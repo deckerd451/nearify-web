@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Organizer Event Setup | Nearify</title>
+  <meta
+    name="description"
+    content="Create a Nearify event, generate the event join payload, and prepare the on-site QR flow."
+  />
+  <link rel="stylesheet" href="../assets/css/styles.css" />
+</head>
+<body>
+  <header class="nav">
+    <div class="logo"><a href="../index.html">Nearify</a></div>
+    <div class="nav-links">
+      <a href="../index.html#how">How it works</a>
+      <a href="../events/index.html">Events</a>
+    </div>
+  </header>
+
+  <main class="admin-page">
+    <section class="event-hero admin-hero">
+      <div class="event-hero-copy">
+        <div class="event-kicker">Organizer Tools</div>
+        <h1>Create a Nearify event</h1>
+        <p class="event-subhead">
+          This page prepares the event join contract for the iOS app. Organizers can define an event,
+          generate the correct Nearify payload, and produce a QR code for the physical venue.
+        </p>
+
+        <div class="hero-actions">
+          <a href="#event-form" class="btn primary">Set up event</a>
+          <a href="../events/index.html" class="btn secondary">View public events</a>
+        </div>
+      </div>
+
+      <aside class="event-side-panel">
+        <div class="event-panel">
+          <h2>How organizers use this</h2>
+          <ol class="event-steps-list">
+            <li>Create the event details</li>
+            <li>Generate a unique event ID</li>
+            <li>Create the app join payload</li>
+            <li>Display or print the QR code at the venue</li>
+            <li>Attendees scan it in the app on arrival</li>
+          </ol>
+        </div>
+      </aside>
+    </section>
+
+    <section id="event-form" class="section event-section">
+      <div class="section-heading">
+        <h2>Event setup</h2>
+        <p>
+          For now, this page is a local organizer utility. It generates the exact event join payload
+          your app expects: <strong>beacon://event/&lt;event-id&gt;</strong>.
+        </p>
+      </div>
+
+      <div class="admin-grid">
+        <div class="admin-card">
+          <form id="organizerForm" class="organizer-form">
+            <div class="form-row">
+              <label for="eventName">Event name</label>
+              <input
+                id="eventName"
+                name="eventName"
+                type="text"
+                placeholder="CharlestonHacks Show & Tell Featuring Hacker Theater"
+                required
+              />
+            </div>
+
+            <div class="form-row">
+              <label for="eventSlug">Event slug</label>
+              <input
+                id="eventSlug"
+                name="eventSlug"
+                type="text"
+                placeholder="charlestonhacks-show-and-tell-featuring-hacker-theater"
+              />
+              <p class="field-help">Used for the public event page URL.</p>
+            </div>
+
+            <div class="form-row">
+              <label for="eventLocation">Location</label>
+              <input
+                id="eventLocation"
+                name="eventLocation"
+                type="text"
+                placeholder="Blue Ion"
+              />
+            </div>
+
+            <div class="form-row two-up">
+              <div>
+                <label for="eventDate">Date</label>
+                <input id="eventDate" name="eventDate" type="date" />
+              </div>
+              <div>
+                <label for="eventTime">Time</label>
+                <input id="eventTime" name="eventTime" type="time" />
+              </div>
+            </div>
+
+            <div class="form-row">
+              <label for="eventDescription">Description</label>
+              <textarea
+                id="eventDescription"
+                name="eventDescription"
+                rows="5"
+                placeholder="Describe the event, who it is for, and why Nearify matters here."
+              ></textarea>
+            </div>
+
+            <div class="form-row">
+              <label for="eventId">Event ID</label>
+              <div class="inline-action-row">
+                <input
+                  id="eventId"
+                  name="eventId"
+                  type="text"
+                  placeholder="Auto-generate a UUID"
+                  readonly
+                />
+                <button type="button" class="btn secondary small-btn" id="generateIdBtn">
+                  Generate ID
+                </button>
+              </div>
+              <p class="field-help">
+                This is the ID embedded in the event QR and passed into the app join flow.
+              </p>
+            </div>
+
+            <div class="form-row">
+              <label for="eventPayload">App join payload</label>
+              <div class="inline-action-row">
+                <input
+                  id="eventPayload"
+                  name="eventPayload"
+                  type="text"
+                  placeholder="beacon://event/..."
+                  readonly
+                />
+                <button type="button" class="btn secondary small-btn" id="copyPayloadBtn">
+                  Copy
+                </button>
+              </div>
+            </div>
+
+            <div class="form-row">
+              <label for="eventPageUrl">Public event page URL</label>
+              <input
+                id="eventPageUrl"
+                name="eventPageUrl"
+                type="text"
+                placeholder="https://nearify.org/events/..."
+                readonly
+              />
+            </div>
+
+            <div class="hero-actions admin-actions">
+              <button type="button" class="btn primary" id="generateQrBtn">
+                Generate QR
+              </button>
+              <button type="reset" class="btn secondary" id="resetFormBtn">
+                Reset
+              </button>
+            </div>
+          </form>
+        </div>
+
+        <div class="admin-card qr-card">
+          <div class="qr-preview-header">
+            <h3>Event QR preview</h3>
+            <p>
+              This QR should be printed or displayed at the venue for attendees to scan with the Nearify app.
+            </p>
+          </div>
+
+          <div class="qr-preview-shell">
+            <canvas id="qrCanvas" width="260" height="260" aria-label="Event QR code preview"></canvas>
+          </div>
+
+          <div class="qr-meta">
+            <div class="qr-meta-row">
+              <span class="qr-meta-label">Current payload</span>
+              <span class="qr-meta-value" id="payloadPreview">Not generated yet</span>
+            </div>
+            <div class="qr-meta-row">
+              <span class="qr-meta-label">Public page</span>
+              <span class="qr-meta-value" id="pagePreview">Not generated yet</span>
+            </div>
+          </div>
+
+          <div class="hero-actions">
+            <button type="button" class="btn secondary" id="downloadQrBtn">
+              Download QR
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section dark event-section">
+      <div class="section-heading">
+        <h2>What this page does today</h2>
+        <p>
+          This is the organizer bridge between the web and mobile experience. It does not yet write to Supabase.
+          It standardizes the event ID, app join payload, and on-site QR workflow so the public event pages and
+          app flow can stay aligned.
+        </p>
+      </div>
+
+      <div class="feature-grid">
+        <div class="feature-card">
+          <h3>Creates a real app payload</h3>
+          <p>
+            The generated value follows your current iOS parsing logic: <code>beacon://event/&lt;event-id&gt;</code>.
+          </p>
+        </div>
+        <div class="feature-card">
+          <h3>Supports the physical event flow</h3>
+          <p>
+            Organizers can print or display this QR code in the room so attendees can join without needing a laptop.
+          </p>
+        </div>
+        <div class="feature-card">
+          <h3>Prepares for future integration</h3>
+          <p>
+            This same structure can later save events to Supabase and feed public event pages, recaps, and analytics.
+          </p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <p>© 2026 Nearify</p>
+  </footer>
+
+  <script>
+    const form = document.getElementById("organizerForm");
+    const eventNameInput = document.getElementById("eventName");
+    const eventSlugInput = document.getElementById("eventSlug");
+    const eventLocationInput = document.getElementById("eventLocation");
+    const eventDateInput = document.getElementById("eventDate");
+    const eventTimeInput = document.getElementById("eventTime");
+    const eventDescriptionInput = document.getElementById("eventDescription");
+    const eventIdInput = document.getElementById("eventId");
+    const eventPayloadInput = document.getElementById("eventPayload");
+    const eventPageUrlInput = document.getElementById("eventPageUrl");
+
+    const payloadPreview = document.getElementById("payloadPreview");
+    const pagePreview = document.getElementById("pagePreview");
+
+    const generateIdBtn = document.getElementById("generateIdBtn");
+    const generateQrBtn = document.getElementById("generateQrBtn");
+    const copyPayloadBtn = document.getElementById("copyPayloadBtn");
+    const downloadQrBtn = document.getElementById("downloadQrBtn");
+    const resetFormBtn = document.getElementById("resetFormBtn");
+
+    const qrCanvas = document.getElementById("qrCanvas");
+    const qrCtx = qrCanvas.getContext("2d");
+
+    function slugify(text) {
+      return text
+        .toLowerCase()
+        .trim()
+        .replace(/&/g, "and")
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-+|-+$/g, "");
+    }
+
+    function generateUUID() {
+      if (window.crypto && crypto.randomUUID) {
+        return crypto.randomUUID();
+      }
+      return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, function(c) {
+        const r = Math.random() * 16 | 0;
+        const v = c === "x" ? r : (r & 0x3 | 0x8);
+        return v.toString(16);
+      });
+    }
+
+    function buildState() {
+      const name = eventNameInput.value.trim();
+      const slug = eventSlugInput.value.trim() || slugify(name);
+      const eventId = eventIdInput.value.trim();
+      const payload = eventId ? `beacon://event/${eventId}` : "";
+      const pageUrl = slug ? `https://nearify.org/events/${slug}.html` : "";
+
+      return { name, slug, eventId, payload, pageUrl };
+    }
+
+    function syncDerivedFields() {
+      const state = buildState();
+
+      if (!eventSlugInput.value.trim() && state.name) {
+        eventSlugInput.value = state.slug;
+      }
+
+      eventPayloadInput.value = state.payload;
+      eventPageUrlInput.value = state.pageUrl;
+      payloadPreview.textContent = state.payload || "Not generated yet";
+      pagePreview.textContent = state.pageUrl || "Not generated yet";
+    }
+
+    function drawPlaceholder() {
+      qrCtx.clearRect(0, 0, qrCanvas.width, qrCanvas.height);
+      qrCtx.fillStyle = "#ffffff";
+      qrCtx.fillRect(0, 0, qrCanvas.width, qrCanvas.height);
+
+      qrCtx.strokeStyle = "#d6dee8";
+      qrCtx.lineWidth = 2;
+      qrCtx.strokeRect(16, 16, qrCanvas.width - 32, qrCanvas.height - 32);
+
+      qrCtx.fillStyle = "#7f8da4";
+      qrCtx.font = "14px sans-serif";
+      qrCtx.textAlign = "center";
+      qrCtx.fillText("QR preview will appear here", qrCanvas.width / 2, qrCanvas.height / 2 - 8);
+      qrCtx.fillText("after you generate an event", qrCanvas.width / 2, qrCanvas.height / 2 + 14);
+    }
+
+    function drawPseudoQR(payload) {
+      qrCtx.clearRect(0, 0, qrCanvas.width, qrCanvas.height);
+      qrCtx.fillStyle = "#ffffff";
+      qrCtx.fillRect(0, 0, qrCanvas.width, qrCanvas.height);
+
+      const size = 21;
+      const margin = 20;
+      const cell = Math.floor((qrCanvas.width - margin * 2) / size);
+
+      let seed = 0;
+      for (let i = 0; i < payload.length; i++) {
+        seed = (seed + payload.charCodeAt(i) * (i + 1)) % 2147483647;
+      }
+
+      function rand() {
+        seed = (seed * 48271) % 2147483647;
+        return seed / 2147483647;
+      }
+
+      function finder(x, y) {
+        qrCtx.fillStyle = "#000";
+        qrCtx.fillRect(margin + x * cell, margin + y * cell, cell * 7, cell * 7);
+        qrCtx.fillStyle = "#fff";
+        qrCtx.fillRect(margin + (x + 1) * cell, margin + (y + 1) * cell, cell * 5, cell * 5);
+        qrCtx.fillStyle = "#000";
+        qrCtx.fillRect(margin + (x + 2) * cell, margin + (y + 2) * cell, cell * 3, cell * 3);
+      }
+
+      finder(0, 0);
+      finder(size - 7, 0);
+      finder(0, size - 7);
+
+      for (let y = 0; y < size; y++) {
+        for (let x = 0; x < size; x++) {
+          const inTopLeft = x < 7 && y < 7;
+          const inTopRight = x >= size - 7 && y < 7;
+          const inBottomLeft = x < 7 && y >= size - 7;
+          if (inTopLeft || inTopRight || inBottomLeft) continue;
+
+          if (rand() > 0.5) {
+            qrCtx.fillStyle = "#000";
+            qrCtx.fillRect(margin + x * cell, margin + y * cell, cell, cell);
+          }
+        }
+      }
+    }
+
+    function generateAll() {
+      if (!eventNameInput.value.trim()) {
+        alert("Please enter an event name first.");
+        eventNameInput.focus();
+        return;
+      }
+
+      if (!eventIdInput.value.trim()) {
+        eventIdInput.value = generateUUID();
+      }
+
+      syncDerivedFields();
+
+      const state = buildState();
+      if (state.payload) {
+        drawPseudoQR(state.payload);
+      }
+    }
+
+    eventNameInput.addEventListener("input", syncDerivedFields);
+    eventSlugInput.addEventListener("input", syncDerivedFields);
+
+    generateIdBtn.addEventListener("click", () => {
+      eventIdInput.value = generateUUID();
+      syncDerivedFields();
+    });
+
+    generateQrBtn.addEventListener("click", generateAll);
+
+    copyPayloadBtn.addEventListener("click", async () => {
+      if (!eventPayloadInput.value) return;
+      try {
+        await navigator.clipboard.writeText(eventPayloadInput.value);
+        copyPayloadBtn.textContent = "Copied";
+        setTimeout(() => {
+          copyPayloadBtn.textContent = "Copy";
+        }, 1200);
+      } catch {
+        alert("Could not copy payload.");
+      }
+    });
+
+    downloadQrBtn.addEventListener("click", () => {
+      const state = buildState();
+      if (!state.payload) {
+        alert("Generate the QR first.");
+        return;
+      }
+      const link = document.createElement("a");
+      link.href = qrCanvas.toDataURL("image/png");
+      link.download = `${state.slug || "nearify-event"}-qr.png`;
+      link.click();
+    });
+
+    resetFormBtn.addEventListener("click", () => {
+      setTimeout(() => {
+        eventIdInput.value = "";
+        eventPayloadInput.value = "";
+        eventPageUrlInput.value = "";
+        payloadPreview.textContent = "Not generated yet";
+        pagePreview.textContent = "Not generated yet";
+        drawPlaceholder();
+      }, 0);
+    });
+
+    drawPlaceholder();
+    syncDerivedFields();
+  </script>
+</body>
+</html>
