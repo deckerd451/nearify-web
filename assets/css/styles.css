@@ -485,3 +485,167 @@ html {
     font-size: 24px;
   }
 }
+.admin-page {
+  padding-bottom: 40px;
+}
+
+.admin-hero {
+  align-items: start;
+}
+
+.admin-grid {
+  display: grid;
+  grid-template-columns: 1.1fr 0.9fr;
+  gap: 24px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.admin-card {
+  background: rgba(22, 32, 51, 0.9);
+  border: 1px solid rgba(0, 209, 255, 0.12);
+  border-radius: 18px;
+  padding: 28px;
+  box-shadow: 0 0 0 1px rgba(255,255,255,0.02) inset;
+}
+
+.organizer-form {
+  display: grid;
+  gap: 18px;
+}
+
+.form-row {
+  display: grid;
+  gap: 8px;
+}
+
+.form-row.two-up {
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.form-row label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #dfe6ef;
+}
+
+.form-row input,
+.form-row textarea {
+  width: 100%;
+  border: 1px solid rgba(255,255,255,0.12);
+  background: rgba(9, 14, 26, 0.9);
+  color: #fff;
+  border-radius: 12px;
+  padding: 14px 14px;
+  font-size: 15px;
+  outline: none;
+}
+
+.form-row input:focus,
+.form-row textarea:focus {
+  border-color: rgba(0, 209, 255, 0.55);
+  box-shadow: 0 0 0 3px rgba(0, 209, 255, 0.08);
+}
+
+.field-help {
+  color: #8fa0b8;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.inline-action-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 10px;
+  align-items: center;
+}
+
+.small-btn {
+  white-space: nowrap;
+  padding: 12px 14px;
+}
+
+.admin-actions {
+  margin-top: 8px;
+}
+
+.qr-card {
+  display: grid;
+  gap: 20px;
+  align-content: start;
+}
+
+.qr-preview-header h3 {
+  font-size: 24px;
+  margin-bottom: 10px;
+}
+
+.qr-preview-header p {
+  color: #c5cfdd;
+  line-height: 1.7;
+}
+
+.qr-preview-shell {
+  background: #fff;
+  border-radius: 16px;
+  padding: 18px;
+  width: fit-content;
+  margin: 0 auto;
+}
+
+#qrCanvas {
+  display: block;
+  width: 260px;
+  height: 260px;
+  max-width: 100%;
+  border-radius: 8px;
+}
+
+.qr-meta {
+  display: grid;
+  gap: 14px;
+}
+
+.qr-meta-row {
+  display: grid;
+  gap: 6px;
+}
+
+.qr-meta-label {
+  color: #8fa0b8;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.qr-meta-value {
+  color: #fff;
+  font-size: 14px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+code {
+  background: rgba(255,255,255,0.08);
+  padding: 2px 6px;
+  border-radius: 6px;
+  font-size: 0.95em;
+}
+
+@media (max-width: 1100px) {
+  .admin-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 720px) {
+  .form-row.two-up,
+  .inline-action-row {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-card {
+    padding: 22px;
+  }
+}
