@@ -1,0 +1,134 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+body {
+  background: #0b0f1a;
+  color: #ffffff;
+}
+
+/* NAV */
+.nav {
+  display: flex;
+  justify-content: space-between;
+  padding: 20px 40px;
+}
+
+.logo {
+  font-weight: bold;
+  font-size: 20px;
+}
+
+.nav-links a {
+  margin-left: 20px;
+  text-decoration: none;
+  color: #ccc;
+}
+
+/* HERO */
+.hero {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 80px 40px;
+}
+
+.hero-content {
+  max-width: 500px;
+}
+
+.hero h1 {
+  font-size: 48px;
+  margin-bottom: 20px;
+}
+
+.hero p {
+  color: #aaa;
+  margin-bottom: 30px;
+}
+
+.hero-actions .btn {
+  margin-right: 10px;
+}
+
+/* BUTTONS */
+.btn {
+  padding: 12px 20px;
+  border-radius: 8px;
+  text-decoration: none;
+  display: inline-block;
+}
+
+.primary {
+  background: #00d1ff;
+  color: black;
+}
+
+.secondary {
+  border: 1px solid #444;
+  color: white;
+}
+
+/* SECTIONS */
+.section {
+  padding: 80px 40px;
+  text-align: center;
+}
+
+.section.dark {
+  background: #111827;
+}
+
+/* STEPS */
+.steps {
+  display: flex;
+  justify-content: center;
+  margin-top: 40px;
+}
+
+.step {
+  margin: 0 20px;
+  max-width: 200px;
+}
+
+.step h3 {
+  margin-bottom: 10px;
+}
+
+/* EVENTS */
+.event-card {
+  background: #1f2937;
+  padding: 30px;
+  border-radius: 12px;
+  margin-top: 30px;
+  display: inline-block;
+}
+
+/* CTA */
+.cta {
+  text-align: center;
+  padding: 100px 40px;
+}
+
+.cta h2 {
+  font-size: 36px;
+  margin-bottom: 20px;
+}
+
+/* FOOTER */
+.footer {
+  text-align: center;
+  padding: 40px;
+  color: #666;
+}
+
+/* NETWORK VISUAL */
+.hero-visual {
+  width: 400px;
+  height: 300px;
+  background: radial-gradient(circle, #00d1ff33, transparent);
+  border-radius: 12px;
+}
