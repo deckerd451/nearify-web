@@ -180,7 +180,7 @@
           </div>
 
           <div class="qr-preview-shell">
-            <canvas id="qrCanvas" width="260" height="260" aria-label="Event QR code preview"></canvas>
+            <div id="qrCode" class="qr-code-box" aria-label="Event QR code preview"></div>
           </div>
 
           <div class="qr-meta">
@@ -240,203 +240,135 @@
     <p>© 2026 Nearify</p>
   </footer>
 
-  <script>
-    const form = document.getElementById("organizerForm");
-    const eventNameInput = document.getElementById("eventName");
-    const eventSlugInput = document.getElementById("eventSlug");
-    const eventLocationInput = document.getElementById("eventLocation");
-    const eventDateInput = document.getElementById("eventDate");
-    const eventTimeInput = document.getElementById("eventTime");
-    const eventDescriptionInput = document.getElementById("eventDescription");
-    const eventIdInput = document.getElementById("eventId");
-    const eventPayloadInput = document.getElementById("eventPayload");
-    const eventPageUrlInput = document.getElementById("eventPageUrl");
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
-    const payloadPreview = document.getElementById("payloadPreview");
-    const pagePreview = document.getElementById("pagePreview");
+ <script>
+  const form = document.getElementById("organizerForm");
+  const eventNameInput = document.getElementById("eventName");
+  const eventSlugInput = document.getElementById("eventSlug");
+  const eventIdInput = document.getElementById("eventId");
+  const eventPayloadInput = document.getElementById("eventPayload");
+  const eventPageUrlInput = document.getElementById("eventPageUrl");
 
-    const generateIdBtn = document.getElementById("generateIdBtn");
-    const generateQrBtn = document.getElementById("generateQrBtn");
-    const copyPayloadBtn = document.getElementById("copyPayloadBtn");
-    const downloadQrBtn = document.getElementById("downloadQrBtn");
-    const resetFormBtn = document.getElementById("resetFormBtn");
+  const payloadPreview = document.getElementById("payloadPreview");
+  const pagePreview = document.getElementById("pagePreview");
 
-    const qrCanvas = document.getElementById("qrCanvas");
-    const qrCtx = qrCanvas.getContext("2d");
+  const generateIdBtn = document.getElementById("generateIdBtn");
+  const generateQrBtn = document.getElementById("generateQrBtn");
+  const copyPayloadBtn = document.getElementById("copyPayloadBtn");
+  const downloadQrBtn = document.getElementById("downloadQrBtn");
+  const resetFormBtn = document.getElementById("resetFormBtn");
 
-    function slugify(text) {
-      return text
-        .toLowerCase()
-        .trim()
-        .replace(/&/g, "and")
-        .replace(/[^a-z0-9]+/g, "-")
-        .replace(/^-+|-+$/g, "");
+  const qrCodeContainer = document.getElementById("qrCode");
+  let qrInstance = null;
+
+  function slugify(text) {
+    return text.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+  }
+
+  function generateUUID() {
+    if (crypto.randomUUID) return crypto.randomUUID();
+    return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, c => {
+      const r = Math.random() * 16 | 0;
+      return (c === "x" ? r : (r & 0x3 | 0x8)).toString(16);
+    });
+  }
+
+  function buildState() {
+    const name = eventNameInput.value.trim();
+    const slug = eventSlugInput.value.trim() || slugify(name);
+    const eventId = eventIdInput.value.trim();
+    const payload = eventId ? `beacon://event/${eventId}` : "";
+    const pageUrl = slug ? `https://nearify.org/events/${slug}.html` : "";
+
+    return { name, slug, eventId, payload, pageUrl };
+  }
+
+  function syncFields() {
+    const s = buildState();
+
+    if (!eventSlugInput.value && s.name) {
+      eventSlugInput.value = s.slug;
     }
 
-    function generateUUID() {
-      if (window.crypto && crypto.randomUUID) {
-        return crypto.randomUUID();
-      }
-      return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, function(c) {
-        const r = Math.random() * 16 | 0;
-        const v = c === "x" ? r : (r & 0x3 | 0x8);
-        return v.toString(16);
-      });
+    eventPayloadInput.value = s.payload;
+    eventPageUrlInput.value = s.pageUrl;
+    payloadPreview.textContent = s.payload || "Not generated yet";
+    pagePreview.textContent = s.pageUrl || "Not generated yet";
+  }
+
+  function renderQR(payload) {
+    qrCodeContainer.innerHTML = "";
+    qrInstance = new QRCode(qrCodeContainer, {
+      text: payload,
+      width: 260,
+      height: 260
+    });
+  }
+
+  function generateAll() {
+    if (!eventNameInput.value) {
+      alert("Enter event name");
+      return;
     }
 
-    function buildState() {
-      const name = eventNameInput.value.trim();
-      const slug = eventSlugInput.value.trim() || slugify(name);
-      const eventId = eventIdInput.value.trim();
-      const payload = eventId ? `beacon://event/${eventId}` : "";
-      const pageUrl = slug ? `https://nearify.org/events/${slug}.html` : "";
-
-      return { name, slug, eventId, payload, pageUrl };
-    }
-
-    function syncDerivedFields() {
-      const state = buildState();
-
-      if (!eventSlugInput.value.trim() && state.name) {
-        eventSlugInput.value = state.slug;
-      }
-
-      eventPayloadInput.value = state.payload;
-      eventPageUrlInput.value = state.pageUrl;
-      payloadPreview.textContent = state.payload || "Not generated yet";
-      pagePreview.textContent = state.pageUrl || "Not generated yet";
-    }
-
-    function drawPlaceholder() {
-      qrCtx.clearRect(0, 0, qrCanvas.width, qrCanvas.height);
-      qrCtx.fillStyle = "#ffffff";
-      qrCtx.fillRect(0, 0, qrCanvas.width, qrCanvas.height);
-
-      qrCtx.strokeStyle = "#d6dee8";
-      qrCtx.lineWidth = 2;
-      qrCtx.strokeRect(16, 16, qrCanvas.width - 32, qrCanvas.height - 32);
-
-      qrCtx.fillStyle = "#7f8da4";
-      qrCtx.font = "14px sans-serif";
-      qrCtx.textAlign = "center";
-      qrCtx.fillText("QR preview will appear here", qrCanvas.width / 2, qrCanvas.height / 2 - 8);
-      qrCtx.fillText("after you generate an event", qrCanvas.width / 2, qrCanvas.height / 2 + 14);
-    }
-
-    function drawPseudoQR(payload) {
-      qrCtx.clearRect(0, 0, qrCanvas.width, qrCanvas.height);
-      qrCtx.fillStyle = "#ffffff";
-      qrCtx.fillRect(0, 0, qrCanvas.width, qrCanvas.height);
-
-      const size = 21;
-      const margin = 20;
-      const cell = Math.floor((qrCanvas.width - margin * 2) / size);
-
-      let seed = 0;
-      for (let i = 0; i < payload.length; i++) {
-        seed = (seed + payload.charCodeAt(i) * (i + 1)) % 2147483647;
-      }
-
-      function rand() {
-        seed = (seed * 48271) % 2147483647;
-        return seed / 2147483647;
-      }
-
-      function finder(x, y) {
-        qrCtx.fillStyle = "#000";
-        qrCtx.fillRect(margin + x * cell, margin + y * cell, cell * 7, cell * 7);
-        qrCtx.fillStyle = "#fff";
-        qrCtx.fillRect(margin + (x + 1) * cell, margin + (y + 1) * cell, cell * 5, cell * 5);
-        qrCtx.fillStyle = "#000";
-        qrCtx.fillRect(margin + (x + 2) * cell, margin + (y + 2) * cell, cell * 3, cell * 3);
-      }
-
-      finder(0, 0);
-      finder(size - 7, 0);
-      finder(0, size - 7);
-
-      for (let y = 0; y < size; y++) {
-        for (let x = 0; x < size; x++) {
-          const inTopLeft = x < 7 && y < 7;
-          const inTopRight = x >= size - 7 && y < 7;
-          const inBottomLeft = x < 7 && y >= size - 7;
-          if (inTopLeft || inTopRight || inBottomLeft) continue;
-
-          if (rand() > 0.5) {
-            qrCtx.fillStyle = "#000";
-            qrCtx.fillRect(margin + x * cell, margin + y * cell, cell, cell);
-          }
-        }
-      }
-    }
-
-    function generateAll() {
-      if (!eventNameInput.value.trim()) {
-        alert("Please enter an event name first.");
-        eventNameInput.focus();
-        return;
-      }
-
-      if (!eventIdInput.value.trim()) {
-        eventIdInput.value = generateUUID();
-      }
-
-      syncDerivedFields();
-
-      const state = buildState();
-      if (state.payload) {
-        drawPseudoQR(state.payload);
-      }
-    }
-
-    eventNameInput.addEventListener("input", syncDerivedFields);
-    eventSlugInput.addEventListener("input", syncDerivedFields);
-
-    generateIdBtn.addEventListener("click", () => {
+    if (!eventIdInput.value) {
       eventIdInput.value = generateUUID();
-      syncDerivedFields();
-    });
+    }
 
-    generateQrBtn.addEventListener("click", generateAll);
+    syncFields();
 
-    copyPayloadBtn.addEventListener("click", async () => {
-      if (!eventPayloadInput.value) return;
-      try {
-        await navigator.clipboard.writeText(eventPayloadInput.value);
-        copyPayloadBtn.textContent = "Copied";
-        setTimeout(() => {
-          copyPayloadBtn.textContent = "Copy";
-        }, 1200);
-      } catch {
-        alert("Could not copy payload.");
-      }
-    });
+    const s = buildState();
+    if (s.payload) renderQR(s.payload);
+  }
 
-    downloadQrBtn.addEventListener("click", () => {
-      const state = buildState();
-      if (!state.payload) {
-        alert("Generate the QR first.");
-        return;
-      }
-      const link = document.createElement("a");
-      link.href = qrCanvas.toDataURL("image/png");
-      link.download = `${state.slug || "nearify-event"}-qr.png`;
-      link.click();
-    });
+  function getQRImage() {
+    const img = qrCodeContainer.querySelector("img");
+    if (img) return img.src;
 
-    resetFormBtn.addEventListener("click", () => {
-      setTimeout(() => {
-        eventIdInput.value = "";
-        eventPayloadInput.value = "";
-        eventPageUrlInput.value = "";
-        payloadPreview.textContent = "Not generated yet";
-        pagePreview.textContent = "Not generated yet";
-        drawPlaceholder();
-      }, 0);
-    });
+    const canvas = qrCodeContainer.querySelector("canvas");
+    if (canvas) return canvas.toDataURL();
 
-    drawPlaceholder();
-    syncDerivedFields();
-  </script>
+    return null;
+  }
+
+  generateIdBtn.onclick = () => {
+    eventIdInput.value = generateUUID();
+    syncFields();
+  };
+
+  generateQrBtn.onclick = generateAll;
+
+  copyPayloadBtn.onclick = async () => {
+    if (!eventPayloadInput.value) return;
+    await navigator.clipboard.writeText(eventPayloadInput.value);
+    copyPayloadBtn.textContent = "Copied";
+    setTimeout(() => copyPayloadBtn.textContent = "Copy", 1000);
+  };
+
+  downloadQrBtn.onclick = () => {
+    const img = getQRImage();
+    if (!img) return alert("Generate QR first");
+
+    const a = document.createElement("a");
+    a.href = img;
+    a.download = "nearify-event-qr.png";
+    a.click();
+  };
+
+  resetFormBtn.onclick = () => {
+    setTimeout(() => {
+      qrCodeContainer.innerHTML = "";
+      eventPayloadInput.value = "";
+      eventPageUrlInput.value = "";
+    }, 0);
+  };
+
+  eventNameInput.oninput = syncFields;
+  eventSlugInput.oninput = syncFields;
+
+  syncFields();
+</script>
+  
 </body>
 </html>
