@@ -649,3 +649,16 @@ code {
     padding: 22px;
   }
 }
+.qr-code-box {
+  width: 260px;
+  height: 260px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.qr-code-box img,
+.qr-code-box canvas {
+  width: 260px !important;
+  height: 260px !important;
+}
