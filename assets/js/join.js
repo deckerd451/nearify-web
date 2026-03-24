@@ -1,54 +1,39 @@
-import { supabase } from "./supabaseClient.js";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-console.log("join.js loaded");
-console.log("Supabase in join.js:", supabase);
+console.log("join.js module loaded");
 
-function getEventId() {
-  const params = new URLSearchParams(window.location.search);
-  return params.get("event");
+const supabaseUrl = "https://unndeygygkgodmmdnlup.supabase.co";
+const supabaseKey = "sb_publishable_G0KAfCFTovYCWDeEEKWBfg_8UpPHWWZ";
+
+const supabase = createClient(supabaseUrl, supabaseKey);
+
+window.supabase = supabase;
+
+console.log("Supabase attached to window:", window.supabase);
+
+const params = new URLSearchParams(window.location.search);
+const eventId = params.get("event");
+const eventName = params.get("name") || "this event";
+
+const titleEl = document.getElementById("joinTitle");
+const payloadEl = document.getElementById("payloadText");
+const topBtn = document.getElementById("openNearifyBtn");
+const bottomBtn = document.getElementById("openNearifyBtnBottom");
+
+const deepLink = eventId ? `beacon://event/${eventId}` : "#";
+
+if (titleEl) {
+  titleEl.textContent = `Open Nearify to join ${eventName}`;
 }
 
-function getEventName() {
-  const params = new URLSearchParams(window.location.search);
-  return params.get("name");
+if (payloadEl) {
+  payloadEl.textContent = deepLink;
 }
 
-function buildDeepLink(eventId) {
-  return `beacon://event/${eventId}`;
+if (topBtn) {
+  topBtn.href = deepLink;
 }
 
-function updateJoinPage() {
-  const eventId = getEventId();
-  const eventName = getEventName();
-
-  const title = document.getElementById("joinTitle");
-  const description = document.getElementById("joinDescription");
-  const payloadText = document.getElementById("payloadText");
-  const openBtn = document.getElementById("openNearifyBtn");
-  const openBtnBottom = document.getElementById("openNearifyBtnBottom");
-
-  if (!eventId) {
-    title.textContent = "No event selected";
-    description.textContent =
-      "This join link is missing an event ID. Please return to the event page or ask the organizer for the correct event link.";
-    payloadText.textContent = "Missing event ID";
-    openBtn.setAttribute("href", "#");
-    openBtnBottom.setAttribute("href", "#");
-    openBtn.classList.add("disabled-link");
-    openBtnBottom.classList.add("disabled-link");
-    return;
-  }
-
-  const deepLink = buildDeepLink(eventId);
-  const labelName = eventName ? decodeURIComponent(eventName) : "this event";
-
-  title.textContent = `Open Nearify to join ${labelName}`;
-  description.textContent =
-    "Tap below to open Nearify and enter the live event network. If the app is not installed yet, use the TestFlight link instead.";
-  payloadText.textContent = deepLink;
-
-  openBtn.setAttribute("href", deepLink);
-  openBtnBottom.setAttribute("href", deepLink);
+if (bottomBtn) {
+  bottomBtn.href = deepLink;
 }
-
-document.addEventListener("DOMContentLoaded", updateJoinPage);
