@@ -265,22 +265,22 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
  <script>
-   const joinPageUrlInput = document.getElementById("joinPageUrl");
-const copyJoinUrlBtn = document.getElementById("copyJoinUrlBtn");
-const joinPreview = document.getElementById("joinPreview");
   const form = document.getElementById("organizerForm");
   const eventNameInput = document.getElementById("eventName");
   const eventSlugInput = document.getElementById("eventSlug");
   const eventIdInput = document.getElementById("eventId");
   const eventPayloadInput = document.getElementById("eventPayload");
   const eventPageUrlInput = document.getElementById("eventPageUrl");
+  const joinPageUrlInput = document.getElementById("joinPageUrl");
 
   const payloadPreview = document.getElementById("payloadPreview");
   const pagePreview = document.getElementById("pagePreview");
+  const joinPreview = document.getElementById("joinPreview");
 
   const generateIdBtn = document.getElementById("generateIdBtn");
   const generateQrBtn = document.getElementById("generateQrBtn");
   const copyPayloadBtn = document.getElementById("copyPayloadBtn");
+  const copyJoinUrlBtn = document.getElementById("copyJoinUrlBtn");
   const downloadQrBtn = document.getElementById("downloadQrBtn");
   const resetFormBtn = document.getElementById("resetFormBtn");
 
@@ -288,7 +288,11 @@ const joinPreview = document.getElementById("joinPreview");
   let qrInstance = null;
 
   function slugify(text) {
-    return text.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+    return text
+      .toLowerCase()
+      .trim()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "");
   }
 
   function generateUUID() {
@@ -300,28 +304,32 @@ const joinPreview = document.getElementById("joinPreview");
   }
 
   function buildState() {
-  const name = eventNameInput.value.trim();
-  const slug = eventSlugInput.value.trim() || slugify(name);
-  const eventId = eventIdInput.value.trim();
-  const payload = eventId ? `beacon://event/${eventId}` : "";
-  const pageUrl = slug ? `https://nearify.org/events/${slug}.html` : "";
-  const joinUrl = eventId
-    ? `https://nearify.org/join/?event=${encodeURIComponent(eventId)}&name=${encodeURIComponent(name || "this event")}`
-    : "";
+    const name = eventNameInput.value.trim();
+    const slug = eventSlugInput.value.trim() || slugify(name);
+    const eventId = eventIdInput.value.trim();
+    const payload = eventId ? `beacon://event/${eventId}` : "";
+    const pageUrl = slug ? `https://nearify.org/events/${slug}.html` : "";
+    const joinUrl = eventId
+      ? `https://nearify.org/join/?event=${encodeURIComponent(eventId)}&name=${encodeURIComponent(name || "this event")}`
+      : "";
 
-  return { name, slug, eventId, payload, pageUrl, joinUrl };
-}
+    return { name, slug, eventId, payload, pageUrl, joinUrl };
+  }
+
   function syncFields() {
     const s = buildState();
 
-    if (!eventSlugInput.value && s.name) {
+    if (!eventSlugInput.value.trim() && s.name) {
       eventSlugInput.value = s.slug;
     }
 
     eventPayloadInput.value = s.payload;
     eventPageUrlInput.value = s.pageUrl;
+    joinPageUrlInput.value = s.joinUrl;
+
     payloadPreview.textContent = s.payload || "Not generated yet";
     pagePreview.textContent = s.pageUrl || "Not generated yet";
+    joinPreview.textContent = s.joinUrl || "Not generated yet";
   }
 
   function renderQR(payload) {
@@ -334,19 +342,22 @@ const joinPreview = document.getElementById("joinPreview");
   }
 
   function generateAll() {
-    if (!eventNameInput.value) {
+    if (!eventNameInput.value.trim()) {
       alert("Enter event name");
+      eventNameInput.focus();
       return;
     }
 
-    if (!eventIdInput.value) {
+    if (!eventIdInput.value.trim()) {
       eventIdInput.value = generateUUID();
     }
 
     syncFields();
 
     const s = buildState();
-    if (s.payload) renderQR(s.payload);
+    if (s.joinUrl) {
+      renderQR(s.joinUrl);
+    }
   }
 
   function getQRImage() {
@@ -370,7 +381,18 @@ const joinPreview = document.getElementById("joinPreview");
     if (!eventPayloadInput.value) return;
     await navigator.clipboard.writeText(eventPayloadInput.value);
     copyPayloadBtn.textContent = "Copied";
-    setTimeout(() => copyPayloadBtn.textContent = "Copy", 1000);
+    setTimeout(() => {
+      copyPayloadBtn.textContent = "Copy";
+    }, 1000);
+  };
+
+  copyJoinUrlBtn.onclick = async () => {
+    if (!joinPageUrlInput.value) return;
+    await navigator.clipboard.writeText(joinPageUrlInput.value);
+    copyJoinUrlBtn.textContent = "Copied";
+    setTimeout(() => {
+      copyJoinUrlBtn.textContent = "Copy";
+    }, 1000);
   };
 
   downloadQrBtn.onclick = () => {
@@ -388,6 +410,10 @@ const joinPreview = document.getElementById("joinPreview");
       qrCodeContainer.innerHTML = "";
       eventPayloadInput.value = "";
       eventPageUrlInput.value = "";
+      joinPageUrlInput.value = "";
+      payloadPreview.textContent = "Not generated yet";
+      pagePreview.textContent = "Not generated yet";
+      joinPreview.textContent = "Not generated yet";
     }, 0);
   };
 
