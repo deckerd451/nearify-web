@@ -31,12 +31,72 @@ if (payloadEl) {
   payloadEl.textContent = deepLink;
 }
 
-if (topBtn) {
-  topBtn.href = deepLink;
+async function ensureProfileFromSession() {
+  const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+  if (sessionError) throw sessionError;
+
+  const user = sessionData.session?.user;
+  if (!user) throw new Error("No authenticated user");
+
+  const name =
+    user.user_metadata?.full_name ||
+    user.user_metadata?.name ||
+    user.email ||
+    "Nearify User";
+
+  const email = user.email || null;
+  const avatarUrl = user.user_metadata?.avatar_url || null;
+
+  const { data, error } = await supabase.rpc("ensure_profile", {
+    p_name: name,
+    p_email: email,
+    p_avatar_url: avatarUrl
+  });
+
+  if (error) throw error;
+  return data;
 }
 
-if (bottomBtn) {
-  bottomBtn.href = deepLink;
+async function joinEventById(id) {
+  const { data, error } = await supabase.rpc("join_event", {
+    p_event_id: id
+  });
+
+  if (error) throw error;
+  return data;
+}
+
+async function openNearifyFlow(e) {
+  e.preventDefault();
+
+  try {
+    if (!eventId) throw new Error("Missing event ID");
+
+    const { data: sessionData } = await supabase.auth.getSession();
+    const session = sessionData.session;
+
+    if (!session?.user) {
+      if (descEl) descEl.textContent = "Please sign in first.";
+      return;
+    }
+
+    if (descEl) descEl.textContent = "Preparing your event entry...";
+
+    const profile = await ensureProfileFromSession();
+    console.log("Profile ensured:", profile);
+
+    const attendee = await joinEventById(eventId);
+    console.log("Event joined:", attendee);
+
+    if (descEl) descEl.textContent = "Opening Nearify...";
+
+    window.location.href = deepLink;
+  } catch (err) {
+    console.error("Open Nearify flow failed:", err);
+    if (descEl) {
+      descEl.textContent = err.message || "Could not join event.";
+    }
+  }
 }
 
 async function refreshAuthState() {
@@ -55,17 +115,13 @@ async function refreshAuthState() {
     if (descEl) {
       descEl.textContent = `Signed in as ${session.user.email}. Open Nearify to continue into the event.`;
     }
-    if (signInBtn) {
-      signInBtn.style.display = "none";
-    }
+    if (signInBtn) signInBtn.style.display = "none";
   } else {
     console.log("No active session");
     if (descEl) {
       descEl.textContent = "Sign in first, then open Nearify to join the event.";
     }
-    if (signInBtn) {
-      signInBtn.style.display = "inline-flex";
-    }
+    if (signInBtn) signInBtn.style.display = "inline-flex";
   }
 }
 
@@ -75,16 +131,12 @@ signInBtn?.addEventListener("click", async (e) => {
   try {
     const redirectTo = window.location.href;
 
-    const { data, error } = await supabase.auth.signInWithOAuth({
+    const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
-      options: {
-        redirectTo
-      }
+      options: { redirectTo }
     });
 
     if (error) throw error;
-
-    console.log("OAuth redirect started:", data);
   } catch (err) {
     console.error("Sign-in error:", err);
     if (descEl) {
@@ -92,5 +144,8 @@ signInBtn?.addEventListener("click", async (e) => {
     }
   }
 });
+
+topBtn?.addEventListener("click", openNearifyFlow);
+bottomBtn?.addEventListener("click", openNearifyFlow);
 
 await refreshAuthState();
