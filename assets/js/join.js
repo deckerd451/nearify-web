@@ -1,5 +1,8 @@
 import { supabase } from "./supabaseClient.js";
 
+console.log("join.js loaded");
+console.log("Supabase in join.js:", supabase);
+
 function getEventId() {
   const params = new URLSearchParams(window.location.search);
   return params.get("event");
