@@ -1,3 +1,5 @@
+import { supabase } from "../supabaseClient.js";
+
 function getEventId() {
   const params = new URLSearchParams(window.location.search);
   return params.get("event");
