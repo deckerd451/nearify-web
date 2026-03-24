@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Join Event | Nearify</title>
+  <meta
+    name="description"
+    content="Open Nearify to join this event and discover attendees in real time."
+  />
+  <link rel="stylesheet" href="../assets/css/styles.css" />
+</head>
+<body>
+  <header class="nav">
+    <div class="logo"><a href="../index.html">Nearify</a></div>
+    <div class="nav-links">
+      <a href="../index.html#how">How it works</a>
+      <a href="../events/index.html">Events</a>
+    </div>
+  </header>
+
+  <main class="join-page">
+    <section class="event-hero join-hero">
+      <div class="event-hero-copy">
+        <div class="event-kicker">Join Event</div>
+        <h1 id="joinTitle">Open Nearify to join this event</h1>
+        <p class="event-subhead" id="joinDescription">
+          You’re one step away from entering the live event network. Open the app, join the event,
+          and discover who’s around you in real time.
+        </p>
+
+        <div class="hero-actions">
+          <a id="openNearifyBtn" href="#" class="btn primary">Open Nearify</a>
+          <a
+            href="https://testflight.apple.com/join/ZayvEbAy"
+            class="btn secondary"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Get Nearify on TestFlight
+          </a>
+        </div>
+
+        <div class="join-payload-card">
+          <div class="meta-label">Event join link</div>
+          <div class="join-payload" id="payloadText">Waiting for event...</div>
+        </div>
+      </div>
+
+      <aside class="event-side-panel">
+        <div class="event-panel">
+          <h2>How this works</h2>
+          <ol class="event-steps-list">
+            <li>Tap <strong>Open Nearify</strong></li>
+            <li>If the app is installed, Nearify opens</li>
+            <li>Join the event and enter the live attendee network</li>
+            <li>If you do not have the app yet, install from TestFlight</li>
+          </ol>
+        </div>
+      </aside>
+    </section>
+
+    <section class="section event-section">
+      <div class="section-heading">
+        <h2>Why this page exists</h2>
+        <p>
+          The iPhone camera recognizes normal web links more reliably than custom app-scheme QR codes.
+          This page bridges that gap and hands you off into Nearify cleanly.
+        </p>
+      </div>
+
+      <div class="feature-grid">
+        <div class="feature-card">
+          <h3>Reliable phone-camera flow</h3>
+          <p>
+            Scan one QR code with the native camera and continue into Nearify from here.
+          </p>
+        </div>
+        <div class="feature-card">
+          <h3>App install fallback</h3>
+          <p>
+            If Nearify is not installed yet, attendees can go directly to TestFlight.
+          </p>
+        </div>
+        <div class="feature-card">
+          <h3>Reusable event entry point</h3>
+          <p>
+            This same page structure can support every Nearify-enabled event.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <section class="cta event-cta">
+      <h2>Ready to join?</h2>
+      <p>Open Nearify and enter the event network.</p>
+      <a id="openNearifyBtnBottom" href="#" class="btn primary">Open Nearify</a>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <p>© 2026 Nearify</p>
+  </footer>
+
+  <script src="../assets/js/join.js"></script>
+</body>
+</html>
