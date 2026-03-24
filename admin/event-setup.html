@@ -159,6 +159,24 @@
                 readonly
               />
             </div>
+            <div class="form-row">
+  <label for="joinPageUrl">Phone-camera join URL</label>
+  <div class="inline-action-row">
+    <input
+      id="joinPageUrl"
+      name="joinPageUrl"
+      type="text"
+      placeholder="https://nearify.org/join/?event=..."
+      readonly
+    />
+    <button type="button" class="btn secondary small-btn" id="copyJoinUrlBtn">
+      Copy
+    </button>
+  </div>
+  <p class="field-help">
+    Use this URL in a QR code for attendees scanning with the iPhone camera.
+  </p>
+</div>
 
             <div class="hero-actions admin-actions">
               <button type="button" class="btn primary" id="generateQrBtn">
