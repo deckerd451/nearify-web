@@ -66,31 +66,45 @@ async function joinEventById(id) {
   return data;
 }
 
+function tryOpenDeepLink(url) {
+  window.location.href = url;
+
+  setTimeout(() => {
+    if (descEl) {
+      descEl.textContent =
+        "If Nearify did not open, use this page on your iPhone with the app installed, or install it from TestFlight.";
+    }
+  }, 1200);
+}
+
 async function openNearifyFlow(e) {
   e.preventDefault();
 
   try {
     if (!eventId) throw new Error("Missing event ID");
 
-    const { data: sessionData } = await supabase.auth.getSession();
-    const session = sessionData.session;
+    const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+    if (sessionError) throw sessionError;
 
+    const session = sessionData.session;
     if (!session?.user) {
       if (descEl) descEl.textContent = "Please sign in first.";
       return;
     }
 
-    if (descEl) descEl.textContent = "Preparing your event entry...";
+    if (descEl) descEl.textContent = "Creating your profile...";
 
     const profile = await ensureProfileFromSession();
     console.log("Profile ensured:", profile);
+
+    if (descEl) descEl.textContent = "Joining event...";
 
     const attendee = await joinEventById(eventId);
     console.log("Event joined:", attendee);
 
     if (descEl) descEl.textContent = "Opening Nearify...";
 
-    window.location.href = deepLink;
+    tryOpenDeepLink(deepLink);
   } catch (err) {
     console.error("Open Nearify flow failed:", err);
     if (descEl) {
