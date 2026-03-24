@@ -300,15 +300,17 @@ const joinPreview = document.getElementById("joinPreview");
   }
 
   function buildState() {
-    const name = eventNameInput.value.trim();
-    const slug = eventSlugInput.value.trim() || slugify(name);
-    const eventId = eventIdInput.value.trim();
-    const payload = eventId ? `beacon://event/${eventId}` : "";
-    const pageUrl = slug ? `https://nearify.org/events/${slug}.html` : "";
+  const name = eventNameInput.value.trim();
+  const slug = eventSlugInput.value.trim() || slugify(name);
+  const eventId = eventIdInput.value.trim();
+  const payload = eventId ? `beacon://event/${eventId}` : "";
+  const pageUrl = slug ? `https://nearify.org/events/${slug}.html` : "";
+  const joinUrl = eventId
+    ? `https://nearify.org/join/?event=${encodeURIComponent(eventId)}&name=${encodeURIComponent(name || "this event")}`
+    : "";
 
-    return { name, slug, eventId, payload, pageUrl };
-  }
-
+  return { name, slug, eventId, payload, pageUrl, joinUrl };
+}
   function syncFields() {
     const s = buildState();
 
