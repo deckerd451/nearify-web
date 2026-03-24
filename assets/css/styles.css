@@ -662,3 +662,32 @@ code {
   width: 260px !important;
   height: 260px !important;
 }
+.join-page {
+  padding-bottom: 40px;
+}
+
+.join-hero {
+  align-items: start;
+}
+
+.join-payload-card {
+  margin-top: 28px;
+  background: rgba(22, 32, 51, 0.9);
+  border: 1px solid rgba(0, 209, 255, 0.12);
+  border-radius: 16px;
+  padding: 18px 20px;
+  max-width: 860px;
+}
+
+.join-payload {
+  margin-top: 8px;
+  color: #ffffff;
+  font-size: 15px;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+
+.disabled-link {
+  pointer-events: none;
+  opacity: 0.5;
+}
