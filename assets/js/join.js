@@ -20,24 +20,79 @@ const topBtn = document.getElementById("openNearifyBtn");
 const bottomBtn = document.getElementById("openNearifyBtnBottom");
 const signInBtn = document.getElementById("signInBtn");
 const descEl = document.getElementById("joinDescription");
+const qrBox = document.getElementById("joinQrBox");
+const qrContainer = document.getElementById("joinQrCode");
 
 const deepLink = eventId ? `beacon://event/${eventId}` : "#";
+const currentJoinUrl = window.location.href;
 
-if (titleEl) {
-  titleEl.textContent = `Open Nearify to join ${eventName}`;
+let appOpened = false;
+
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "hidden") {
+    appOpened = true;
+    console.log("[Join] App switch detected");
+  }
+});
+
+function setDescription(text) {
+  if (descEl) descEl.textContent = text;
 }
 
-if (payloadEl) {
-  payloadEl.textContent = deepLink;
+function setButtonsEnabled(enabled) {
+  const method = enabled ? "removeAttribute" : "setAttribute";
+  if (topBtn) topBtn[method]("aria-disabled", "true");
+  if (bottomBtn) bottomBtn[method]("aria-disabled", "true");
 }
 
-if (eventId && typeof QRCode !== "undefined") {
-  const qrBox = document.getElementById("joinQrBox");
-  const qrContainer = document.getElementById("joinQrCode");
-  if (qrBox && qrContainer) {
-    new QRCode(qrContainer, { text: deepLink, width: 200, height: 200 });
+function showMissingEventState() {
+  if (titleEl) titleEl.textContent = "Event not found";
+  if (payloadEl) payloadEl.textContent = "Missing event parameter";
+  setDescription(
+    "This join link is missing an event ID. Please return to the event page and try again."
+  );
+
+  if (topBtn) topBtn.style.display = "none";
+  if (bottomBtn) bottomBtn.style.display = "none";
+
+  if (signInBtn) {
+    signInBtn.style.display = "inline-flex";
+    signInBtn.textContent = "Get Nearify on TestFlight";
+    signInBtn.href = "https://testflight.apple.com/join/ZayvEbAy";
+  }
+
+  if (qrBox) qrBox.style.display = "none";
+}
+
+function initializePage() {
+  if (!eventId) {
+    console.warn("[Join] Missing event parameter");
+    showMissingEventState();
+    return false;
+  }
+
+  if (titleEl) {
+    titleEl.textContent = `Open Nearify to join ${eventName}`;
+  }
+
+  if (payloadEl) {
+    payloadEl.textContent = deepLink;
+  }
+
+  if (topBtn) topBtn.href = deepLink;
+  if (bottomBtn) bottomBtn.href = deepLink;
+
+  if (typeof QRCode !== "undefined" && qrBox && qrContainer) {
+    qrContainer.innerHTML = "";
+    new QRCode(qrContainer, {
+      text: deepLink,
+      width: 200,
+      height: 200
+    });
     qrBox.style.display = "";
   }
+
+  return true;
 }
 
 async function ensureProfileFromSession() {
@@ -76,14 +131,18 @@ async function joinEventById(id) {
 }
 
 function tryOpenDeepLink(url) {
+  console.log("[Join] Attempting to open app:", url);
+  appOpened = false;
   window.location.href = url;
 
   setTimeout(() => {
-    if (descEl) {
-      descEl.textContent =
-        "If Nearify did not open, use this page on your iPhone with the app installed, or install it from TestFlight.";
+    if (!appOpened) {
+      console.log("[Join] App did not open; staying on join page");
+      setDescription(
+        "If Nearify did not open, tap “Open Nearify” again. If you do not have the app yet, install it from TestFlight."
+      );
     }
-  }, 1200);
+  }, 2000);
 }
 
 async function openNearifyFlow(e) {
@@ -92,33 +151,32 @@ async function openNearifyFlow(e) {
   try {
     if (!eventId) throw new Error("Missing event ID");
 
+    setButtonsEnabled(false);
+
     const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
     if (sessionError) throw sessionError;
 
     const session = sessionData.session;
     if (!session?.user) {
-      if (descEl) descEl.textContent = "Please sign in first.";
+      setDescription("Please sign in first.");
+      setButtonsEnabled(true);
       return;
     }
 
-    if (descEl) descEl.textContent = "Creating your profile...";
-
+    setDescription("Creating your profile...");
     const profile = await ensureProfileFromSession();
-    console.log("Profile ensured:", profile);
+    console.log("[Join] Profile ensured:", profile);
 
-    if (descEl) descEl.textContent = "Joining event...";
-
+    setDescription("Joining event...");
     const attendee = await joinEventById(eventId);
-    console.log("Event joined:", attendee);
+    console.log("[Join] Event joined:", attendee);
 
-    if (descEl) descEl.textContent = "Opening Nearify...";
-
+    setDescription("Opening Nearify...");
     tryOpenDeepLink(deepLink);
   } catch (err) {
-    console.error("Open Nearify flow failed:", err);
-    if (descEl) {
-      descEl.textContent = err.message || "Could not join event.";
-    }
+    console.error("[Join] Open Nearify flow failed:", err);
+    setDescription(err?.message || "Could not join event.");
+    setButtonsEnabled(true);
   }
 }
 
@@ -126,29 +184,31 @@ async function refreshAuthState() {
   const { data, error } = await supabase.auth.getSession();
 
   if (error) {
-    console.error("getSession error:", error);
-    if (descEl) descEl.textContent = "Error checking sign-in state.";
+    console.error("[Join] getSession error:", error);
+    setDescription("Error checking sign-in state.");
     return;
   }
 
   const session = data.session;
 
   if (session?.user) {
-    console.log("Signed in as:", session.user.email);
-    if (descEl) {
-      descEl.textContent = `Signed in as ${session.user.email}. Open Nearify to continue into the event.`;
-    }
+    console.log("[Join] Signed in as:", session.user.email);
+    setDescription(
+      `Signed in as ${session.user.email}. Tap Open Nearify to join the event.`
+    );
     if (signInBtn) signInBtn.style.display = "none";
   } else {
-    console.log("No active session");
-    if (descEl) {
-      descEl.textContent = "Sign in first, then open Nearify to join the event.";
+    console.log("[Join] No active session");
+    setDescription("Sign in first, then open Nearify to join the event.");
+    if (signInBtn) {
+      signInBtn.style.display = "inline-flex";
+      signInBtn.href = currentJoinUrl;
+      signInBtn.textContent = "Sign in to continue";
     }
-    if (signInBtn) signInBtn.style.display = "inline-flex";
   }
 }
 
-signInBtn?.addEventListener("click", async (e) => {
+async function signInWithGoogle(e) {
   e.preventDefault();
 
   try {
@@ -161,14 +221,14 @@ signInBtn?.addEventListener("click", async (e) => {
 
     if (error) throw error;
   } catch (err) {
-    console.error("Sign-in error:", err);
-    if (descEl) {
-      descEl.textContent = `Sign-in failed: ${err.message || err}`;
-    }
+    console.error("[Join] Sign-in error:", err);
+    setDescription(`Sign-in failed: ${err?.message || err}`);
   }
-});
+}
 
-topBtn?.addEventListener("click", openNearifyFlow);
-bottomBtn?.addEventListener("click", openNearifyFlow);
-
-await refreshAuthState();
+if (initializePage()) {
+  signInBtn?.addEventListener("click", signInWithGoogle);
+  topBtn?.addEventListener("click", openNearifyFlow);
+  bottomBtn?.addEventListener("click", openNearifyFlow);
+  await refreshAuthState();
+}
