@@ -704,3 +704,41 @@ code {
   border-color: #00d1ff;
   color: #00d1ff;
 }
+
+/* In-app event QR on join page */
+.join-qr-box {
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  display: grid;
+  gap: 12px;
+}
+
+.join-qr-label {
+  color: #8fa0b8;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.join-qr-shell {
+  background: #fff;
+  border-radius: 12px;
+  padding: 14px;
+  width: fit-content;
+}
+
+.join-qr-shell img,
+.join-qr-shell canvas {
+  display: block;
+  width: 200px !important;
+  height: 200px !important;
+}
+
+.join-qr-hint {
+  color: #8fa0b8;
+  font-size: 13px;
+  line-height: 1.55;
+  max-width: 360px;
+}

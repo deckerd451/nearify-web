@@ -408,12 +408,11 @@
   }
 
   function getQRImage() {
-    const img = qrCodeContainer.querySelector("img");
+    const container = activeTab === "inapp" ? qrCodeInAppContainer : qrCodeContainer;
+    const img = container.querySelector("img");
     if (img) return img.src;
-
-    const canvas = qrCodeContainer.querySelector("canvas");
+    const canvas = container.querySelector("canvas");
     if (canvas) return canvas.toDataURL();
-
     return null;
   }
 
@@ -445,22 +444,24 @@
   downloadQrBtn.onclick = () => {
     const img = getQRImage();
     if (!img) return alert("Generate QR first");
-
     const a = document.createElement("a");
     a.href = img;
-    a.download = "nearify-event-qr.png";
+    a.download = activeTab === "inapp" ? "nearify-event-inapp-qr.png" : "nearify-event-camera-qr.png";
     a.click();
   };
 
   resetFormBtn.onclick = () => {
     setTimeout(() => {
       qrCodeContainer.innerHTML = "";
+      qrCodeInAppContainer.innerHTML = "";
       eventPayloadInput.value = "";
       eventPageUrlInput.value = "";
       joinPageUrlInput.value = "";
       payloadPreview.textContent = "Not generated yet";
       pagePreview.textContent = "Not generated yet";
       joinPreview.textContent = "Not generated yet";
+      inAppPayloadPreview.textContent = "Not generated yet";
+      inAppQrMetaRow.style.display = "none";
     }, 0);
   };
 
