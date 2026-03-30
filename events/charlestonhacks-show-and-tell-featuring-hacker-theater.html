@@ -59,6 +59,14 @@
 
       <aside class="event-side-panel">
         <div class="event-panel">
+          <div class="event-kicker" style="margin-bottom: 14px;">Scan to join this event</div>
+          <div class="event-qr-shell">
+            <div id="eventQrCode"></div>
+          </div>
+          <p class="event-qr-caption">Scan with your iPhone camera or Nearify in-app scanner</p>
+
+          <hr class="event-panel-divider" />
+
           <h2>Use Nearify at this event</h2>
           <ol class="event-steps-list">
             <li>Install Nearify from TestFlight</li>
@@ -209,5 +217,14 @@
   <footer class="footer">
     <p>© 2026 Nearify</p>
   </footer>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <script>
+    new QRCode(document.getElementById("eventQrCode"), {
+      text: "https://nearify.org/join/?event=a073b942-a73c-4eea-b12b-bc5d6f0e11cf&name=CharlestonHacks%20Show%20and%20Tell",
+      width: 220,
+      height: 220
+    });
+  </script>
 </body>
 </html>
