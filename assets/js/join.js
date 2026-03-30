@@ -31,6 +31,15 @@ if (payloadEl) {
   payloadEl.textContent = deepLink;
 }
 
+if (eventId && typeof QRCode !== "undefined") {
+  const qrBox = document.getElementById("joinQrBox");
+  const qrContainer = document.getElementById("joinQrCode");
+  if (qrBox && qrContainer) {
+    new QRCode(qrContainer, { text: deepLink, width: 200, height: 200 });
+    qrBox.style.display = "";
+  }
+}
+
 async function ensureProfileFromSession() {
   const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
   if (sessionError) throw sessionError;

@@ -47,6 +47,16 @@
         <div class="join-payload-card">
           <div class="meta-label">Event join link</div>
           <div class="join-payload" id="payloadText">Waiting for event...</div>
+
+          <div id="joinQrBox" class="join-qr-box" style="display:none;">
+            <div class="join-qr-label">Scan with the Nearify in-app scanner</div>
+            <div class="join-qr-shell">
+              <div id="joinQrCode"></div>
+            </div>
+            <p class="join-qr-hint">
+              Already have Nearify open? Use the in-app scanner to join directly — no browser needed.
+            </p>
+          </div>
         </div>
       </div>
 
@@ -105,6 +115,7 @@
     <p>© 2026 Nearify</p>
   </footer>
 
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <script type="module" src="../assets/js/join.js"></script>
 </body>
 </html>
