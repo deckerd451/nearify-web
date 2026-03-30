@@ -705,6 +705,35 @@ code {
   color: #00d1ff;
 }
 
+/* QR display on public event page */
+.event-qr-shell {
+  background: #fff;
+  border-radius: 12px;
+  padding: 14px;
+  width: fit-content;
+  margin-bottom: 12px;
+}
+
+.event-qr-shell img,
+.event-qr-shell canvas {
+  display: block;
+  width: 220px !important;
+  height: 220px !important;
+}
+
+.event-qr-caption {
+  color: #8fa0b8;
+  font-size: 13px;
+  line-height: 1.5;
+  margin-bottom: 4px;
+}
+
+.event-panel-divider {
+  border: none;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  margin: 20px 0;
+}
+
 /* In-app event QR on join page */
 .join-qr-box {
   margin-top: 20px;
