@@ -193,12 +193,24 @@
           <div class="qr-preview-header">
             <h3>Event QR preview</h3>
             <p>
-              This QR should be printed or displayed at the venue for attendees to scan with the Nearify app.
+              Choose which QR to display. Use the <strong>Camera QR</strong> for printed signage;
+              use the <strong>In-App QR</strong> to display inside Nearify for attendees to scan
+              with the in-app scanner.
             </p>
           </div>
 
+          <div class="qr-tab-row">
+            <button type="button" class="btn secondary small-btn qr-tab active" id="tabCameraQr" data-tab="camera">
+              Camera QR
+            </button>
+            <button type="button" class="btn secondary small-btn qr-tab" id="tabInAppQr" data-tab="inapp">
+              In-App QR
+            </button>
+          </div>
+
           <div class="qr-preview-shell">
-            <div id="qrCode" class="qr-code-box" aria-label="Event QR code preview"></div>
+            <div id="qrCode" class="qr-code-box" aria-label="Camera join QR code"></div>
+            <div id="qrCodeInApp" class="qr-code-box" style="display:none;" aria-label="In-app event QR code"></div>
           </div>
 
           <div class="qr-meta">
@@ -213,6 +225,10 @@
   <div class="qr-meta-row">
     <span class="qr-meta-label">Camera join URL</span>
     <span class="qr-meta-value" id="joinPreview">Not generated yet</span>
+  </div>
+  <div class="qr-meta-row" id="inAppQrMetaRow" style="display:none;">
+    <span class="qr-meta-label">In-App QR payload</span>
+    <span class="qr-meta-value" id="inAppPayloadPreview">Not generated yet</span>
   </div>
 </div>
 
@@ -285,7 +301,12 @@
   const resetFormBtn = document.getElementById("resetFormBtn");
 
   const qrCodeContainer = document.getElementById("qrCode");
+  const qrCodeInAppContainer = document.getElementById("qrCodeInApp");
+  const inAppQrMetaRow = document.getElementById("inAppQrMetaRow");
+  const inAppPayloadPreview = document.getElementById("inAppPayloadPreview");
   let qrInstance = null;
+  let qrInAppInstance = null;
+  let activeTab = "camera"; // "camera" | "inapp"
 
   function slugify(text) {
     return text
@@ -341,6 +362,29 @@
     });
   }
 
+  function renderInAppQR(payload) {
+    qrCodeInAppContainer.innerHTML = "";
+    qrInAppInstance = new QRCode(qrCodeInAppContainer, {
+      text: payload,
+      width: 260,
+      height: 260
+    });
+    inAppPayloadPreview.textContent = payload;
+    inAppQrMetaRow.style.display = "";
+  }
+
+  function switchTab(tab) {
+    activeTab = tab;
+    const tabBtns = document.querySelectorAll(".qr-tab");
+    tabBtns.forEach(btn => btn.classList.toggle("active", btn.dataset.tab === tab));
+    qrCodeContainer.style.display     = tab === "camera" ? "" : "none";
+    qrCodeInAppContainer.style.display = tab === "inapp"  ? "" : "none";
+  }
+
+  document.querySelectorAll(".qr-tab").forEach(btn => {
+    btn.addEventListener("click", () => switchTab(btn.dataset.tab));
+  });
+
   function generateAll() {
     if (!eventNameInput.value.trim()) {
       alert("Enter event name");
@@ -357,6 +401,9 @@
     const s = buildState();
     if (s.joinUrl) {
       renderQR(s.joinUrl);
+    }
+    if (s.payload) {
+      renderInAppQR(s.payload);
     }
   }
 
