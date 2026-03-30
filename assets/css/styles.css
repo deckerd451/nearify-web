@@ -691,3 +691,16 @@ code {
   pointer-events: none;
   opacity: 0.5;
 }
+
+/* QR tab toggle (admin/event-setup) */
+.qr-tab-row {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.qr-tab.active {
+  background: rgba(0, 209, 255, 0.15);
+  border-color: #00d1ff;
+  color: #00d1ff;
+}
