@@ -16,6 +16,7 @@ const params = new URLSearchParams(window.location.search);
 const eventId = params.get("event");
 const eventName = params.get("name") || "this event";
 
+// Existing DOM refs
 const titleEl = document.getElementById("joinTitle");
 const payloadEl = document.getElementById("payloadText");
 const topBtn = document.getElementById("openNearifyBtn");
@@ -24,6 +25,22 @@ const signInBtn = document.getElementById("signInBtn");
 const descEl = document.getElementById("joinDescription");
 const qrBox = document.getElementById("joinQrBox");
 const qrContainer = document.getElementById("joinQrCode");
+
+// Intent DOM refs
+const intentStep = document.getElementById("intentStep");
+const intentChips = document.querySelectorAll(".intent-chip");
+const skipIntentBtn = document.getElementById("skipIntentBtn");
+const intentStatus = document.getElementById("intentStatus");
+
+// Intelligence DOM refs
+const intelligencePanel = document.getElementById("intelligencePanel");
+const intelFollowUp = document.getElementById("intelFollowUp");
+const intelMissed = document.getElementById("intelMissed");
+const intelStrong = document.getElementById("intelStrong");
+const intelFollowUpCards = document.getElementById("intelFollowUpCards");
+const intelMissedCards = document.getElementById("intelMissedCards");
+const intelStrongCards = document.getElementById("intelStrongCards");
+const intelEmpty = document.getElementById("intelEmpty");
 
 const deepLink = eventId ? `beacon://event/${eventId}` : "#";
 const currentJoinUrl = window.location.href;
@@ -159,12 +176,150 @@ function tryOpenDeepLink(url) {
     if (!appOpened) {
       console.log("[Join] App did not open; staying on join page");
       setDescription(
-        "If Nearify did not open automatically, tap “Open Nearify.” If you do not have the app yet, install it from TestFlight."
+        "If Nearify did not open automatically, tap \u201cOpen Nearify.\u201d If you do not have the app yet, install it from TestFlight."
       );
       setButtonsEnabled(true);
     }
   }, APP_FALLBACK_DELAY_MS);
 }
+
+// ============================================================
+// INTENT CAPTURE (Phase 2)
+// ============================================================
+
+function showIntentStep() {
+  if (intentStep) {
+    intentStep.style.display = "";
+    intentStep.scrollIntoView({ behavior: "smooth", block: "start" });
+    console.log("[Join] Intent step shown");
+  }
+}
+
+function hideIntentStep() {
+  if (intentStep) intentStep.style.display = "none";
+}
+
+async function submitIntent(intentValue) {
+  if (!eventId) return;
+
+  try {
+    if (intentStatus) intentStatus.textContent = "Saving...";
+
+    const { data, error } = await supabase.rpc("update_attendee_intent", {
+      p_event_id: eventId,
+      p_intent_primary: intentValue
+    });
+
+    if (error) throw error;
+
+    console.log("[Join] Intent saved:", data);
+    if (intentStatus) intentStatus.textContent = "Got it — enjoy the event.";
+
+    // Fade out intent step after brief confirmation
+    setTimeout(() => {
+      hideIntentStep();
+      loadIntelligence();
+    }, 1200);
+  } catch (err) {
+    console.error("[Join] Intent save failed:", err);
+    if (intentStatus) intentStatus.textContent = "Could not save — you can set this later.";
+  }
+}
+
+function initIntentListeners() {
+  intentChips.forEach((chip) => {
+    chip.addEventListener("click", () => {
+      // Visual feedback
+      intentChips.forEach((c) => c.classList.remove("active"));
+      chip.classList.add("active");
+      submitIntent(chip.dataset.intent);
+    });
+  });
+
+  if (skipIntentBtn) {
+    skipIntentBtn.addEventListener("click", () => {
+      console.log("[Join] Intent skipped");
+      hideIntentStep();
+      loadIntelligence();
+    });
+  }
+}
+
+// ============================================================
+// INTELLIGENCE DISPLAY (Phase 5)
+// ============================================================
+
+function renderIntelCard(item) {
+  const card = document.createElement("div");
+  card.className = "intel-card";
+
+  const avatar = item.target_avatar
+    ? `<img class="intel-avatar" src="${item.target_avatar}" alt="" />`
+    : `<div class="intel-avatar intel-avatar-placeholder"></div>`;
+
+  card.innerHTML = `
+    ${avatar}
+    <div class="intel-card-body">
+      <div class="intel-card-name">${item.target_name || "Attendee"}</div>
+      <div class="intel-card-reason">${item.reason || ""}</div>
+      <div class="intel-card-score">Score: ${Math.round(item.score)}</div>
+    </div>
+  `;
+  return card;
+}
+
+async function loadIntelligence() {
+  if (!eventId || !intelligencePanel) return;
+
+  try {
+    const user = await getSessionUser();
+    if (!user) return;
+
+    const { data, error } = await supabase.rpc("get_my_intelligence", {
+      p_event_id: eventId
+    });
+
+    if (error) {
+      console.error("[Join] Intelligence load error:", error);
+      return;
+    }
+
+    if (!data || data.length === 0) {
+      intelligencePanel.style.display = "";
+      if (intelEmpty) intelEmpty.style.display = "";
+      return;
+    }
+
+    console.log("[Join] Intelligence loaded:", data.length, "items");
+
+    const recommended = data.filter((d) => d.type === "recommended");
+    const missed = data.filter((d) => d.type === "missed");
+    const followUp = data.filter((d) => d.type === "follow_up");
+
+    if (recommended.length && intelStrong && intelStrongCards) {
+      intelStrong.style.display = "";
+      recommended.forEach((item) => intelStrongCards.appendChild(renderIntelCard(item)));
+    }
+
+    if (missed.length && intelMissed && intelMissedCards) {
+      intelMissed.style.display = "";
+      missed.forEach((item) => intelMissedCards.appendChild(renderIntelCard(item)));
+    }
+
+    if (followUp.length && intelFollowUp && intelFollowUpCards) {
+      intelFollowUp.style.display = "";
+      followUp.forEach((item) => intelFollowUpCards.appendChild(renderIntelCard(item)));
+    }
+
+    intelligencePanel.style.display = "";
+  } catch (err) {
+    console.error("[Join] Intelligence load failed:", err);
+  }
+}
+
+// ============================================================
+// JOIN FLOW (existing, enhanced)
+// ============================================================
 
 async function runJoinFlow({ autoOpenApp = true } = {}) {
   if (!eventId) throw new Error("Missing event ID");
@@ -191,6 +346,9 @@ async function runJoinFlow({ autoOpenApp = true } = {}) {
     setDescription("Joining event...");
     const attendee = await joinEventById(eventId);
     console.log("[Join] Event joined:", attendee);
+
+    // Show intent capture after successful join
+    showIntentStep();
 
     if (autoOpenApp) {
       setDescription("Opening Nearify...");
@@ -274,10 +432,22 @@ async function autoJoinIfSignedIn() {
   }
 }
 
+// ============================================================
+// INIT
+// ============================================================
+
 if (initializePage()) {
+  initIntentListeners();
+
   signInBtn?.addEventListener("click", signInWithGoogle);
   topBtn?.addEventListener("click", openNearifyFlow);
   bottomBtn?.addEventListener("click", openNearifyFlow);
 
   await autoJoinIfSignedIn();
+
+  // If user is already signed in and returning, load intelligence
+  const user = await getSessionUser();
+  if (user) {
+    loadIntelligence();
+  }
 }

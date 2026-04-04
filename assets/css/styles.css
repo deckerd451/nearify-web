@@ -771,3 +771,140 @@ code {
   line-height: 1.55;
   max-width: 360px;
 }
+
+/* ============================================================
+   INTENT CAPTURE
+   ============================================================ */
+.intent-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  justify-content: center;
+  margin: 24px auto;
+  max-width: 600px;
+}
+
+.intent-chip {
+  background: rgba(22, 32, 51, 0.9);
+  border: 1px solid rgba(0, 209, 255, 0.18);
+  border-radius: 999px;
+  color: #dfe6ef;
+  font-size: 15px;
+  font-weight: 600;
+  padding: 12px 24px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.intent-chip:hover {
+  border-color: rgba(0, 209, 255, 0.5);
+  background: rgba(0, 209, 255, 0.08);
+}
+
+.intent-chip.active {
+  background: rgba(0, 209, 255, 0.18);
+  border-color: #00d1ff;
+  color: #00d1ff;
+}
+
+.intent-actions {
+  text-align: center;
+  margin-top: 16px;
+}
+
+.intent-status {
+  text-align: center;
+  color: #8fa0b8;
+  font-size: 14px;
+  margin-top: 12px;
+  min-height: 20px;
+}
+
+/* ============================================================
+   INTELLIGENCE PANEL
+   ============================================================ */
+.intel-section {
+  margin-bottom: 32px;
+}
+
+.intel-section-title {
+  font-size: 20px;
+  color: #00d1ff;
+  margin-bottom: 16px;
+  text-align: left;
+}
+
+.intel-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+}
+
+.intel-card {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  background: rgba(22, 32, 51, 0.9);
+  border: 1px solid rgba(0, 209, 255, 0.12);
+  border-radius: 14px;
+  padding: 18px;
+}
+
+.intel-avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  object-fit: cover;
+}
+
+.intel-avatar-placeholder {
+  background: rgba(0, 209, 255, 0.14);
+}
+
+.intel-card-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.intel-card-name {
+  font-weight: 600;
+  font-size: 16px;
+  margin-bottom: 4px;
+}
+
+.intel-card-reason {
+  color: #aab4c5;
+  font-size: 14px;
+  line-height: 1.5;
+  margin-bottom: 6px;
+}
+
+.intel-card-score {
+  color: #7f8da4;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.intel-empty {
+  text-align: center;
+  color: #8fa0b8;
+  font-size: 16px;
+  padding: 40px 20px;
+}
+
+@media (max-width: 720px) {
+  .intent-grid {
+    gap: 8px;
+  }
+
+  .intent-chip {
+    padding: 10px 18px;
+    font-size: 14px;
+  }
+
+  .intel-cards {
+    grid-template-columns: 1fr;
+  }
+}

@@ -104,6 +104,48 @@
       </div>
     </section>
 
+    <!-- Intent capture step — shown after successful join -->
+    <section id="intentStep" class="section event-section" style="display:none;">
+      <div class="section-heading">
+        <h2>What brings you here today?</h2>
+        <p>This helps Nearify connect you with the right people. Takes 2 seconds.</p>
+      </div>
+      <div class="intent-grid">
+        <button class="intent-chip" data-intent="meet_people">Meet people</button>
+        <button class="intent-chip" data-intent="find_cofounder">Find cofounder</button>
+        <button class="intent-chip" data-intent="hire">Hire</button>
+        <button class="intent-chip" data-intent="explore_ideas">Explore ideas</button>
+        <button class="intent-chip" data-intent="demo_something">Demo something</button>
+      </div>
+      <div class="intent-actions">
+        <button id="skipIntentBtn" class="btn secondary">Skip for now</button>
+      </div>
+      <p id="intentStatus" class="intent-status"></p>
+    </section>
+
+    <!-- Intelligence panel — shown when data exists -->
+    <section id="intelligencePanel" class="section event-section" style="display:none;">
+      <div class="section-heading">
+        <h2>Your event intelligence</h2>
+        <p>Based on your interactions and intent alignment.</p>
+      </div>
+      <div id="intelFollowUp" class="intel-section" style="display:none;">
+        <h3 class="intel-section-title">You should follow up with</h3>
+        <div class="intel-cards" id="intelFollowUpCards"></div>
+      </div>
+      <div id="intelMissed" class="intel-section" style="display:none;">
+        <h3 class="intel-section-title">You missed</h3>
+        <div class="intel-cards" id="intelMissedCards"></div>
+      </div>
+      <div id="intelStrong" class="intel-section" style="display:none;">
+        <h3 class="intel-section-title">Strongest interactions</h3>
+        <div class="intel-cards" id="intelStrongCards"></div>
+      </div>
+      <p id="intelEmpty" class="intel-empty" style="display:none;">
+        No intelligence yet. Use Nearify at the event and check back after.
+      </p>
+    </section>
+
     <section class="cta event-cta">
       <h2>Ready to join?</h2>
       <p>Open Nearify and enter the event network.</p>
