@@ -57,3 +57,4 @@ CREATE TABLE IF NOT EXISTS interaction_intelligence (
 
 CREATE INDEX IF NOT EXISTS idx_intelligence_event    ON interaction_intelligence(event_id);
 CREATE INDEX IF NOT EXISTS idx_intelligence_profile  ON interaction_intelligence(profile_id);
+CREATE INDEX IF NOT EXISTS idx_intelligence_target   ON interaction_intelligence(target_profile_id);

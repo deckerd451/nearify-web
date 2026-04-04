@@ -887,6 +887,14 @@ code {
   letter-spacing: 0.06em;
 }
 
+.intel-direction {
+  font-size: 12px;
+  margin-bottom: 4px;
+  display: inline-block;
+}
+.intel-direction.outgoing { color: #6ec6a5; }
+.intel-direction.incoming { color: #7ab8f5; }
+
 .intel-empty {
   text-align: center;
   color: #8fa0b8;

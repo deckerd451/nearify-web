@@ -327,10 +327,15 @@ function renderIntelCard(item) {
     ? `<img class="intel-avatar" src="${item.target_avatar}" alt="" />`
     : `<div class="intel-avatar intel-avatar-placeholder"></div>`;
 
+  const directionLabel = item.direction === "incoming"
+    ? `<span class="intel-direction incoming">They matched with you</span>`
+    : `<span class="intel-direction outgoing">You matched with them</span>`;
+
   card.innerHTML = `
     ${avatar}
     <div class="intel-card-body">
       <div class="intel-card-name">${item.target_name || "Attendee"}</div>
+      ${directionLabel}
       <div class="intel-card-reason">${item.reason || ""}</div>
       <div class="intel-card-score">Score: ${Math.round(item.score)}</div>
     </div>
@@ -345,6 +350,8 @@ async function loadIntelligence() {
     const user = await getSessionUser();
     if (!user) return;
 
+    console.log("[Join] Current user id:", user.id);
+
     const { data, error } = await supabase.rpc("get_my_intelligence", {
       p_event_id: eventId
     });
@@ -353,6 +360,8 @@ async function loadIntelligence() {
       console.error("[Join] Intelligence load error:", error);
       return;
     }
+
+    console.log("[Join] Intelligence rows returned:", data ? data.length : 0);
 
     if (!data || data.length === 0) {
       intelligencePanel.style.display = "";

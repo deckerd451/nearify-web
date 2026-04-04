@@ -29,7 +29,10 @@ ALTER TABLE interaction_intelligence ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "Users see own intelligence"
   ON interaction_intelligence FOR SELECT
-  USING (profile_id = current_profile_id());
+  USING (
+    profile_id = current_profile_id()
+    OR target_profile_id = current_profile_id()
+  );
 
 -- ---- RPC: update_attendee_intent ----
 -- Called from web after join to store intent
@@ -205,7 +208,9 @@ END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- ---- RPC: get_my_intelligence ----
--- Web UI calls this to show recommendations
+-- Web UI calls this to show recommendations.
+-- Returns rows where user is profile_id OR target_profile_id,
+-- deduplicated per other-person (keeps highest score direction).
 CREATE OR REPLACE FUNCTION get_my_intelligence(p_event_id uuid)
 RETURNS jsonb AS $$
 DECLARE
@@ -219,20 +224,51 @@ BEGIN
   RETURN (
     SELECT jsonb_agg(row_to_json(r))
     FROM (
-      SELECT
-        ii.target_profile_id,
-        p.name   AS target_name,
-        p.avatar_url AS target_avatar,
-        ii.score,
-        ii.reason,
-        ii.type,
-        ii.created_at
-      FROM interaction_intelligence ii
-      JOIN profiles p ON p.id = ii.target_profile_id
-      WHERE ii.event_id   = p_event_id
-        AND ii.profile_id = v_profile_id
-      ORDER BY ii.score DESC
+      SELECT DISTINCT ON (other_id)
+        other_id       AS target_profile_id,
+        other_name     AS target_name,
+        other_avatar   AS target_avatar,
+        score,
+        reason,
+        type,
+        direction,
+        created_at
+      FROM (
+        -- Rows where current user is the source (You → them)
+        SELECT
+          ii.target_profile_id AS other_id,
+          p.name               AS other_name,
+          p.avatar_url         AS other_avatar,
+          ii.score,
+          ii.reason,
+          ii.type,
+          'outgoing'::text     AS direction,
+          ii.created_at
+        FROM interaction_intelligence ii
+        JOIN profiles p ON p.id = ii.target_profile_id
+        WHERE ii.event_id   = p_event_id
+          AND ii.profile_id = v_profile_id
+
+        UNION ALL
+
+        -- Rows where current user is the target (Them → you)
+        SELECT
+          ii.profile_id    AS other_id,
+          p.name           AS other_name,
+          p.avatar_url     AS other_avatar,
+          ii.score,
+          ii.reason,
+          ii.type,
+          'incoming'::text AS direction,
+          ii.created_at
+        FROM interaction_intelligence ii
+        JOIN profiles p ON p.id = ii.profile_id
+        WHERE ii.event_id          = p_event_id
+          AND ii.target_profile_id = v_profile_id
+      ) combined
+      ORDER BY other_id, score DESC
     ) r
+    ORDER BY r.score DESC
   );
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
