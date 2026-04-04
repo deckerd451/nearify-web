@@ -45,8 +45,33 @@ const intelEmpty = document.getElementById("intelEmpty");
 const deepLink = eventId ? `beacon://event/${eventId}` : "#";
 const currentJoinUrl = window.location.href;
 
+// ============================================================
+// CENTRAL STATE — single source of truth, persisted per session
+// ============================================================
+const SESSION_KEY = `nearify_join_${eventId}`;
+
+const joinState = {
+  initialized: false,
+  profileEnsured: false,
+  eventJoined: false,
+  intentShown: false,
+  intentSaved: false,
+  appLaunchAttempted: false
+};
+
+// Restore from sessionStorage on reload
+try {
+  const saved = sessionStorage.getItem(SESSION_KEY);
+  if (saved) Object.assign(joinState, JSON.parse(saved));
+} catch (_) { /* ignore parse errors */ }
+
+function persistState() {
+  try {
+    sessionStorage.setItem(SESSION_KEY, JSON.stringify(joinState));
+  } catch (_) { /* quota errors etc */ }
+}
+
 let appOpened = false;
-let autoJoinAttempted = false;
 let joinInProgress = false;
 
 document.addEventListener("visibilitychange", () => {
@@ -132,6 +157,11 @@ async function getSessionUser() {
 }
 
 async function ensureProfileFromSession() {
+  if (joinState.profileEnsured) {
+    console.log("[Join] Profile already ensured — skipping");
+    return null;
+  }
+
   const user = await getSessionUser();
   if (!user) throw new Error("No authenticated user");
 
@@ -151,20 +181,40 @@ async function ensureProfileFromSession() {
   });
 
   if (error) throw error;
+
+  joinState.profileEnsured = true;
+  persistState();
+  console.log("[Join] Profile ensured (once)");
   return data;
 }
 
 async function joinEventById(id) {
+  if (joinState.eventJoined) {
+    console.log("[Join] Event already joined — skipping");
+    return null;
+  }
+
   const { data, error } = await supabase.rpc("join_event", {
     p_event_id: id
   });
 
   if (error) throw error;
+
+  joinState.eventJoined = true;
+  persistState();
+  console.log("[Join] Event joined (once)");
   return data;
 }
 
 function tryOpenDeepLink(url) {
-  console.log("[Join] Attempting to open app:", url);
+  if (joinState.appLaunchAttempted) {
+    console.log("[Join] App launch already attempted — skipping");
+    return;
+  }
+
+  joinState.appLaunchAttempted = true;
+  persistState();
+  console.log("[Join] Attempting app launch (once):", url);
 
   appOpened = false;
 
@@ -188,10 +238,17 @@ function tryOpenDeepLink(url) {
 // ============================================================
 
 function showIntentStep() {
+  if (joinState.intentShown) {
+    console.log("[Join] Intent step already shown — skipping");
+    return;
+  }
+
   if (intentStep) {
     intentStep.style.display = "";
     intentStep.scrollIntoView({ behavior: "smooth", block: "start" });
-    console.log("[Join] Intent step shown");
+    joinState.intentShown = true;
+    persistState();
+    console.log("[Join] Intent step shown (once)");
   }
 }
 
@@ -201,9 +258,17 @@ function hideIntentStep() {
 
 async function submitIntent(intentValue) {
   if (!eventId) return;
+  if (joinState.intentSaved) {
+    console.log("[Join] Intent already saved — skipping");
+    return;
+  }
 
   try {
     if (intentStatus) intentStatus.textContent = "Saving...";
+
+    // Disable all chips immediately to prevent double-clicks
+    intentChips.forEach((c) => { c.disabled = true; c.style.pointerEvents = "none"; });
+    if (skipIntentBtn) { skipIntentBtn.disabled = true; skipIntentBtn.style.pointerEvents = "none"; }
 
     const { data, error } = await supabase.rpc("update_attendee_intent", {
       p_event_id: eventId,
@@ -212,7 +277,9 @@ async function submitIntent(intentValue) {
 
     if (error) throw error;
 
-    console.log("[Join] Intent saved:", data);
+    joinState.intentSaved = true;
+    persistState();
+    console.log("[Join] Intent saved (once):", data);
     if (intentStatus) intentStatus.textContent = "Got it — enjoy the event.";
 
     // Fade out intent step after brief confirmation
@@ -223,6 +290,9 @@ async function submitIntent(intentValue) {
   } catch (err) {
     console.error("[Join] Intent save failed:", err);
     if (intentStatus) intentStatus.textContent = "Could not save — you can set this later.";
+    // Re-enable on failure so user can retry
+    intentChips.forEach((c) => { c.disabled = false; c.style.pointerEvents = "auto"; });
+    if (skipIntentBtn) { skipIntentBtn.disabled = false; skipIntentBtn.style.pointerEvents = "auto"; }
   }
 }
 
@@ -324,7 +394,7 @@ async function loadIntelligence() {
 async function runJoinFlow({ autoOpenApp = true } = {}) {
   if (!eventId) throw new Error("Missing event ID");
   if (joinInProgress) {
-    console.log("[Join] Join already in progress");
+    console.log("[Join] Join flow already in progress — skipping reentry");
     return;
   }
 
@@ -340,12 +410,10 @@ async function runJoinFlow({ autoOpenApp = true } = {}) {
     }
 
     setDescription("Creating your profile...");
-    const profile = await ensureProfileFromSession();
-    console.log("[Join] Profile ensured:", profile);
+    await ensureProfileFromSession();
 
     setDescription("Joining event...");
-    const attendee = await joinEventById(eventId);
-    console.log("[Join] Event joined:", attendee);
+    await joinEventById(eventId);
 
     // Show intent capture after successful join
     showIntentStep();
@@ -418,8 +486,9 @@ async function signInWithGoogle(e) {
 }
 
 async function autoJoinIfSignedIn() {
-  if (autoJoinAttempted || !eventId) return;
-  autoJoinAttempted = true;
+  if (joinState.initialized || !eventId) return;
+  joinState.initialized = true;
+  persistState();
 
   const signedIn = await refreshAuthState();
   if (!signedIn) return;
@@ -445,7 +514,7 @@ if (initializePage()) {
 
   await autoJoinIfSignedIn();
 
-  // If user is already signed in and returning, load intelligence
+  // If user is returning after the event, load intelligence
   const user = await getSessionUser();
   if (user) {
     loadIntelligence();
