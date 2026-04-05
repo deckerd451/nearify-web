@@ -923,3 +923,37 @@ code {
   font-size: 16px;
   margin-bottom: 24px;
 }
+
+/* ADMIN EVENT LIST */
+.admin-events-list {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: grid;
+  gap: 12px;
+}
+
+.admin-event-row {
+  background: rgba(22, 32, 51, 0.9);
+  border: 1px solid rgba(0, 209, 255, 0.12);
+  border-radius: 14px;
+  padding: 18px 20px;
+  display: grid;
+  gap: 8px;
+}
+
+.admin-event-name {
+  font-weight: 600;
+  font-size: 16px;
+}
+
+.admin-event-meta {
+  color: #8fa0b8;
+  font-size: 13px;
+}
+
+.admin-event-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 4px;
+}

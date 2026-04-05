@@ -20,6 +20,26 @@
   </header>
 
   <main class="admin-page">
+
+    <!-- AUTH GATE — shown when not signed in -->
+    <section id="adminAuthGate" class="event-hero admin-hero">
+      <div class="event-hero-copy" style="text-align:center; max-width:560px; margin:0 auto;">
+        <div class="event-kicker">Organizer Tools</div>
+        <h1>Sign in to manage events</h1>
+        <p class="event-subhead">
+          This area is for event hosts and organizers. Sign in to create events,
+          generate QR codes, and manage your Nearify event setup.
+        </p>
+        <div class="hero-actions" style="justify-content:center;">
+          <button id="adminSignInBtn" class="btn primary">Sign in with Google</button>
+        </div>
+        <p id="adminAuthStatus" class="field-help" style="margin-top:12px;"></p>
+      </div>
+    </section>
+
+    <!-- ORGANIZER CONTENT — hidden until authenticated -->
+    <div id="adminContent" style="display:none;">
+
     <section class="event-hero admin-hero">
       <div class="event-hero-copy">
         <div class="event-kicker">Organizer Tools</div>
@@ -245,6 +265,16 @@
       </div>
     </section>
 
+    <section class="section event-section">
+      <div class="section-heading">
+        <h2>Your events</h2>
+        <p>Events you've created. Load one into the form to edit, regenerate QR codes, or copy join links.</p>
+      </div>
+      <div id="myEventsList" class="admin-events-list">
+        <p class="field-help">Loading...</p>
+      </div>
+    </section>
+
     <section class="section dark event-section">
       <div class="section-heading">
         <h2>What this page does today</h2>
@@ -276,6 +306,7 @@
         </div>
       </div>
     </section>
+    </div><!-- /adminContent -->
   </main>
 
   <footer class="footer">
@@ -284,20 +315,64 @@
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
-  <!-- Supabase save-to-db support -->
+  <!-- Supabase auth gate + save-to-db + event management -->
   <script type="module">
     import { supabase } from "../assets/js/supabaseClient.js";
 
-    const saveBtn = document.getElementById("saveToSupabaseBtn");
-    const saveStatus = document.getElementById("saveStatus");
+    const authGate     = document.getElementById("adminAuthGate");
+    const adminContent = document.getElementById("adminContent");
+    const signInBtn    = document.getElementById("adminSignInBtn");
+    const authStatus   = document.getElementById("adminAuthStatus");
+    const saveBtn      = document.getElementById("saveToSupabaseBtn");
+    const saveStatus   = document.getElementById("saveStatus");
 
+    // --- Auth gate ---
+    async function checkAuth() {
+      const { data, error } = await supabase.auth.getSession();
+      if (error) {
+        console.error("[Admin] Auth check failed:", error);
+        return null;
+      }
+      return data.session?.user ?? null;
+    }
+
+    async function initAuthGate() {
+      const user = await checkAuth();
+      if (user) {
+        showAdminContent(user);
+        loadMyEvents();
+      } else {
+        authGate.style.display = "";
+        adminContent.style.display = "none";
+      }
+    }
+
+    function showAdminContent(user) {
+      authGate.style.display = "none";
+      adminContent.style.display = "";
+      console.log("[Admin] Authenticated as:", user.email);
+    }
+
+    signInBtn.addEventListener("click", async () => {
+      authStatus.textContent = "Redirecting...";
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: { redirectTo: window.location.href }
+      });
+      if (error) {
+        console.error("[Admin] Sign-in error:", error);
+        authStatus.textContent = "Sign-in failed: " + error.message;
+      }
+    });
+
+    // --- Save event ---
     saveBtn.addEventListener("click", async () => {
-      const eventId = document.getElementById("eventId").value.trim();
-      const name = document.getElementById("eventName").value.trim();
-      const slug = document.getElementById("eventSlug").value.trim();
+      const eventId  = document.getElementById("eventId").value.trim();
+      const name     = document.getElementById("eventName").value.trim();
+      const slug     = document.getElementById("eventSlug").value.trim();
       const location = document.getElementById("eventLocation").value.trim();
-      const date = document.getElementById("eventDate").value;
-      const time = document.getElementById("eventTime").value;
+      const date     = document.getElementById("eventDate").value;
+      const time     = document.getElementById("eventTime").value;
 
       if (!eventId || !name) {
         saveStatus.textContent = "Generate an event ID and enter a name first.";
@@ -305,30 +380,95 @@
       }
 
       saveStatus.textContent = "Saving...";
-
-      const starts_at = date && time ? `${date}T${time}:00` : date || null;
+      const starts_at = date && time ? date + "T" + time + ":00" : date || null;
 
       const { data, error } = await supabase
         .from("events")
-        .upsert({
-          id: eventId,
-          name,
-          slug: slug || null,
-          location: location || null,
-          starts_at,
-        }, { onConflict: "id" })
+        .upsert({ id: eventId, name, slug: slug || null, location: location || null, starts_at }, { onConflict: "id" })
         .select();
 
       if (error) {
         console.error("[Admin] Save failed:", error);
-        saveStatus.textContent = `Error: ${error.message}`;
+        saveStatus.textContent = "Error: " + error.message;
         return;
       }
 
       console.log("[Admin] Event saved:", data);
       saveStatus.textContent = "Saved to Supabase.";
+      loadMyEvents();
       setTimeout(() => { saveStatus.textContent = ""; }, 3000);
     });
+
+    // --- Event listing ---
+    async function loadMyEvents() {
+      const container = document.getElementById("myEventsList");
+      if (!container) return;
+
+      const { data, error } = await supabase
+        .from("events")
+        .select("id, name, slug, location, starts_at, created_at")
+        .order("created_at", { ascending: false })
+        .limit(20);
+
+      if (error) {
+        console.error("[Admin] Event list error:", error);
+        container.innerHTML = '<p class="field-help">Could not load events.</p>';
+        return;
+      }
+
+      if (!data || data.length === 0) {
+        container.innerHTML = '<p class="field-help">No events yet. Create one above.</p>';
+        return;
+      }
+
+      container.innerHTML = data.map(ev => {
+        const joinUrl = "https://nearify.org/join/?event=" + encodeURIComponent(ev.id) + "&name=" + encodeURIComponent(ev.name);
+        return '<div class="admin-event-row">' +
+          '<div class="admin-event-name">' + ev.name + '</div>' +
+          '<div class="admin-event-meta">' + (ev.location || "") + (ev.starts_at ? " · " + new Date(ev.starts_at).toLocaleDateString() : "") + '</div>' +
+          '<div class="admin-event-actions">' +
+            '<button class="btn secondary small-btn admin-copy-link" data-url="' + joinUrl + '">Copy join link</button>' +
+            '<button class="btn secondary small-btn admin-load-event" data-id="' + ev.id + '" data-name="' + ev.name.replace(/"/g, "&quot;") + '" data-slug="' + (ev.slug || "") + '" data-location="' + (ev.location || "") + '">Load into form</button>' +
+            '<button class="btn secondary small-btn admin-delete-event" data-id="' + ev.id + '" style="color:#f87171;">Delete</button>' +
+          '</div>' +
+        '</div>';
+      }).join("");
+
+      // Copy link handlers
+      container.querySelectorAll(".admin-copy-link").forEach(btn => {
+        btn.addEventListener("click", async () => {
+          await navigator.clipboard.writeText(btn.dataset.url);
+          btn.textContent = "Copied";
+          setTimeout(() => { btn.textContent = "Copy join link"; }, 1000);
+        });
+      });
+
+      // Load into form handlers
+      container.querySelectorAll(".admin-load-event").forEach(btn => {
+        btn.addEventListener("click", () => {
+          document.getElementById("eventId").value = btn.dataset.id;
+          document.getElementById("eventName").value = btn.dataset.name;
+          document.getElementById("eventSlug").value = btn.dataset.slug;
+          document.getElementById("eventLocation").value = btn.dataset.location;
+          document.getElementById("eventName").dispatchEvent(new Event("input"));
+        });
+      });
+
+      // Delete handlers
+      container.querySelectorAll(".admin-delete-event").forEach(btn => {
+        btn.addEventListener("click", async () => {
+          if (!confirm("Delete this event? This cannot be undone.")) return;
+          const { error } = await supabase.from("events").delete().eq("id", btn.dataset.id);
+          if (error) {
+            alert("Delete failed: " + error.message);
+            return;
+          }
+          loadMyEvents();
+        });
+      });
+    }
+
+    initAuthGate();
   </script>
 
  <script>
