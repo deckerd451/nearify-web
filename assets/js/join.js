@@ -133,10 +133,30 @@ function tryOpenDeepLink(url) {
   setTimeout(() => {
     if (!appOpened) {
       console.log("[Join] App did not open — user may need to install");
-      if (descEl) descEl.textContent =
-        `If Nearify didn\u2019t open, you may need to install it first. Tap "Get Nearify" above.`;
+      showDeepLinkFallback();
     }
   }, APP_FALLBACK_DELAY_MS);
+}
+
+function showDeepLinkFallback() {
+  // Update description with clear guidance
+  if (descEl) {
+    descEl.innerHTML =
+      'Nearify didn\u2019t open. You may need to install it first.<br>' +
+      '<span style="color:#8fa0b8; font-size:16px;">Tap "Get Nearify" below, install from TestFlight, then come back and try again.</span>';
+  }
+
+  // Visually emphasize the install button
+  const getAppBtn = document.getElementById("getAppBtn");
+  if (getAppBtn) {
+    getAppBtn.style.animation = "none";
+    // Force reflow then add a subtle pulse
+    void getAppBtn.offsetWidth;
+    getAppBtn.style.boxShadow = "0 0 0 4px rgba(0, 209, 255, 0.3)";
+  }
+
+  // Update the open button to show it can be retried
+  if (topBtn) topBtn.textContent = "Try opening Nearify again";
 }
 
 function handleOpenNearify(e) {

@@ -511,13 +511,11 @@
       // Copy link
       container.querySelectorAll(".admin-copy-link").forEach(btn => {
         btn.addEventListener("click", async () => {
-          try {
-            await navigator.clipboard.writeText(btn.dataset.url);
-            btn.textContent = "Copied";
-          } catch (_) {
-            btn.textContent = "Failed";
-          }
-          setTimeout(() => { btn.textContent = "Copy join link"; }, 1200);
+          const url = btn.dataset.url;
+          const ok = await copyToClipboard(url);
+          btn.textContent = ok ? "Copied" : "Copy failed";
+          if (!ok) console.warn("[Admin] Clipboard copy failed for:", url);
+          setTimeout(() => { btn.textContent = "Copy join link"; }, ok ? 1200 : 2500);
         });
       });
 
@@ -556,6 +554,35 @@
 
     function escapeAttr(str) {
       return (str || "").replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;");
+    }
+
+    // --- Clipboard helper with fallback ---
+    async function copyToClipboard(text) {
+      // Try modern API first
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        try {
+          await navigator.clipboard.writeText(text);
+          return true;
+        } catch (e) {
+          console.warn("[Admin] clipboard.writeText failed, trying fallback:", e.message);
+        }
+      }
+      // Fallback: temporary textarea + execCommand
+      try {
+        const ta = document.createElement("textarea");
+        ta.value = text;
+        ta.style.position = "fixed";
+        ta.style.left = "-9999px";
+        ta.style.opacity = "0";
+        document.body.appendChild(ta);
+        ta.select();
+        const ok = document.execCommand("copy");
+        document.body.removeChild(ta);
+        return ok;
+      } catch (e) {
+        console.error("[Admin] Fallback copy failed:", e);
+        return false;
+      }
     }
 
     exitEditMode();
@@ -707,22 +734,40 @@
 
   generateQrBtn.onclick = generateAll;
 
+  // Clipboard helper with fallback
+  function copyText(text) {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      return navigator.clipboard.writeText(text).then(() => true).catch(() => fallbackCopy(text));
+    }
+    return Promise.resolve(fallbackCopy(text));
+  }
+  function fallbackCopy(text) {
+    try {
+      const ta = document.createElement("textarea");
+      ta.value = text;
+      ta.style.position = "fixed";
+      ta.style.left = "-9999px";
+      ta.style.opacity = "0";
+      document.body.appendChild(ta);
+      ta.select();
+      const ok = document.execCommand("copy");
+      document.body.removeChild(ta);
+      return ok;
+    } catch (_) { return false; }
+  }
+
   copyPayloadBtn.onclick = async () => {
     if (!eventPayloadInput.value) return;
-    await navigator.clipboard.writeText(eventPayloadInput.value);
-    copyPayloadBtn.textContent = "Copied";
-    setTimeout(() => {
-      copyPayloadBtn.textContent = "Copy";
-    }, 1000);
+    const ok = await copyText(eventPayloadInput.value);
+    copyPayloadBtn.textContent = ok ? "Copied" : "Failed";
+    setTimeout(() => { copyPayloadBtn.textContent = "Copy"; }, 1000);
   };
 
   copyJoinUrlBtn.onclick = async () => {
     if (!joinPageUrlInput.value) return;
-    await navigator.clipboard.writeText(joinPageUrlInput.value);
-    copyJoinUrlBtn.textContent = "Copied";
-    setTimeout(() => {
-      copyJoinUrlBtn.textContent = "Copy";
-    }, 1000);
+    const ok = await copyText(joinPageUrlInput.value);
+    copyJoinUrlBtn.textContent = ok ? "Copied" : "Failed";
+    setTimeout(() => { copyJoinUrlBtn.textContent = "Copy"; }, 1000);
   };
 
   downloadQrBtn.onclick = () => {
