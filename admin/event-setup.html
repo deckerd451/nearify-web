@@ -473,7 +473,7 @@
               'data-starts-at="' + escapeAttr(ev.starts_at || "") + '"' +
             '>Edit</button>' +
             '<button class="btn admin-btn admin-btn-copy admin-copy-link" data-url="' + joinUrl + '">Copy join link</button>' +
-            '<button class="btn admin-btn admin-btn-delete admin-delete-event" data-id="' + ev.id + '" data-name="' + escapeAttr(ev.name) + '">Delete</button>' +
+            '<button class="btn admin-btn admin-btn-delete admin-delete-event" data-id="' + ev.id + '" data-name="' + escapeAttr(ev.name) + '">Archive</button>' +
           '</div>' +
         '</div>';
       }).join("");
@@ -525,23 +525,23 @@
       container.querySelectorAll(".admin-delete-event").forEach(btn => {
         btn.addEventListener("click", async () => {
           const name = btn.dataset.name || "this event";
-          if (!confirm('Delete "' + name + '"? This cannot be undone.')) return;
+          if (!confirm('Archive "' + name + '"? It will be removed from public listings.')) return;
 
-          btn.textContent = "Deleting...";
+          btn.textContent = "Archiving...";
           btn.disabled = true;
 
           const { error } = await deleteEvent(btn.dataset.id);
 
           if (error) {
-            console.error("[Admin] Delete failed:", error);
+            console.error("[Admin] Archive failed:", error);
             btn.textContent = "Failed";
             btn.disabled = false;
-            showStatus("Delete failed: " + error.message, true);
-            setTimeout(() => { btn.textContent = "Delete"; }, 2000);
+            showStatus("Archive failed: " + error.message, true);
+            setTimeout(() => { btn.textContent = "Archive"; }, 2000);
             return;
           }
 
-          showStatus("Event deleted.");
+          showStatus("Event archived.");
           setTimeout(() => { saveStatus.textContent = ""; }, 3000);
           loadMyEvents();
         });

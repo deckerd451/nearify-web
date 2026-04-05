@@ -17,14 +17,21 @@
 ALTER TABLE events
   ADD COLUMN IF NOT EXISTS created_by uuid REFERENCES profiles(id);
 
+-- Soft-delete support: archived events are hidden from listings
+ALTER TABLE events
+  ADD COLUMN IF NOT EXISTS deleted_at timestamptz;
+
 -- Enable RLS
 ALTER TABLE events ENABLE ROW LEVEL SECURITY;
 
--- Anyone can read events (public pages, no auth needed)
+-- Public can read non-deleted events; owners can see all their own events
 DROP POLICY IF EXISTS "Public can read events" ON events;
 CREATE POLICY "Public can read events"
   ON events FOR SELECT
-  USING (true);
+  USING (
+    deleted_at IS NULL
+    OR created_by = current_profile_id()
+  );
 
 -- Authenticated users can create events (created_by must match their profile)
 DROP POLICY IF EXISTS "Authenticated users can create events" ON events;

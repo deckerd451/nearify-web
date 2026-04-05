@@ -56,6 +56,7 @@ export async function fetchPublicEvents() {
   const { data, error } = await supabase
     .from("events")
     .select("id, name, slug, location, starts_at, created_at")
+    .is("deleted_at", null)
     .order("starts_at", { ascending: true, nullsFirst: false })
     .limit(50);
 
@@ -111,18 +112,19 @@ export async function saveEvent(eventFields, isUpdate = false) {
 }
 
 /**
- * Delete an event by ID.
- * RLS ensures only the owner (created_by = current_profile_id()) can delete.
+ * Soft-delete an event by setting deleted_at.
+ * Preserves historical interaction data (no FK conflicts).
+ * RLS ensures only the owner can update.
  * @param {string} eventId
  * @returns {Promise<{error}>}
  */
 export async function deleteEvent(eventId) {
   const { error } = await supabase
     .from("events")
-    .delete()
+    .update({ deleted_at: new Date().toISOString() })
     .eq("id", eventId);
 
-  if (error) console.error("[Events] deleteEvent error:", error);
+  if (error) console.error("[Events] deleteEvent (soft) error:", error);
   return { error };
 }
 
@@ -138,6 +140,7 @@ export async function fetchOrganizerEvents() {
     .from("events")
     .select("id, name, slug, location, starts_at, created_at, created_by")
     .eq("created_by", profileId)
+    .is("deleted_at", null)
     .order("created_at", { ascending: false })
     .limit(50);
 
