@@ -3,7 +3,7 @@
 --
 -- Identity model:
 --   profiles.id is used for ALL ownership relationships.
---   profiles.auth_user_id references auth.users.id.
+--   profiles.user_id references auth.users.id.
 --   events.created_by references profiles.id.
 --
 -- This migration:

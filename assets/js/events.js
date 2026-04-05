@@ -3,7 +3,7 @@
  *
  * Identity model:
  *   events.created_by = profiles.id
- *   profiles.auth_user_id = auth.users.id
+ *   profiles.user_id = auth.users.id
  *
  * All ownership operations resolve the current user's profile_id first.
  */
@@ -28,7 +28,7 @@ export async function getOrganizerProfileId() {
   const { data, error } = await supabase
     .from("profiles")
     .select("id")
-    .eq("auth_user_id", authUserId)
+    .eq("user_id", authUserId)
     .maybeSingle();
 
   if (error) {
@@ -40,7 +40,7 @@ export async function getOrganizerProfileId() {
   if (_cachedProfileId) {
     console.log("[Events] resolved profile_id:", _cachedProfileId);
   } else {
-    console.warn("[Events] no profile found for auth_user_id:", authUserId);
+    console.warn("[Events] no profile found for user_id:", authUserId);
   }
   return _cachedProfileId;
 }

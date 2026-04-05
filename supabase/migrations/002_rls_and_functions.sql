@@ -7,7 +7,7 @@
 -- Helper: resolve profile_id from current auth session
 CREATE OR REPLACE FUNCTION current_profile_id()
 RETURNS uuid AS $$
-  SELECT id FROM profiles WHERE auth_user_id = auth.uid();
+  SELECT id FROM profiles WHERE user_id = auth.uid();
 $$ LANGUAGE sql STABLE SECURITY DEFINER;
 
 -- ---- RLS: interaction_events ----
