@@ -2,7 +2,8 @@
  * home.js — Homepage state-aware behavior
  *
  * - Loads public events from Supabase (for all visitors)
- * - Detects auth state and event context for signed-in users
+ * - If signed in with a recent event, resolves the event record
+ *   and shows a human-readable "Continue your recent event" section
  * - Surfaces post-event intelligence when available
  */
 import { supabase } from "./supabaseClient.js";
@@ -34,7 +35,7 @@ async function init() {
   console.log("[Home] Signed in as:", user.email);
 
   if (eventId) {
-    showEventState(eventId);
+    await showRecentEvent(eventId);
     await loadHomeIntelligence(eventId);
   }
 }
@@ -56,7 +57,7 @@ async function loadPublicEvents() {
     const dateStr = ev.starts_at
       ? new Date(ev.starts_at).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })
       : "";
-    const meta = [ev.location, dateStr].filter(Boolean).join(" · ");
+    const meta = [ev.location, dateStr].filter(Boolean).join(" \u00b7 ");
 
     return '<div class="event-card">' +
       '<h3>' + escapeHtml(ev.name) + '</h3>' +
@@ -69,19 +70,51 @@ async function loadPublicEvents() {
   }).join("");
 }
 
-function showEventState(eventId) {
+/**
+ * Resolve the event record from Supabase and render a human-readable card.
+ * Falls back to a minimal display if the record can't be fetched.
+ */
+async function showRecentEvent(eventId) {
   if (!yourEvent || !yourEventBody) return;
 
+  // Try to resolve the real event record
+  let eventName = null;
+  let eventLocation = null;
+  let eventDate = null;
+
+  try {
+    const { data, error } = await supabase
+      .from("events")
+      .select("name, location, starts_at")
+      .eq("id", eventId)
+      .maybeSingle();
+
+    if (!error && data) {
+      eventName = data.name;
+      eventLocation = data.location;
+      eventDate = data.starts_at
+        ? new Date(data.starts_at).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })
+        : null;
+    }
+  } catch (e) {
+    console.warn("[Home] Could not resolve event record:", e.message);
+  }
+
   const deepLink = "beacon://event/" + eventId;
+  const joinUrl = "join/?event=" + encodeURIComponent(eventId) +
+    (eventName ? "&name=" + encodeURIComponent(eventName) : "");
+
+  const title = eventName || "Your recent event";
+  const meta = [eventLocation, eventDate].filter(Boolean).join(" \u00b7 ");
 
   yourEventBody.innerHTML =
-    '<div class="event-meta-card" style="display:inline-block; margin-bottom:16px;">' +
-      '<div class="meta-label">Current event</div>' +
-      '<div class="meta-value" style="font-size:14px; overflow-wrap:anywhere;">' + eventId + '</div>' +
-    '</div>' +
-    '<div class="hero-actions">' +
-      '<a href="' + deepLink + '" class="btn primary">Open Nearify</a>' +
-      '<a href="join/?event=' + encodeURIComponent(eventId) + '" class="btn secondary">Event join page</a>' +
+    '<div class="event-card" style="text-align:left; max-width:600px; margin:0 auto;">' +
+      '<h3>' + escapeHtml(title) + '</h3>' +
+      (meta ? '<p style="color:#8fa0b8; font-size:14px; margin-bottom:12px;">' + escapeHtml(meta) + '</p>' : '') +
+      '<div class="hero-actions" style="margin-top:14px;">' +
+        '<a href="' + deepLink + '" class="btn primary">Open in Nearify</a>' +
+        '<a href="' + joinUrl + '" class="btn secondary">Return to join page</a>' +
+      '</div>' +
     '</div>';
 
   yourEvent.style.display = "";
