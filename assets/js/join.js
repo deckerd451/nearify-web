@@ -5,8 +5,6 @@ import { setCurrentEventId } from "./appState.js";
 console.log("[Join] join.js loaded");
 
 const TESTFLIGHT_URL = "https://testflight.apple.com/join/ZayvEbAy";
-const APP_OPEN_DELAY_MS = 500;
-const APP_FALLBACK_DELAY_MS = 2200;
 
 const params = new URLSearchParams(window.location.search);
 const eventId = params.get("event");
@@ -18,8 +16,6 @@ if (eventId) setCurrentEventId(eventId);
 // DOM refs
 const titleEl    = document.getElementById("joinTitle");
 const payloadEl  = document.getElementById("payloadText");
-const topBtn     = document.getElementById("openNearifyBtn");
-const bottomBtn  = document.getElementById("openNearifyBtnBottom");
 const descEl     = document.getElementById("joinDescription");
 const qrBox      = document.getElementById("joinQrBox");
 const qrContainer = document.getElementById("joinQrCode");
@@ -83,8 +79,6 @@ function showMissingEventState() {
   if (payloadEl) payloadEl.textContent = "Missing event parameter";
   if (descEl) descEl.textContent =
     "This join link is missing an event ID. Return to the event page and try again.";
-  if (topBtn) topBtn.style.display = "none";
-  if (bottomBtn) bottomBtn.style.display = "none";
   if (qrBox) qrBox.style.display = "none";
 }
 
@@ -104,65 +98,37 @@ function initializePage() {
 
   if (titleEl) titleEl.textContent = `Join ${eventName}`;
   if (payloadEl) payloadEl.textContent = deepLink;
-  if (topBtn) topBtn.href = deepLink;
-  if (bottomBtn) bottomBtn.href = deepLink;
 
   renderInAppQr();
+
+  // Silently attempt deep link — if the app is installed it will open
+  silentDeepLinkAttempt();
+
   return true;
 }
 
 // ============================================================
-// OPEN NEARIFY — attempts deep link, no auth required
+// SILENT DEEP LINK — attempt once, don't rely on it
 // ============================================================
 
-function tryOpenDeepLink(url) {
-  if (joinState.appLaunchAttempted) {
-    // Allow re-tapping — just navigate directly
-    window.location.href = url;
-    return;
-  }
+function silentDeepLinkAttempt() {
+  if (joinState.appLaunchAttempted) return;
 
   joinState.appLaunchAttempted = true;
   persistState();
-  console.log("[Join] Attempting app launch:", url);
 
-  appOpened = false;
+  console.log("[Join] Silent deep link attempt:", deepLink);
 
-  setTimeout(() => { window.location.href = url; }, APP_OPEN_DELAY_MS);
+  // Use a hidden iframe to avoid navigating away from the page
+  const iframe = document.createElement("iframe");
+  iframe.style.display = "none";
+  iframe.src = deepLink;
+  document.body.appendChild(iframe);
 
+  // Clean up after a short delay
   setTimeout(() => {
-    if (!appOpened) {
-      console.log("[Join] App did not open — user may need to install");
-      showDeepLinkFallback();
-    }
-  }, APP_FALLBACK_DELAY_MS);
-}
-
-function showDeepLinkFallback() {
-  // Update description with clear guidance
-  if (descEl) {
-    descEl.innerHTML =
-      'Nearify didn\u2019t open. You may need to install it first.<br>' +
-      '<span style="color:#8fa0b8; font-size:16px;">Tap "Get Nearify" below, install from TestFlight, then come back and try again.</span>';
-  }
-
-  // Visually emphasize the install button
-  const getAppBtn = document.getElementById("getAppBtn");
-  if (getAppBtn) {
-    getAppBtn.style.animation = "none";
-    // Force reflow then add a subtle pulse
-    void getAppBtn.offsetWidth;
-    getAppBtn.style.boxShadow = "0 0 0 4px rgba(0, 209, 255, 0.3)";
-  }
-
-  // Update the open button to show it can be retried
-  if (topBtn) topBtn.textContent = "Try opening Nearify again";
-}
-
-function handleOpenNearify(e) {
-  e.preventDefault();
-  if (!eventId) return;
-  tryOpenDeepLink(deepLink);
+    try { document.body.removeChild(iframe); } catch (_) {}
+  }, 3000);
 }
 
 // ============================================================
@@ -346,9 +312,6 @@ async function enhanceForSignedInUser() {
 
 if (initializePage()) {
   initIntentListeners();
-
-  topBtn?.addEventListener("click", handleOpenNearify);
-  bottomBtn?.addEventListener("click", handleOpenNearify);
 
   // If user is already signed in, enhance the experience silently
   enhanceForSignedInUser();

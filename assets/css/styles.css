@@ -1005,3 +1005,11 @@ code {
 }
 
 .btn-inline-link:hover { opacity: 0.8; }
+
+/* Join page hint text */
+.join-hint {
+  color: #8fa0b8;
+  font-size: 14px;
+  line-height: 1.5;
+  margin-top: 10px;
+}

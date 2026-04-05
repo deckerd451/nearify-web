@@ -100,7 +100,6 @@ async function showRecentEvent(eventId) {
     console.warn("[Home] Could not resolve event record:", e.message);
   }
 
-  const deepLink = "beacon://event/" + eventId;
   const joinUrl = "join/?event=" + encodeURIComponent(eventId) +
     (eventName ? "&name=" + encodeURIComponent(eventName) : "");
 
@@ -112,9 +111,10 @@ async function showRecentEvent(eventId) {
       '<h3>' + escapeHtml(title) + '</h3>' +
       (meta ? '<p style="color:#8fa0b8; font-size:14px; margin-bottom:12px;">' + escapeHtml(meta) + '</p>' : '') +
       '<div class="hero-actions" style="margin-top:14px;">' +
-        '<a href="' + deepLink + '" class="btn primary">Open in Nearify</a>' +
-        '<a href="' + joinUrl + '" class="btn secondary">Return to join page</a>' +
+        '<a href="' + TESTFLIGHT_URL + '" class="btn primary" target="_blank" rel="noopener noreferrer">Get Nearify (TestFlight)</a>' +
+        '<a href="' + joinUrl + '" class="btn secondary">Event join page</a>' +
       '</div>' +
+      '<p class="join-hint" style="margin-top:10px;">Already installed? Open the app and scan the event QR code.</p>' +
     '</div>';
 
   yourEvent.style.display = "";

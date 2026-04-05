@@ -30,7 +30,7 @@
         </p>
 
         <div class="hero-actions" id="joinActions">
-          <!-- Primary: install pathway (most attendees won't have the app) -->
+          <!-- Primary: install pathway -->
           <a
             id="getAppBtn"
             href="https://testflight.apple.com/join/ZayvEbAy"
@@ -41,8 +41,10 @@
             Get Nearify (TestFlight)
           </a>
 
-          <!-- Secondary: returning users who already have the app -->
-          <a id="openNearifyBtn" href="#" class="btn secondary">I already have it — Open Nearify</a>
+          <!-- Secondary: hint for returning users -->
+          <p id="alreadyInstalledHint" class="join-hint">
+            Already installed? Open the app and scan the event QR code.
+          </p>
         </div>
 
         <div class="join-payload-card">
@@ -68,7 +70,7 @@
             <li>Install Nearify from TestFlight</li>
             <li>Open the app and sign in with Google or GitHub</li>
             <li>Create your profile</li>
-            <li>Tap <strong>Open Nearify</strong> above, or scan the event QR in the app</li>
+            <li>Scan the event QR code at the venue, or use the in-app scanner below</li>
             <li>Discover who's here and connect in person</li>
           </ol>
         </div>
@@ -150,7 +152,7 @@
 
     <section class="cta event-cta">
       <h2>Ready to join?</h2>
-      <p>Get the app and enter the event network.</p>
+      <p>Install the app, then scan the event QR code when you arrive.</p>
       <a
         href="https://testflight.apple.com/join/ZayvEbAy"
         class="btn primary"
@@ -159,7 +161,9 @@
       >
         Get Nearify on TestFlight
       </a>
-      <a id="openNearifyBtnBottom" href="#" class="btn secondary" style="margin-left:10px;">Open Nearify</a>
+      <p class="join-hint" style="margin-top:12px;">
+        Already installed? Open the app and scan again.
+      </p>
     </section>
   </main>
 
