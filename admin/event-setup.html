@@ -182,10 +182,14 @@
               <button type="button" class="btn primary" id="generateQrBtn">
                 Generate QR
               </button>
+              <button type="button" class="btn primary" id="saveToSupabaseBtn" style="background:#6ec6a5;">
+                Save to Supabase
+              </button>
               <button type="reset" class="btn secondary" id="resetFormBtn">
                 Reset
               </button>
             </div>
+            <p id="saveStatus" class="field-help" style="margin-top:8px;"></p>
           </form>
         </div>
 
@@ -279,6 +283,53 @@
   </footer>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+  <!-- Supabase save-to-db support -->
+  <script type="module">
+    import { supabase } from "../assets/js/supabaseClient.js";
+
+    const saveBtn = document.getElementById("saveToSupabaseBtn");
+    const saveStatus = document.getElementById("saveStatus");
+
+    saveBtn.addEventListener("click", async () => {
+      const eventId = document.getElementById("eventId").value.trim();
+      const name = document.getElementById("eventName").value.trim();
+      const slug = document.getElementById("eventSlug").value.trim();
+      const location = document.getElementById("eventLocation").value.trim();
+      const date = document.getElementById("eventDate").value;
+      const time = document.getElementById("eventTime").value;
+
+      if (!eventId || !name) {
+        saveStatus.textContent = "Generate an event ID and enter a name first.";
+        return;
+      }
+
+      saveStatus.textContent = "Saving...";
+
+      const starts_at = date && time ? `${date}T${time}:00` : date || null;
+
+      const { data, error } = await supabase
+        .from("events")
+        .upsert({
+          id: eventId,
+          name,
+          slug: slug || null,
+          location: location || null,
+          starts_at,
+        }, { onConflict: "id" })
+        .select();
+
+      if (error) {
+        console.error("[Admin] Save failed:", error);
+        saveStatus.textContent = `Error: ${error.message}`;
+        return;
+      }
+
+      console.log("[Admin] Event saved:", data);
+      saveStatus.textContent = "Saved to Supabase.";
+      setTimeout(() => { saveStatus.textContent = ""; }, 3000);
+    });
+  </script>
 
  <script>
   const form = document.getElementById("organizerForm");

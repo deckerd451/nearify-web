@@ -1,12 +1,8 @@
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { supabase } from "./supabaseClient.js";
+import { renderIntelCard, fetchIntelligence } from "./intelligence.js";
+import { setCurrentEventId } from "./appState.js";
 
 console.log("[Join] join.js loaded");
-
-const supabaseUrl = "https://unndeygygkgodmmdnlup.supabase.co";
-const supabaseKey = "sb_publishable_G0KAfCFTovYCWDeEEKWBfg_8UpPHWWZ";
-
-const supabase = createClient(supabaseUrl, supabaseKey);
-window.supabase = supabase;
 
 const TESTFLIGHT_URL = "https://testflight.apple.com/join/ZayvEbAy";
 const APP_OPEN_DELAY_MS = 500;
@@ -15,6 +11,9 @@ const APP_FALLBACK_DELAY_MS = 2200;
 const params = new URLSearchParams(window.location.search);
 const eventId = params.get("event");
 const eventName = params.get("name") || "this event";
+
+// Persist event ID so other pages (homepage) can access it
+if (eventId) setCurrentEventId(eventId);
 
 // Existing DOM refs
 const titleEl = document.getElementById("joinTitle");
@@ -319,49 +318,13 @@ function initIntentListeners() {
 // INTELLIGENCE DISPLAY (Phase 5)
 // ============================================================
 
-function renderIntelCard(item) {
-  const card = document.createElement("div");
-  card.className = "intel-card";
-
-  const avatar = item.target_avatar
-    ? `<img class="intel-avatar" src="${item.target_avatar}" alt="" />`
-    : `<div class="intel-avatar intel-avatar-placeholder"></div>`;
-
-  const directionLabel = item.direction === "incoming"
-    ? `<span class="intel-direction incoming">They matched with you</span>`
-    : `<span class="intel-direction outgoing">You matched with them</span>`;
-
-  card.innerHTML = `
-    ${avatar}
-    <div class="intel-card-body">
-      <div class="intel-card-name">${item.target_name || "Attendee"}</div>
-      ${directionLabel}
-      <div class="intel-card-reason">${item.reason || ""}</div>
-      <div class="intel-card-score">Score: ${Math.round(item.score)}</div>
-    </div>
-  `;
-  return card;
-}
+// renderIntelCard is imported from intelligence.js
 
 async function loadIntelligence() {
   if (!eventId || !intelligencePanel) return;
 
   try {
-    const user = await getSessionUser();
-    if (!user) return;
-
-    console.log("[Join] Current user id:", user.id);
-
-    const { data, error } = await supabase.rpc("get_my_intelligence", {
-      p_event_id: eventId
-    });
-
-    if (error) {
-      console.error("[Join] Intelligence load error:", error);
-      return;
-    }
-
-    console.log("[Join] Intelligence rows returned:", data ? data.length : 0);
+    const data = await fetchIntelligence(eventId);
 
     if (!data || data.length === 0) {
       intelligencePanel.style.display = "";

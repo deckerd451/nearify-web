@@ -916,3 +916,10 @@ code {
     grid-template-columns: 1fr;
   }
 }
+
+/* HOMEPAGE INTELLIGENCE */
+.home-intel-subhead {
+  color: #aab4c5;
+  font-size: 16px;
+  margin-bottom: 24px;
+}

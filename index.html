@@ -72,6 +72,19 @@
   </div>
 </section>
 
+    <!-- YOUR EVENT (hidden by default, shown when user has event context) -->
+    <section id="yourEventSection" class="section" style="display:none;">
+      <h2>Your event</h2>
+      <div id="yourEventBody"></div>
+    </section>
+
+    <!-- INTELLIGENCE PREVIEW (hidden by default, shown post-event) -->
+    <section id="homeIntelSection" class="section dark" style="display:none;">
+      <h2>Your event intelligence</h2>
+      <p class="home-intel-subhead">Based on your interactions and intent alignment.</p>
+      <div id="homeIntelContainer"></div>
+    </section>
+
     <!-- CTA -->
     <section class="cta">
       <h2>Real connections start in real space.</h2>
@@ -87,5 +100,6 @@
   </footer>
 
   <script src="assets/js/main.js"></script>
+  <script type="module" src="assets/js/home.js"></script>
 </body>
 </html>

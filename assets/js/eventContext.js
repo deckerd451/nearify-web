@@ -7,12 +7,7 @@
  * Since this is a static site, the iOS app calls the Supabase RPC directly.
  * This module provides the client-side helper and can be loaded in any page.
  */
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-
-const supabaseUrl = "https://unndeygygkgodmmdnlup.supabase.co";
-const supabaseKey = "sb_publishable_G0KAfCFTovYCWDeEEKWBfg_8UpPHWWZ";
-
-const supabase = createClient(supabaseUrl, supabaseKey);
+import { supabase } from "./supabaseClient.js";
 
 /**
  * Fetch event context for the current authenticated user.
