@@ -267,7 +267,7 @@
     <section class="section event-section">
       <div class="section-heading">
         <h2>Your events</h2>
-        <p>Events you've created. Load one into the form to edit, regenerate QR codes, or copy join links.</p>
+        <p>Events you've created. Edit, copy join links, or delete from here.</p>
       </div>
       <div id="myEventsList" class="admin-events-list">
         <p class="field-help">Loading...</p>
@@ -317,7 +317,7 @@
   <!-- Supabase auth gate + event management -->
   <script type="module">
     import { supabase } from "../assets/js/supabaseClient.js";
-    import { saveEvent, deleteEvent } from "../assets/js/events.js";
+    import { saveEvent, deleteEvent, fetchOrganizerEvents, getOrganizerProfileId } from "../assets/js/events.js";
 
     const authGate     = document.getElementById("adminAuthGate");
     const adminContent = document.getElementById("adminContent");
@@ -335,10 +335,10 @@
       editingEventId = eventId;
       if (formHeading) formHeading.textContent = "Editing: " + eventName;
       if (formSubhead) formSubhead.innerHTML =
-        'You are editing an existing event. <button id="cancelEditBtn" class="btn-inline-link">Cancel edit</button>';
+        'Updating an existing event. ' +
+        '<button id="cancelEditBtn" class="btn-inline-link">Cancel and create new</button>';
       saveBtnEl.textContent = "Update Event";
 
-      // Bind cancel
       const cancelBtn = document.getElementById("cancelEditBtn");
       if (cancelBtn) cancelBtn.addEventListener("click", exitEditMode);
     }
@@ -350,7 +350,6 @@
         'Create a new event or edit an existing one from the list below.';
       saveBtnEl.textContent = "Save Event";
 
-      // Clear form
       document.getElementById("organizerForm").reset();
       document.getElementById("eventId").value = "";
       document.getElementById("eventPayload").value = "";
@@ -372,6 +371,13 @@
         authGate.style.display = "none";
         adminContent.style.display = "";
         console.log("[Admin] Authenticated:", user.email);
+
+        // Pre-resolve profile so save/delete work immediately
+        const profileId = await getOrganizerProfileId();
+        if (!profileId) {
+          saveStatus.textContent = "Warning: no organizer profile found. Create a profile in the Nearify app first.";
+        }
+
         loadMyEvents();
       } else {
         authGate.style.display = "";
@@ -397,55 +403,60 @@
       const date     = document.getElementById("eventDate").value;
       const time     = document.getElementById("eventTime").value;
 
-      if (!eventId || !name) {
-        saveStatus.textContent = "Generate an event ID and enter a name first.";
+      if (!name) {
+        showStatus("Enter an event name first.", true);
         return;
       }
 
-      saveStatus.textContent = editingEventId ? "Updating..." : "Saving...";
+      // Auto-generate ID for new events
+      const id = eventId || (crypto.randomUUID ? crypto.randomUUID() : window.generateUUID());
+      if (!eventId) document.getElementById("eventId").value = id;
+
+      const isUpdate = !!editingEventId;
+      showStatus(isUpdate ? "Updating..." : "Saving...");
+
       const starts_at = date && time ? date + "T" + time + ":00" : date || null;
 
-      const { data, error } = await saveEvent({
-        id: eventId, name,
-        slug: slug || null,
-        location: location || null,
-        starts_at
-      });
+      const { data, error } = await saveEvent(
+        { id, name, slug: slug || null, location: location || null, starts_at },
+        isUpdate
+      );
 
       if (error) {
-        saveStatus.textContent = "Error: " + error.message;
+        showStatus("Error: " + error.message, true);
+        console.error("[Admin] Save failed:", error);
         return;
       }
 
       console.log("[Admin] Event saved:", data);
-      saveStatus.textContent = editingEventId ? "Event updated." : "Event created.";
-      if (editingEventId) exitEditMode();
+      showStatus(isUpdate ? "Event updated." : "Event created.");
+      if (isUpdate) exitEditMode();
+
+      // Sync QR fields after save
+      document.getElementById("eventName").dispatchEvent(new Event("input"));
+
       loadMyEvents();
-      setTimeout(() => { saveStatus.textContent = ""; }, 3000);
+      setTimeout(() => { saveStatus.textContent = ""; }, 4000);
     });
 
-    // --- Event listing ---
+    function showStatus(msg, isError) {
+      saveStatus.textContent = msg;
+      saveStatus.style.color = isError ? "#f87171" : "#8fa0b8";
+    }
+
+    // --- Event listing (organizer's own events) ---
     async function loadMyEvents() {
       const container = document.getElementById("myEventsList");
       if (!container) return;
 
-      const { data, error } = await supabase
-        .from("events")
-        .select("id, name, slug, location, starts_at, created_at")
-        .order("created_at", { ascending: false })
-        .limit(50);
+      const events = await fetchOrganizerEvents();
 
-      if (error) {
-        container.innerHTML = '<p class="field-help">Could not load events: ' + error.message + '</p>';
-        return;
-      }
-
-      if (!data || data.length === 0) {
+      if (!events.length) {
         container.innerHTML = '<p class="field-help">No events yet. Create one above.</p>';
         return;
       }
 
-      container.innerHTML = data.map(ev => {
+      container.innerHTML = events.map(ev => {
         const joinUrl = "https://nearify.org/join/?event=" + encodeURIComponent(ev.id) + "&name=" + encodeURIComponent(ev.name);
         const dateStr = ev.starts_at ? new Date(ev.starts_at).toLocaleDateString() : "";
         const meta = [ev.location, dateStr].filter(Boolean).join(" \u00b7 ");
@@ -462,38 +473,37 @@
               'data-starts-at="' + escapeAttr(ev.starts_at || "") + '"' +
             '>Edit</button>' +
             '<button class="btn admin-btn admin-btn-copy admin-copy-link" data-url="' + joinUrl + '">Copy join link</button>' +
-            '<button class="btn admin-btn admin-btn-delete admin-delete-event" data-id="' + ev.id + '">Delete</button>' +
+            '<button class="btn admin-btn admin-btn-delete admin-delete-event" data-id="' + ev.id + '" data-name="' + escapeAttr(ev.name) + '">Delete</button>' +
           '</div>' +
         '</div>';
       }).join("");
 
-      // --- Bind handlers ---
+      bindEventHandlers(container);
+    }
 
+    function bindEventHandlers(container) {
       // Edit
       container.querySelectorAll(".admin-edit-event").forEach(btn => {
         btn.addEventListener("click", () => {
-          const id = btn.dataset.id;
-          const name = btn.dataset.name;
-          document.getElementById("eventId").value = id;
-          document.getElementById("eventName").value = name;
+          document.getElementById("eventId").value = btn.dataset.id;
+          document.getElementById("eventName").value = btn.dataset.name;
           document.getElementById("eventSlug").value = btn.dataset.slug;
           document.getElementById("eventLocation").value = btn.dataset.location;
 
-          // Parse starts_at into date/time fields
           if (btn.dataset.startsAt) {
             try {
               const dt = new Date(btn.dataset.startsAt);
               document.getElementById("eventDate").value = dt.toISOString().split("T")[0];
-              const h = String(dt.getHours()).padStart(2, "0");
-              const m = String(dt.getMinutes()).padStart(2, "0");
-              document.getElementById("eventTime").value = h + ":" + m;
+              document.getElementById("eventTime").value =
+                String(dt.getHours()).padStart(2, "0") + ":" + String(dt.getMinutes()).padStart(2, "0");
             } catch (_) {}
+          } else {
+            document.getElementById("eventDate").value = "";
+            document.getElementById("eventTime").value = "";
           }
 
           document.getElementById("eventName").dispatchEvent(new Event("input"));
-          enterEditMode(id, name);
-
-          // Scroll to form
+          enterEditMode(btn.dataset.id, btn.dataset.name);
           document.getElementById("event-form").scrollIntoView({ behavior: "smooth" });
         });
       });
@@ -501,8 +511,12 @@
       // Copy link
       container.querySelectorAll(".admin-copy-link").forEach(btn => {
         btn.addEventListener("click", async () => {
-          await navigator.clipboard.writeText(btn.dataset.url);
-          btn.textContent = "Copied";
+          try {
+            await navigator.clipboard.writeText(btn.dataset.url);
+            btn.textContent = "Copied";
+          } catch (_) {
+            btn.textContent = "Failed";
+          }
           setTimeout(() => { btn.textContent = "Copy join link"; }, 1200);
         });
       });
@@ -510,20 +524,25 @@
       // Delete
       container.querySelectorAll(".admin-delete-event").forEach(btn => {
         btn.addEventListener("click", async () => {
-          if (!confirm("Delete this event? This cannot be undone.")) return;
+          const name = btn.dataset.name || "this event";
+          if (!confirm('Delete "' + name + '"? This cannot be undone.')) return;
+
           btn.textContent = "Deleting...";
           btn.disabled = true;
 
           const { error } = await deleteEvent(btn.dataset.id);
 
           if (error) {
-            alert("Delete failed: " + error.message +
-              "\n\nIf this is a permissions error, run the 003_events_rls.sql migration to enable delete policies.");
-            btn.textContent = "Delete";
+            console.error("[Admin] Delete failed:", error);
+            btn.textContent = "Failed";
             btn.disabled = false;
+            showStatus("Delete failed: " + error.message, true);
+            setTimeout(() => { btn.textContent = "Delete"; }, 2000);
             return;
           }
 
+          showStatus("Event deleted.");
+          setTimeout(() => { saveStatus.textContent = ""; }, 3000);
           loadMyEvents();
         });
       });
@@ -539,8 +558,7 @@
       return (str || "").replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;");
     }
 
-    // Init
-    exitEditMode(); // set default form state
+    exitEditMode();
     initAuthGate();
   </script>
 
@@ -587,6 +605,8 @@
       return (c === "x" ? r : (r & 0x3 | 0x8)).toString(16);
     });
   }
+  // Expose for module script
+  window.generateUUID = generateUUID;
 
   function buildState() {
     const name = eventNameInput.value.trim();

@@ -1,19 +1,21 @@
 -- ============================================================
 -- Events table RLS policies
 --
--- The events table is pre-existing. This migration adds RLS
--- so that:
--- - Anyone can read events (public listing)
--- - Authenticated users can create events
--- - Authenticated users can update/delete their own events
+-- Identity model:
+--   profiles.id is used for ALL ownership relationships.
+--   profiles.auth_user_id references auth.users.id.
+--   events.created_by references profiles.id.
 --
--- NOTE: If the events table does not have a created_by column,
--- we add one. If it already exists, the IF NOT EXISTS handles it.
+-- This migration:
+-- 1. Adds created_by column referencing profiles(id)
+-- 2. Enables RLS on events
+-- 3. Public SELECT for all visitors
+-- 4. INSERT/UPDATE/DELETE restricted to the owning profile
 -- ============================================================
 
--- Add ownership column if missing
+-- Add ownership column if missing (references profiles, not auth.users)
 ALTER TABLE events
-  ADD COLUMN IF NOT EXISTS created_by uuid REFERENCES auth.users(id) DEFAULT auth.uid();
+  ADD COLUMN IF NOT EXISTS created_by uuid REFERENCES profiles(id);
 
 -- Enable RLS
 ALTER TABLE events ENABLE ROW LEVEL SECURITY;
@@ -24,20 +26,20 @@ CREATE POLICY "Public can read events"
   ON events FOR SELECT
   USING (true);
 
--- Authenticated users can create events
+-- Authenticated users can create events (created_by must match their profile)
 DROP POLICY IF EXISTS "Authenticated users can create events" ON events;
 CREATE POLICY "Authenticated users can create events"
   ON events FOR INSERT
-  WITH CHECK (auth.uid() IS NOT NULL);
+  WITH CHECK (created_by = current_profile_id());
 
 -- Owners can update their events
 DROP POLICY IF EXISTS "Owners can update events" ON events;
 CREATE POLICY "Owners can update events"
   ON events FOR UPDATE
-  USING (created_by = auth.uid());
+  USING (created_by = current_profile_id());
 
 -- Owners can delete their events
 DROP POLICY IF EXISTS "Owners can delete events" ON events;
 CREATE POLICY "Owners can delete events"
   ON events FOR DELETE
-  USING (created_by = auth.uid());
+  USING (created_by = current_profile_id());
