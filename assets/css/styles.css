@@ -957,3 +957,51 @@ code {
   flex-wrap: wrap;
   margin-top: 4px;
 }
+
+/* Admin action buttons — high contrast on dark backgrounds */
+.admin-btn {
+  padding: 8px 14px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  transition: opacity 0.15s ease;
+}
+
+.admin-btn:hover { opacity: 0.85; }
+.admin-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.admin-btn-edit {
+  background: #00d1ff;
+  color: #0b0f1a;
+}
+
+.admin-btn-copy {
+  background: rgba(255, 255, 255, 0.12);
+  color: #dfe6ef;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.admin-btn-delete {
+  background: rgba(248, 113, 113, 0.15);
+  color: #f87171;
+  border: 1px solid rgba(248, 113, 113, 0.3);
+}
+
+.admin-btn-delete:hover {
+  background: rgba(248, 113, 113, 0.25);
+}
+
+/* Inline link-style button for cancel edit */
+.btn-inline-link {
+  background: none;
+  border: none;
+  color: #00d1ff;
+  cursor: pointer;
+  font-size: inherit;
+  text-decoration: underline;
+  padding: 0;
+}
+
+.btn-inline-link:hover { opacity: 0.8; }

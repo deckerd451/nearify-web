@@ -47,43 +47,12 @@
       <div class="section-heading">
         <h2>Upcoming events</h2>
         <p>
-          Start with the next live Nearify-enabled gathering and be ready to scan the event QR code on site.
+          Browse Nearify-enabled gatherings and be ready to scan the event QR code on site.
         </p>
       </div>
 
-      <div class="events-list-grid">
-        <article class="event-list-card featured" data-event-id="a073b942-a73c-4eea-b12b-bc5d6f0e11cf">
-          <div class="card-badge">Featured</div>
-          <h3>CharlestonHacks Show &amp; Tell Featuring Hacker Theater</h3>
-          <p class="event-list-meta">Blue Ion · Charleston</p>
-          <p>
-            A room for demos, side projects, ideas, feedback, and open discussion on what is real,
-            what is possible, and what comes next.
-          </p>
-
-          <div class="event-card-actions">
-            <a
-              href="charlestonhacks-show-and-tell-featuring-hacker-theater.html"
-              class="btn primary"
-            >
-              View Event
-            </a>
-            <a
-              href="../join/?event=a073b942-a73c-4eea-b12b-bc5d6f0e11cf&name=CharlestonHacks%20Show%20and%20Tell"
-              class="btn secondary"
-            >
-              Join Event
-            </a>
-            <a
-              href="https://testflight.apple.com/join/ZayvEbAy"
-              class="btn secondary"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Install App
-            </a>
-          </div>
-        </article>
+      <div class="events-list-grid" id="eventsListGrid">
+        <p class="field-help" style="text-align:center;">Loading events...</p>
       </div>
     </section>
 
@@ -117,36 +86,6 @@
       </div>
     </section>
 
-    <section class="section event-section">
-      <div class="section-heading">
-        <h2>More events coming soon</h2>
-        <p>
-          This page will grow into the Nearify event hub, with upcoming gatherings, event recaps, and connection intelligence.
-        </p>
-      </div>
-
-      <div class="events-list-grid">
-        <article class="event-list-card muted">
-          <div class="card-badge neutral">Coming Soon</div>
-          <h3>Your next Nearify-enabled event</h3>
-          <p class="event-list-meta">Future event</p>
-          <p>
-            This space is reserved for the next event page, organizer setup, and recap flow.
-          </p>
-          <div class="event-card-actions">
-            <a
-              href="https://testflight.apple.com/join/ZayvEbAy"
-              class="btn secondary"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Get the app first
-            </a>
-          </div>
-        </article>
-      </div>
-    </section>
-
     <section class="cta event-cta">
       <h2>Install Nearify before you arrive</h2>
       <p>
@@ -166,5 +105,50 @@
   <footer class="footer">
     <p>© 2026 Nearify</p>
   </footer>
+
+  <script type="module">
+    import { fetchPublicEvents } from "../assets/js/events.js";
+
+    const TESTFLIGHT_URL = "https://testflight.apple.com/join/ZayvEbAy";
+    const grid = document.getElementById("eventsListGrid");
+
+    async function loadEvents() {
+      const events = await fetchPublicEvents();
+
+      if (!events.length) {
+        grid.innerHTML =
+          '<p style="text-align:center; color:#8fa0b8;">No events yet. Check back soon.</p>';
+        return;
+      }
+
+      grid.innerHTML = events.map((ev, i) => {
+        const joinUrl = "../join/?event=" + encodeURIComponent(ev.id) +
+          "&name=" + encodeURIComponent(ev.name);
+        const dateStr = ev.starts_at
+          ? new Date(ev.starts_at).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })
+          : "";
+        const meta = [ev.location, dateStr].filter(Boolean).join(" \u00b7 ");
+        const featured = i === 0 ? " featured" : "";
+
+        return '<article class="event-list-card' + featured + '" data-event-id="' + ev.id + '">' +
+          (i === 0 ? '<div class="card-badge">Featured</div>' : '') +
+          '<h3>' + escapeHtml(ev.name) + '</h3>' +
+          (meta ? '<p class="event-list-meta">' + escapeHtml(meta) + '</p>' : '') +
+          '<div class="event-card-actions">' +
+            '<a href="' + joinUrl + '" class="btn primary">Join Event</a>' +
+            '<a href="' + TESTFLIGHT_URL + '" class="btn secondary" target="_blank" rel="noopener noreferrer">Install App</a>' +
+          '</div>' +
+        '</article>';
+      }).join("");
+    }
+
+    function escapeHtml(str) {
+      const d = document.createElement("div");
+      d.textContent = str;
+      return d.innerHTML;
+    }
+
+    loadEvents();
+  </script>
 </body>
 </html>

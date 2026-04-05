@@ -73,8 +73,7 @@
       <div class="section-heading">
         <h2>Event setup</h2>
         <p>
-          For now, this page is a local organizer utility. It generates the exact event join payload
-          your app expects: <strong>beacon://event/&lt;event-id&gt;</strong>.
+          Create a new event or edit an existing one from the list below.
         </p>
       </div>
 
@@ -202,8 +201,8 @@
               <button type="button" class="btn primary" id="generateQrBtn">
                 Generate QR
               </button>
-              <button type="button" class="btn primary" id="saveToSupabaseBtn" style="background:#6ec6a5;">
-                Save to Supabase
+              <button type="button" class="btn primary" id="saveToSupabaseBtn">
+                Save Event
               </button>
               <button type="reset" class="btn secondary" id="resetFormBtn">
                 Reset
@@ -277,31 +276,31 @@
 
     <section class="section dark event-section">
       <div class="section-heading">
-        <h2>What this page does today</h2>
+        <h2>How this works</h2>
         <p>
-          This is the organizer bridge between the web and mobile experience. It does not yet write to Supabase.
-          It standardizes the event ID, app join payload, and on-site QR workflow so the public event pages and
-          app flow can stay aligned.
+          This is the organizer bridge between the web and mobile experience.
+          Events you create here appear on the public events page and generate
+          the QR codes and join links attendees use to enter the event network.
         </p>
       </div>
 
       <div class="feature-grid">
         <div class="feature-card">
-          <h3>Creates a real app payload</h3>
+          <h3>Creates real events</h3>
           <p>
-            The generated value follows your current iOS parsing logic: <code>beacon://event/&lt;event-id&gt;</code>.
+            Events are saved to Supabase and immediately appear on the public events page for attendees to discover.
           </p>
         </div>
         <div class="feature-card">
-          <h3>Supports the physical event flow</h3>
+          <h3>Generates join links and QR codes</h3>
           <p>
-            Organizers can print or display this QR code in the room so attendees can join without needing a laptop.
+            Each event gets a unique join URL and QR code. Print the QR for the venue so attendees can scan and join.
           </p>
         </div>
         <div class="feature-card">
-          <h3>Prepares for future integration</h3>
+          <h3>Full event management</h3>
           <p>
-            This same structure can later save events to Supabase and feed public event pages, recaps, and analytics.
+            Edit event details, regenerate QR codes, copy join links, or delete events you no longer need.
           </p>
         </div>
       </div>
@@ -315,42 +314,69 @@
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
-  <!-- Supabase auth gate + save-to-db + event management -->
+  <!-- Supabase auth gate + event management -->
   <script type="module">
     import { supabase } from "../assets/js/supabaseClient.js";
+    import { saveEvent, deleteEvent } from "../assets/js/events.js";
 
     const authGate     = document.getElementById("adminAuthGate");
     const adminContent = document.getElementById("adminContent");
     const signInBtn    = document.getElementById("adminSignInBtn");
     const authStatus   = document.getElementById("adminAuthStatus");
-    const saveBtn      = document.getElementById("saveToSupabaseBtn");
+    const saveBtnEl    = document.getElementById("saveToSupabaseBtn");
     const saveStatus   = document.getElementById("saveStatus");
+    const formHeading  = document.querySelector("#event-form .section-heading h2");
+    const formSubhead  = document.querySelector("#event-form .section-heading p");
+
+    // --- Edit mode state ---
+    let editingEventId = null;
+
+    function enterEditMode(eventId, eventName) {
+      editingEventId = eventId;
+      if (formHeading) formHeading.textContent = "Editing: " + eventName;
+      if (formSubhead) formSubhead.innerHTML =
+        'You are editing an existing event. <button id="cancelEditBtn" class="btn-inline-link">Cancel edit</button>';
+      saveBtnEl.textContent = "Update Event";
+
+      // Bind cancel
+      const cancelBtn = document.getElementById("cancelEditBtn");
+      if (cancelBtn) cancelBtn.addEventListener("click", exitEditMode);
+    }
+
+    function exitEditMode() {
+      editingEventId = null;
+      if (formHeading) formHeading.textContent = "Event setup";
+      if (formSubhead) formSubhead.innerHTML =
+        'Create a new event or edit an existing one from the list below.';
+      saveBtnEl.textContent = "Save Event";
+
+      // Clear form
+      document.getElementById("organizerForm").reset();
+      document.getElementById("eventId").value = "";
+      document.getElementById("eventPayload").value = "";
+      document.getElementById("eventPageUrl").value = "";
+      document.getElementById("joinPageUrl").value = "";
+      saveStatus.textContent = "";
+    }
 
     // --- Auth gate ---
     async function checkAuth() {
       const { data, error } = await supabase.auth.getSession();
-      if (error) {
-        console.error("[Admin] Auth check failed:", error);
-        return null;
-      }
+      if (error) { console.error("[Admin] Auth error:", error); return null; }
       return data.session?.user ?? null;
     }
 
     async function initAuthGate() {
       const user = await checkAuth();
       if (user) {
-        showAdminContent(user);
+        authGate.style.display = "none";
+        adminContent.style.display = "";
+        console.log("[Admin] Authenticated:", user.email);
         loadMyEvents();
       } else {
         authGate.style.display = "";
         adminContent.style.display = "none";
       }
-    }
-
-    function showAdminContent(user) {
-      authGate.style.display = "none";
-      adminContent.style.display = "";
-      console.log("[Admin] Authenticated as:", user.email);
     }
 
     signInBtn.addEventListener("click", async () => {
@@ -359,14 +385,11 @@
         provider: "google",
         options: { redirectTo: window.location.href }
       });
-      if (error) {
-        console.error("[Admin] Sign-in error:", error);
-        authStatus.textContent = "Sign-in failed: " + error.message;
-      }
+      if (error) authStatus.textContent = "Sign-in failed: " + error.message;
     });
 
-    // --- Save event ---
-    saveBtn.addEventListener("click", async () => {
+    // --- Save / Update event ---
+    saveBtnEl.addEventListener("click", async () => {
       const eventId  = document.getElementById("eventId").value.trim();
       const name     = document.getElementById("eventName").value.trim();
       const slug     = document.getElementById("eventSlug").value.trim();
@@ -379,22 +402,24 @@
         return;
       }
 
-      saveStatus.textContent = "Saving...";
+      saveStatus.textContent = editingEventId ? "Updating..." : "Saving...";
       const starts_at = date && time ? date + "T" + time + ":00" : date || null;
 
-      const { data, error } = await supabase
-        .from("events")
-        .upsert({ id: eventId, name, slug: slug || null, location: location || null, starts_at }, { onConflict: "id" })
-        .select();
+      const { data, error } = await saveEvent({
+        id: eventId, name,
+        slug: slug || null,
+        location: location || null,
+        starts_at
+      });
 
       if (error) {
-        console.error("[Admin] Save failed:", error);
         saveStatus.textContent = "Error: " + error.message;
         return;
       }
 
       console.log("[Admin] Event saved:", data);
-      saveStatus.textContent = "Saved to Supabase.";
+      saveStatus.textContent = editingEventId ? "Event updated." : "Event created.";
+      if (editingEventId) exitEditMode();
       loadMyEvents();
       setTimeout(() => { saveStatus.textContent = ""; }, 3000);
     });
@@ -408,11 +433,10 @@
         .from("events")
         .select("id, name, slug, location, starts_at, created_at")
         .order("created_at", { ascending: false })
-        .limit(20);
+        .limit(50);
 
       if (error) {
-        console.error("[Admin] Event list error:", error);
-        container.innerHTML = '<p class="field-help">Could not load events.</p>';
+        container.innerHTML = '<p class="field-help">Could not load events: ' + error.message + '</p>';
         return;
       }
 
@@ -423,51 +447,100 @@
 
       container.innerHTML = data.map(ev => {
         const joinUrl = "https://nearify.org/join/?event=" + encodeURIComponent(ev.id) + "&name=" + encodeURIComponent(ev.name);
+        const dateStr = ev.starts_at ? new Date(ev.starts_at).toLocaleDateString() : "";
+        const meta = [ev.location, dateStr].filter(Boolean).join(" \u00b7 ");
+
         return '<div class="admin-event-row">' +
-          '<div class="admin-event-name">' + ev.name + '</div>' +
-          '<div class="admin-event-meta">' + (ev.location || "") + (ev.starts_at ? " · " + new Date(ev.starts_at).toLocaleDateString() : "") + '</div>' +
+          '<div class="admin-event-name">' + escapeHtml(ev.name) + '</div>' +
+          (meta ? '<div class="admin-event-meta">' + escapeHtml(meta) + '</div>' : '') +
           '<div class="admin-event-actions">' +
-            '<button class="btn secondary small-btn admin-copy-link" data-url="' + joinUrl + '">Copy join link</button>' +
-            '<button class="btn secondary small-btn admin-load-event" data-id="' + ev.id + '" data-name="' + ev.name.replace(/"/g, "&quot;") + '" data-slug="' + (ev.slug || "") + '" data-location="' + (ev.location || "") + '">Load into form</button>' +
-            '<button class="btn secondary small-btn admin-delete-event" data-id="' + ev.id + '" style="color:#f87171;">Delete</button>' +
+            '<button class="btn admin-btn admin-btn-edit admin-edit-event" ' +
+              'data-id="' + ev.id + '" ' +
+              'data-name="' + escapeAttr(ev.name) + '" ' +
+              'data-slug="' + escapeAttr(ev.slug || "") + '" ' +
+              'data-location="' + escapeAttr(ev.location || "") + '" ' +
+              'data-starts-at="' + escapeAttr(ev.starts_at || "") + '"' +
+            '>Edit</button>' +
+            '<button class="btn admin-btn admin-btn-copy admin-copy-link" data-url="' + joinUrl + '">Copy join link</button>' +
+            '<button class="btn admin-btn admin-btn-delete admin-delete-event" data-id="' + ev.id + '">Delete</button>' +
           '</div>' +
         '</div>';
       }).join("");
 
-      // Copy link handlers
+      // --- Bind handlers ---
+
+      // Edit
+      container.querySelectorAll(".admin-edit-event").forEach(btn => {
+        btn.addEventListener("click", () => {
+          const id = btn.dataset.id;
+          const name = btn.dataset.name;
+          document.getElementById("eventId").value = id;
+          document.getElementById("eventName").value = name;
+          document.getElementById("eventSlug").value = btn.dataset.slug;
+          document.getElementById("eventLocation").value = btn.dataset.location;
+
+          // Parse starts_at into date/time fields
+          if (btn.dataset.startsAt) {
+            try {
+              const dt = new Date(btn.dataset.startsAt);
+              document.getElementById("eventDate").value = dt.toISOString().split("T")[0];
+              const h = String(dt.getHours()).padStart(2, "0");
+              const m = String(dt.getMinutes()).padStart(2, "0");
+              document.getElementById("eventTime").value = h + ":" + m;
+            } catch (_) {}
+          }
+
+          document.getElementById("eventName").dispatchEvent(new Event("input"));
+          enterEditMode(id, name);
+
+          // Scroll to form
+          document.getElementById("event-form").scrollIntoView({ behavior: "smooth" });
+        });
+      });
+
+      // Copy link
       container.querySelectorAll(".admin-copy-link").forEach(btn => {
         btn.addEventListener("click", async () => {
           await navigator.clipboard.writeText(btn.dataset.url);
           btn.textContent = "Copied";
-          setTimeout(() => { btn.textContent = "Copy join link"; }, 1000);
+          setTimeout(() => { btn.textContent = "Copy join link"; }, 1200);
         });
       });
 
-      // Load into form handlers
-      container.querySelectorAll(".admin-load-event").forEach(btn => {
-        btn.addEventListener("click", () => {
-          document.getElementById("eventId").value = btn.dataset.id;
-          document.getElementById("eventName").value = btn.dataset.name;
-          document.getElementById("eventSlug").value = btn.dataset.slug;
-          document.getElementById("eventLocation").value = btn.dataset.location;
-          document.getElementById("eventName").dispatchEvent(new Event("input"));
-        });
-      });
-
-      // Delete handlers
+      // Delete
       container.querySelectorAll(".admin-delete-event").forEach(btn => {
         btn.addEventListener("click", async () => {
           if (!confirm("Delete this event? This cannot be undone.")) return;
-          const { error } = await supabase.from("events").delete().eq("id", btn.dataset.id);
+          btn.textContent = "Deleting...";
+          btn.disabled = true;
+
+          const { error } = await deleteEvent(btn.dataset.id);
+
           if (error) {
-            alert("Delete failed: " + error.message);
+            alert("Delete failed: " + error.message +
+              "\n\nIf this is a permissions error, run the 003_events_rls.sql migration to enable delete policies.");
+            btn.textContent = "Delete";
+            btn.disabled = false;
             return;
           }
+
           loadMyEvents();
         });
       });
     }
 
+    function escapeHtml(str) {
+      const d = document.createElement("div");
+      d.textContent = str || "";
+      return d.innerHTML;
+    }
+
+    function escapeAttr(str) {
+      return (str || "").replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;");
+    }
+
+    // Init
+    exitEditMode(); // set default form state
     initAuthGate();
   </script>
 
