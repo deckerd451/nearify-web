@@ -1126,22 +1126,89 @@ code {
 /* ============================================================
    NAV USER INDICATOR — injected by navAuth.js when signed in
    ============================================================ */
+.nav-user-wrapper {
+  position: relative;
+  display: inline-flex;
+  margin-left: 16px;
+}
+
 .nav-user {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  margin-left: 16px;
-  padding: 5px 12px 5px 5px;
+  padding: 5px 10px 5px 5px;
   background: rgba(0, 209, 255, 0.08);
   border: 1px solid rgba(0, 209, 255, 0.25);
   border-radius: var(--radius-full);
-  cursor: default;
+  cursor: pointer;
   transition: background 0.15s ease, border-color 0.15s ease;
+  user-select: none;
 }
 
-.nav-user:hover {
+.nav-user:hover,
+.nav-user-wrapper.open .nav-user {
   background: rgba(0, 209, 255, 0.13);
-  border-color: rgba(0, 209, 255, 0.4);
+  border-color: rgba(0, 209, 255, 0.45);
+}
+
+.nav-user-chevron {
+  font-size: 10px;
+  color: rgba(0, 209, 255, 0.7);
+  line-height: 1;
+  transition: transform 0.15s ease;
+}
+
+.nav-user-wrapper.open .nav-user-chevron {
+  transform: rotate(180deg);
+}
+
+/* Dropdown */
+.nav-dropdown {
+  display: none;
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  min-width: 200px;
+  background: #161f33;
+  border: 1px solid rgba(0, 209, 255, 0.2);
+  border-radius: var(--radius-md);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  padding: 8px;
+  z-index: 100;
+}
+
+.nav-user-wrapper.open .nav-dropdown {
+  display: block;
+}
+
+.nav-dropdown-email {
+  font-size: 13px;
+  color: var(--color-text-muted);
+  padding: 8px 10px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  margin-bottom: 6px;
+}
+
+.nav-dropdown-signout {
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: none;
+  color: #f87171;
+  font-size: 14px;
+  font-weight: 500;
+  padding: 8px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.12s ease;
+  font-family: inherit;
+}
+
+.nav-dropdown-signout:hover {
+  background: rgba(248, 113, 113, 0.1);
 }
 
 .nav-avatar {
@@ -1181,8 +1248,13 @@ code {
 }
 
 @media (max-width: 720px) {
-  .nav-user {
+  .nav-user-wrapper {
     margin-left: 0;
     align-self: flex-start;
+  }
+
+  .nav-dropdown {
+    left: 0;
+    right: auto;
   }
 }
