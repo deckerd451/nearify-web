@@ -8,6 +8,17 @@ import { supabase } from "./supabaseClient.js";
 import { getCurrentUser } from "./appState.js";
 
 /**
+ * Normalize backend reason text to remove follow-up language.
+ */
+function normalizeReason(reason) {
+  if (!reason) return "";
+  return reason
+    .replace(/worth following up/gi, "notable interaction")
+    .replace(/follow up/gi, "notable connection")
+    .replace(/Brief interaction — notable interaction\./gi, "Brief interaction — notable signal.");
+}
+
+/**
  * Render a single intelligence card DOM element.
  */
 export function renderIntelCard(item) {
@@ -27,7 +38,7 @@ export function renderIntelCard(item) {
     <div class="intel-card-body">
       <div class="intel-card-name">${item.target_name || "Attendee"}</div>
       ${directionLabel}
-      <div class="intel-card-reason">${item.reason || ""}</div>
+      <div class="intel-card-reason">${normalizeReason(item.reason)}</div>
       <div class="intel-card-score">Score: ${Math.round(item.score)}</div>
     </div>
   `;
