@@ -186,7 +186,7 @@ BEGIN
         v_reason := v_reason || 'Strong match.';
       ELSIF v_dwell > 0 AND v_score < 30 THEN
         v_type := 'follow_up';
-        v_reason := v_reason || 'Brief interaction — worth following up.';
+        v_reason := v_reason || 'Brief interaction — notable signal.';
       ELSIF v_intent_match AND v_dwell = 0 THEN
         v_type := 'missed';
         v_reason := v_reason || 'Aligned intent but no interaction recorded.';

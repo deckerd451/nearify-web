@@ -19,8 +19,8 @@ export function renderIntelCard(item) {
     : `<div class="intel-avatar intel-avatar-placeholder"></div>`;
 
   const directionLabel = item.direction === "incoming"
-    ? `<span class="intel-direction incoming">They matched with you</span>`
-    : `<span class="intel-direction outgoing">You matched with them</span>`;
+    ? `<span class="intel-direction incoming">You connected</span>`
+    : `<span class="intel-direction outgoing">You connected</span>`;
 
   card.innerHTML = `
     ${avatar}
@@ -81,7 +81,7 @@ export function renderIntelligenceInto(container, data) {
 
   const buckets = {
     recommended: { title: "Strongest interactions", items: [] },
-    follow_up:   { title: "You should follow up with", items: [] },
+    follow_up:   { title: "People you met", items: [] },
     missed:      { title: "You missed", items: [] },
   };
 
