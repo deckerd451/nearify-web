@@ -1122,3 +1122,67 @@ code {
   line-height: 1.5;
   margin-top: 10px;
 }
+
+/* ============================================================
+   NAV USER INDICATOR — injected by navAuth.js when signed in
+   ============================================================ */
+.nav-user {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: 16px;
+  padding: 5px 12px 5px 5px;
+  background: rgba(0, 209, 255, 0.08);
+  border: 1px solid rgba(0, 209, 255, 0.25);
+  border-radius: var(--radius-full);
+  cursor: default;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.nav-user:hover {
+  background: rgba(0, 209, 255, 0.13);
+  border-color: rgba(0, 209, 255, 0.4);
+}
+
+.nav-avatar {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+  display: block;
+}
+
+.nav-avatar-placeholder {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: rgba(0, 209, 255, 0.18);
+  color: var(--color-accent);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  text-transform: uppercase;
+}
+
+.nav-user-name {
+  font-size: 13px;
+  font-weight: 500;
+  color: #ffffff;
+  max-width: 110px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  line-height: 1;
+}
+
+@media (max-width: 720px) {
+  .nav-user {
+    margin-left: 0;
+    align-self: flex-start;
+  }
+}
