@@ -222,18 +222,8 @@
             </p>
           </div>
 
-          <div class="qr-tab-row">
-            <button type="button" class="btn secondary small-btn qr-tab active" id="tabCameraQr" data-tab="camera">
-              Camera QR
-            </button>
-            <button type="button" class="btn secondary small-btn qr-tab" id="tabInAppQr" data-tab="inapp">
-              In-App QR
-            </button>
-          </div>
-
           <div class="qr-preview-shell">
             <div id="qrCode" class="qr-code-box" aria-label="Camera join QR code"></div>
-            <div id="qrCodeInApp" class="qr-code-box" style="display:none;" aria-label="In-app event QR code"></div>
           </div>
 
           <div class="qr-meta">
@@ -248,10 +238,6 @@
   <div class="qr-meta-row">
     <span class="qr-meta-label">Camera join URL</span>
     <span class="qr-meta-value" id="joinPreview">Not generated yet</span>
-  </div>
-  <div class="qr-meta-row" id="inAppQrMetaRow" style="display:none;">
-    <span class="qr-meta-label">In-App QR payload</span>
-    <span class="qr-meta-value" id="inAppPayloadPreview">Not generated yet</span>
   </div>
 </div>
 
@@ -400,9 +386,10 @@
       const eventId  = document.getElementById("eventId").value.trim();
       const name     = document.getElementById("eventName").value.trim();
       const slug     = document.getElementById("eventSlug").value.trim();
-      const location = document.getElementById("eventLocation").value.trim();
-      const date     = document.getElementById("eventDate").value;
-      const time     = document.getElementById("eventTime").value;
+      const location    = document.getElementById("eventLocation").value.trim();
+      const date        = document.getElementById("eventDate").value;
+      const time        = document.getElementById("eventTime").value;
+      const description = document.getElementById("eventDescription").value.trim();
 
       if (!name) {
         showStatus("Enter an event name first.", true);
@@ -419,7 +406,7 @@
       const starts_at = date && time ? date + "T" + time + ":00" : date || null;
 
       const { data, error } = await saveEvent(
-        { id, name, slug: slug || null, location: location || null, starts_at },
+        { id, name, slug: slug || null, location: location || null, starts_at, description: description || null },
         isUpdate
       );
 
@@ -431,7 +418,6 @@
 
       console.log("[Admin] Event saved:", data);
       showStatus(isUpdate ? "Event updated." : "Event created.");
-      if (isUpdate) exitEditMode();
 
       // Sync QR fields after save
       document.getElementById("eventName").dispatchEvent(new Event("input"));
@@ -471,7 +457,8 @@
               'data-name="' + escapeAttr(ev.name) + '" ' +
               'data-slug="' + escapeAttr(ev.slug || "") + '" ' +
               'data-location="' + escapeAttr(ev.location || "") + '" ' +
-              'data-starts-at="' + escapeAttr(ev.starts_at || "") + '"' +
+              'data-starts-at="' + escapeAttr(ev.starts_at || "") + '" ' +
+              'data-description="' + escapeAttr(ev.description || "") + '"' +
             '>Edit</button>' +
             '<button class="btn admin-btn admin-btn-copy admin-copy-link" data-url="' + joinUrl + '">Copy join link</button>' +
             '<button class="btn admin-btn admin-btn-delete admin-delete-event" data-id="' + ev.id + '" data-name="' + escapeAttr(ev.name) + '">Archive</button>' +
@@ -503,6 +490,7 @@
             document.getElementById("eventTime").value = "";
           }
 
+          document.getElementById("eventDescription").value = btn.dataset.description || "";
           document.getElementById("eventName").dispatchEvent(new Event("input"));
           enterEditMode(btn.dataset.id, btn.dataset.name);
           document.getElementById("event-form").scrollIntoView({ behavior: "smooth" });
@@ -611,12 +599,7 @@
   const resetFormBtn = document.getElementById("resetFormBtn");
 
   const qrCodeContainer = document.getElementById("qrCode");
-  const qrCodeInAppContainer = document.getElementById("qrCodeInApp");
-  const inAppQrMetaRow = document.getElementById("inAppQrMetaRow");
-  const inAppPayloadPreview = document.getElementById("inAppPayloadPreview");
   let qrInstance = null;
-  let qrInAppInstance = null;
-  let activeTab = "camera"; // "camera" | "inapp"
 
   function slugify(text) {
     return text
@@ -674,29 +657,6 @@
     });
   }
 
-  function renderInAppQR(payload) {
-    qrCodeInAppContainer.innerHTML = "";
-    qrInAppInstance = new QRCode(qrCodeInAppContainer, {
-      text: payload,
-      width: 260,
-      height: 260
-    });
-    inAppPayloadPreview.textContent = payload;
-    inAppQrMetaRow.style.display = "";
-  }
-
-  function switchTab(tab) {
-    activeTab = tab;
-    const tabBtns = document.querySelectorAll(".qr-tab");
-    tabBtns.forEach(btn => btn.classList.toggle("active", btn.dataset.tab === tab));
-    qrCodeContainer.style.display     = tab === "camera" ? "" : "none";
-    qrCodeInAppContainer.style.display = tab === "inapp"  ? "" : "none";
-  }
-
-  document.querySelectorAll(".qr-tab").forEach(btn => {
-    btn.addEventListener("click", () => switchTab(btn.dataset.tab));
-  });
-
   function generateAll() {
     if (!eventNameInput.value.trim()) {
       alert("Enter event name");
@@ -714,16 +674,12 @@
     if (s.joinUrl) {
       renderQR(s.joinUrl);
     }
-    if (s.payload) {
-      renderInAppQR(s.payload);
-    }
   }
 
   function getQRImage() {
-    const container = activeTab === "inapp" ? qrCodeInAppContainer : qrCodeContainer;
-    const img = container.querySelector("img");
+    const img = qrCodeContainer.querySelector("img");
     if (img) return img.src;
-    const canvas = container.querySelector("canvas");
+    const canvas = qrCodeContainer.querySelector("canvas");
     if (canvas) return canvas.toDataURL();
     return null;
   }
@@ -776,22 +732,19 @@
     if (!img) return alert("Generate QR first");
     const a = document.createElement("a");
     a.href = img;
-    a.download = activeTab === "inapp" ? "nearify-event-inapp-qr.png" : "nearify-event-camera-qr.png";
+    a.download = "nearify-event-qr.png";
     a.click();
   };
 
   resetFormBtn.onclick = () => {
     setTimeout(() => {
       qrCodeContainer.innerHTML = "";
-      qrCodeInAppContainer.innerHTML = "";
       eventPayloadInput.value = "";
       eventPageUrlInput.value = "";
       joinPageUrlInput.value = "";
       payloadPreview.textContent = "Not generated yet";
       pagePreview.textContent = "Not generated yet";
       joinPreview.textContent = "Not generated yet";
-      inAppPayloadPreview.textContent = "Not generated yet";
-      inAppQrMetaRow.style.display = "none";
     }, 0);
   };
 
