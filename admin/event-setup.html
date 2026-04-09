@@ -182,14 +182,8 @@
 </div>
 
             <div class="hero-actions admin-actions">
-              <button type="button" class="btn primary" id="generateQrBtn">
-                Generate QR
-              </button>
               <button type="button" class="btn primary" id="saveToSupabaseBtn">
                 Save Event
-              </button>
-              <button type="reset" class="btn secondary" id="resetFormBtn">
-                Reset
               </button>
             </div>
             <p id="saveStatus" class="field-help" style="margin-top:8px;"></p>
@@ -573,10 +567,8 @@
   const joinPreview = document.getElementById("joinPreview");
 
   const generateIdBtn = document.getElementById("generateIdBtn");
-  const generateQrBtn = document.getElementById("generateQrBtn");
   const copyJoinUrlBtn = document.getElementById("copyJoinUrlBtn");
   const downloadQrBtn = document.getElementById("downloadQrBtn");
-  const resetFormBtn = document.getElementById("resetFormBtn");
 
   const qrCodeContainer = document.getElementById("qrCode");
   let qrInstance = null;
@@ -613,6 +605,11 @@
   }
 
   function syncFields() {
+    // Auto-generate event ID as soon as a name is present
+    if (eventNameInput.value.trim() && !eventIdInput.value.trim()) {
+      eventIdInput.value = generateUUID();
+    }
+
     const s = buildState();
 
     if (!eventSlugInput.value.trim() && s.name) {
@@ -625,6 +622,12 @@
     payloadPreview.textContent = s.payload || "Not generated yet";
     pagePreview.textContent = s.pageUrl || "Not generated yet";
     joinPreview.textContent = s.joinUrl || "Not generated yet";
+
+    if (s.joinUrl) {
+      renderQR(s.joinUrl);
+    } else {
+      qrCodeContainer.innerHTML = "";
+    }
   }
 
   function renderQR(payload) {
@@ -634,25 +637,6 @@
       width: 260,
       height: 260
     });
-  }
-
-  function generateAll() {
-    if (!eventNameInput.value.trim()) {
-      alert("Enter event name");
-      eventNameInput.focus();
-      return;
-    }
-
-    if (!eventIdInput.value.trim()) {
-      eventIdInput.value = generateUUID();
-    }
-
-    syncFields();
-
-    const s = buildState();
-    if (s.joinUrl) {
-      renderQR(s.joinUrl);
-    }
   }
 
   function getQRImage() {
@@ -667,8 +651,6 @@
     eventIdInput.value = generateUUID();
     syncFields();
   };
-
-  generateQrBtn.onclick = generateAll;
 
   // Clipboard helper with fallback
   function copyText(text) {
@@ -701,22 +683,11 @@
 
   downloadQrBtn.onclick = () => {
     const img = getQRImage();
-    if (!img) return alert("Generate QR first");
+    if (!img) return alert("Enter an event name first to generate the QR code.");
     const a = document.createElement("a");
     a.href = img;
     a.download = "nearify-event-qr.png";
     a.click();
-  };
-
-  resetFormBtn.onclick = () => {
-    setTimeout(() => {
-      qrCodeContainer.innerHTML = "";
-      eventPageUrlInput.value = "";
-      joinPageUrlInput.value = "";
-      payloadPreview.textContent = "Not generated yet";
-      pagePreview.textContent = "Not generated yet";
-      joinPreview.textContent = "Not generated yet";
-    }, 0);
   };
 
   eventNameInput.oninput = syncFields;
