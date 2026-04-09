@@ -143,29 +143,13 @@
                   placeholder="Auto-generate a UUID"
                   readonly
                 />
-                <button type="button" class="btn secondary small-btn" id="generateIdBtn">
+                <button type="button" class="btn primary small-btn" id="generateIdBtn">
                   Generate ID
                 </button>
               </div>
               <p class="field-help">
                 This is the ID embedded in the event QR and passed into the app join flow.
               </p>
-            </div>
-
-            <div class="form-row">
-              <label for="eventPayload">App join payload</label>
-              <div class="inline-action-row">
-                <input
-                  id="eventPayload"
-                  name="eventPayload"
-                  type="text"
-                  placeholder="beacon://event/..."
-                  readonly
-                />
-                <button type="button" class="btn secondary small-btn" id="copyPayloadBtn">
-                  Copy
-                </button>
-              </div>
             </div>
 
             <div class="form-row">
@@ -188,7 +172,7 @@
       placeholder="https://nearify.org/join/?event=..."
       readonly
     />
-    <button type="button" class="btn secondary small-btn" id="copyJoinUrlBtn">
+    <button type="button" class="btn primary small-btn" id="copyJoinUrlBtn">
       Copy
     </button>
   </div>
@@ -216,9 +200,8 @@
           <div class="qr-preview-header">
             <h3>Event QR preview</h3>
             <p>
-              Choose which QR to display. Use the <strong>Camera QR</strong> for printed signage;
-              use the <strong>In-App QR</strong> to display inside Nearify for attendees to scan
-              with the in-app scanner.
+              Print or display this QR code at the venue. Attendees scan it with their phone camera
+              to join the event network.
             </p>
           </div>
 
@@ -242,7 +225,7 @@
 </div>
 
           <div class="hero-actions">
-            <button type="button" class="btn secondary" id="downloadQrBtn">
+            <button type="button" class="btn primary" id="downloadQrBtn">
               Download QR
             </button>
           </div>
@@ -583,7 +566,6 @@
   const eventNameInput = document.getElementById("eventName");
   const eventSlugInput = document.getElementById("eventSlug");
   const eventIdInput = document.getElementById("eventId");
-  const eventPayloadInput = document.getElementById("eventPayload");
   const eventPageUrlInput = document.getElementById("eventPageUrl");
   const joinPageUrlInput = document.getElementById("joinPageUrl");
 
@@ -593,7 +575,6 @@
 
   const generateIdBtn = document.getElementById("generateIdBtn");
   const generateQrBtn = document.getElementById("generateQrBtn");
-  const copyPayloadBtn = document.getElementById("copyPayloadBtn");
   const copyJoinUrlBtn = document.getElementById("copyJoinUrlBtn");
   const downloadQrBtn = document.getElementById("downloadQrBtn");
   const resetFormBtn = document.getElementById("resetFormBtn");
@@ -621,7 +602,7 @@
 
   function buildState() {
     const name = eventNameInput.value.trim();
-    const slug = eventSlugInput.value.trim() || slugify(name);
+    const slug = slugify(eventSlugInput.value.trim() || name);
     const eventId = eventIdInput.value.trim();
     const payload = eventId ? `beacon://event/${eventId}` : "";
     const pageUrl = slug ? `https://nearify.org/events/${slug}.html` : "";
@@ -639,7 +620,6 @@
       eventSlugInput.value = s.slug;
     }
 
-    eventPayloadInput.value = s.payload;
     eventPageUrlInput.value = s.pageUrl;
     joinPageUrlInput.value = s.joinUrl;
 
@@ -713,13 +693,6 @@
     } catch (_) { return false; }
   }
 
-  copyPayloadBtn.onclick = async () => {
-    if (!eventPayloadInput.value) return;
-    const ok = await copyText(eventPayloadInput.value);
-    copyPayloadBtn.textContent = ok ? "Copied" : "Failed";
-    setTimeout(() => { copyPayloadBtn.textContent = "Copy"; }, 1000);
-  };
-
   copyJoinUrlBtn.onclick = async () => {
     if (!joinPageUrlInput.value) return;
     const ok = await copyText(joinPageUrlInput.value);
@@ -739,7 +712,6 @@
   resetFormBtn.onclick = () => {
     setTimeout(() => {
       qrCodeContainer.innerHTML = "";
-      eventPayloadInput.value = "";
       eventPageUrlInput.value = "";
       joinPageUrlInput.value = "";
       payloadPreview.textContent = "Not generated yet";
