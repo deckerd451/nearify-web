@@ -459,9 +459,6 @@ html {
 @media (max-width: 720px) {
   .nav {
     padding: 18px 20px;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 12px;
   }
 
   .hero,
@@ -1256,5 +1253,97 @@ code {
   .nav-dropdown {
     left: 0;
     right: auto;
+  }
+}
+
+/* ============================================================
+   HAMBURGER + NAV DRAWER
+   ============================================================ */
+.nav-hamburger {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 5px;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  background: none;
+  border: none;
+  cursor: pointer;
+  border-radius: 8px;
+  flex-shrink: 0;
+  transition: background 0.15s ease;
+}
+
+.nav-hamburger:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.nav-hamburger span {
+  display: block;
+  width: 22px;
+  height: 2px;
+  background: #ffffff;
+  border-radius: 2px;
+  transition: transform 0.22s ease, opacity 0.22s ease;
+}
+
+.nav-hamburger.open span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+.nav-hamburger.open span:nth-child(2) { opacity: 0; transform: scaleX(0); }
+.nav-hamburger.open span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
+.nav-drawer {
+  display: none;
+  flex-direction: column;
+  background: #0d1220;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 4px 40px 20px;
+  position: relative;
+  z-index: 99;
+}
+
+.nav-drawer.open {
+  display: flex;
+}
+
+.nav-drawer a {
+  padding: 14px 0;
+  color: #aab4c5;
+  text-decoration: none;
+  font-size: 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  transition: color 0.15s ease;
+}
+
+.nav-drawer a:last-child {
+  border-bottom: none;
+}
+
+.nav-drawer a:hover {
+  color: #ffffff;
+}
+
+.nav-drawer a.nav-drawer-highlight {
+  color: var(--color-accent);
+}
+
+.nav-drawer a.nav-drawer-highlight:hover {
+  color: #ffffff;
+}
+
+/* On mobile: hide inline text links, hamburger takes over */
+@media (max-width: 720px) {
+  .nav {
+    flex-direction: row;
+    align-items: center;
+    gap: 0;
+  }
+  .nav-links a:not(.nav-user-wrapper *) {
+    display: none;
+  }
+  .nav-drawer {
+    padding-left: 20px;
+    padding-right: 20px;
   }
 }

@@ -104,3 +104,31 @@ async function initNavAuth() {
 }
 
 initNavAuth();
+
+// ---- Hamburger menu toggle ----
+function initHamburger() {
+  const btn    = document.getElementById("navHamburger");
+  const drawer = document.getElementById("navDrawer");
+  if (!btn || !drawer) return;
+
+  function close() {
+    drawer.classList.remove("open");
+    btn.classList.remove("open");
+    btn.setAttribute("aria-expanded", "false");
+  }
+
+  btn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    const open = drawer.classList.toggle("open");
+    btn.classList.toggle("open", open);
+    btn.setAttribute("aria-expanded", String(open));
+  });
+
+  // Close when a drawer link is clicked
+  drawer.querySelectorAll("a").forEach(a => a.addEventListener("click", close));
+
+  // Close on outside click
+  document.addEventListener("click", close);
+}
+
+initHamburger();
