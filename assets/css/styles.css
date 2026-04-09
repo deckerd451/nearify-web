@@ -1259,6 +1259,12 @@ code {
 /* ============================================================
    HAMBURGER + NAV DRAWER
    ============================================================ */
+
+/* Wrapper gives the dropdown an absolute-positioning context */
+.nav-container {
+  position: relative;
+}
+
 .nav-hamburger {
   display: flex;
   flex-direction: column;
@@ -1293,34 +1299,37 @@ code {
 .nav-hamburger.open span:nth-child(2) { opacity: 0; transform: scaleX(0); }
 .nav-hamburger.open span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
 
+/* Dropdown card — overlays content, anchored to right of nav */
 .nav-drawer {
   display: none;
-  flex-direction: column;
-  background: #0d1220;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-  padding: 4px 40px 20px;
-  position: relative;
-  z-index: 99;
+  position: absolute;
+  top: calc(100% - 8px);
+  right: 40px;
+  min-width: 220px;
+  background: #161f33;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 8px;
+  z-index: 200;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
 }
 
 .nav-drawer.open {
-  display: flex;
+  display: block;
 }
 
 .nav-drawer a {
-  padding: 14px 0;
+  display: block;
+  padding: 11px 14px;
   color: #aab4c5;
   text-decoration: none;
-  font-size: 16px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-  transition: color 0.15s ease;
-}
-
-.nav-drawer a:last-child {
-  border-bottom: none;
+  font-size: 15px;
+  border-radius: 8px;
+  transition: background 0.12s ease, color 0.12s ease;
 }
 
 .nav-drawer a:hover {
+  background: rgba(255, 255, 255, 0.06);
   color: #ffffff;
 }
 
@@ -1329,21 +1338,20 @@ code {
 }
 
 .nav-drawer a.nav-drawer-highlight:hover {
-  color: #ffffff;
+  background: rgba(0, 209, 255, 0.08);
+  color: var(--color-accent);
 }
 
-/* On mobile: hide inline text links, hamburger takes over */
+/* On mobile: hide inline text links, full-width dropdown */
 @media (max-width: 720px) {
-  .nav {
-    flex-direction: row;
-    align-items: center;
-    gap: 0;
-  }
   .nav-links a:not(.nav-user-wrapper *) {
     display: none;
   }
   .nav-drawer {
-    padding-left: 20px;
-    padding-right: 20px;
+    right: 0;
+    left: 0;
+    min-width: unset;
+    border-radius: 0 0 12px 12px;
+    border-top: none;
   }
 }
