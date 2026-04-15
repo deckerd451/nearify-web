@@ -48,14 +48,16 @@ export async function getOrganizerProfileId() {
 // ---- Public (no auth) ----
 
 /**
- * Fetch all public events ordered by start date.
+ * Fetch all public (approved) events ordered by start date.
  * No auth required — relies on RLS SELECT policy.
+ * The explicit status filter mirrors the RLS rule for clarity.
  * @returns {Promise<Array>}
  */
 export async function fetchPublicEvents() {
   const { data, error } = await supabase
     .from("events")
     .select("id, name, slug, location, starts_at, created_at")
+    .eq("status", "approved")
     .is("deleted_at", null)
     .order("starts_at", { ascending: true, nullsFirst: false })
     .limit(50);
@@ -138,7 +140,7 @@ export async function fetchOrganizerEvents() {
 
   const { data, error } = await supabase
     .from("events")
-    .select("id, name, slug, location, starts_at, description, created_at, created_by")
+    .select("id, name, slug, location, starts_at, description, status, admin_note, created_at, created_by")
     .eq("created_by", profileId)
     .is("deleted_at", null)
     .order("created_at", { ascending: false })

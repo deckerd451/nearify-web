@@ -434,10 +434,20 @@
         const joinUrl = "https://nearify.org/join/?event=" + encodeURIComponent(ev.id) + "&name=" + encodeURIComponent(ev.name);
         const dateStr = ev.starts_at ? new Date(ev.starts_at).toLocaleDateString() : "";
         const meta = [ev.location, dateStr].filter(Boolean).join(" \u00b7 ");
+        const status = ev.status || "pending";
+        const statusColors = { pending: "#fbbf24", approved: "#34d399", rejected: "#f87171" };
+        const statusBadge =
+          '<span style="display:inline-block;font-size:11px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;' +
+          'padding:2px 7px;border-radius:999px;background:rgba(255,255,255,0.06);color:' + (statusColors[status] || "#8fa0b8") + ';margin-left:8px;">' +
+          status + '</span>';
+        const adminNote = ev.status === "rejected" && ev.admin_note
+          ? '<div style="font-size:12px;color:#f87171;margin-top:4px;font-style:italic;">Note: ' + escapeHtml(ev.admin_note) + '</div>'
+          : "";
 
         return '<div class="admin-event-row">' +
-          '<div class="admin-event-name">' + escapeHtml(ev.name) + '</div>' +
+          '<div class="admin-event-name">' + escapeHtml(ev.name) + statusBadge + '</div>' +
           (meta ? '<div class="admin-event-meta">' + escapeHtml(meta) + '</div>' : '') +
+          adminNote +
           '<div class="admin-event-actions">' +
             '<button class="btn admin-btn admin-btn-edit admin-edit-event" ' +
               'data-id="' + ev.id + '" ' +
