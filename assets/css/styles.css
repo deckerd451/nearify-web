@@ -1306,6 +1306,45 @@ code {
   margin: 0 auto;
 }
 
+.intel-recommended-action {
+  margin: 0 auto 14px;
+  max-width: 480px;
+  text-align: center;
+  padding: 14px 16px;
+  border: 1px solid rgba(0, 209, 255, 0.28);
+  border-radius: 12px;
+  background: rgba(11, 18, 32, 0.65);
+}
+
+.intel-recommended-title {
+  margin: 0 0 6px;
+  font-size: 14px;
+  font-weight: 700;
+  color: #cfe6ff;
+}
+
+.intel-recommended-body {
+  margin: 0;
+  font-size: 13px;
+  color: var(--color-text-muted);
+}
+
+.intel-connect-btn {
+  margin-top: 10px;
+  padding: 8px 14px;
+  border-radius: 8px;
+  border: 1px solid rgba(0, 209, 255, 0.4);
+  color: var(--color-accent);
+  background: rgba(0, 209, 255, 0.08);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.intel-connect-btn:hover {
+  background: rgba(0, 209, 255, 0.14);
+}
+
 .intel-empty-title {
   font-size: 16px;
   font-weight: 600;

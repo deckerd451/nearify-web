@@ -202,6 +202,79 @@ function renderDecisionDebug(decision) {
   return wrap;
 }
 
+function getDecisionSignals(decision) {
+  if (!decision || typeof decision !== "object") return { P: 0, X: 0 };
+  const source = decision.components?.signals ?? decision.components ?? {};
+  return {
+    P: clamp01(Number(source.P) || 0),
+    X: clamp01(Number(source.X) || 0),
+  };
+}
+
+function buildSuggestConnectReason(decision) {
+  const { P, X } = getDecisionSignals(decision);
+  const parts = [];
+  if (P > 0.5) parts.push("You were both at this event");
+  if (X > 0) parts.push("You had a recent interaction");
+  return parts.join(" and ") || "This looks like a good time to connect";
+}
+
+function resolveSuggestedConnectTarget() {
+  const candidateRoutes = ["/connect/", "/connect", "/profile/", "/profile", "/join/"];
+  for (const route of candidateRoutes) {
+    const exists = document.querySelector(`a[href='${route}']`);
+    if (exists) {
+      return { type: "route", target: route };
+    }
+  }
+
+  const url = new URL(window.location.href);
+  const eventId = url.searchParams.get("event");
+  if (eventId) {
+    return { type: "deep-link", target: `beacon://event/${encodeURIComponent(eventId)}` };
+  }
+
+  if (window.location.pathname !== "/") {
+    return { type: "fallback-url", target: "/" };
+  }
+
+  return { type: "fallback-alert", target: "Open Nearify app to connect" };
+}
+
+function handleSuggestConnect() {
+  const action = resolveSuggestedConnectTarget();
+  if (action.type === "route" || action.type === "fallback-url") {
+    window.location.assign(action.target);
+    return;
+  }
+  if (action.type === "deep-link") {
+    window.location.href = action.target;
+    return;
+  }
+  alert(action.target);
+}
+
+function renderRecommendedAction(decision) {
+  if (!decision || decision.action !== "suggest_connect" || Number(decision.confidence) <= 0.2) {
+    return null;
+  }
+
+  const block = document.createElement("div");
+  block.className = "intel-recommended-action";
+  block.innerHTML =
+    `<p class="intel-recommended-title">Recommended next step</p>` +
+    `<p class="intel-recommended-body">${escapeHtml(buildSuggestConnectReason(decision))}.</p>`;
+
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = "intel-connect-btn";
+  button.textContent = "Connect now";
+  button.addEventListener("click", handleSuggestConnect);
+
+  block.appendChild(button);
+  return block;
+}
+
 export function appendDecisionDebug(container, decision) {
   if (!container) return;
   container.querySelectorAll(".intel-decision-debug").forEach((el) => el.remove());
@@ -442,7 +515,7 @@ export async function fetchRawSignals(eventId) {
   }).sort((a, b) => b.score - a.score);
 
   const best = scored[0] || { action: "do_nothing", score: 0 };
-  const confidence = clamp01(c * (0.5 + 0.5 * Math.max(P, X, O, N)));
+  const confidence = clamp01(c * (0.3 * P + 0.3 * X + 0.2 * O + 0.2 * N));
   const result = {
     action: best.action,
     score: Number(best.score.toFixed(4)),
@@ -554,6 +627,10 @@ export function renderIntelligenceInto(container, data, eventMeta = null, fallba
   }
 
   if (!hasData) {
+    const decision = fallbackDecision ?? computeNextBestAction([]);
+    const cta = renderRecommendedAction(decision);
+    if (cta) container.appendChild(cta);
+
     const eventLine = eventMeta
       ? `Interaction data from <strong>${escapeHtml(eventMeta.name)}</strong> is being processed.`
       : "Your interaction data is being processed.";
@@ -568,7 +645,6 @@ export function renderIntelligenceInto(container, data, eventMeta = null, fallba
 
     container.appendChild(empty);
 
-    const decision = fallbackDecision ?? computeNextBestAction([]);
     console.info("[Intelligence] next_best_action", decision);
     appendDecisionDebug(container, decision);
 
@@ -612,6 +688,9 @@ export function renderIntelligenceInto(container, data, eventMeta = null, fallba
   }
 
   if (!hasContent) {
+    const cta = renderRecommendedAction(decision);
+    if (cta) container.appendChild(cta);
+
     const eventLine = eventMeta
       ? `Interaction data from <strong>${escapeHtml(eventMeta.name)}</strong> is being processed.`
       : "Your interaction data is being processed.";
