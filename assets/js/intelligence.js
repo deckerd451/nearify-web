@@ -627,7 +627,8 @@ export function renderIntelligenceInto(container, data, eventMeta = null, fallba
   }
 
   if (!hasData) {
-    const decision = fallbackDecision ?? computeNextBestAction([]);
+    const decision = fallbackDecision ?? computeNextBestAction(data);
+    console.log("[CTA] rendering decision:", decision);
     const cta = renderRecommendedAction(decision);
     if (cta) container.appendChild(cta);
 
@@ -652,7 +653,7 @@ export function renderIntelligenceInto(container, data, eventMeta = null, fallba
     return;
   }
 
-  const decision = computeNextBestAction(data);
+  const decision = fallbackDecision ?? computeNextBestAction(data);
   console.info("[Intelligence] next_best_action", decision);
 
   const buckets = {
@@ -688,6 +689,7 @@ export function renderIntelligenceInto(container, data, eventMeta = null, fallba
   }
 
   if (!hasContent) {
+    console.log("[CTA] rendering decision:", decision);
     const cta = renderRecommendedAction(decision);
     if (cta) container.appendChild(cta);
 
