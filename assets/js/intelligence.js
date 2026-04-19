@@ -14,8 +14,8 @@ const DIRECTION_LABELS = {
 
 const STRENGTH_LEVELS = [
   { min: 75, dots: 3, label: "Strong match" },
-  { min: 45, dots: 2, label: "Good signal"  },
-  { min:  0, dots: 1, label: "Mild signal"  },
+  { min: 45, dots: 2, label: "Good signal" },
+  { min: 0, dots: 1, label: "Mild signal" },
 ];
 
 const EPSILON = 0.0001;
@@ -29,19 +29,34 @@ const DECISION_ACTIONS = [
   "do_nothing",
 ];
 
+const EL_ACTIONS = [
+  "suggest_connect",
+  "suggest_follow_up",
+  "suggest_find",
+  "suggest_rejoin",
+  "suggest_explore",
+  "do_nothing",
+];
+
 function scoreToStrength(score) {
-  return STRENGTH_LEVELS.find(l => score >= l.min) ?? STRENGTH_LEVELS[2];
+  return STRENGTH_LEVELS.find((l) => score >= l.min) ?? STRENGTH_LEVELS[2];
 }
 
 function renderStrengthDots(dots) {
-  return [1, 2, 3].map(i =>
-    `<span class="intel-dot ${i <= dots ? "filled" : "empty"}"></span>`
-  ).join("");
+  return [1, 2, 3]
+    .map((i) => `<span class="intel-dot ${i <= dots ? "filled" : "empty"}"></span>`)
+    .join("");
 }
 
 function getInitials(name) {
   if (!name) return "?";
-  return name.trim().split(/\s+/).slice(0, 2).map(w => w[0]).join("").toUpperCase();
+  return name
+    .trim()
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((w) => w[0])
+    .join("")
+    .toUpperCase();
 }
 
 function escapeHtml(str) {
@@ -150,13 +165,17 @@ export function computeNextBestAction(rows) {
 
   for (const action of DECISION_ACTIONS) {
     if (action === "do_nothing") continue;
+
     const factors = getActionComponentFactors(action, meta, signals);
     const pathExists = rows.length > 0 ? 1 : 0;
     const H = confidence >= 0.3 && risk <= 0.75 && cooldown === 0 && pathExists === 1 ? 1 : 0;
-    const phi = H === 0
-      ? Number.NEGATIVE_INFINITY
-      : (((g0 + g1) / (e + EPSILON)) * factors.a_s * factors.c * factors.r_g)
-          - (0.5 * factors.r) - (0.35 * factors.v) - (0.2 * factors.m);
+    const phi =
+      H === 0
+        ? Number.NEGATIVE_INFINITY
+        : (((g0 + g1) / (e + EPSILON)) * factors.a_s * factors.c * factors.r_g) -
+          0.5 * factors.r -
+          0.35 * factors.v -
+          0.2 * factors.m;
 
     if (phi > best.score) {
       best = {
@@ -201,17 +220,17 @@ function buildEventHeader(eventMeta, hasData) {
     ? `<span class="intel-event-date"> · ${escapeHtml(eventMeta.date)}</span>`
     : "";
 
-  const statusClass = hasData ? "intel-status-ready"   : "intel-status-pending";
-  const statusText  = hasData ? "Ready"                : "Report pending";
+  const statusClass = hasData ? "intel-status-ready" : "intel-status-pending";
+  const statusText = hasData ? "Ready" : "Report pending";
 
   header.innerHTML =
     `<div class="intel-event-badge">` +
-      `<span class="intel-event-name">${escapeHtml(eventMeta.name)}</span>` +
-      datePart +
+    `<span class="intel-event-name">${escapeHtml(eventMeta.name)}</span>` +
+    datePart +
     `</div>` +
     `<div class="intel-report-status ${statusClass}">` +
-      `<span class="intel-status-dot"></span>` +
-      `<span class="intel-status-text">${statusText}</span>` +
+    `<span class="intel-status-dot"></span>` +
+    `<span class="intel-status-text">${statusText}</span>` +
     `</div>`;
 
   return header;
@@ -222,7 +241,8 @@ function buildEventHeader(eventMeta, hasData) {
  */
 function normalizeReason(reason) {
   if (!reason) return "";
-  let r = reason.trim()
+  let r = reason
+    .trim()
     .replace(/worth following up/gi, "notable interaction")
     .replace(/\bfollow[\s-]?up\b/gi, "reconnect")
     .replace(/Brief interaction — notable interaction\./gi, "Brief interaction — a signal worth noting.");
@@ -253,9 +273,10 @@ export function renderIntelCard(item) {
       <span class="intel-strength-label">${strength.label}</span>
     </div>`;
 
-  const missedHint = item.type === "missed"
-    ? `<p class="intel-missed-hint">You were near each other but didn't connect — worth a reach-out.</p>`
-    : "";
+  const missedHint =
+    item.type === "missed"
+      ? `<p class="intel-missed-hint">You were near each other but didn't connect — worth a reach-out.</p>`
+      : "";
 
   card.innerHTML = `
     ${avatar}
@@ -270,60 +291,12 @@ export function renderIntelCard(item) {
   return card;
 }
 
-/**
- * Fetch intelligence for the current user at a given event.
- * @param {string} eventId
- * @returns {Promise<Array|null>}
- */
-export async function fetchIntelligence(eventId) {
-  const user = await getCurrentUser();
-  if (!user) return null;
-
-  console.log("[Intelligence] Current user id:", user.id);
-  console.log("[Intelligence] Requesting get_my_intelligence for event:", eventId);
-
-  const { data, error } = await supabase.rpc("get_my_intelligence", {
-    p_event_id: eventId,
-  });
-
-  if (error) {
-    console.error("[Intelligence] load error:", error);
-    return null;
-  }
-
-  console.log("[Intelligence] rows returned:", data ? data.length : 0);
-console.log("[Intelligence] rows returned:", data ? data.length : 0);
-console.log("[Intelligence] payload type:", Array.isArray(data) ? "array" : typeof data);
-
-// EL fallback (additive, does not affect existing flow)
-if (!data || data.length === 0) {
-  const fallback = await fetchRawSignals(eventId);
-  console.log("[Intelligence] EL fallback:", fallback);
-}
-  return data;
-}
-
-const EL_ACTIONS = [
-  "suggest_connect",
-  "suggest_follow_up",
-  "suggest_find",
-  "suggest_rejoin",
-  "suggest_explore",
-  "do_nothing",
-];
-
-function clamp01(v) {
-  return Math.max(0, Math.min(1, Number.isFinite(v) ? v : 0));
-}
-
 async function resolveCurrentProfileId() {
   const user = await getCurrentUser();
   if (!user?.id) return null;
-  const { data, error } = await supabase
-    .from("profiles")
-    .select("id")
-    .eq("user_id", user.id)
-    .maybeSingle();
+
+  const { data, error } = await supabase.from("profiles").select("id").eq("user_id", user.id).maybeSingle();
+
   if (error) return null;
   return data?.id ?? null;
 }
@@ -331,12 +304,8 @@ async function resolveCurrentProfileId() {
 function computeSharedInterestScore(currentProfile, peerProfiles) {
   const toSet = (obj) => {
     if (!obj || typeof obj !== "object") return new Set();
-    const raw =
-      obj.interests ??
-      obj.tags ??
-      obj.topics ??
-      obj.intent_secondary ??
-      [];
+
+    const raw = obj.interests ?? obj.tags ?? obj.topics ?? obj.intent_secondary ?? [];
     const arr = Array.isArray(raw) ? raw : [];
     return new Set(arr.map((x) => String(x).trim().toLowerCase()).filter(Boolean));
   };
@@ -351,18 +320,26 @@ function computeSharedInterestScore(currentProfile, peerProfiles) {
     const overlap = [...mine].filter((x) => theirs.has(x)).length;
     overlapTotal += overlap / Math.max(1, Math.min(mine.size, theirs.size));
   }
+
   return clamp01(overlapTotal / peerProfiles.length);
 }
 
 function actionSuitability(action, s) {
   switch (action) {
-    case "suggest_connect":   return 0.5 + 0.4 * s.P + 0.1 * s.O;
-    case "suggest_follow_up": return 0.5 + 0.4 * s.X + 0.1 * s.N;
-    case "suggest_find":      return 0.4 + 0.4 * s.O + 0.2 * (1 - s.X);
-    case "suggest_rejoin":    return 0.4 + 0.4 * (1 - s.N) + 0.2 * s.P;
-    case "suggest_explore":   return 0.5 + 0.3 * (1 - s.O) + 0.2 * s.N;
-    case "do_nothing":        return 0.3 + 0.7 * (1 - s.P);
-    default:                  return 0.5;
+    case "suggest_connect":
+      return 0.5 + 0.4 * s.P + 0.1 * s.O;
+    case "suggest_follow_up":
+      return 0.5 + 0.4 * s.X + 0.1 * s.N;
+    case "suggest_find":
+      return 0.4 + 0.4 * s.O + 0.2 * (1 - s.X);
+    case "suggest_rejoin":
+      return 0.4 + 0.4 * (1 - s.N) + 0.2 * s.P;
+    case "suggest_explore":
+      return 0.5 + 0.3 * (1 - s.O) + 0.2 * s.N;
+    case "do_nothing":
+      return 0.3 + 0.7 * (1 - s.P);
+    default:
+      return 0.5;
   }
 }
 
@@ -380,6 +357,7 @@ export async function fetchRawSignals(eventId) {
     confidence: 0,
     components: { P: 0, X: 0, O: 0, N: 0, note: "no_signals" },
   };
+
   if (!eventId) return fallback;
 
   const profileId = await resolveCurrentProfileId();
@@ -395,9 +373,7 @@ export async function fetchRawSignals(eventId) {
       .select("from_profile_id, to_profile_id, interaction_type, strength, dwell_seconds, signal_strength, created_at")
       .eq("event_id", eventId)
       .or(`from_profile_id.eq.${profileId},to_profile_id.eq.${profileId}`),
-    supabase
-      .from("profiles")
-      .select("*"),
+    supabase.from("profiles").select("*"),
   ]);
 
   const attendeeRows = attendees || [];
@@ -432,8 +408,9 @@ export async function fetchRawSignals(eventId) {
     const ts = r.created_at ? new Date(r.created_at).getTime() : 0;
     return Math.max(maxTs, ts);
   }, 0);
+
   const ageHours = latestTs ? (Date.now() - latestTs) / (1000 * 60 * 60) : 72;
-  const N = clamp01(1 - (ageHours / 72));
+  const N = clamp01(1 - ageHours / 72);
 
   const signals = { P, X, O, N };
   const epsilon = 0.001;
@@ -463,8 +440,22 @@ export async function fetchRawSignals(eventId) {
     confidence: Number(confidence.toFixed(4)),
     components: {
       ...signals,
-      g0, g1, e, epsilon, c, r_g, alpha, beta, delta, r, v, m,
-      scored_actions: scored.map((s) => ({ action: s.action, score: Number(s.score.toFixed(4)) })),
+      g0,
+      g1,
+      e,
+      epsilon,
+      c,
+      r_g,
+      alpha,
+      beta,
+      delta,
+      r,
+      v,
+      m,
+      scored_actions: scored.map((s) => ({
+        action: s.action,
+        score: Number(s.score.toFixed(4)),
+      })),
     },
   };
 
@@ -475,24 +466,57 @@ export async function fetchRawSignals(eventId) {
 }
 
 /**
+ * Fetch intelligence for the current user at a given event.
+ * @param {string} eventId
+ * @returns {Promise<Array|null>}
+ */
+export async function fetchIntelligence(eventId) {
+  const user = await getCurrentUser();
+  if (!user) return null;
+
+  console.log("[Intelligence] Current user id:", user.id);
+  console.log("[Intelligence] Requesting get_my_intelligence for event:", eventId);
+
+  const { data, error } = await supabase.rpc("get_my_intelligence", {
+    p_event_id: eventId,
+  });
+
+  if (error) {
+    console.error("[Intelligence] load error:", error);
+    return null;
+  }
+
+  console.log("[Intelligence] rows returned:", data ? data.length : 0);
+  console.log("[Intelligence] payload type:", Array.isArray(data) ? "array" : typeof data);
+
+  if (!data || data.length === 0) {
+    const fallback = await fetchRawSignals(eventId);
+    console.log("[Intelligence] EL fallback:", fallback);
+  }
+
+  return data;
+}
+
+/**
  * Fetch event metadata (name, date) for display in intelligence sections.
  * @param {string} eventId
  * @returns {Promise<{name:string, date:string|null}|null>}
  */
 export async function fetchEventMeta(eventId) {
   if (!eventId) return null;
+
   try {
-    const { data, error } = await supabase
-      .from("events")
-      .select("name, starts_at")
-      .eq("id", eventId)
-      .maybeSingle();
+    const { data, error } = await supabase.from("events").select("name, starts_at").eq("id", eventId).maybeSingle();
+
     if (error || !data) return null;
+
     return {
       name: data.name,
       date: data.starts_at
         ? new Date(data.starts_at).toLocaleDateString(undefined, {
-            month: "short", day: "numeric", year: "numeric"
+            month: "short",
+            day: "numeric",
+            year: "numeric",
           })
         : null,
     };
@@ -513,7 +537,6 @@ export function renderIntelligenceInto(container, data, eventMeta = null) {
 
   const hasData = !!(data && data.length > 0);
 
-  // Event header — always shown when we know which event this is
   if (eventMeta) {
     container.appendChild(buildEventHeader(eventMeta, hasData));
   }
@@ -530,10 +553,13 @@ export function renderIntelligenceInto(container, data, eventMeta = null) {
       `<p class="intel-empty-body">${eventLine} ` +
       `Reports are typically ready within a few hours of the event ending.</p>` +
       `<button class="intel-refresh-btn" onclick="window.location.reload()">Refresh to check</button>`;
+
     container.appendChild(empty);
+
     const fallbackDecision = computeNextBestAction([]);
     console.info("[Intelligence] next_best_action", fallbackDecision);
     appendDecisionDebug(container, fallbackDecision);
+
     container.style.display = "";
     return;
   }
@@ -543,8 +569,8 @@ export function renderIntelligenceInto(container, data, eventMeta = null) {
 
   const buckets = {
     recommended: { title: "Strongest interactions", items: [] },
-    follow_up:   { title: "People you met",         items: [] },
-    missed:      { title: "You missed",             items: [] },
+    follow_up: { title: "People you met", items: [] },
+    missed: { title: "You missed", items: [] },
   };
 
   data.forEach((d) => {
@@ -577,6 +603,7 @@ export function renderIntelligenceInto(container, data, eventMeta = null) {
     const eventLine = eventMeta
       ? `Interaction data from <strong>${escapeHtml(eventMeta.name)}</strong> is being processed.`
       : "Your interaction data is being processed.";
+
     const empty = document.createElement("div");
     empty.className = "intel-empty";
     empty.innerHTML =
@@ -584,10 +611,10 @@ export function renderIntelligenceInto(container, data, eventMeta = null) {
       `<p class="intel-empty-body">${eventLine} ` +
       `Reports are typically ready within a few hours of the event ending.</p>` +
       `<button class="intel-refresh-btn" onclick="window.location.reload()">Refresh to check</button>`;
+
     container.appendChild(empty);
   }
 
   appendDecisionDebug(container, decision);
-
   container.style.display = "";
 }
