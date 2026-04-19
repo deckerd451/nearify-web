@@ -146,8 +146,9 @@ async function loadHomeIntelligence(eventId) {
   if (!intelSection || !intelContainer) return;
 
   const data = await fetchIntelligence(eventId);
-  if (!data || data.length === 0) return;
 
+  // Always show the section for signed-in users with an event context,
+  // even when empty — renderIntelligenceInto handles the pending state
   renderIntelligenceInto(intelContainer, data);
   intelSection.style.display = "";
 }
