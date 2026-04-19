@@ -363,10 +363,14 @@ export async function fetchRawSignals(eventId) {
   const profileId = await resolveCurrentProfileId();
   if (!profileId) return fallback;
 
-  const [{ data: attendees }, { data: interactions }, { data: profiles }] = await Promise.all([
+  const [
+    { data: attendees, error: attendeesError },
+    { data: interactions, error: interactionsError },
+    { data: profiles, error: profilesError },
+  ] = await Promise.all([
     supabase
       .from("event_attendees")
-      .select("profile_id, intent_primary, intent_secondary, created_at")
+      .select("profile_id")
       .eq("event_id", eventId),
     supabase
       .from("interaction_events")
@@ -375,6 +379,11 @@ export async function fetchRawSignals(eventId) {
       .or(`from_profile_id.eq.${profileId},to_profile_id.eq.${profileId}`),
     supabase.from("profiles").select("*"),
   ]);
+
+  console.log("[EL] attendees query result:", attendees);
+  if (attendeesError) console.error("[EL] attendees query error:", attendeesError);
+  if (interactionsError) console.error("[EL] interactions query error:", interactionsError);
+  if (profilesError) console.error("[EL] profiles query error:", profilesError);
 
   const attendeeRows = attendees || [];
   const interactionRows = interactions || [];
@@ -468,11 +477,11 @@ export async function fetchRawSignals(eventId) {
 /**
  * Fetch intelligence for the current user at a given event.
  * @param {string} eventId
- * @returns {Promise<Array|null>}
+ * @returns {Promise<{data:Array|null,fallbackDecision:object|null}>}
  */
 export async function fetchIntelligence(eventId) {
   const user = await getCurrentUser();
-  if (!user) return null;
+  if (!user) return { data: null, fallbackDecision: null };
 
   console.log("[Intelligence] Current user id:", user.id);
   console.log("[Intelligence] Requesting get_my_intelligence for event:", eventId);
@@ -483,18 +492,21 @@ export async function fetchIntelligence(eventId) {
 
   if (error) {
     console.error("[Intelligence] load error:", error);
-    return null;
+    const fallbackDecision = await fetchRawSignals(eventId);
+    console.log("[Intelligence] EL fallback:", fallbackDecision);
+    return { data: null, fallbackDecision };
   }
 
   console.log("[Intelligence] rows returned:", data ? data.length : 0);
   console.log("[Intelligence] payload type:", Array.isArray(data) ? "array" : typeof data);
 
   if (!data || data.length === 0) {
-    const fallback = await fetchRawSignals(eventId);
-    console.log("[Intelligence] EL fallback:", fallback);
+    const fallbackDecision = await fetchRawSignals(eventId);
+    console.log("[Intelligence] EL fallback:", fallbackDecision);
+    return { data, fallbackDecision };
   }
 
-  return data;
+  return { data, fallbackDecision: null };
 }
 
 /**
@@ -532,7 +544,7 @@ export async function fetchEventMeta(eventId) {
  * @param {Array|null}       data       - rows from fetchIntelligence
  * @param {{name,date}|null} eventMeta  - from fetchEventMeta; shown in header + empty state
  */
-export function renderIntelligenceInto(container, data, eventMeta = null) {
+export function renderIntelligenceInto(container, data, eventMeta = null, fallbackDecision = null) {
   container.innerHTML = "";
 
   const hasData = !!(data && data.length > 0);
@@ -556,9 +568,9 @@ export function renderIntelligenceInto(container, data, eventMeta = null) {
 
     container.appendChild(empty);
 
-    const fallbackDecision = computeNextBestAction([]);
-    console.info("[Intelligence] next_best_action", fallbackDecision);
-    appendDecisionDebug(container, fallbackDecision);
+    const decision = fallbackDecision ?? computeNextBestAction([]);
+    console.info("[Intelligence] next_best_action", decision);
+    appendDecisionDebug(container, decision);
 
     container.style.display = "";
     return;
