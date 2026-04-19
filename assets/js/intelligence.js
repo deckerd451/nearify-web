@@ -231,6 +231,12 @@ function buildPostEventSummary(decision, hasData) {
     : "Your post-event intelligence report is taking shape from early event signals.";
 }
 
+export function hasMeaningfulFallbackDecision(decision) {
+  if (!decision || typeof decision !== "object") return false;
+  const confidence = Number(decision.confidence ?? 0);
+  return decision.action !== "do_nothing" && confidence > 0.2;
+}
+
 function buildSignalInsights(decision) {
   const { P, X, N } = getDecisionSignals(decision);
   const insights = [];
@@ -417,7 +423,7 @@ function renderPostEventSummary(container, decision, hasData) {
  * Build the event context header shown at the top of every intelligence section.
  * Includes event name, date, and a live/pending status badge.
  */
-function buildEventHeader(eventMeta, hasData) {
+function buildEventHeader(eventMeta, hasData, hasMeaningfulFallback = false) {
   const header = document.createElement("div");
   header.className = "intel-event-header";
 
@@ -425,7 +431,11 @@ function buildEventHeader(eventMeta, hasData) {
     ? `<span class="intel-event-date"> · ${escapeHtml(eventMeta.date)}</span>`
     : "";
 
-  const statusClass = hasData ? "intel-status-ready" : "intel-status-pending";
+  const statusClass = hasData
+    ? "intel-status-ready"
+    : hasMeaningfulFallback
+      ? "intel-status-pending intel-status-soft"
+      : "intel-status-pending";
   const statusText = hasData ? "Ready" : "Report pending";
 
   header.innerHTML =
@@ -817,9 +827,10 @@ export function renderIntelligenceInto(container, data, eventMeta = null, fallba
 
   const hasData = !!(data && data.length > 0);
   const decision = fallbackDecision ?? computeNextBestAction(data);
+  const hasMeaningfulFallback = !hasData && hasMeaningfulFallbackDecision(fallbackDecision);
 
   if (eventMeta) {
-    container.appendChild(buildEventHeader(eventMeta, hasData));
+    container.appendChild(buildEventHeader(eventMeta, hasData, hasMeaningfulFallback));
   }
 
   renderPostEventSummary(container, decision, hasData);
@@ -829,7 +840,9 @@ export function renderIntelligenceInto(container, data, eventMeta = null, fallba
 
     const pending = document.createElement("p");
     pending.className = "intel-processing-note";
-    pending.textContent = "Full report still processing.";
+    pending.textContent = hasMeaningfulFallback
+      ? "Early event intelligence is available. You already have a recommended next step. Full report still processing."
+      : "Full report still processing.";
     container.appendChild(pending);
 
     appendRecommendedAction(container, decision);
