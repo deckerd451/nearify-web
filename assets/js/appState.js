@@ -9,6 +9,7 @@
  */
 import { supabase } from "./supabaseClient.js";
 
+// localStorage so event context survives browser close (post-event intelligence)
 const STORAGE_KEY = "nearify_current_event";
 
 /** @returns {Promise<import("@supabase/supabase-js").User | null>} */
@@ -31,24 +32,24 @@ export function isAuthenticated() {
 /**
  * Resolve the current event ID from (in priority order):
  * 1. URL ?event= parameter
- * 2. sessionStorage
+ * 2. localStorage
  */
 export function getCurrentEventId() {
   const params = new URLSearchParams(window.location.search);
   const fromUrl = params.get("event");
   if (fromUrl) {
-    try { sessionStorage.setItem(STORAGE_KEY, fromUrl); } catch (_) {}
+    try { localStorage.setItem(STORAGE_KEY, fromUrl); } catch (_) {}
     return fromUrl;
   }
-  try { return sessionStorage.getItem(STORAGE_KEY); } catch (_) {}
+  try { return localStorage.getItem(STORAGE_KEY); } catch (_) {}
   return null;
 }
 
 /**
- * Persist an event ID into session so other pages can pick it up.
+ * Persist an event ID so other pages and future sessions can pick it up.
  */
 export function setCurrentEventId(eventId) {
-  try { sessionStorage.setItem(STORAGE_KEY, eventId); } catch (_) {}
+  try { localStorage.setItem(STORAGE_KEY, eventId); } catch (_) {}
 }
 
 console.log("[AppState] loaded");

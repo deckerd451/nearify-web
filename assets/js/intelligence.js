@@ -117,9 +117,12 @@ export function renderIntelligenceInto(container, data) {
   container.innerHTML = "";
 
   if (!data || data.length === 0) {
-    const empty = document.createElement("p");
+    const empty = document.createElement("div");
     empty.className = "intel-empty";
-    empty.textContent = "No intelligence yet. Use Nearify at the event and check back after.";
+    empty.innerHTML =
+      `<p class="intel-empty-title">Your post-event report isn't ready yet.</p>` +
+      `<p class="intel-empty-body">Results are prepared within a few hours of the event ending. ` +
+      `Make sure you used Nearify during the event — the more interactions, the richer your report.</p>`;
     container.appendChild(empty);
     container.style.display = "";
     return;
@@ -158,9 +161,12 @@ export function renderIntelligenceInto(container, data) {
   }
 
   if (!hasContent) {
-    const empty = document.createElement("p");
+    const empty = document.createElement("div");
     empty.className = "intel-empty";
-    empty.textContent = "No intelligence yet. Use Nearify at the event and check back after.";
+    empty.innerHTML =
+      `<p class="intel-empty-title">Your post-event report isn't ready yet.</p>` +
+      `<p class="intel-empty-body">Results are prepared within a few hours of the event ending. ` +
+      `Make sure you used Nearify during the event — the more interactions, the richer your report.</p>`;
     container.appendChild(empty);
   }
 

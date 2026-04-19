@@ -1301,9 +1301,22 @@ code {
 
 .intel-empty {
   text-align: center;
-  color: #8fa0b8;
-  font-size: 16px;
   padding: 40px 20px;
+  max-width: 480px;
+  margin: 0 auto;
+}
+
+.intel-empty-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  margin-bottom: 10px;
+}
+
+.intel-empty-body {
+  font-size: 14px;
+  color: var(--color-text-muted);
+  line-height: 1.65;
 }
 
 @media (max-width: 720px) {
