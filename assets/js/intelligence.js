@@ -292,8 +292,186 @@ export async function fetchIntelligence(eventId) {
   }
 
   console.log("[Intelligence] rows returned:", data ? data.length : 0);
-  console.log("[Intelligence] payload type:", Array.isArray(data) ? "array" : typeof data);
+console.log("[Intelligence] rows returned:", data ? data.length : 0);
+console.log("[Intelligence] payload type:", Array.isArray(data) ? "array" : typeof data);
+
+// EL fallback (additive, does not affect existing flow)
+if (!data || data.length === 0) {
+  const fallback = await fetchRawSignals(eventId);
+  console.log("[Intelligence] EL fallback:", fallback);
+}
   return data;
+}
+
+const EL_ACTIONS = [
+  "suggest_connect",
+  "suggest_follow_up",
+  "suggest_find",
+  "suggest_rejoin",
+  "suggest_explore",
+  "do_nothing",
+];
+
+function clamp01(v) {
+  return Math.max(0, Math.min(1, Number.isFinite(v) ? v : 0));
+}
+
+async function resolveCurrentProfileId() {
+  const user = await getCurrentUser();
+  if (!user?.id) return null;
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("id")
+    .eq("user_id", user.id)
+    .maybeSingle();
+  if (error) return null;
+  return data?.id ?? null;
+}
+
+function computeSharedInterestScore(currentProfile, peerProfiles) {
+  const toSet = (obj) => {
+    if (!obj || typeof obj !== "object") return new Set();
+    const raw =
+      obj.interests ??
+      obj.tags ??
+      obj.topics ??
+      obj.intent_secondary ??
+      [];
+    const arr = Array.isArray(raw) ? raw : [];
+    return new Set(arr.map((x) => String(x).trim().toLowerCase()).filter(Boolean));
+  };
+
+  const mine = toSet(currentProfile);
+  if (mine.size === 0 || !peerProfiles.length) return 0;
+
+  let overlapTotal = 0;
+  for (const peer of peerProfiles) {
+    const theirs = toSet(peer);
+    if (theirs.size === 0) continue;
+    const overlap = [...mine].filter((x) => theirs.has(x)).length;
+    overlapTotal += overlap / Math.max(1, Math.min(mine.size, theirs.size));
+  }
+  return clamp01(overlapTotal / peerProfiles.length);
+}
+
+function actionSuitability(action, s) {
+  switch (action) {
+    case "suggest_connect":   return 0.5 + 0.4 * s.P + 0.1 * s.O;
+    case "suggest_follow_up": return 0.5 + 0.4 * s.X + 0.1 * s.N;
+    case "suggest_find":      return 0.4 + 0.4 * s.O + 0.2 * (1 - s.X);
+    case "suggest_rejoin":    return 0.4 + 0.4 * (1 - s.N) + 0.2 * s.P;
+    case "suggest_explore":   return 0.5 + 0.3 * (1 - s.O) + 0.2 * s.N;
+    case "do_nothing":        return 0.3 + 0.7 * (1 - s.P);
+    default:                  return 0.5;
+  }
+}
+
+/**
+ * Fetch raw interaction signals and compute next-best-action.
+ * Never modifies RPC/UI behavior; this is additive fallback intelligence.
+ *
+ * @param {string} eventId
+ * @returns {Promise<{action:string, score:number, confidence:number, components:object}>}
+ */
+export async function fetchRawSignals(eventId) {
+  const fallback = {
+    action: "do_nothing",
+    score: 0,
+    confidence: 0,
+    components: { P: 0, X: 0, O: 0, N: 0, note: "no_signals" },
+  };
+  if (!eventId) return fallback;
+
+  const profileId = await resolveCurrentProfileId();
+  if (!profileId) return fallback;
+
+  const [{ data: attendees }, { data: interactions }, { data: profiles }] = await Promise.all([
+    supabase
+      .from("event_attendees")
+      .select("profile_id, intent_primary, intent_secondary, created_at")
+      .eq("event_id", eventId),
+    supabase
+      .from("interaction_events")
+      .select("from_profile_id, to_profile_id, interaction_type, strength, dwell_seconds, signal_strength, created_at")
+      .eq("event_id", eventId)
+      .or(`from_profile_id.eq.${profileId},to_profile_id.eq.${profileId}`),
+    supabase
+      .from("profiles")
+      .select("*"),
+  ]);
+
+  const attendeeRows = attendees || [];
+  const interactionRows = interactions || [];
+  const profileRows = profiles || [];
+  const attendeeIds = new Set(attendeeRows.map((a) => a.profile_id));
+  const relevantProfiles = profileRows.filter((p) => attendeeIds.has(p.id));
+  const me = relevantProfiles.find((p) => p.id === profileId);
+  const peers = relevantProfiles.filter((p) => p.id !== profileId);
+
+  if (!attendeeRows.length && !interactionRows.length) {
+    console.log("[EL] action:", fallback.action);
+    console.log("[EL] score:", fallback.score);
+    console.log("[EL] components:", fallback.components);
+    return fallback;
+  }
+
+  const coPresent = attendeeIds.has(profileId) ? 1 : 0;
+  const rawStrength = interactionRows.reduce((acc, r) => {
+    const qrBoost = r.interaction_type === "qr_confirmed" ? 0.5 : 0;
+    const dwell = Math.min(1, (Number(r.dwell_seconds) || 0) / 300);
+    const s = clamp01((Number(r.strength) || 0) / 100);
+    const sig = clamp01((Number(r.signal_strength) || 0) / 100);
+    return acc + 0.5 * dwell + 0.25 * s + 0.25 * sig + qrBoost;
+  }, 0);
+
+  const P = clamp01(coPresent);
+  const X = clamp01(rawStrength / Math.max(1, interactionRows.length));
+  const O = computeSharedInterestScore(me, peers);
+
+  const latestTs = interactionRows.reduce((maxTs, r) => {
+    const ts = r.created_at ? new Date(r.created_at).getTime() : 0;
+    return Math.max(maxTs, ts);
+  }, 0);
+  const ageHours = latestTs ? (Date.now() - latestTs) / (1000 * 60 * 60) : 72;
+  const N = clamp01(1 - (ageHours / 72));
+
+  const signals = { P, X, O, N };
+  const epsilon = 0.001;
+  const g0 = P;
+  const g1 = X;
+  const e = 1 - O;
+  const c = clamp01((Number(!!me) + Number(peers.length > 0) + Number(interactionRows.length > 0)) / 3);
+  const r_g = N;
+  const alpha = 0.25;
+  const beta = 0.2;
+  const delta = 0.2;
+  const r = 1 - X;
+  const v = Math.abs(P - X);
+  const m = 1 - O;
+
+  const scored = EL_ACTIONS.map((action) => {
+    const a_s = clamp01(actionSuitability(action, signals));
+    const score = (((g0 + g1) / (e + epsilon)) * a_s * c * r_g) - alpha * r - beta * v - delta * m;
+    return { action, score };
+  }).sort((a, b) => b.score - a.score);
+
+  const best = scored[0] || { action: "do_nothing", score: 0 };
+  const confidence = clamp01(c * (0.5 + 0.5 * Math.max(P, X, O, N)));
+  const result = {
+    action: best.action,
+    score: Number(best.score.toFixed(4)),
+    confidence: Number(confidence.toFixed(4)),
+    components: {
+      ...signals,
+      g0, g1, e, epsilon, c, r_g, alpha, beta, delta, r, v, m,
+      scored_actions: scored.map((s) => ({ action: s.action, score: Number(s.score.toFixed(4)) })),
+    },
+  };
+
+  console.log("[EL] action:", result.action);
+  console.log("[EL] score:", result.score);
+  console.log("[EL] components:", result.components);
+  return result;
 }
 
 /**
