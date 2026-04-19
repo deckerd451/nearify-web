@@ -130,6 +130,7 @@ export async function fetchIntelligence(eventId) {
   if (!user) return null;
 
   console.log("[Intelligence] Current user id:", user.id);
+  console.log("[Intelligence] Requesting get_my_intelligence for event:", eventId);
 
   const { data, error } = await supabase.rpc("get_my_intelligence", {
     p_event_id: eventId,
@@ -141,6 +142,7 @@ export async function fetchIntelligence(eventId) {
   }
 
   console.log("[Intelligence] rows returned:", data ? data.length : 0);
+  console.log("[Intelligence] payload type:", Array.isArray(data) ? "array" : typeof data);
   return data;
 }
 
