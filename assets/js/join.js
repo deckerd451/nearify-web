@@ -4,6 +4,7 @@ import {
   fetchIntelligence,
   fetchEventMeta,
   computeNextBestAction,
+  appendRecommendedAction,
   appendDecisionDebug,
 } from "./intelligence.js";
 import { setCurrentEventId } from "./appState.js";
@@ -342,6 +343,8 @@ async function loadIntelligence() {
   if (!eventId || !intelligencePanel) return;
 
   try {
+    intelligencePanel.querySelectorAll(".intel-recommended-action").forEach((el) => el.remove());
+
     const [{ data, fallbackDecision }, eventMeta] = await Promise.all([
       fetchIntelligence(eventId),
       fetchEventMeta(eventId),
@@ -372,6 +375,7 @@ async function loadIntelligence() {
       const decision = fallbackDecision ?? computeNextBestAction([]);
       console.info("[Join] next_best_action", decision);
       appendDecisionDebug(headerEl || intelligencePanel, decision);
+      appendRecommendedAction(intelligencePanel, decision);
       if (intelEmpty) {
         const titleP = intelEmpty.querySelector(".intel-empty-title");
         const bodyP  = intelEmpty.querySelector(".intel-empty-body");
@@ -397,6 +401,7 @@ async function loadIntelligence() {
     const decision = computeNextBestAction(data);
     console.info("[Join] next_best_action", decision);
     appendDecisionDebug(headerEl || intelligencePanel, decision);
+    appendRecommendedAction(intelligencePanel, decision);
 
     const recommended = data.filter((d) => d.type === "recommended");
     const missed      = data.filter((d) => d.type === "missed");
