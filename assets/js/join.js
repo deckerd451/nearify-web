@@ -342,7 +342,7 @@ async function loadIntelligence() {
   if (!eventId || !intelligencePanel) return;
 
   try {
-    const [data, eventMeta] = await Promise.all([
+    const [{ data, fallbackDecision }, eventMeta] = await Promise.all([
       fetchIntelligence(eventId),
       fetchEventMeta(eventId),
     ]);
@@ -369,9 +369,9 @@ async function loadIntelligence() {
     }
 
     if (!hasData) {
-      const fallbackDecision = computeNextBestAction([]);
-      console.info("[Join] next_best_action", fallbackDecision);
-      appendDecisionDebug(headerEl || intelligencePanel, fallbackDecision);
+      const decision = fallbackDecision ?? computeNextBestAction([]);
+      console.info("[Join] next_best_action", decision);
+      appendDecisionDebug(headerEl || intelligencePanel, decision);
       if (intelEmpty) {
         const titleP = intelEmpty.querySelector(".intel-empty-title");
         const bodyP  = intelEmpty.querySelector(".intel-empty-body");
