@@ -1121,6 +1121,14 @@ code {
 
 .intel-avatar-placeholder {
   background: rgba(0, 209, 255, 0.14);
+  color: var(--color-accent);
+  font-size: 13px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  letter-spacing: 0.02em;
+  user-select: none;
 }
 
 .intel-card-body {
@@ -1141,20 +1149,64 @@ code {
   margin-bottom: 6px;
 }
 
-.intel-card-score {
-  color: #7f8da4;
-  font-size: 12px;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-}
-
 .intel-direction {
   font-size: 12px;
-  margin-bottom: 4px;
+  font-weight: 600;
+  margin-bottom: 6px;
   display: inline-block;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 .intel-direction.outgoing { color: #6ec6a5; }
 .intel-direction.incoming { color: #7ab8f5; }
+
+/* Strength indicator */
+.intel-strength {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.intel-dots {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+
+.intel-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.intel-dot.filled { background: var(--color-accent); }
+.intel-dot.empty  { background: rgba(0, 209, 255, 0.18); }
+
+.intel-strength-label {
+  font-size: 11px;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+}
+
+/* Section count badge */
+.intel-section-count {
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--color-text-muted);
+  margin-left: 6px;
+}
+
+/* Missed section reach-out hint */
+.intel-missed-hint {
+  font-size: 12px;
+  color: var(--color-text-muted);
+  font-style: italic;
+  margin-top: 6px;
+  line-height: 1.5;
+}
 
 .intel-empty {
   text-align: center;

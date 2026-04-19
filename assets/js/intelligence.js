@@ -7,15 +7,43 @@
 import { supabase } from "./supabaseClient.js";
 import { getCurrentUser } from "./appState.js";
 
+const DIRECTION_LABELS = {
+  incoming: "They noticed you",
+  outgoing: "You connected",
+};
+
+const STRENGTH_LEVELS = [
+  { min: 75, dots: 3, label: "Strong match" },
+  { min: 45, dots: 2, label: "Good signal"  },
+  { min:  0, dots: 1, label: "Mild signal"  },
+];
+
+function scoreToStrength(score) {
+  return STRENGTH_LEVELS.find(l => score >= l.min) ?? STRENGTH_LEVELS[2];
+}
+
+function renderStrengthDots(dots) {
+  return [1, 2, 3].map(i =>
+    `<span class="intel-dot ${i <= dots ? "filled" : "empty"}"></span>`
+  ).join("");
+}
+
+function getInitials(name) {
+  if (!name) return "?";
+  return name.trim().split(/\s+/).slice(0, 2).map(w => w[0]).join("").toUpperCase();
+}
+
 /**
- * Normalize backend reason text to remove follow-up language.
+ * Normalize backend reason text.
  */
 function normalizeReason(reason) {
   if (!reason) return "";
-  return reason
+  let r = reason.trim()
     .replace(/worth following up/gi, "notable interaction")
-    .replace(/follow up/gi, "notable connection")
-    .replace(/Brief interaction — notable interaction\./gi, "Brief interaction — notable signal.");
+    .replace(/\bfollow[\s-]?up\b/gi, "reconnect")
+    .replace(/Brief interaction — notable interaction\./gi, "Brief interaction — a signal worth noting.");
+  if (!/[.!?]$/.test(r)) r += ".";
+  return r.charAt(0).toUpperCase() + r.slice(1);
 }
 
 /**
@@ -25,13 +53,25 @@ export function renderIntelCard(item) {
   const card = document.createElement("div");
   card.className = "intel-card";
 
+  const initials = getInitials(item.target_name);
   const avatar = item.target_avatar
-    ? `<img class="intel-avatar" src="${item.target_avatar}" alt="" />`
-    : `<div class="intel-avatar intel-avatar-placeholder"></div>`;
+    ? `<img class="intel-avatar" src="${item.target_avatar}" alt="${initials}" />`
+    : `<div class="intel-avatar intel-avatar-placeholder" aria-hidden="true">${initials}</div>`;
 
-  const directionLabel = item.direction === "incoming"
-    ? `<span class="intel-direction incoming">You connected</span>`
-    : `<span class="intel-direction outgoing">You connected</span>`;
+  const directionText = DIRECTION_LABELS[item.direction] ?? "Interaction";
+  const directionClass = item.direction === "incoming" ? "incoming" : "outgoing";
+  const directionLabel = `<span class="intel-direction ${directionClass}">${directionText}</span>`;
+
+  const strength = scoreToStrength(Math.round(item.score ?? 0));
+  const strengthHtml = `
+    <div class="intel-strength">
+      <span class="intel-dots">${renderStrengthDots(strength.dots)}</span>
+      <span class="intel-strength-label">${strength.label}</span>
+    </div>`;
+
+  const missedHint = item.type === "missed"
+    ? `<p class="intel-missed-hint">You were near each other but didn't connect — worth a reach-out.</p>`
+    : "";
 
   card.innerHTML = `
     ${avatar}
@@ -39,7 +79,8 @@ export function renderIntelCard(item) {
       <div class="intel-card-name">${item.target_name || "Attendee"}</div>
       ${directionLabel}
       <div class="intel-card-reason">${normalizeReason(item.reason)}</div>
-      <div class="intel-card-score">Score: ${Math.round(item.score)}</div>
+      ${strengthHtml}
+      ${missedHint}
     </div>
   `;
   return card;
@@ -71,12 +112,6 @@ export async function fetchIntelligence(eventId) {
 
 /**
  * Render intelligence data into a container element.
- *
- * Expects the container to have (or will create) sub-sections for
- * follow_up, missed, and recommended types.
- *
- * @param {HTMLElement} container - parent element to render into
- * @param {Array} data - intelligence rows from fetchIntelligence
  */
 export function renderIntelligenceInto(container, data) {
   container.innerHTML = "";
@@ -92,8 +127,8 @@ export function renderIntelligenceInto(container, data) {
 
   const buckets = {
     recommended: { title: "Strongest interactions", items: [] },
-    follow_up:   { title: "People you met", items: [] },
-    missed:      { title: "You missed", items: [] },
+    follow_up:   { title: "People you met",         items: [] },
+    missed:      { title: "You missed",             items: [] },
   };
 
   data.forEach((d) => {
@@ -111,7 +146,7 @@ export function renderIntelligenceInto(container, data) {
 
     const title = document.createElement("h3");
     title.className = "intel-section-title";
-    title.textContent = bucket.title;
+    title.innerHTML = `${bucket.title} <span class="intel-section-count">${bucket.items.length}</span>`;
     section.appendChild(title);
 
     const cards = document.createElement("div");
