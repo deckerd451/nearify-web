@@ -1316,6 +1316,12 @@ code {
   background: rgba(11, 18, 32, 0.65);
 }
 
+.intel-recommended-action[data-cta-debug="true"] {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
 .intel-recommended-title {
   margin: 0 0 6px;
   font-size: 14px;
