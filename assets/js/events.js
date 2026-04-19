@@ -55,7 +55,7 @@ export async function getOrganizerProfileId() {
 export async function fetchPublicEvents() {
   const { data, error } = await supabase
     .from("events")
-    .select("id, name, slug, location, starts_at, created_at")
+    .select("id, name, slug, location, starts_at, description, created_at")
     .is("deleted_at", null)
     .order("starts_at", { ascending: true, nullsFirst: false })
     .limit(50);
