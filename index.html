@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Nearify</title>
+  <title>Nearify — Real-time event networking</title>
   <meta name="description" content="Discover and connect with people around you in real time." />
 
   <link rel="stylesheet" href="assets/css/styles.css" />
@@ -16,7 +16,7 @@
     <div class="nav-links">
       <a href="#how">How it works</a>
       <a href="events/index.html">Events</a>
-      <a href="admin/event-setup.html">Organizer Setup</a>
+      <a href="admin/event-setup.html">Host an Event</a>
     </div>
     <button class="nav-hamburger" id="navHamburger" aria-label="Open menu" aria-expanded="false">
       <span></span><span></span><span></span>
@@ -25,7 +25,7 @@
   <nav class="nav-drawer" id="navDrawer" aria-label="Site navigation">
     <a href="#how">How it works</a>
     <a href="events/index.html">Events</a>
-    <a href="admin/event-setup.html" class="nav-drawer-highlight">Organizer Setup</a>
+    <a href="admin/event-setup.html" class="nav-drawer-highlight">Host an Event</a>
   </nav>
   </div>
 
@@ -39,13 +39,62 @@
         <p>Nearify helps you discover and connect with people in real time at events.</p>
 
         <div class="hero-actions">
-          <a href="#events" class="btn primary">Join an Event</a>
+          <a href="#events" class="btn primary">See Upcoming Events</a>
           <a href="#how" class="btn secondary">How it works</a>
-          <a href="admin/event-setup.html" class="btn secondary">Organizer Setup</a>
         </div>
+        <p class="hero-platform-note">iOS app · Android coming soon</p>
       </div>
 
-      <div class="hero-visual" id="network"></div>
+      <div class="hero-visual" id="network" aria-hidden="true">
+        <svg class="hero-network-svg" viewBox="0 0 400 300" xmlns="http://www.w3.org/2000/svg">
+          <!-- Connection lines -->
+          <line x1="200" y1="150" x2="100" y2="80"  stroke="#00d1ff" stroke-width="1.5" stroke-opacity="0.35"/>
+          <line x1="200" y1="150" x2="310" y2="90"  stroke="#00d1ff" stroke-width="1.5" stroke-opacity="0.35"/>
+          <line x1="200" y1="150" x2="320" y2="210" stroke="#00d1ff" stroke-width="1.5" stroke-opacity="0.35"/>
+          <line x1="200" y1="150" x2="90"  y2="220" stroke="#00d1ff" stroke-width="1.5" stroke-opacity="0.35"/>
+          <line x1="200" y1="150" x2="200" y2="260" stroke="#00d1ff" stroke-width="1.5" stroke-opacity="0.25"/>
+          <line x1="100" y1="80"  x2="310" y2="90"  stroke="#00d1ff" stroke-width="1"   stroke-opacity="0.15"/>
+          <line x1="310" y1="90"  x2="320" y2="210" stroke="#00d1ff" stroke-width="1"   stroke-opacity="0.15"/>
+          <line x1="90"  y1="220" x2="320" y2="210" stroke="#00d1ff" stroke-width="1"   stroke-opacity="0.12"/>
+          <!-- Pulse ring on center node -->
+          <circle cx="200" cy="150" r="30" fill="none" stroke="#00d1ff" stroke-width="1" stroke-opacity="0.18" class="pulse-ring"/>
+          <!-- Outer nodes -->
+          <circle cx="100" cy="80"  r="18" fill="rgba(22,32,51,0.95)" stroke="#00d1ff" stroke-width="1.5" stroke-opacity="0.55"/>
+          <circle cx="310" cy="90"  r="18" fill="rgba(22,32,51,0.95)" stroke="#00d1ff" stroke-width="1.5" stroke-opacity="0.55"/>
+          <circle cx="320" cy="210" r="18" fill="rgba(22,32,51,0.95)" stroke="#00d1ff" stroke-width="1.5" stroke-opacity="0.55"/>
+          <circle cx="90"  cy="220" r="18" fill="rgba(22,32,51,0.95)" stroke="#00d1ff" stroke-width="1.5" stroke-opacity="0.55"/>
+          <circle cx="200" cy="260" r="14" fill="rgba(22,32,51,0.95)" stroke="#00d1ff" stroke-width="1"   stroke-opacity="0.35"/>
+          <!-- Person silhouettes in outer nodes (simple initials stand-in) -->
+          <text x="100" y="85"  text-anchor="middle" fill="#00d1ff" font-size="11" font-family="Inter,sans-serif" font-weight="600" opacity="0.8">AK</text>
+          <text x="310" y="95"  text-anchor="middle" fill="#00d1ff" font-size="11" font-family="Inter,sans-serif" font-weight="600" opacity="0.8">MJ</text>
+          <text x="320" y="215" text-anchor="middle" fill="#00d1ff" font-size="11" font-family="Inter,sans-serif" font-weight="600" opacity="0.8">RL</text>
+          <text x="90"  y="225" text-anchor="middle" fill="#00d1ff" font-size="11" font-family="Inter,sans-serif" font-weight="600" opacity="0.8">SP</text>
+          <text x="200" y="264" text-anchor="middle" fill="#00d1ff" font-size="10" font-family="Inter,sans-serif" font-weight="600" opacity="0.6">+4</text>
+          <!-- Center node — "you" -->
+          <circle cx="200" cy="150" r="22" fill="rgba(0,209,255,0.15)" stroke="#00d1ff" stroke-width="2"/>
+          <text x="200" y="155" text-anchor="middle" fill="#00d1ff" font-size="12" font-family="Inter,sans-serif" font-weight="700">YOU</text>
+        </svg>
+      </div>
+    </section>
+
+    <!-- SOCIAL PROOF -->
+    <section class="proof-bar">
+      <div class="proof-bar-inner">
+        <div class="proof-stat">
+          <span class="proof-number">Live</span>
+          <span class="proof-label">proximity networking</span>
+        </div>
+        <div class="proof-divider"></div>
+        <div class="proof-stat">
+          <span class="proof-number">Real-time</span>
+          <span class="proof-label">attendee discovery</span>
+        </div>
+        <div class="proof-divider"></div>
+        <div class="proof-stat">
+          <span class="proof-number">Launched at</span>
+          <span class="proof-label">CharlestonHacks</span>
+        </div>
+      </div>
     </section>
 
     <!-- HOW IT WORKS -->
@@ -111,6 +160,12 @@
   </main>
 
   <footer class="footer">
+    <nav class="footer-links">
+      <a href="events/index.html">Events</a>
+      <a href="admin/event-setup.html">Host an Event</a>
+      <a href="https://testflight.apple.com/join/ZayvEbAy" target="_blank" rel="noopener noreferrer">Get the App</a>
+      <a href="mailto:hello@nearify.org">Contact</a>
+    </nav>
     <p>© 2026 Nearify</p>
   </footer>
 

@@ -17,7 +17,7 @@
     <div class="nav-links">
       <a href="../index.html#how">How it works</a>
       <a href="index.html">Events</a>
-      <a href="../admin/event-setup.html">Organizer Setup</a>
+      <a href="../admin/event-setup.html">Host an Event</a>
     </div>
     <button class="nav-hamburger" id="navHamburger" aria-label="Open menu" aria-expanded="false">
       <span></span><span></span><span></span>
@@ -26,7 +26,7 @@
   <nav class="nav-drawer" id="navDrawer" aria-label="Site navigation">
     <a href="../index.html#how">How it works</a>
     <a href="index.html">Events</a>
-    <a href="../admin/event-setup.html" class="nav-drawer-highlight">Organizer Setup</a>
+    <a href="../admin/event-setup.html" class="nav-drawer-highlight">Host an Event</a>
   </nav>
   </div>
 
@@ -114,6 +114,12 @@
   </main>
 
   <footer class="footer">
+    <nav class="footer-links">
+      <a href="../index.html">Home</a>
+      <a href="../admin/event-setup.html">Host an Event</a>
+      <a href="https://testflight.apple.com/join/ZayvEbAy" target="_blank" rel="noopener noreferrer">Get the App</a>
+      <a href="mailto:hello@nearify.org">Contact</a>
+    </nav>
     <p>© 2026 Nearify</p>
   </footer>
 
@@ -125,9 +131,16 @@
     const grid = document.getElementById("eventsListGrid");
 
     async function loadEvents() {
-      const events = await fetchPublicEvents();
+      let events;
+      try {
+        events = await fetchPublicEvents();
+      } catch (err) {
+        grid.innerHTML =
+          '<p style="text-align:center; color:#f87171;">Could not load events. Please refresh and try again.</p>';
+        return;
+      }
 
-      if (!events.length) {
+      if (!events || !events.length) {
         grid.innerHTML =
           '<p style="text-align:center; color:#8fa0b8;">No events yet. Check back soon.</p>';
         return;
@@ -141,11 +154,15 @@
           : "";
         const meta = [ev.location, dateStr].filter(Boolean).join(" \u00b7 ");
         const featured = i === 0 ? " featured" : "";
+        const desc = ev.description
+          ? '<p class="event-list-desc">' + escapeHtml(ev.description) + '</p>'
+          : '';
 
         return '<article class="event-list-card' + featured + '" data-event-id="' + ev.id + '">' +
           (i === 0 ? '<div class="card-badge">Featured</div>' : '') +
           '<h3>' + escapeHtml(ev.name) + '</h3>' +
           (meta ? '<p class="event-list-meta">' + escapeHtml(meta) + '</p>' : '') +
+          desc +
           '<div class="event-card-actions">' +
             '<a href="' + joinUrl + '" class="btn primary">Join Event</a>' +
             '<a href="' + TESTFLIGHT_URL + '" class="btn secondary" target="_blank" rel="noopener noreferrer">Install App</a>' +
