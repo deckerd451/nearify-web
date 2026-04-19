@@ -1,5 +1,11 @@
 import { supabase } from "./supabaseClient.js";
-import { renderIntelCard, fetchIntelligence, fetchEventMeta } from "./intelligence.js";
+import {
+  renderIntelCard,
+  fetchIntelligence,
+  fetchEventMeta,
+  computeNextBestAction,
+  appendDecisionDebug,
+} from "./intelligence.js";
 import { setCurrentEventId } from "./appState.js";
 
 console.log("[Join] join.js loaded");
@@ -363,6 +369,9 @@ async function loadIntelligence() {
     }
 
     if (!hasData) {
+      const fallbackDecision = computeNextBestAction([]);
+      console.info("[Join] next_best_action", fallbackDecision);
+      appendDecisionDebug(headerEl || intelligencePanel, fallbackDecision);
       if (intelEmpty) {
         const titleP = intelEmpty.querySelector(".intel-empty-title");
         const bodyP  = intelEmpty.querySelector(".intel-empty-body");
@@ -385,6 +394,9 @@ async function loadIntelligence() {
     }
 
     console.log("[Join] Intelligence loaded:", data.length, "items");
+    const decision = computeNextBestAction(data);
+    console.info("[Join] next_best_action", decision);
+    appendDecisionDebug(headerEl || intelligencePanel, decision);
 
     const recommended = data.filter((d) => d.type === "recommended");
     const missed      = data.filter((d) => d.type === "missed");
