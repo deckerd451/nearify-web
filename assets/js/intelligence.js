@@ -33,6 +33,40 @@ function getInitials(name) {
   return name.trim().split(/\s+/).slice(0, 2).map(w => w[0]).join("").toUpperCase();
 }
 
+function escapeHtml(str) {
+  const d = document.createElement("div");
+  d.textContent = String(str ?? "");
+  return d.innerHTML;
+}
+
+/**
+ * Build the event context header shown at the top of every intelligence section.
+ * Includes event name, date, and a live/pending status badge.
+ */
+function buildEventHeader(eventMeta, hasData) {
+  const header = document.createElement("div");
+  header.className = "intel-event-header";
+
+  const datePart = eventMeta.date
+    ? `<span class="intel-event-date"> · ${escapeHtml(eventMeta.date)}</span>`
+    : "";
+
+  const statusClass = hasData ? "intel-status-ready"   : "intel-status-pending";
+  const statusText  = hasData ? "Ready"                : "Report pending";
+
+  header.innerHTML =
+    `<div class="intel-event-badge">` +
+      `<span class="intel-event-name">${escapeHtml(eventMeta.name)}</span>` +
+      datePart +
+    `</div>` +
+    `<div class="intel-report-status ${statusClass}">` +
+      `<span class="intel-status-dot"></span>` +
+      `<span class="intel-status-text">${statusText}</span>` +
+    `</div>`;
+
+  return header;
+}
+
 /**
  * Normalize backend reason text.
  */
@@ -55,8 +89,8 @@ export function renderIntelCard(item) {
 
   const initials = getInitials(item.target_name);
   const avatar = item.target_avatar
-    ? `<img class="intel-avatar" src="${item.target_avatar}" alt="${initials}" />`
-    : `<div class="intel-avatar intel-avatar-placeholder" aria-hidden="true">${initials}</div>`;
+    ? `<img class="intel-avatar" src="${escapeHtml(item.target_avatar)}" alt="${escapeHtml(initials)}" />`
+    : `<div class="intel-avatar intel-avatar-placeholder" aria-hidden="true">${escapeHtml(initials)}</div>`;
 
   const directionText = DIRECTION_LABELS[item.direction] ?? "Interaction";
   const directionClass = item.direction === "incoming" ? "incoming" : "outgoing";
@@ -76,7 +110,7 @@ export function renderIntelCard(item) {
   card.innerHTML = `
     ${avatar}
     <div class="intel-card-body">
-      <div class="intel-card-name">${item.target_name || "Attendee"}</div>
+      <div class="intel-card-name">${escapeHtml(item.target_name || "Attendee")}</div>
       ${directionLabel}
       <div class="intel-card-reason">${normalizeReason(item.reason)}</div>
       ${strengthHtml}
@@ -111,18 +145,61 @@ export async function fetchIntelligence(eventId) {
 }
 
 /**
- * Render intelligence data into a container element.
+ * Fetch event metadata (name, date) for display in intelligence sections.
+ * @param {string} eventId
+ * @returns {Promise<{name:string, date:string|null}|null>}
  */
-export function renderIntelligenceInto(container, data) {
+export async function fetchEventMeta(eventId) {
+  if (!eventId) return null;
+  try {
+    const { data, error } = await supabase
+      .from("events")
+      .select("name, starts_at")
+      .eq("id", eventId)
+      .maybeSingle();
+    if (error || !data) return null;
+    return {
+      name: data.name,
+      date: data.starts_at
+        ? new Date(data.starts_at).toLocaleDateString(undefined, {
+            month: "short", day: "numeric", year: "numeric"
+          })
+        : null,
+    };
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Render intelligence data into a container element.
+ *
+ * @param {HTMLElement}      container
+ * @param {Array|null}       data       - rows from fetchIntelligence
+ * @param {{name,date}|null} eventMeta  - from fetchEventMeta; shown in header + empty state
+ */
+export function renderIntelligenceInto(container, data, eventMeta = null) {
   container.innerHTML = "";
 
-  if (!data || data.length === 0) {
+  const hasData = !!(data && data.length > 0);
+
+  // Event header — always shown when we know which event this is
+  if (eventMeta) {
+    container.appendChild(buildEventHeader(eventMeta, hasData));
+  }
+
+  if (!hasData) {
+    const eventLine = eventMeta
+      ? `Interaction data from <strong>${escapeHtml(eventMeta.name)}</strong> is being processed.`
+      : "Your interaction data is being processed.";
+
     const empty = document.createElement("div");
     empty.className = "intel-empty";
     empty.innerHTML =
-      `<p class="intel-empty-title">Your post-event report isn't ready yet.</p>` +
-      `<p class="intel-empty-body">Results are prepared within a few hours of the event ending. ` +
-      `Make sure you used Nearify during the event — the more interactions, the richer your report.</p>`;
+      `<p class="intel-empty-title">Your post-event report is being prepared.</p>` +
+      `<p class="intel-empty-body">${eventLine} ` +
+      `Reports are typically ready within a few hours of the event ending.</p>` +
+      `<button class="intel-refresh-btn" onclick="window.location.reload()">Refresh to check</button>`;
     container.appendChild(empty);
     container.style.display = "";
     return;
@@ -161,12 +238,16 @@ export function renderIntelligenceInto(container, data) {
   }
 
   if (!hasContent) {
+    const eventLine = eventMeta
+      ? `Interaction data from <strong>${escapeHtml(eventMeta.name)}</strong> is being processed.`
+      : "Your interaction data is being processed.";
     const empty = document.createElement("div");
     empty.className = "intel-empty";
     empty.innerHTML =
-      `<p class="intel-empty-title">Your post-event report isn't ready yet.</p>` +
-      `<p class="intel-empty-body">Results are prepared within a few hours of the event ending. ` +
-      `Make sure you used Nearify during the event — the more interactions, the richer your report.</p>`;
+      `<p class="intel-empty-title">Your post-event report is being prepared.</p>` +
+      `<p class="intel-empty-body">${eventLine} ` +
+      `Reports are typically ready within a few hours of the event ending.</p>` +
+      `<button class="intel-refresh-btn" onclick="window.location.reload()">Refresh to check</button>`;
     container.appendChild(empty);
   }
 
