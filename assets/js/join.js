@@ -6,6 +6,14 @@ console.log("[Join] join.js loaded");
 
 const TESTFLIGHT_URL = "https://testflight.apple.com/join/ZayvEbAy";
 
+const INTENT_LABELS = {
+  meet_people:    "meet people",
+  find_cofounder: "find a cofounder",
+  hire:           "hire",
+  explore_ideas:  "explore ideas",
+  demo_something: "demo something",
+};
+
 const params = new URLSearchParams(window.location.search);
 const eventId = params.get("event");
 const eventName = params.get("name") || "this event";
@@ -256,7 +264,9 @@ async function submitIntent(intentValue) {
 
     joinState.intentSaved = true;
     persistState();
-    if (intentStatus) intentStatus.textContent = "Got it — enjoy the event.";
+    const label = INTENT_LABELS[intentValue] || intentValue.replace(/_/g, " ");
+    if (intentStatus) intentStatus.textContent =
+      `Got it. We'll surface people here to ${label} — and show you to them too.`;
 
     setTimeout(() => { hideIntentStep(); loadIntelligence(); }, 1200);
   } catch (err) {
