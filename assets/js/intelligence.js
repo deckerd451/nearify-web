@@ -251,42 +251,51 @@ function handleSuggestConnect() {
     window.location.href = action.target;
     return;
   }
-  alert(action.target);
+
+  const fallbackMessage = document.querySelector(".intel-recommended-action .intel-recommended-body");
+  if (fallbackMessage) {
+    fallbackMessage.textContent = action.target;
+  }
 }
 
 function renderRecommendedAction(decision) {
-  console.log("[CTA] decision in renderer:", decision);
-  if (!decision) return null;
+  if (!decision || decision.action !== "suggest_connect" || Number(decision.confidence) <= 0.2) {
+    return null;
+  }
 
   const block = document.createElement("div");
-  block.style.background = "red";
-  block.style.padding = "20px";
-  block.style.margin = "20px";
-  block.style.color = "white";
-  block.style.fontSize = "20px";
+  block.className = "intel-recommended-action";
+  block.dataset.ctaDebug = "true";
 
-  block.innerText = "CTA TEST BUTTON";
+  const title = document.createElement("p");
+  title.className = "intel-recommended-title";
+  title.textContent = "Recommended next step";
+
+  const body = document.createElement("p");
+  body.className = "intel-recommended-body";
+  body.textContent = buildSuggestConnectReason(decision);
 
   const button = document.createElement("button");
-  button.innerText = "CLICK ME";
-  button.style.marginTop = "10px";
+  button.type = "button";
+  button.className = "intel-connect-btn";
+  button.textContent = "Connect now";
+  button.addEventListener("click", handleSuggestConnect);
 
-  button.onclick = () => alert("CTA CLICKED");
+  block.append(title, body, button);
 
-  block.appendChild(document.createElement("br"));
-  block.appendChild(button);
+  console.log("[CTA] rendered suggest_connect", {
+    confidence: decision.confidence,
+    action: decision.action,
+  });
 
-  console.log("[CTA] rendered element:", block);
   return block;
 }
 
 function appendRecommendedAction(container, decision) {
   if (!container) return;
   const cta = renderRecommendedAction(decision);
-  console.log("[CTA] rendered element:", cta);
-  console.log("[CTA] append target children count before:", container.children.length);
+  if (!cta) return;
   container.appendChild(cta);
-  console.log("[CTA] append target children count after:", container.children.length);
 }
 
 export function appendDecisionDebug(container, decision) {
