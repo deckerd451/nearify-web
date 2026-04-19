@@ -8,6 +8,15 @@
     name="description"
     content="Explore upcoming and featured Nearify events. Discover where real-world connection starts."
   />
+
+  <meta property="og:type"        content="website" />
+  <meta property="og:url"         content="https://nearify.org/events/" />
+  <meta property="og:title"       content="Events | Nearify" />
+  <meta property="og:description" content="Browse upcoming Nearify-enabled events. Install the app and be ready to connect the moment you arrive." />
+  <meta name="twitter:card"       content="summary" />
+  <meta name="twitter:title"      content="Events | Nearify" />
+  <meta name="twitter:description" content="Browse upcoming Nearify-enabled events. Install the app and be ready to connect the moment you arrive." />
+
   <link rel="stylesheet" href="../assets/css/styles.css" />
 </head>
 <body>
@@ -64,7 +73,9 @@
       </div>
 
       <div class="events-list-grid" id="eventsListGrid">
-        <p class="field-help" style="text-align:center;">Loading events...</p>
+        <!-- Skeleton shown while events load -->
+        <div class="skeleton-card"><div class="skeleton-line title"></div><div class="skeleton-line meta"></div><div class="skeleton-line body"></div><div class="skeleton-line body2"></div><div class="skeleton-line button"></div></div>
+        <div class="skeleton-card"><div class="skeleton-line title"></div><div class="skeleton-line meta"></div><div class="skeleton-line body"></div><div class="skeleton-line body2"></div><div class="skeleton-line button"></div></div>
       </div>
     </section>
 
