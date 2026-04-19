@@ -1036,49 +1036,140 @@ code {
 /* ============================================================
    INTENT CAPTURE
    ============================================================ */
+
+.intent-section {
+  background: rgba(0, 209, 255, 0.02);
+  border-top: 1px solid rgba(0, 209, 255, 0.08);
+  border-bottom: 1px solid rgba(0, 209, 255, 0.08);
+}
+
+.intent-step-label {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--color-accent);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-bottom: 12px;
+}
+
 .intent-grid {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 12px;
-  justify-content: center;
-  margin: 24px auto;
-  max-width: 600px;
+  max-width: 640px;
+  margin: 28px auto;
 }
 
 .intent-chip {
   background: rgba(22, 32, 51, 0.9);
   border: 1px solid rgba(0, 209, 255, 0.18);
-  border-radius: 999px;
+  border-radius: var(--radius-md);
   color: #dfe6ef;
-  font-size: 15px;
-  font-weight: 600;
-  padding: 12px 24px;
+  padding: 16px 16px 14px;
   cursor: pointer;
   transition: all 0.15s ease;
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  font-family: inherit;
 }
 
 .intent-chip:hover {
   border-color: rgba(0, 209, 255, 0.5);
-  background: rgba(0, 209, 255, 0.08);
+  background: rgba(0, 209, 255, 0.07);
 }
 
 .intent-chip.active {
-  background: rgba(0, 209, 255, 0.18);
+  background: rgba(0, 209, 255, 0.13);
   border-color: #00d1ff;
+}
+
+.intent-chip.active .intent-chip-label {
   color: #00d1ff;
+}
+
+.intent-chip.active .intent-chip-sub {
+  color: rgba(0, 209, 255, 0.65);
+}
+
+.intent-chip-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #ffffff;
+  line-height: 1.2;
+}
+
+.intent-chip-sub {
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--color-text-muted);
+  line-height: 1.45;
+}
+
+/* Sign-in gate — shown after unauthenticated chip tap */
+.intent-signin-gate {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  max-width: 400px;
+  margin: 4px auto 20px;
+  padding: 20px 24px;
+  background: rgba(0, 209, 255, 0.05);
+  border: 1px solid rgba(0, 209, 255, 0.2);
+  border-radius: var(--radius-md);
+}
+
+.intent-signin-message {
+  font-size: 14px;
+  color: var(--color-text-secondary);
+  line-height: 1.55;
+  text-align: center;
 }
 
 .intent-actions {
   text-align: center;
-  margin-top: 16px;
+  margin-top: 4px;
+}
+
+.intent-skip-btn {
+  background: none;
+  border: none;
+  color: var(--color-text-muted);
+  font-size: 13px;
+  font-family: inherit;
+  cursor: pointer;
+  padding: 6px 10px;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  transition: color 0.15s ease;
+}
+
+.intent-skip-btn:hover {
+  color: #ffffff;
 }
 
 .intent-status {
   text-align: center;
-  color: #8fa0b8;
+  color: var(--color-accent);
   font-size: 14px;
-  margin-top: 12px;
+  font-weight: 500;
+  margin-top: 16px;
   min-height: 20px;
+}
+
+@media (max-width: 720px) {
+  .intent-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+}
+
+@media (max-width: 400px) {
+  .intent-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 /* ============================================================
@@ -1216,15 +1307,6 @@ code {
 }
 
 @media (max-width: 720px) {
-  .intent-grid {
-    gap: 8px;
-  }
-
-  .intent-chip {
-    padding: 10px 18px;
-    font-size: 14px;
-  }
-
   .intel-cards {
     grid-template-columns: 1fr;
   }

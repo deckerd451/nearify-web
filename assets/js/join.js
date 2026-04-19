@@ -6,9 +6,20 @@ console.log("[Join] join.js loaded");
 
 const TESTFLIGHT_URL = "https://testflight.apple.com/join/ZayvEbAy";
 
+const INTENT_LABELS = {
+  meet_people:    "meet people",
+  find_cofounder: "find a cofounder",
+  hire:           "hire",
+  explore_ideas:  "explore ideas",
+  demo_something: "demo something",
+};
+
 const params = new URLSearchParams(window.location.search);
 const eventId = params.get("event");
 const eventName = params.get("name") || "this event";
+
+// Survives the Google OAuth redirect so we can auto-save after sign-in
+const PENDING_INTENT_KEY = `nearify_pending_intent_${eventId}`;
 
 // Persist event ID so other pages (homepage, app) can access it
 if (eventId) setCurrentEventId(eventId);
@@ -102,6 +113,9 @@ function initializePage() {
   renderInAppQr();
   silentDeepLinkAttempt();
   fetchAndDisplayEventMetadata();
+
+  // Show intent section for all visitors — auth handled inline
+  if (intentStep) intentStep.style.display = "";
 
   return true;
 }
@@ -226,18 +240,16 @@ async function joinEventById(id) {
 // INTENT CAPTURE — only for signed-in users
 // ============================================================
 
-function showIntentStep() {
-  if (joinState.intentShown) return;
-  if (intentStep) {
-    intentStep.style.display = "";
-    intentStep.scrollIntoView({ behavior: "smooth", block: "start" });
-    joinState.intentShown = true;
-    persistState();
-  }
-}
-
 function hideIntentStep() {
   if (intentStep) intentStep.style.display = "none";
+}
+
+function showSignInGate() {
+  const gate = document.getElementById("intentSignInGate");
+  const skipBtn = document.getElementById("skipIntentBtn");
+  if (gate) gate.style.display = "";
+  // Hide skip while sign-in gate is visible — the gate itself is the alternative
+  if (skipBtn) skipBtn.style.display = "none";
 }
 
 async function submitIntent(intentValue) {
@@ -256,7 +268,9 @@ async function submitIntent(intentValue) {
 
     joinState.intentSaved = true;
     persistState();
-    if (intentStatus) intentStatus.textContent = "Got it — enjoy the event.";
+    const label = INTENT_LABELS[intentValue] || intentValue.replace(/_/g, " ");
+    if (intentStatus) intentStatus.textContent =
+      `Got it. We'll surface people here to ${label} — and show you to them too.`;
 
     setTimeout(() => { hideIntentStep(); loadIntelligence(); }, 1200);
   } catch (err) {
@@ -269,10 +283,18 @@ async function submitIntent(intentValue) {
 
 function initIntentListeners() {
   intentChips.forEach((chip) => {
-    chip.addEventListener("click", () => {
+    chip.addEventListener("click", async () => {
       intentChips.forEach((c) => c.classList.remove("active"));
       chip.classList.add("active");
-      submitIntent(chip.dataset.intent);
+
+      const user = await getSessionUser().catch(() => null);
+      if (user) {
+        submitIntent(chip.dataset.intent);
+      } else {
+        // Store intent so it survives the OAuth redirect
+        try { sessionStorage.setItem(PENDING_INTENT_KEY, chip.dataset.intent); } catch {}
+        showSignInGate();
+      }
     });
   });
 
@@ -280,6 +302,26 @@ function initIntentListeners() {
     skipIntentBtn.addEventListener("click", () => {
       hideIntentStep();
       loadIntelligence();
+    });
+  }
+
+  // Sign-in button inside the gate
+  const signInBtn = document.getElementById("intentSignInBtn");
+  if (signInBtn) {
+    signInBtn.addEventListener("click", async () => {
+      signInBtn.textContent = "Redirecting…";
+      signInBtn.disabled = true;
+      try {
+        await supabase.auth.signInWithOAuth({
+          provider: "google",
+          options: { redirectTo: window.location.href }
+        });
+      } catch (err) {
+        console.error("[Join] Sign in failed:", err);
+        signInBtn.textContent = "Sign in with Google";
+        signInBtn.disabled = false;
+        if (intentStatus) intentStatus.textContent = "Sign in failed — please try again.";
+      }
     });
   }
 }
@@ -346,8 +388,24 @@ async function enhanceForSignedInUser() {
     await ensureProfileFromSession();
     await joinEventById(eventId);
 
-    // Show intent capture if not already done
-    showIntentStep();
+    // Check for intent stored before the OAuth redirect
+    let pendingIntent = null;
+    try { pendingIntent = sessionStorage.getItem(PENDING_INTENT_KEY); } catch {}
+
+    if (pendingIntent && !joinState.intentSaved) {
+      try { sessionStorage.removeItem(PENDING_INTENT_KEY); } catch {}
+      // Restore the chip selection visually
+      const chip = intentStep?.querySelector(`.intent-chip[data-intent="${pendingIntent}"]`);
+      if (chip) {
+        intentChips.forEach((c) => c.classList.remove("active"));
+        chip.classList.add("active");
+      }
+      // Hide sign-in gate, restore skip button
+      const gate = document.getElementById("intentSignInGate");
+      if (gate) gate.style.display = "none";
+      if (skipIntentBtn) skipIntentBtn.style.display = "";
+      await submitIntent(pendingIntent);
+    }
 
     // Load intelligence if available
     loadIntelligence();
