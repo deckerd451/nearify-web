@@ -40,10 +40,28 @@ async function init() {
   }
 }
 
+function skeletonCard() {
+  return '<div class="skeleton-card" style="text-align:left;">' +
+    '<div class="skeleton-line title"></div>' +
+    '<div class="skeleton-line meta"></div>' +
+    '<div class="skeleton-line body"></div>' +
+    '<div class="skeleton-line button"></div>' +
+  '</div>';
+}
+
 async function loadPublicEvents() {
   if (!publicEventsList) return;
 
-  const events = await fetchPublicEvents();
+  publicEventsList.innerHTML = skeletonCard() + skeletonCard();
+
+  let events;
+  try {
+    events = await fetchPublicEvents();
+  } catch {
+    publicEventsList.innerHTML =
+      '<p class="home-intel-subhead" style="color:#f87171;">Could not load events. Please refresh.</p>';
+    return;
+  }
 
   if (!events.length) {
     publicEventsList.innerHTML =

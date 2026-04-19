@@ -100,11 +100,62 @@ function initializePage() {
   if (payloadEl) payloadEl.textContent = deepLink;
 
   renderInAppQr();
-
-  // Silently attempt deep link — if the app is installed it will open
   silentDeepLinkAttempt();
+  fetchAndDisplayEventMetadata();
 
   return true;
+}
+
+async function fetchAndDisplayEventMetadata() {
+  const metaEl = document.getElementById("joinEventMeta");
+  const kickerEl = document.getElementById("joinKicker");
+  if (!metaEl || !eventId) return;
+
+  try {
+    const { data, error } = await supabase
+      .from("events")
+      .select("name, location, starts_at")
+      .eq("id", eventId)
+      .maybeSingle();
+
+    if (error || !data) return;
+
+    const chips = [];
+
+    if (data.location) {
+      chips.push(`<span class="join-meta-chip"><span class="join-meta-chip-icon">📍</span>${escapeHtml(data.location)}</span>`);
+    }
+
+    if (data.starts_at) {
+      const dateStr = new Date(data.starts_at).toLocaleDateString(undefined, {
+        weekday: "short", month: "short", day: "numeric", year: "numeric"
+      });
+      chips.push(`<span class="join-meta-chip"><span class="join-meta-chip-icon">📅</span>${dateStr}</span>`);
+    }
+
+    if (chips.length) {
+      metaEl.innerHTML = chips.join("");
+      metaEl.style.display = "";
+    }
+
+    // Update the page title if name differs from URL param
+    if (data.name && titleEl) {
+      titleEl.textContent = `Join ${data.name}`;
+      document.title = `${data.name} | Nearify`;
+    }
+
+    if (kickerEl && data.name) {
+      kickerEl.textContent = "You're joining";
+    }
+  } catch (err) {
+    console.warn("[Join] Could not fetch event metadata:", err.message);
+  }
+}
+
+function escapeHtml(str) {
+  const d = document.createElement("div");
+  d.textContent = str;
+  return d.innerHTML;
 }
 
 // ============================================================

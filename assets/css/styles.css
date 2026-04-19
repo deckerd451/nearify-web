@@ -1178,6 +1178,39 @@ code {
   }
 }
 
+/* SKELETON / SHIMMER */
+@keyframes shimmer {
+  0%   { background-position: -600px 0; }
+  100% { background-position:  600px 0; }
+}
+
+.skeleton-card {
+  background: rgba(22, 32, 51, 0.9);
+  border: 1px solid rgba(0, 209, 255, 0.08);
+  border-radius: 18px;
+  padding: 32px;
+  display: grid;
+  gap: 14px;
+}
+
+.skeleton-line {
+  border-radius: 6px;
+  background: linear-gradient(
+    90deg,
+    rgba(255,255,255,0.04) 25%,
+    rgba(255,255,255,0.09) 50%,
+    rgba(255,255,255,0.04) 75%
+  );
+  background-size: 600px 100%;
+  animation: shimmer 1.4s ease-in-out infinite;
+}
+
+.skeleton-line.title  { height: 28px; width: 60%; }
+.skeleton-line.meta   { height: 14px; width: 40%; }
+.skeleton-line.body   { height: 14px; width: 85%; }
+.skeleton-line.body2  { height: 14px; width: 70%; }
+.skeleton-line.button { height: 40px; width: 120px; border-radius: 8px; }
+
 /* HOMEPAGE INTELLIGENCE */
 .home-intel-subhead {
   color: #aab4c5;
@@ -1266,6 +1299,77 @@ code {
 }
 
 .btn-inline-link:hover { opacity: 0.8; }
+
+/* Join page — event metadata strip */
+.join-event-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.join-meta-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(0, 209, 255, 0.08);
+  border: 1px solid rgba(0, 209, 255, 0.2);
+  border-radius: var(--radius-full);
+  color: #c5cfdd;
+  font-size: 13px;
+  padding: 6px 12px;
+}
+
+.join-meta-chip-icon {
+  color: var(--color-accent);
+  font-size: 12px;
+}
+
+/* Join page — numbered steps sidebar */
+.join-steps-list {
+  list-style: none;
+  padding: 0;
+  display: grid;
+  gap: 20px;
+  counter-reset: join-step;
+}
+
+.join-steps-list li {
+  display: grid;
+  grid-template-columns: 32px 1fr;
+  gap: 0 12px;
+  counter-increment: join-step;
+}
+
+.join-steps-list li::before {
+  content: counter(join-step);
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-full);
+  background: rgba(0, 209, 255, 0.14);
+  color: var(--color-accent);
+  font-weight: 700;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.join-step-label {
+  font-weight: 600;
+  font-size: 15px;
+  color: #ffffff;
+  margin-bottom: 4px;
+}
+
+.join-step-detail {
+  font-size: 13px;
+  color: var(--color-text-secondary);
+  line-height: 1.55;
+  grid-column: 2;
+}
 
 /* Join page hint text */
 .join-hint {

@@ -8,6 +8,15 @@
     name="description"
     content="Get the Nearify app to join this event and discover attendees in real time."
   />
+
+  <meta property="og:type"        content="website" />
+  <meta property="og:url"         content="https://nearify.org/join/" />
+  <meta property="og:title"       content="Join Event | Nearify" />
+  <meta property="og:description" content="Get Nearify to join this event and discover who's around you in real time." />
+  <meta name="twitter:card"       content="summary" />
+  <meta name="twitter:title"      content="Join Event | Nearify" />
+  <meta name="twitter:description" content="Get Nearify to join this event and discover who's around you in real time." />
+
   <link rel="stylesheet" href="../assets/css/styles.css" />
 </head>
 <body>
@@ -34,11 +43,15 @@
   <main id="main-content" class="join-page">
     <section class="event-hero join-hero">
       <div class="event-hero-copy">
-        <div class="event-kicker">Join Event</div>
+        <div class="event-kicker" id="joinKicker">Join Event</div>
         <h1 id="joinTitle">Get Nearify to join this event</h1>
+
+        <!-- Populated by JS once event metadata is fetched -->
+        <div id="joinEventMeta" class="join-event-meta" style="display:none;"></div>
+
         <p class="event-subhead" id="joinDescription">
-          Nearify is a live event app that helps you discover and connect with people around you.
-          Install the app, sign in there, and join this event from inside the app.
+          Nearify shows you who's actually at this event so you can discover and connect in real time — not just swap contact info later.
+          Install the app, sign in, and scan the event QR code when you arrive.
         </p>
 
         <div class="hero-actions" id="joinActions">
@@ -77,13 +90,20 @@
 
       <aside class="event-side-panel">
         <div class="event-panel">
-          <h2>How to join this event</h2>
-          <ol class="event-steps-list">
-            <li>Install Nearify from TestFlight</li>
-            <li>Open the app and sign in with Google or GitHub</li>
-            <li>Create your profile</li>
-            <li>Scan the event QR code at the venue, or use the in-app scanner below</li>
-            <li>Discover who's here and connect in person</li>
+          <h2>3 steps to join</h2>
+          <ol class="join-steps-list">
+            <li>
+              <div class="join-step-label">Install Nearify</div>
+              <div class="join-step-detail">Get the app on TestFlight — takes about 2 minutes.</div>
+            </li>
+            <li>
+              <div class="join-step-label">Sign in &amp; create your profile</div>
+              <div class="join-step-detail">Use Google or GitHub. Your profile is how people find you.</div>
+            </li>
+            <li>
+              <div class="join-step-label">Scan the event QR code</div>
+              <div class="join-step-detail">Find the Nearify QR at the venue and scan it to enter the live network.</div>
+            </li>
           </ol>
         </div>
       </aside>
