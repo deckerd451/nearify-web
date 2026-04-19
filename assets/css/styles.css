@@ -1768,3 +1768,130 @@ code {
     border-top: none;
   }
 }
+
+/* ============================================================
+   INTELLIGENCE STATUS INDICATORS
+   ============================================================ */
+
+/* Event context header in intelligence panels */
+.intel-event-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 12px 16px;
+  margin-bottom: 20px;
+  background: rgba(0, 209, 255, 0.04);
+  border: 1px solid rgba(0, 209, 255, 0.12);
+  border-radius: 10px;
+}
+
+.intel-event-badge {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.intel-event-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: #e2e8f0;
+}
+
+.intel-event-date {
+  font-size: 13px;
+  color: #8fa0b8;
+}
+
+/* Report status pill */
+.intel-report-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+.intel-status-pending {
+  background: rgba(0, 209, 255, 0.10);
+  color: var(--color-accent);
+  border: 1px solid rgba(0, 209, 255, 0.25);
+}
+
+.intel-status-ready {
+  background: rgba(52, 211, 153, 0.10);
+  color: #34d399;
+  border: 1px solid rgba(52, 211, 153, 0.25);
+}
+
+/* Pulsing dot inside status pill */
+.intel-status-dot {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.intel-status-pending .intel-status-dot {
+  background: var(--color-accent);
+  animation: pulse-dot 1.6s ease-in-out infinite;
+}
+
+.intel-status-ready .intel-status-dot {
+  background: #34d399;
+}
+
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%       { opacity: 0.4; transform: scale(0.75); }
+}
+
+/* Inline status used in join page subhead text */
+.intel-inline-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 13px;
+  font-weight: 600;
+  vertical-align: middle;
+}
+
+.intel-inline-status.intel-status-pending {
+  color: var(--color-accent);
+}
+
+.intel-inline-status.intel-status-ready {
+  color: #34d399;
+}
+
+.intel-inline-status .intel-status-dot {
+  width: 6px;
+  height: 6px;
+}
+
+/* Refresh button in empty / pending intelligence state */
+.intel-refresh-btn {
+  display: inline-block;
+  margin-top: 14px;
+  padding: 8px 18px;
+  background: transparent;
+  color: var(--color-accent);
+  border: 1px solid rgba(0, 209, 255, 0.35);
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.intel-refresh-btn:hover {
+  background: rgba(0, 209, 255, 0.08);
+  border-color: var(--color-accent);
+}

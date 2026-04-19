@@ -1,5 +1,5 @@
 import { supabase } from "./supabaseClient.js";
-import { renderIntelCard, fetchIntelligence } from "./intelligence.js";
+import { renderIntelCard, fetchIntelligence, fetchEventMeta } from "./intelligence.js";
 import { setCurrentEventId } from "./appState.js";
 
 console.log("[Join] join.js loaded");
@@ -336,11 +336,51 @@ async function loadIntelligence() {
   if (!eventId || !intelligencePanel) return;
 
   try {
-    const data = await fetchIntelligence(eventId);
+    const [data, eventMeta] = await Promise.all([
+      fetchIntelligence(eventId),
+      fetchEventMeta(eventId),
+    ]);
 
-    if (!data || data.length === 0) {
+    const hasData = !!(data && data.length > 0);
+
+    // Populate panel heading with event context
+    const titleEl   = document.getElementById("intelPanelTitle");
+    const subheadEl = document.getElementById("intelPanelSubhead");
+    const headerEl  = document.getElementById("intelEventHeader");
+
+    if (eventMeta) {
+      if (titleEl) titleEl.textContent = `Your report from ${eventMeta.name}`;
+      if (subheadEl) {
+        const datePart = eventMeta.date ? `${eventMeta.date} · ` : "";
+        const statusClass = hasData ? "intel-status-ready" : "intel-status-pending";
+        const statusText  = hasData ? "Ready" : "Report pending";
+        subheadEl.innerHTML =
+          `${escapeHtml(datePart)}` +
+          `<span class="intel-inline-status ${statusClass}">` +
+            `<span class="intel-status-dot"></span> ${statusText}` +
+          `</span>`;
+      }
+    }
+
+    if (!hasData) {
+      if (intelEmpty) {
+        const titleP = intelEmpty.querySelector(".intel-empty-title");
+        const bodyP  = intelEmpty.querySelector(".intel-empty-body");
+        if (titleP) titleP.textContent = "Your post-event report is being prepared.";
+        if (bodyP) bodyP.innerHTML = eventMeta
+          ? `Interaction data from <strong>${escapeHtml(eventMeta.name)}</strong> is being processed. Reports are typically ready within a few hours of the event ending.`
+          : "Interaction data is being processed. Reports are typically ready within a few hours of the event ending.";
+        // Add refresh button if not already present
+        if (!intelEmpty.querySelector(".intel-refresh-btn")) {
+          const btn = document.createElement("button");
+          btn.className = "intel-refresh-btn";
+          btn.textContent = "Refresh to check";
+          btn.onclick = () => window.location.reload();
+          intelEmpty.appendChild(btn);
+        }
+        intelEmpty.style.display = "";
+      }
       intelligencePanel.style.display = "";
-      if (intelEmpty) intelEmpty.style.display = "";
       return;
     }
 

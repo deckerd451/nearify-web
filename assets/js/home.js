@@ -8,7 +8,7 @@
  */
 import { supabase } from "./supabaseClient.js";
 import { getCurrentUser, getCurrentEventId } from "./appState.js";
-import { fetchIntelligence, renderIntelligenceInto } from "./intelligence.js";
+import { fetchIntelligence, fetchEventMeta, renderIntelligenceInto } from "./intelligence.js";
 import { fetchPublicEvents } from "./events.js";
 
 const TESTFLIGHT_URL = "https://testflight.apple.com/join/ZayvEbAy";
@@ -145,11 +145,13 @@ async function showRecentEvent(eventId) {
 async function loadHomeIntelligence(eventId) {
   if (!intelSection || !intelContainer) return;
 
-  const data = await fetchIntelligence(eventId);
+  // Fetch intelligence and event metadata in parallel
+  const [data, eventMeta] = await Promise.all([
+    fetchIntelligence(eventId),
+    fetchEventMeta(eventId),
+  ]);
 
-  // Always show the section for signed-in users with an event context,
-  // even when empty — renderIntelligenceInto handles the pending state
-  renderIntelligenceInto(intelContainer, data);
+  renderIntelligenceInto(intelContainer, data, eventMeta);
   intelSection.style.display = "";
 }
 
