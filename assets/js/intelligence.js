@@ -262,6 +262,7 @@ function renderRecommendedAction(decision) {
 
   const block = document.createElement("div");
   block.className = "intel-recommended-action";
+  block.setAttribute("data-cta-debug", "true");
   block.innerHTML =
     `<p class="intel-recommended-title">Recommended next step</p>` +
     `<p class="intel-recommended-body">${escapeHtml(buildSuggestConnectReason(decision))}.</p>`;
@@ -275,6 +276,15 @@ function renderRecommendedAction(decision) {
   block.appendChild(button);
   console.log("[CTA] rendered element:", block);
   return block;
+}
+
+function appendRecommendedAction(container, decision) {
+  if (!container) return;
+  const cta = renderRecommendedAction(decision);
+  console.log("[CTA] rendered element:", cta);
+  console.log("[CTA] append target children count before:", container.children.length);
+  if (cta) container.appendChild(cta);
+  console.log("[CTA] append target children count after:", container.children.length);
 }
 
 export function appendDecisionDebug(container, decision) {
@@ -645,9 +655,7 @@ export function renderIntelligenceInto(container, data, eventMeta = null, fallba
       `<button class="intel-refresh-btn" onclick="window.location.reload()">Refresh to check</button>`;
 
     container.appendChild(empty);
-    const cta = renderRecommendedAction(decision);
-    if (cta) container.appendChild(cta);
-    console.log("[CTA] container children count:", container.children.length);
+    appendRecommendedAction(container, decision);
 
     console.info("[Intelligence] next_best_action", decision);
     appendDecisionDebug(container, decision);
@@ -708,9 +716,7 @@ export function renderIntelligenceInto(container, data, eventMeta = null, fallba
   }
 
   console.log("[CTA] rendering decision:", decision);
-  const cta = renderRecommendedAction(decision);
-  if (cta) container.appendChild(cta);
-  console.log("[CTA] container children count:", container.children.length);
+  appendRecommendedAction(container, decision);
 
   appendDecisionDebug(container, decision);
   container.style.display = "";
