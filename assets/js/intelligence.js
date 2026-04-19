@@ -255,6 +255,7 @@ function handleSuggestConnect() {
 }
 
 function renderRecommendedAction(decision) {
+  console.log("[CTA] decision in renderer:", decision);
   if (!decision || decision.action !== "suggest_connect" || Number(decision.confidence) <= 0.2) {
     return null;
   }
@@ -272,6 +273,7 @@ function renderRecommendedAction(decision) {
   button.addEventListener("click", handleSuggestConnect);
 
   block.appendChild(button);
+  console.log("[CTA] rendered element:", block);
   return block;
 }
 
@@ -629,8 +631,6 @@ export function renderIntelligenceInto(container, data, eventMeta = null, fallba
   if (!hasData) {
     const decision = fallbackDecision ?? computeNextBestAction(data);
     console.log("[CTA] rendering decision:", decision);
-    const cta = renderRecommendedAction(decision);
-    if (cta) container.appendChild(cta);
 
     const eventLine = eventMeta
       ? `Interaction data from <strong>${escapeHtml(eventMeta.name)}</strong> is being processed.`
@@ -645,6 +645,9 @@ export function renderIntelligenceInto(container, data, eventMeta = null, fallba
       `<button class="intel-refresh-btn" onclick="window.location.reload()">Refresh to check</button>`;
 
     container.appendChild(empty);
+    const cta = renderRecommendedAction(decision);
+    if (cta) container.appendChild(cta);
+    console.log("[CTA] container children count:", container.children.length);
 
     console.info("[Intelligence] next_best_action", decision);
     appendDecisionDebug(container, decision);
@@ -689,10 +692,6 @@ export function renderIntelligenceInto(container, data, eventMeta = null, fallba
   }
 
   if (!hasContent) {
-    console.log("[CTA] rendering decision:", decision);
-    const cta = renderRecommendedAction(decision);
-    if (cta) container.appendChild(cta);
-
     const eventLine = eventMeta
       ? `Interaction data from <strong>${escapeHtml(eventMeta.name)}</strong> is being processed.`
       : "Your interaction data is being processed.";
@@ -707,6 +706,11 @@ export function renderIntelligenceInto(container, data, eventMeta = null, fallba
 
     container.appendChild(empty);
   }
+
+  console.log("[CTA] rendering decision:", decision);
+  const cta = renderRecommendedAction(decision);
+  if (cta) container.appendChild(cta);
+  console.log("[CTA] container children count:", container.children.length);
 
   appendDecisionDebug(container, decision);
   container.style.display = "";
