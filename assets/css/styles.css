@@ -1926,6 +1926,14 @@ code {
   border: 1px solid rgba(52, 211, 153, 0.25);
 }
 
+.intel-status-soft {
+  opacity: 0.72;
+}
+
+.intel-status-soft .intel-status-dot {
+  animation: none;
+}
+
 /* Pulsing dot inside status pill */
 .intel-status-dot {
   display: inline-block;

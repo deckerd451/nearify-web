@@ -6,6 +6,7 @@ import {
   computeNextBestAction,
   appendRecommendedAction,
   appendDecisionDebug,
+  hasMeaningfulFallbackDecision,
 } from "./intelligence.js";
 import { setCurrentEventId } from "./appState.js";
 
@@ -384,11 +385,17 @@ async function loadIntelligence() {
     const subheadEl = document.getElementById("intelPanelSubhead");
     const headerEl  = document.getElementById("intelEventHeader");
 
+    const hasMeaningfulFallback = !hasData && hasMeaningfulFallbackDecision(fallbackDecision);
+
     if (eventMeta) {
       if (titleEl) titleEl.textContent = `Your report from ${eventMeta.name}`;
       if (subheadEl) {
         const datePart = eventMeta.date ? `${eventMeta.date} · ` : "";
-        const statusClass = hasData ? "intel-status-ready" : "intel-status-pending";
+        const statusClass = hasData
+          ? "intel-status-ready"
+          : hasMeaningfulFallback
+            ? "intel-status-pending intel-status-soft"
+            : "intel-status-pending";
         const statusText  = hasData ? "Ready" : "Report pending";
         subheadEl.innerHTML =
           `${escapeHtml(datePart)}` +
@@ -406,10 +413,15 @@ async function loadIntelligence() {
       if (intelEmpty) {
         const titleP = intelEmpty.querySelector(".intel-empty-title");
         const bodyP  = intelEmpty.querySelector(".intel-empty-body");
-        if (titleP) titleP.textContent = "Your post-event report is being prepared.";
-        if (bodyP) bodyP.innerHTML = eventMeta
-          ? `Interaction data from <strong>${escapeHtml(eventMeta.name)}</strong> is being processed. Reports are typically ready within a few hours of the event ending.`
-          : "Interaction data is being processed. Reports are typically ready within a few hours of the event ending.";
+        if (hasMeaningfulFallback) {
+          if (titleP) titleP.textContent = "Early event intelligence is available";
+          if (bodyP) bodyP.textContent = "You already have a recommended next step. Full report still processing.";
+        } else {
+          if (titleP) titleP.textContent = "Your post-event report is being prepared.";
+          if (bodyP) bodyP.innerHTML = eventMeta
+            ? `Interaction data from <strong>${escapeHtml(eventMeta.name)}</strong> is being processed. Reports are typically ready within a few hours of the event ending.`
+            : "Interaction data is being processed. Reports are typically ready within a few hours of the event ending.";
+        }
         // Add refresh button if not already present
         if (!intelEmpty.querySelector(".intel-refresh-btn")) {
           const btn = document.createElement("button");
