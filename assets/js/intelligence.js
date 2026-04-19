@@ -332,16 +332,33 @@ function renderRecommendedAction(decision) {
     return null;
   }
 
+  function generateReason(_decision, intent) {
+    if (!intent) return "You had a recent interaction.";
+
+    const intentMap = {
+      meet_people: "You’re both looking to meet people.",
+      find_cofounder: "You’re both exploring collaboration opportunities.",
+      hire: "There may be a strong hiring match here.",
+      explore_ideas: "You’re both exploring ideas.",
+      demo: "One of you is showcasing something worth seeing.",
+    };
+
+    return intentMap[intent] || "You had a relevant interaction.";
+  }
+
+  const intent = normalizeIntent(decision?.components?.intent || localStorage.getItem("intent_primary"));
+  const reason = generateReason(decision, intent);
+
   const block = document.createElement("div");
   block.className = "intel-recommended-action";
 
   const title = document.createElement("h3");
   title.className = "intel-recommended-title";
-  title.textContent = "You made a promising connection";
+  title.textContent = "Recommended next step";
 
   const body = document.createElement("p");
   body.className = "intel-recommended-body";
-  body.textContent = buildSuggestConnectReason(decision);
+  body.textContent = reason;
 
   const button = document.createElement("button");
   button.type = "button";
@@ -512,6 +529,55 @@ function computeSharedInterestScore(currentProfile, peerProfiles) {
   return clamp01(overlapTotal / peerProfiles.length);
 }
 
+function normalizeIntent(intent) {
+  if (!intent) return "";
+  const normalized = String(intent).trim().toLowerCase();
+  return normalized === "demo_something" ? "demo" : normalized;
+}
+
+async function getCurrentIntent() {
+  try {
+    const user = await getCurrentUser();
+    if (user?.id) {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("intent_primary")
+        .eq("user_id", user.id)
+        .maybeSingle();
+
+      if (!error && data?.intent_primary) {
+        const intent = normalizeIntent(data.intent_primary);
+        console.log("[Intent] current:", intent);
+        return intent;
+      }
+    }
+  } catch (_) {
+    // fall through to local storage fallback
+  }
+
+  const intent = normalizeIntent(localStorage.getItem("intent_primary"));
+  console.log("[Intent] current:", intent);
+  return intent;
+}
+
+function computeIntentAlignment(myIntent, otherIntent) {
+  const mine = normalizeIntent(myIntent);
+  const other = normalizeIntent(otherIntent);
+  if (!mine || !other) return 0;
+  if (mine === other) return 1;
+
+  const matrix = {
+    meet_people: ["explore_ideas", "demo"],
+    find_cofounder: ["demo", "explore_ideas"],
+    hire: ["demo"],
+    explore_ideas: ["meet_people", "find_cofounder"],
+    demo: ["find_cofounder", "hire"],
+  };
+
+  if (matrix[mine]?.includes(other)) return 0.6;
+  return 0.2;
+}
+
 function actionSuitability(action, s) {
   switch (action) {
     case "suggest_connect":
@@ -580,6 +646,7 @@ export async function fetchRawSignals(eventId) {
   const relevantProfiles = profileRows.filter((p) => attendeeIds.has(p.id));
   const me = relevantProfiles.find((p) => p.id === profileId);
   const peers = relevantProfiles.filter((p) => p.id !== profileId);
+  const intent = await getCurrentIntent();
 
   if (!attendeeRows.length && !interactionRows.length) {
     console.log("[EL] action:", fallback.action);
@@ -599,7 +666,17 @@ export async function fetchRawSignals(eventId) {
 
   const P = clamp01(coPresent);
   const X = clamp01(rawStrength / Math.max(1, interactionRows.length));
-  const O = computeSharedInterestScore(me, peers);
+  const sharedInterestScore = computeSharedInterestScore(me, peers);
+  const peerIntentAlignments = peers.map((peer) => computeIntentAlignment(intent, peer?.intent_primary));
+  const intentAlignment = peerIntentAlignments.length
+    ? peerIntentAlignments.reduce((acc, value) => acc + value, 0) / peerIntentAlignments.length
+    : 0;
+  console.log("[EL] intent:", intent);
+  console.log("[EL] intentAlignment:", intentAlignment);
+  const O = clamp01(
+    0.5 * sharedInterestScore +
+    0.5 * intentAlignment
+  );
 
   const latestTs = interactionRows.reduce((maxTs, r) => {
     const ts = r.created_at ? new Date(r.created_at).getTime() : 0;
@@ -649,6 +726,9 @@ export async function fetchRawSignals(eventId) {
       r,
       v,
       m,
+      intent,
+      intentAlignment: Number(intentAlignment.toFixed(4)),
+      sharedInterestScore: Number(sharedInterestScore.toFixed(4)),
       scored_actions: scored.map((s) => ({
         action: s.action,
         score: Number(s.score.toFixed(4)),
