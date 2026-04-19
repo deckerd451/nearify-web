@@ -256,24 +256,26 @@ function handleSuggestConnect() {
 
 function renderRecommendedAction(decision) {
   console.log("[CTA] decision in renderer:", decision);
-  if (!decision || decision.action !== "suggest_connect" || Number(decision.confidence) <= 0.2) {
-    return null;
-  }
+  if (!decision) return null;
 
   const block = document.createElement("div");
-  block.className = "intel-recommended-action";
-  block.setAttribute("data-cta-debug", "true");
-  block.innerHTML =
-    `<p class="intel-recommended-title">Recommended next step</p>` +
-    `<p class="intel-recommended-body">${escapeHtml(buildSuggestConnectReason(decision))}.</p>`;
+  block.style.background = "red";
+  block.style.padding = "20px";
+  block.style.margin = "20px";
+  block.style.color = "white";
+  block.style.fontSize = "20px";
+
+  block.innerText = "CTA TEST BUTTON";
 
   const button = document.createElement("button");
-  button.type = "button";
-  button.className = "intel-connect-btn";
-  button.textContent = "Connect now";
-  button.addEventListener("click", handleSuggestConnect);
+  button.innerText = "CLICK ME";
+  button.style.marginTop = "10px";
 
+  button.onclick = () => alert("CTA CLICKED");
+
+  block.appendChild(document.createElement("br"));
   block.appendChild(button);
+
   console.log("[CTA] rendered element:", block);
   return block;
 }
@@ -283,7 +285,7 @@ function appendRecommendedAction(container, decision) {
   const cta = renderRecommendedAction(decision);
   console.log("[CTA] rendered element:", cta);
   console.log("[CTA] append target children count before:", container.children.length);
-  if (cta) container.appendChild(cta);
+  container.appendChild(cta);
   console.log("[CTA] append target children count after:", container.children.length);
 }
 
