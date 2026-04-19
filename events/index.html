@@ -11,6 +11,7 @@
   <link rel="stylesheet" href="../assets/css/styles.css" />
 </head>
 <body>
+  <a href="#main-content" class="skip-link">Skip to main content</a>
   <div class="nav-container">
   <header class="nav">
     <div class="logo"><a href="../index.html">Nearify</a></div>
@@ -30,7 +31,7 @@
   </nav>
   </div>
 
-  <main class="events-page">
+  <main id="main-content" class="events-page">
     <section class="events-hero">
       <div class="events-hero-copy">
         <div class="event-kicker">Nearify Events</div>
@@ -157,10 +158,14 @@
         const desc = ev.description
           ? '<p class="event-list-desc">' + escapeHtml(ev.description) + '</p>'
           : '';
+        const detailUrl = ev.slug ? ev.slug + ".html" : null;
+        const nameHtml = detailUrl
+          ? '<a href="' + detailUrl + '" class="event-list-name-link">' + escapeHtml(ev.name) + '</a>'
+          : escapeHtml(ev.name);
 
         return '<article class="event-list-card' + featured + '" data-event-id="' + ev.id + '">' +
           (i === 0 ? '<div class="card-badge">Featured</div>' : '') +
-          '<h3>' + escapeHtml(ev.name) + '</h3>' +
+          '<h3>' + nameHtml + '</h3>' +
           (meta ? '<p class="event-list-meta">' + escapeHtml(meta) + '</p>' : '') +
           desc +
           '<div class="event-card-actions">' +

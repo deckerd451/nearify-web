@@ -58,9 +58,13 @@ async function loadPublicEvents() {
       ? new Date(ev.starts_at).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })
       : "";
     const meta = [ev.location, dateStr].filter(Boolean).join(" \u00b7 ");
+    const detailUrl = ev.slug ? "events/" + ev.slug + ".html" : null;
+    const nameHtml = detailUrl
+      ? '<a href="' + detailUrl + '" class="event-list-name-link">' + escapeHtml(ev.name) + '</a>'
+      : escapeHtml(ev.name);
 
     return '<div class="event-card">' +
-      '<h3>' + escapeHtml(ev.name) + '</h3>' +
+      '<h3>' + nameHtml + '</h3>' +
       (meta ? '<p style="color:#8fa0b8; font-size:14px; margin-bottom:8px;">' + escapeHtml(meta) + '</p>' : '') +
       '<div class="hero-actions" style="margin-top:14px;">' +
         '<a href="' + joinUrl + '" class="btn primary">Join Event</a>' +
