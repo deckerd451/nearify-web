@@ -1895,3 +1895,26 @@ code {
   background: rgba(0, 209, 255, 0.08);
   border-color: var(--color-accent);
 }
+
+.intel-decision-debug {
+  margin-top: 14px;
+  padding: 10px 12px;
+  border: 1px solid rgba(122, 184, 245, 0.35);
+  border-radius: 10px;
+  background: rgba(11, 18, 32, 0.5);
+  color: #9eb0ca;
+}
+
+.intel-decision-debug summary {
+  cursor: pointer;
+  color: #cfe6ff;
+  font-weight: 600;
+}
+
+.intel-decision-debug pre {
+  margin: 8px 0 0;
+  max-height: 220px;
+  overflow: auto;
+  font-size: 12px;
+  line-height: 1.45;
+}
