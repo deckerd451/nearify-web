@@ -204,10 +204,12 @@ function renderDecisionDebug(decision) {
 
 function getDecisionSignals(decision) {
   if (!decision || typeof decision !== "object") return { P: 0, X: 0 };
-  const source = decision.components?.signals ?? decision.components ?? {};
+  const source = decision.signals ?? decision.components?.signals ?? decision.components ?? {};
   return {
     P: clamp01(Number(source.P) || 0),
     X: clamp01(Number(source.X) || 0),
+    O: clamp01(Number(source.O) || 0),
+    N: clamp01(Number(source.N) || 0),
   };
 }
 
@@ -217,6 +219,41 @@ function buildSuggestConnectReason(decision) {
   if (P > 0.5) parts.push("You were both at this event");
   if (X > 0) parts.push("You had a recent interaction");
   return parts.join(" and ") || "This looks like a good time to connect";
+}
+
+function buildPostEventSummary(decision, hasData) {
+  const { P, X } = getDecisionSignals(decision);
+  if (P > 0.5 && X > 0.25) return "You made a promising connection based on shared presence and recent interaction signals.";
+  if (P > 0.5) return "You were present at the same event, which created a meaningful opportunity to connect.";
+  if (X > 0.25) return "Your recent interaction signals point to a useful follow-up opportunity.";
+  return hasData
+    ? "Your post-event intelligence report is ready with interaction highlights."
+    : "Your post-event intelligence report is taking shape from early event signals.";
+}
+
+function buildSignalInsights(decision) {
+  const { P, X, N } = getDecisionSignals(decision);
+  const insights = [];
+
+  insights.push({
+    label: "Shared presence",
+    value: P > 0.5 ? "Confirmed at this event" : "Limited co-presence signal",
+  });
+  insights.push({
+    label: "Interaction strength",
+    value: X > 0.5 ? "Strong interaction signal" : X > 0.2 ? "Moderate interaction signal" : "Light interaction signal",
+  });
+  insights.push({
+    label: "Timing",
+    value: N > 0.5 ? "Interaction was recent" : "Interaction was less recent",
+  });
+
+  return insights.slice(0, 3);
+}
+
+function isDebugModeEnabled() {
+  const params = new URLSearchParams(window.location.search);
+  return params.get("debug") === "1" || localStorage.getItem("nearify_intel_debug") === "1";
 }
 
 function resolveSuggestedConnectTarget() {
@@ -265,11 +302,10 @@ function renderRecommendedAction(decision) {
 
   const block = document.createElement("div");
   block.className = "intel-recommended-action";
-  block.dataset.ctaDebug = "true";
 
-  const title = document.createElement("p");
+  const title = document.createElement("h3");
   title.className = "intel-recommended-title";
-  title.textContent = "Recommended next step";
+  title.textContent = "You made a promising connection";
 
   const body = document.createElement("p");
   body.className = "intel-recommended-body";
@@ -301,7 +337,31 @@ function appendRecommendedAction(container, decision) {
 export function appendDecisionDebug(container, decision) {
   if (!container) return;
   container.querySelectorAll(".intel-decision-debug").forEach((el) => el.remove());
+  if (!isDebugModeEnabled()) return;
   container.appendChild(renderDecisionDebug(decision));
+}
+
+function renderPostEventSummary(container, decision, hasData) {
+  const summary = document.createElement("div");
+  summary.className = "intel-post-summary";
+  summary.innerHTML = `
+    <p class="intel-post-summary-title">Post-event summary</p>
+    <p class="intel-post-summary-body">${escapeHtml(buildPostEventSummary(decision, hasData))}</p>
+  `;
+  container.appendChild(summary);
+
+  const insights = buildSignalInsights(decision);
+  if (!insights.length) return;
+
+  const insightsList = document.createElement("ul");
+  insightsList.className = "intel-secondary-insights";
+  insights.forEach((entry) => {
+    const item = document.createElement("li");
+    item.className = "intel-secondary-insight";
+    item.innerHTML = `<span class="intel-insight-label">${escapeHtml(entry.label)}:</span> ${escapeHtml(entry.value)}`;
+    insightsList.appendChild(item);
+  });
+  container.appendChild(insightsList);
 }
 
 /**
@@ -644,28 +704,22 @@ export function renderIntelligenceInto(container, data, eventMeta = null, fallba
   container.innerHTML = "";
 
   const hasData = !!(data && data.length > 0);
+  const decision = fallbackDecision ?? computeNextBestAction(data);
 
   if (eventMeta) {
     container.appendChild(buildEventHeader(eventMeta, hasData));
   }
 
+  renderPostEventSummary(container, decision, hasData);
+
   if (!hasData) {
-    const decision = fallbackDecision ?? computeNextBestAction(data);
     console.log("[CTA] rendering decision:", decision);
 
-    const eventLine = eventMeta
-      ? `Interaction data from <strong>${escapeHtml(eventMeta.name)}</strong> is being processed.`
-      : "Your interaction data is being processed.";
+    const pending = document.createElement("p");
+    pending.className = "intel-processing-note";
+    pending.textContent = "Full report still processing.";
+    container.appendChild(pending);
 
-    const empty = document.createElement("div");
-    empty.className = "intel-empty";
-    empty.innerHTML =
-      `<p class="intel-empty-title">Your post-event report is being prepared.</p>` +
-      `<p class="intel-empty-body">${eventLine} ` +
-      `Reports are typically ready within a few hours of the event ending.</p>` +
-      `<button class="intel-refresh-btn" onclick="window.location.reload()">Refresh to check</button>`;
-
-    container.appendChild(empty);
     appendRecommendedAction(container, decision);
 
     console.info("[Intelligence] next_best_action", decision);
@@ -675,7 +729,6 @@ export function renderIntelligenceInto(container, data, eventMeta = null, fallba
     return;
   }
 
-  const decision = fallbackDecision ?? computeNextBestAction(data);
   console.info("[Intelligence] next_best_action", decision);
 
   const buckets = {
@@ -711,19 +764,10 @@ export function renderIntelligenceInto(container, data, eventMeta = null, fallba
   }
 
   if (!hasContent) {
-    const eventLine = eventMeta
-      ? `Interaction data from <strong>${escapeHtml(eventMeta.name)}</strong> is being processed.`
-      : "Your interaction data is being processed.";
-
-    const empty = document.createElement("div");
-    empty.className = "intel-empty";
-    empty.innerHTML =
-      `<p class="intel-empty-title">Your post-event report is being prepared.</p>` +
-      `<p class="intel-empty-body">${eventLine} ` +
-      `Reports are typically ready within a few hours of the event ending.</p>` +
-      `<button class="intel-refresh-btn" onclick="window.location.reload()">Refresh to check</button>`;
-
-    container.appendChild(empty);
+    const pending = document.createElement("p");
+    pending.className = "intel-processing-note";
+    pending.textContent = "Full report still processing.";
+    container.appendChild(pending);
   }
 
   console.log("[CTA] rendering decision:", decision);
