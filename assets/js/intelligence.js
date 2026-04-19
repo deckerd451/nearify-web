@@ -327,7 +327,7 @@ function renderRecommendedAction(decision) {
   return block;
 }
 
-function appendRecommendedAction(container, decision) {
+export function appendRecommendedAction(container, decision) {
   if (!container) return;
   const cta = renderRecommendedAction(decision);
   if (!cta) return;
