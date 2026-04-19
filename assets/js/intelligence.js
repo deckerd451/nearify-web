@@ -278,21 +278,53 @@ function resolveSuggestedConnectTarget() {
   return { type: "fallback-alert", target: "Open Nearify app to connect" };
 }
 
+function setConnectFallbackMessage(message = "Open the Nearify app on your phone to continue.") {
+  const fallbackMessage = document.querySelector(".intel-recommended-action .intel-recommended-body");
+  if (fallbackMessage) {
+    fallbackMessage.textContent = message;
+  }
+}
+
 function handleSuggestConnect() {
   const action = resolveSuggestedConnectTarget();
   if (action.type === "route" || action.type === "fallback-url") {
     window.location.assign(action.target);
     return;
   }
+
   if (action.type === "deep-link") {
+    console.log("[CTA] deep link attempted");
+
+    let fallbackUsed = false;
+    const fallbackTimer = window.setTimeout(() => {
+      if (document.visibilityState === "visible") {
+        fallbackUsed = true;
+        console.log("[CTA] deep link fallback used");
+        setConnectFallbackMessage();
+      }
+    }, 1200);
+
+    const clearFallbackTimer = () => {
+      window.clearTimeout(fallbackTimer);
+      document.removeEventListener("visibilitychange", clearFallbackTimer);
+      window.removeEventListener("pagehide", clearFallbackTimer);
+    };
+
+    document.addEventListener("visibilitychange", clearFallbackTimer);
+    window.addEventListener("pagehide", clearFallbackTimer);
+
     window.location.href = action.target;
+
+    window.setTimeout(() => {
+      if (!fallbackUsed) {
+        clearFallbackTimer();
+      }
+    }, 1500);
     return;
   }
 
-  const fallbackMessage = document.querySelector(".intel-recommended-action .intel-recommended-body");
-  if (fallbackMessage) {
-    fallbackMessage.textContent = action.target;
-  }
+  console.log("[CTA] deep link fallback used");
+  setConnectFallbackMessage(action.target);
 }
 
 function renderRecommendedAction(decision) {
