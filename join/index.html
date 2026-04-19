@@ -140,7 +140,7 @@
       </div>
     </section>
 
-    <!-- Intent capture step — shown only for signed-in users after join -->
+    <!-- Intent capture — always visible for valid event URLs -->
     <section id="intentStep" class="section event-section intent-section" style="display:none;">
       <div class="section-heading">
         <div class="intent-step-label">One quick question</div>
@@ -172,6 +172,13 @@
           <span class="intent-chip-sub">Here to show what I've built</span>
         </button>
       </div>
+
+      <!-- Shown after an unauthenticated user taps a chip -->
+      <div id="intentSignInGate" class="intent-signin-gate" style="display:none;">
+        <p class="intent-signin-message">Sign in to lock in your intent and get personalized recommendations after the event.</p>
+        <button id="intentSignInBtn" class="btn primary">Sign in with Google</button>
+      </div>
+
       <div class="intent-actions">
         <button id="skipIntentBtn" class="intent-skip-btn">I'll decide later</button>
       </div>
