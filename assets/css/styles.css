@@ -1477,6 +1477,18 @@ code {
 .skeleton-line.body2  { height: 14px; width: 70%; }
 .skeleton-line.button { height: 40px; width: 120px; border-radius: 8px; }
 
+/* HOMEPAGE PAST EVENTS LABEL */
+.home-past-label {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #8fa0b8;
+  margin: 40px 0 16px;
+  padding-top: 28px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
 /* HOMEPAGE INTELLIGENCE */
 .home-intel-subhead {
   color: #aab4c5;
