@@ -169,10 +169,8 @@
         const desc = ev.description
           ? '<p class="event-list-desc">' + escapeHtml(ev.description) + '</p>'
           : '';
-        const detailUrl = ev.slug ? ev.slug + ".html" : null;
-        const nameHtml = detailUrl
-          ? '<a href="' + detailUrl + '" class="event-list-name-link">' + escapeHtml(ev.name) + '</a>'
-          : escapeHtml(ev.name);
+        const detailUrl = ev.slug ? "event.html?slug=" + encodeURIComponent(ev.slug) : "event.html?id=" + encodeURIComponent(ev.id);
+        const nameHtml = '<a href="' + detailUrl + '" class="event-list-name-link">' + escapeHtml(ev.name) + '</a>';
 
         return '<article class="event-list-card' + featured + '" data-event-id="' + ev.id + '">' +
           (i === 0 ? '<div class="card-badge">Featured</div>' : '') +

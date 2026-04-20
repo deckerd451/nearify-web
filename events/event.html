@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Event | Nearify</title>
+  <meta name="description" content="Discover and connect with attendees at this Nearify event in real time." />
+
+  <meta property="og:type"        content="website" />
+  <meta property="og:url"         content="https://nearify.org/events/event.html" />
+  <meta property="og:title"       content="Event | Nearify" />
+  <meta property="og:description" content="Discover and connect with attendees at this Nearify event in real time." />
+  <meta name="twitter:card"       content="summary" />
+  <meta name="twitter:title"      content="Event | Nearify" />
+  <meta name="twitter:description" content="Discover and connect with attendees at this Nearify event in real time." />
+
+  <link rel="stylesheet" href="../assets/css/styles.css" />
+</head>
+<body>
+  <a href="#main-content" class="skip-link">Skip to main content</a>
+  <div class="nav-container">
+  <header class="nav">
+    <div class="logo"><a href="../index.html">Nearify</a></div>
+    <div class="nav-links">
+      <a href="../index.html#how">How it works</a>
+      <a href="index.html">Events</a>
+      <a href="../admin/event-setup.html">Host an Event</a>
+    </div>
+    <button class="nav-hamburger" id="navHamburger" aria-label="Open menu" aria-expanded="false">
+      <span></span><span></span><span></span>
+    </button>
+  </header>
+  <nav class="nav-drawer" id="navDrawer" aria-label="Site navigation">
+    <a href="../index.html#how">How it works</a>
+    <a href="index.html">Events</a>
+    <a href="../admin/event-setup.html" class="nav-drawer-highlight">Host an Event</a>
+  </nav>
+  </div>
+
+  <main id="main-content" class="event-page">
+    <section class="event-hero">
+
+      <!-- Loading skeleton (shown while fetch is in flight) -->
+      <div id="eventSkeleton" class="event-hero-copy">
+        <div class="skeleton-line title" style="max-width:560px; height:44px; margin-bottom:18px;"></div>
+        <div class="skeleton-line body"  style="max-width:480px; margin-bottom:10px;"></div>
+        <div class="skeleton-line body"  style="max-width:360px; margin-bottom:28px;"></div>
+        <div style="display:flex; gap:12px;">
+          <div class="skeleton-line button" style="width:160px; height:44px; border-radius:10px;"></div>
+          <div class="skeleton-line button" style="width:130px; height:44px; border-radius:10px;"></div>
+        </div>
+      </div>
+
+      <!-- Real hero copy (hidden until event loads) -->
+      <div id="eventHeroCopy" class="event-hero-copy" style="display:none;">
+        <div class="event-kicker">Nearify Event</div>
+        <h1 id="eventTitle"></h1>
+        <p class="event-subhead" id="eventSubhead"></p>
+
+        <div class="event-meta-grid" id="eventMetaGrid"></div>
+
+        <div class="hero-actions">
+          <a
+            href="https://testflight.apple.com/join/ZayvEbAy"
+            class="btn primary"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Get Nearify on TestFlight
+          </a>
+          <a id="eventJoinBtn" href="#" class="btn secondary">Join this event</a>
+        </div>
+      </div>
+
+      <!-- Not-found / error state -->
+      <div id="eventNotFound" class="event-hero-copy" style="display:none;">
+        <div class="event-kicker">Nearify Events</div>
+        <h1>Event not found</h1>
+        <p class="event-subhead event-not-found-message">
+          This event may have ended or the link may be invalid.
+        </p>
+        <div class="hero-actions">
+          <a href="index.html" class="btn primary">Browse events</a>
+        </div>
+      </div>
+
+      <!-- Side panel — QR and steps (always visible) -->
+      <aside class="event-side-panel">
+        <div class="event-panel">
+          <div class="event-kicker" style="margin-bottom:14px;">Scan to join this event</div>
+          <div class="event-qr-shell">
+            <div id="eventQrCode"></div>
+          </div>
+          <p class="event-qr-caption">Scan with your iPhone camera or Nearify in-app scanner</p>
+
+          <hr class="event-panel-divider" />
+
+          <h2>Use Nearify at this event</h2>
+          <ol class="event-steps-list">
+            <li>Install Nearify from TestFlight</li>
+            <li>Sign in with Google or GitHub</li>
+            <li>Create your profile</li>
+            <li>Scan the event QR code on site</li>
+            <li>See attendees and discover who to meet</li>
+            <li>Use proximity guidance to connect in person</li>
+          </ol>
+        </div>
+      </aside>
+    </section>
+
+    <!-- Sections hidden while loading, shown once event resolves -->
+    <div id="eventSections" style="display:none;">
+
+      <section id="how-nearify-works" class="section dark event-section">
+        <div class="section-heading">
+          <h2>How Nearify works at this event</h2>
+          <p>
+            Nearify is the live connection layer for in-person events. The app helps you discover
+            attendees during the event, and the web experience preserves those interactions as
+            memory and network intelligence.
+          </p>
+        </div>
+
+        <div class="timeline-grid">
+          <div class="timeline-card">
+            <div class="timeline-number">1</div>
+            <h3>Install and sign in</h3>
+            <p>
+              Get Nearify on TestFlight, sign in with Google or GitHub, and create your profile
+              so people can find and understand you.
+            </p>
+          </div>
+
+          <div class="timeline-card">
+            <div class="timeline-number">2</div>
+            <h3>Join the event</h3>
+            <p>
+              Scan the event QR code at the venue to enter the live event network and reveal the
+              attendees participating in this session.
+            </p>
+          </div>
+
+          <div class="timeline-card">
+            <div class="timeline-number">3</div>
+            <h3>Discover who is here</h3>
+            <p>
+              See other attendees, explore who feels relevant, and move from passive attendance to
+              intentional discovery.
+            </p>
+          </div>
+
+          <div class="timeline-card">
+            <div class="timeline-number">4</div>
+            <h3>Find and connect</h3>
+            <p>
+              Tap a person, use proximity guidance, and connect when you are in range. The
+              interaction becomes part of your event network.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section class="section event-section">
+        <div class="section-heading">
+          <h2>Why use Nearify instead of just mingling?</h2>
+          <p>
+            Great events create a lot of possibility, but most of that value disappears when you do
+            not know who is there, who matters to you, or how to reconnect later. Nearify makes the
+            room legible.
+          </p>
+        </div>
+
+        <div class="comparison-grid">
+          <div class="comparison-card">
+            <h3>Without Nearify</h3>
+            <ul>
+              <li>You meet people by chance</li>
+              <li>You forget who was in the room</li>
+              <li>Good conversations are hard to remember later</li>
+              <li>The event ends and the network disappears</li>
+            </ul>
+          </div>
+
+          <div class="comparison-card active">
+            <h3>With Nearify</h3>
+            <ul>
+              <li>You discover who is actually around you</li>
+              <li>You connect intentionally in real space</li>
+              <li>Your interactions become a persistent network</li>
+              <li>Post-event intelligence surfaces who to follow up with</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <section class="cta event-cta">
+        <h2>Get Nearify before the event</h2>
+        <p>Install the app, create your profile, and be ready to scan the event QR code when you arrive.</p>
+        <a
+          href="https://testflight.apple.com/join/ZayvEbAy"
+          class="btn primary"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          Open TestFlight
+        </a>
+      </section>
+
+    </div><!-- /eventSections -->
+  </main>
+
+  <footer class="footer">
+    <nav class="footer-links">
+      <a href="../index.html">Home</a>
+      <a href="index.html">Events</a>
+      <a href="../admin/event-setup.html">Host an Event</a>
+      <a href="mailto:hello@nearify.org">Contact</a>
+    </nav>
+    <p>© 2026 Nearify</p>
+  </footer>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <script type="module" src="../assets/js/eventDetail.js"></script>
+  <script type="module" src="../assets/js/navAuth.js"></script>
+</body>
+</html>
