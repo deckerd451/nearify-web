@@ -1895,3 +1895,69 @@ code {
   background: rgba(0, 209, 255, 0.08);
   border-color: var(--color-accent);
 }
+
+/* ============================================================
+   EVENTS PAGE — HOW TO ATTEND STRIP
+   ============================================================ */
+
+.event-how-strip {
+  display: flex;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgba(0, 0, 0, 0.18);
+}
+
+.event-how-step {
+  flex: 1;
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 22px 28px;
+  border-right: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.event-how-step:last-child {
+  border-right: none;
+}
+
+.event-how-num {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: rgba(0, 209, 255, 0.12);
+  color: var(--color-accent);
+  font-size: 12px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.event-how-step-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #e2e8f0;
+  margin-bottom: 3px;
+}
+
+.event-how-step-desc {
+  font-size: 12px;
+  color: #8fa0b8;
+  line-height: 1.5;
+}
+
+@media (max-width: 720px) {
+  .event-how-strip {
+    flex-direction: column;
+  }
+  .event-how-step {
+    border-right: none;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    padding: 16px 20px;
+  }
+  .event-how-step:last-child {
+    border-bottom: none;
+  }
+}

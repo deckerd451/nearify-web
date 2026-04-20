@@ -44,10 +44,10 @@
     <section class="events-hero">
       <div class="events-hero-copy">
         <div class="event-kicker">Nearify Events</div>
-        <h1>Where real-world connection starts</h1>
+        <h1>Real-world events, live connections</h1>
         <p class="event-subhead">
-          Nearify works best in rooms where people are building, sharing, exploring, and meeting with intention.
-          Browse upcoming events, install the app, and be ready to join the network when you arrive.
+          Nearify turns in-person events into live networks. Install the app before you arrive,
+          then scan the event QR code on site to see who's in the room and start connecting.
         </p>
 
         <div class="hero-actions">
@@ -57,18 +57,43 @@
             target="_blank"
             rel="noopener noreferrer"
           >
-            Get Nearify on TestFlight
+            Install Nearify (TestFlight)
           </a>
-          <a href="#upcoming-events" class="btn secondary">Browse Events</a>
+          <a href="#upcoming-events" class="btn secondary">See Events</a>
         </div>
       </div>
     </section>
+
+    <!-- How to attend strip -->
+    <div class="event-how-strip" aria-label="How to attend a Nearify event">
+      <div class="event-how-step">
+        <div class="event-how-num">1</div>
+        <div>
+          <div class="event-how-step-title">Install the app</div>
+          <div class="event-how-step-desc">Get Nearify on TestFlight and create your profile before the event.</div>
+        </div>
+      </div>
+      <div class="event-how-step">
+        <div class="event-how-num">2</div>
+        <div>
+          <div class="event-how-step-title">Set your intent</div>
+          <div class="event-how-step-desc">Tell Nearify why you're attending so it can surface the right people for you.</div>
+        </div>
+      </div>
+      <div class="event-how-step">
+        <div class="event-how-num">3</div>
+        <div>
+          <div class="event-how-step-title">Scan when you arrive</div>
+          <div class="event-how-step-desc">Use the event QR code at the venue to join the live network and see who's there.</div>
+        </div>
+      </div>
+    </div>
 
     <section id="upcoming-events" class="section event-section">
       <div class="section-heading">
         <h2>Upcoming events</h2>
         <p>
-          Browse Nearify-enabled gatherings and be ready to scan the event QR code on site.
+          Select an event to learn more, set your intent, and get your join QR code before you arrive.
         </p>
       </div>
 
@@ -81,9 +106,9 @@
 
     <section class="section dark event-section">
       <div class="section-heading">
-        <h2>What Nearify events feel like</h2>
+        <h2>What happens when you're there</h2>
         <p>
-          Nearify is designed for live gatherings where proximity matters and the people in the room are part of the value.
+          Once you scan the event QR code, Nearify shows you the live attendee network — real people in the room right now, not a static list from a signup sheet.
         </p>
       </div>
 
@@ -139,7 +164,6 @@
   <script type="module">
     import { fetchPublicEvents } from "../assets/js/events.js";
 
-    const TESTFLIGHT_URL = "https://testflight.apple.com/join/ZayvEbAy";
     const grid = document.getElementById("eventsListGrid");
 
     async function loadEvents() {
@@ -154,13 +178,11 @@
 
       if (!events || !events.length) {
         grid.innerHTML =
-          '<p style="text-align:center; color:#8fa0b8;">No events yet. Check back soon.</p>';
+          '<p style="text-align:center; color:#8fa0b8;">No upcoming events scheduled. Check back soon.</p>';
         return;
       }
 
       grid.innerHTML = events.map((ev, i) => {
-        const joinUrl = "../join/?event=" + encodeURIComponent(ev.id) +
-          "&name=" + encodeURIComponent(ev.name);
         const dateStr = ev.starts_at
           ? new Date(ev.starts_at).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })
           : "";
@@ -178,8 +200,7 @@
           (meta ? '<p class="event-list-meta">' + escapeHtml(meta) + '</p>' : '') +
           desc +
           '<div class="event-card-actions">' +
-            '<a href="' + joinUrl + '" class="btn primary">Join Event</a>' +
-            '<a href="' + TESTFLIGHT_URL + '" class="btn secondary" target="_blank" rel="noopener noreferrer">Install App</a>' +
+            '<a href="' + detailUrl + '" class="btn primary">View Event</a>' +
           '</div>' +
         '</article>';
       }).join("");
