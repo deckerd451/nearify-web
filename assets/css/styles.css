@@ -2023,6 +2023,14 @@ code {
   border-color: var(--color-accent);
 }
 
+/* Past event detail page — single column, centred, no side panel */
+.event-hero--past {
+  grid-template-columns: 1fr;
+  max-width: 740px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
 /* ============================================================
    EVENTS PAGE — HOW TO ATTEND STRIP
    ============================================================ */

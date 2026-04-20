@@ -53,14 +53,15 @@
 
       <!-- Real hero copy (hidden until event loads) -->
       <div id="eventHeroCopy" class="event-hero-copy" style="display:none;">
-        <div class="event-kicker">Nearify Event</div>
+        <div id="eventKicker" class="event-kicker">Nearify Event</div>
         <h1 id="eventTitle"></h1>
         <p class="event-subhead" id="eventSubhead"></p>
 
         <div class="event-meta-grid" id="eventMetaGrid"></div>
 
-        <div class="hero-actions">
+        <div class="hero-actions" id="eventHeroActions">
           <a
+            id="eventTestflightBtn"
             href="https://testflight.apple.com/join/ZayvEbAy"
             class="btn primary"
             target="_blank"
@@ -84,8 +85,8 @@
         </div>
       </div>
 
-      <!-- Side panel — QR and steps (always visible) -->
-      <aside class="event-side-panel">
+      <!-- Side panel — QR and steps (upcoming events only) -->
+      <aside id="eventSidePanel" class="event-side-panel">
         <div class="event-panel">
           <div class="event-kicker" style="margin-bottom:14px;">Scan to join this event</div>
           <div class="event-qr-shell">
