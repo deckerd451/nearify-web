@@ -76,10 +76,10 @@ async function loadPublicEvents() {
       ? new Date(ev.starts_at).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })
       : "";
     const meta = [ev.location, dateStr].filter(Boolean).join(" \u00b7 ");
-    const detailUrl = ev.slug ? "events/" + ev.slug + ".html" : null;
-    const nameHtml = detailUrl
-      ? '<a href="' + detailUrl + '" class="event-list-name-link">' + escapeHtml(ev.name) + '</a>'
-      : escapeHtml(ev.name);
+    const detailUrl = ev.slug
+      ? "events/event.html?slug=" + encodeURIComponent(ev.slug)
+      : "events/event.html?id="   + encodeURIComponent(ev.id);
+    const nameHtml = '<a href="' + detailUrl + '" class="event-list-name-link">' + escapeHtml(ev.name) + '</a>';
 
     return '<div class="event-card">' +
       '<h3>' + nameHtml + '</h3>' +
