@@ -690,6 +690,29 @@ html {
   color: #d1d7e0;
 }
 
+.card-badge-past {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-bottom: 14px;
+  background: rgba(255, 255, 255, 0.06);
+  color: #8fa0b8;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.event-card-past {
+  opacity: 0.75;
+}
+
+.event-card-past:hover {
+  opacity: 1;
+}
+
 .event-list-card h3 {
   font-size: 30px;
   margin-bottom: 12px;

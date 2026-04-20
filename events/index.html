@@ -104,6 +104,17 @@
       </div>
     </section>
 
+    <!-- Past events — hidden until there are past events to show -->
+    <section id="pastEventsSection" class="section event-section" style="display:none;">
+      <div class="section-heading">
+        <h2>Past events</h2>
+        <p>
+          These events have already taken place. If you attended with Nearify, your post-event intelligence report is available on the event page.
+        </p>
+      </div>
+      <div class="events-list-grid" id="pastEventsGrid"></div>
+    </section>
+
     <section class="section dark event-section">
       <div class="section-heading">
         <h2>What happens when you're there</h2>
@@ -164,52 +175,77 @@
   <script type="module">
     import { fetchPublicEvents } from "../assets/js/events.js";
 
-    const grid = document.getElementById("eventsListGrid");
+    const upcomingGrid   = document.getElementById("eventsListGrid");
+    const pastSection    = document.getElementById("pastEventsSection");
+    const pastGrid       = document.getElementById("pastEventsGrid");
+
+    function escapeHtml(str) {
+      const d = document.createElement("div");
+      d.textContent = str;
+      return d.innerHTML;
+    }
+
+    function renderCard(ev, { featured = false, past = false } = {}) {
+      const dateStr  = ev.starts_at
+        ? new Date(ev.starts_at).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })
+        : "";
+      const meta     = [ev.location, dateStr].filter(Boolean).join(" \u00b7 ");
+      const desc     = ev.description
+        ? '<p class="event-list-desc">' + escapeHtml(ev.description) + '</p>'
+        : "";
+      const detailUrl = ev.slug
+        ? "event.html?slug=" + encodeURIComponent(ev.slug)
+        : "event.html?id="   + encodeURIComponent(ev.id);
+      const nameHtml = '<a href="' + detailUrl + '" class="event-list-name-link">' + escapeHtml(ev.name) + '</a>';
+      const cardClass = "event-list-card" + (featured ? " featured" : "") + (past ? " event-card-past" : "");
+      const badge = featured
+        ? '<div class="card-badge">Featured</div>'
+        : past
+          ? '<div class="card-badge card-badge-past">Past</div>'
+          : "";
+
+      return '<article class="' + cardClass + '" data-event-id="' + ev.id + '">' +
+        badge +
+        '<h3>' + nameHtml + '</h3>' +
+        (meta ? '<p class="event-list-meta">' + escapeHtml(meta) + '</p>' : "") +
+        desc +
+        '<div class="event-card-actions">' +
+          '<a href="' + detailUrl + '" class="btn primary">View Event</a>' +
+        '</div>' +
+      '</article>';
+    }
 
     async function loadEvents() {
       let events;
       try {
         events = await fetchPublicEvents();
       } catch (err) {
-        grid.innerHTML =
+        upcomingGrid.innerHTML =
           '<p style="text-align:center; color:#f87171;">Could not load events. Please refresh and try again.</p>';
         return;
       }
 
-      if (!events || !events.length) {
-        grid.innerHTML =
+      const now      = new Date();
+      const upcoming = (events || []).filter(ev => !ev.starts_at || new Date(ev.starts_at) >= now);
+      const past     = (events || [])
+        .filter(ev => ev.starts_at && new Date(ev.starts_at) < now)
+        .sort((a, b) => new Date(b.starts_at) - new Date(a.starts_at));
+
+      // Upcoming
+      if (!upcoming.length) {
+        upcomingGrid.innerHTML =
           '<p style="text-align:center; color:#8fa0b8;">No upcoming events scheduled. Check back soon.</p>';
-        return;
+      } else {
+        upcomingGrid.innerHTML = upcoming
+          .map((ev, i) => renderCard(ev, { featured: i === 0 }))
+          .join("");
       }
 
-      grid.innerHTML = events.map((ev, i) => {
-        const dateStr = ev.starts_at
-          ? new Date(ev.starts_at).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })
-          : "";
-        const meta = [ev.location, dateStr].filter(Boolean).join(" \u00b7 ");
-        const featured = i === 0 ? " featured" : "";
-        const desc = ev.description
-          ? '<p class="event-list-desc">' + escapeHtml(ev.description) + '</p>'
-          : '';
-        const detailUrl = ev.slug ? "event.html?slug=" + encodeURIComponent(ev.slug) : "event.html?id=" + encodeURIComponent(ev.id);
-        const nameHtml = '<a href="' + detailUrl + '" class="event-list-name-link">' + escapeHtml(ev.name) + '</a>';
-
-        return '<article class="event-list-card' + featured + '" data-event-id="' + ev.id + '">' +
-          (i === 0 ? '<div class="card-badge">Featured</div>' : '') +
-          '<h3>' + nameHtml + '</h3>' +
-          (meta ? '<p class="event-list-meta">' + escapeHtml(meta) + '</p>' : '') +
-          desc +
-          '<div class="event-card-actions">' +
-            '<a href="' + detailUrl + '" class="btn primary">View Event</a>' +
-          '</div>' +
-        '</article>';
-      }).join("");
-    }
-
-    function escapeHtml(str) {
-      const d = document.createElement("div");
-      d.textContent = str;
-      return d.innerHTML;
+      // Past
+      if (past.length && pastSection && pastGrid) {
+        pastGrid.innerHTML = past.map(ev => renderCard(ev, { past: true })).join("");
+        pastSection.style.display = "";
+      }
     }
 
     loadEvents();
