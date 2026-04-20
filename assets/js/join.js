@@ -6,7 +6,7 @@ import {
   computeNextBestAction,
   appendRecommendedAction,
   appendDecisionDebug,
-  hasMeaningfulFallbackDecision,
+  shouldPromoteFallbackDecision,
 } from "./intelligence.js";
 import { setCurrentEventId } from "./appState.js";
 
@@ -391,12 +391,9 @@ async function loadIntelligence() {
       if (titleEl) titleEl.textContent = `Your report from ${eventMeta.name}`;
       if (subheadEl) {
         const datePart = eventMeta.date ? `${eventMeta.date} · ` : "";
-        const statusClass = hasData
-          ? "intel-status-ready"
-          : hasMeaningfulFallback
-            ? "intel-status-pending intel-status-soft"
-            : "intel-status-pending";
-        const statusText  = hasData ? "Ready" : "Report pending";
+        const shouldPromote = !hasData && shouldPromoteFallbackDecision(fallbackDecision);
+        const statusClass = hasData || shouldPromote ? "intel-status-ready" : "intel-status-pending";
+        const statusText  = hasData ? "Ready" : shouldPromote ? "Early signal" : "Report pending";
         subheadEl.innerHTML =
           `${escapeHtml(datePart)}` +
           `<span class="intel-inline-status ${statusClass}">` +
@@ -407,21 +404,27 @@ async function loadIntelligence() {
 
     if (!hasData) {
       const decision = fallbackDecision ?? computeNextBestAction([]);
+      const shouldPromote = shouldPromoteFallbackDecision(fallbackDecision);
       console.info("[Join] next_best_action", decision);
       appendDecisionDebug(headerEl || intelligencePanel, decision);
       appendRecommendedAction(intelligencePanel, decision);
       if (intelEmpty) {
         const titleP = intelEmpty.querySelector(".intel-empty-title");
         const bodyP  = intelEmpty.querySelector(".intel-empty-body");
-        if (hasMeaningfulFallback) {
-          if (titleP) titleP.textContent = "Early event intelligence is available";
-          if (bodyP) bodyP.textContent = "You already have a recommended next step. Full report still processing.";
+        if (shouldPromote) {
+          if (titleP) titleP.textContent = "You made a promising connection";
+          if (bodyP) bodyP.textContent = "You both came to meet people and had a recent interaction.";
         } else {
           if (titleP) titleP.textContent = "Your post-event report is being prepared.";
           if (bodyP) bodyP.innerHTML = eventMeta
             ? `Interaction data from <strong>${escapeHtml(eventMeta.name)}</strong> is being processed. Reports are typically ready within a few hours of the event ending.`
             : "Interaction data is being processed. Reports are typically ready within a few hours of the event ending.";
         }
+        intelEmpty.querySelectorAll(".intel-processing-note").forEach((el) => el.remove());
+        const subtleStatus = document.createElement("p");
+        subtleStatus.className = "intel-processing-note";
+        subtleStatus.textContent = "Full report still processing";
+        intelEmpty.appendChild(subtleStatus);
         // Add refresh button if not already present
         if (!intelEmpty.querySelector(".intel-refresh-btn")) {
           const btn = document.createElement("button");

@@ -221,6 +221,29 @@ function buildSuggestConnectReason(decision) {
   return parts.join(" and ") || "This looks like a good time to connect";
 }
 
+function getIntentSignalLabel(intent) {
+  const intentMap = {
+    meet_people: "came to meet people",
+    find_cofounder: "came to find a cofounder",
+    hire: "came to hire",
+    explore_ideas: "came to explore ideas",
+    demo: "came to demo",
+  };
+  return intentMap[intent] || "showed similar intent";
+}
+
+export function shouldPromoteFallbackDecision(decision) {
+  return !!decision && decision.action !== "do_nothing" && Number(decision.confidence) > 0.2;
+}
+
+function buildPromotedFallbackExplanation(decision) {
+  const intent = normalizeIntent(decision?.components?.intent || localStorage.getItem("intent_primary"));
+  const { X } = getDecisionSignals(decision);
+  const intentSignal = getIntentSignalLabel(intent);
+  const interactionSignal = X > 0.2 ? "had a recent interaction" : "showed interaction activity";
+  return `You both ${intentSignal} and ${interactionSignal}.`;
+}
+
 function buildPostEventSummary(decision, hasData) {
   const { P, X } = getDecisionSignals(decision);
   if (P > 0.5 && X > 0.25) return "You made a promising connection based on shared presence and recent interaction signals.";
@@ -396,12 +419,17 @@ export function appendDecisionDebug(container, decision) {
   container.appendChild(renderDecisionDebug(decision));
 }
 
-function renderPostEventSummary(container, decision, hasData) {
+function renderPostEventSummary(container, decision, hasData, promoteFallback) {
+  const titleText = promoteFallback ? "You made a promising connection" : "Post-event summary";
+  const bodyText = promoteFallback
+    ? buildPromotedFallbackExplanation(decision)
+    : buildPostEventSummary(decision, hasData);
+
   const summary = document.createElement("div");
   summary.className = "intel-post-summary";
   summary.innerHTML = `
-    <p class="intel-post-summary-title">Post-event summary</p>
-    <p class="intel-post-summary-body">${escapeHtml(buildPostEventSummary(decision, hasData))}</p>
+    <p class="intel-post-summary-title">${escapeHtml(titleText)}</p>
+    <p class="intel-post-summary-body">${escapeHtml(bodyText)}</p>
   `;
   container.appendChild(summary);
 
@@ -423,7 +451,7 @@ function renderPostEventSummary(container, decision, hasData) {
  * Build the event context header shown at the top of every intelligence section.
  * Includes event name, date, and a live/pending status badge.
  */
-function buildEventHeader(eventMeta, hasData, hasMeaningfulFallback = false) {
+function buildEventHeader(eventMeta, hasData, promoteFallback) {
   const header = document.createElement("div");
   header.className = "intel-event-header";
 
@@ -431,12 +459,8 @@ function buildEventHeader(eventMeta, hasData, hasMeaningfulFallback = false) {
     ? `<span class="intel-event-date"> · ${escapeHtml(eventMeta.date)}</span>`
     : "";
 
-  const statusClass = hasData
-    ? "intel-status-ready"
-    : hasMeaningfulFallback
-      ? "intel-status-pending intel-status-soft"
-      : "intel-status-pending";
-  const statusText = hasData ? "Ready" : "Report pending";
+  const statusClass = hasData || promoteFallback ? "intel-status-ready" : "intel-status-pending";
+  const statusText = hasData ? "Ready" : promoteFallback ? "Early signal" : "Report pending";
 
   header.innerHTML =
     `<div class="intel-event-badge">` +
@@ -827,13 +851,13 @@ export function renderIntelligenceInto(container, data, eventMeta = null, fallba
 
   const hasData = !!(data && data.length > 0);
   const decision = fallbackDecision ?? computeNextBestAction(data);
-  const hasMeaningfulFallback = !hasData && hasMeaningfulFallbackDecision(fallbackDecision);
+  const promoteFallback = !hasData && shouldPromoteFallbackDecision(fallbackDecision);
 
   if (eventMeta) {
-    container.appendChild(buildEventHeader(eventMeta, hasData, hasMeaningfulFallback));
+    container.appendChild(buildEventHeader(eventMeta, hasData, promoteFallback));
   }
 
-  renderPostEventSummary(container, decision, hasData);
+  renderPostEventSummary(container, decision, hasData, promoteFallback);
 
   if (!hasData) {
     console.log("[CTA] rendering decision:", decision);
