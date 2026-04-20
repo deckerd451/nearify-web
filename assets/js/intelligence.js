@@ -254,6 +254,12 @@ function buildPostEventSummary(decision, hasData) {
     : "Your post-event intelligence report is taking shape from early event signals.";
 }
 
+export function hasMeaningfulFallbackDecision(decision) {
+  if (!decision || typeof decision !== "object") return false;
+  const confidence = Number(decision.confidence ?? 0);
+  return decision.action !== "do_nothing" && confidence > 0.2;
+}
+
 function buildSignalInsights(decision) {
   const { P, X, N } = getDecisionSignals(decision);
   const insights = [];
@@ -858,7 +864,9 @@ export function renderIntelligenceInto(container, data, eventMeta = null, fallba
 
     const pending = document.createElement("p");
     pending.className = "intel-processing-note";
-    pending.textContent = "Full report still processing.";
+    pending.textContent = hasMeaningfulFallback
+      ? "Early event intelligence is available. You already have a recommended next step. Full report still processing."
+      : "Full report still processing.";
     container.appendChild(pending);
 
     appendRecommendedAction(container, decision);

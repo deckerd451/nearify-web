@@ -385,6 +385,8 @@ async function loadIntelligence() {
     const subheadEl = document.getElementById("intelPanelSubhead");
     const headerEl  = document.getElementById("intelEventHeader");
 
+    const hasMeaningfulFallback = !hasData && hasMeaningfulFallbackDecision(fallbackDecision);
+
     if (eventMeta) {
       if (titleEl) titleEl.textContent = `Your report from ${eventMeta.name}`;
       if (subheadEl) {
