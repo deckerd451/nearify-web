@@ -146,12 +146,12 @@ async function loadHomeIntelligence(eventId) {
   if (!intelSection || !intelContainer) return;
 
   // Fetch intelligence and event metadata in parallel
-  const [data, eventMeta] = await Promise.all([
+  const [{ data, fallbackDecision }, eventMeta] = await Promise.all([
     fetchIntelligence(eventId),
     fetchEventMeta(eventId),
   ]);
 
-  renderIntelligenceInto(intelContainer, data, eventMeta);
+  renderIntelligenceInto(intelContainer, data, eventMeta, fallbackDecision);
   intelSection.style.display = "";
 }
 

@@ -1,5 +1,13 @@
 import { supabase } from "./supabaseClient.js";
-import { renderIntelCard, fetchIntelligence, fetchEventMeta } from "./intelligence.js";
+import {
+  renderIntelCard,
+  fetchIntelligence,
+  fetchEventMeta,
+  computeNextBestAction,
+  appendRecommendedAction,
+  appendDecisionDebug,
+  hasMeaningfulFallbackDecision,
+} from "./intelligence.js";
 import { setCurrentEventId } from "./appState.js";
 
 console.log("[Join] join.js loaded");
@@ -11,7 +19,7 @@ const INTENT_LABELS = {
   find_cofounder: "find a cofounder",
   hire:           "hire",
   explore_ideas:  "explore ideas",
-  demo_something: "demo something",
+  demo:           "demo something",
 };
 
 const params = new URLSearchParams(window.location.search);
@@ -73,6 +81,11 @@ function persistState() {
 }
 
 let appOpened = false;
+
+function normalizeIntent(intentValue) {
+  if (!intentValue) return "";
+  return intentValue === "demo_something" ? "demo" : intentValue;
+}
 
 document.addEventListener("visibilitychange", () => {
   if (document.visibilityState === "hidden") {
@@ -256,19 +269,41 @@ async function submitIntent(intentValue) {
   if (!eventId || joinState.intentSaved) return;
 
   try {
+    const normalizedIntent = normalizeIntent(intentValue);
+    console.log("[Intent] selected:", normalizedIntent);
+
     if (intentStatus) intentStatus.textContent = "Saving...";
     intentChips.forEach((c) => { c.disabled = true; c.style.pointerEvents = "none"; });
     if (skipIntentBtn) { skipIntentBtn.disabled = true; skipIntentBtn.style.pointerEvents = "none"; }
 
+    // Primary path: persist selected intent to profiles.intent_primary.
+    // If this fails, localStorage still preserves intent for EL + CTA fallback.
+    try {
+      const sessionUser = await getSessionUser();
+      if (sessionUser?.id) {
+        const { error: profileIntentError } = await supabase
+          .from("profiles")
+          .update({ intent_primary: normalizedIntent })
+          .eq("user_id", sessionUser.id);
+        if (profileIntentError) throw profileIntentError;
+      }
+    } catch (profileErr) {
+      console.warn("[Join] Profile intent save failed, using localStorage fallback:", profileErr.message);
+      try { localStorage.setItem("intent_primary", normalizedIntent); } catch (_) {}
+    }
+
+    // Keep local fallback in sync for immediate client-side intelligence usage.
+    try { localStorage.setItem("intent_primary", normalizedIntent); } catch (_) {}
+
     const { data, error } = await supabase.rpc("update_attendee_intent", {
       p_event_id: eventId,
-      p_intent_primary: intentValue
+      p_intent_primary: normalizedIntent
     });
     if (error) throw error;
 
     joinState.intentSaved = true;
     persistState();
-    const label = INTENT_LABELS[intentValue] || intentValue.replace(/_/g, " ");
+    const label = INTENT_LABELS[normalizedIntent] || normalizedIntent.replace(/_/g, " ");
     if (intentStatus) intentStatus.textContent =
       `Got it. We'll surface people here to ${label} — and show you to them too.`;
 
@@ -336,7 +371,9 @@ async function loadIntelligence() {
   if (!eventId || !intelligencePanel) return;
 
   try {
-    const [data, eventMeta] = await Promise.all([
+    intelligencePanel.querySelectorAll(".intel-recommended-action").forEach((el) => el.remove());
+
+    const [{ data, fallbackDecision }, eventMeta] = await Promise.all([
       fetchIntelligence(eventId),
       fetchEventMeta(eventId),
     ]);
@@ -348,11 +385,17 @@ async function loadIntelligence() {
     const subheadEl = document.getElementById("intelPanelSubhead");
     const headerEl  = document.getElementById("intelEventHeader");
 
+    const hasMeaningfulFallback = !hasData && hasMeaningfulFallbackDecision(fallbackDecision);
+
     if (eventMeta) {
       if (titleEl) titleEl.textContent = `Your report from ${eventMeta.name}`;
       if (subheadEl) {
         const datePart = eventMeta.date ? `${eventMeta.date} · ` : "";
-        const statusClass = hasData ? "intel-status-ready" : "intel-status-pending";
+        const statusClass = hasData
+          ? "intel-status-ready"
+          : hasMeaningfulFallback
+            ? "intel-status-pending intel-status-soft"
+            : "intel-status-pending";
         const statusText  = hasData ? "Ready" : "Report pending";
         subheadEl.innerHTML =
           `${escapeHtml(datePart)}` +
@@ -363,13 +406,22 @@ async function loadIntelligence() {
     }
 
     if (!hasData) {
+      const decision = fallbackDecision ?? computeNextBestAction([]);
+      console.info("[Join] next_best_action", decision);
+      appendDecisionDebug(headerEl || intelligencePanel, decision);
+      appendRecommendedAction(intelligencePanel, decision);
       if (intelEmpty) {
         const titleP = intelEmpty.querySelector(".intel-empty-title");
         const bodyP  = intelEmpty.querySelector(".intel-empty-body");
-        if (titleP) titleP.textContent = "Your post-event report is being prepared.";
-        if (bodyP) bodyP.innerHTML = eventMeta
-          ? `Interaction data from <strong>${escapeHtml(eventMeta.name)}</strong> is being processed. Reports are typically ready within a few hours of the event ending.`
-          : "Interaction data is being processed. Reports are typically ready within a few hours of the event ending.";
+        if (hasMeaningfulFallback) {
+          if (titleP) titleP.textContent = "Early event intelligence is available";
+          if (bodyP) bodyP.textContent = "You already have a recommended next step. Full report still processing.";
+        } else {
+          if (titleP) titleP.textContent = "Your post-event report is being prepared.";
+          if (bodyP) bodyP.innerHTML = eventMeta
+            ? `Interaction data from <strong>${escapeHtml(eventMeta.name)}</strong> is being processed. Reports are typically ready within a few hours of the event ending.`
+            : "Interaction data is being processed. Reports are typically ready within a few hours of the event ending.";
+        }
         // Add refresh button if not already present
         if (!intelEmpty.querySelector(".intel-refresh-btn")) {
           const btn = document.createElement("button");
@@ -385,6 +437,10 @@ async function loadIntelligence() {
     }
 
     console.log("[Join] Intelligence loaded:", data.length, "items");
+    const decision = computeNextBestAction(data);
+    console.info("[Join] next_best_action", decision);
+    appendDecisionDebug(headerEl || intelligencePanel, decision);
+    appendRecommendedAction(intelligencePanel, decision);
 
     const recommended = data.filter((d) => d.type === "recommended");
     const missed      = data.filter((d) => d.type === "missed");
