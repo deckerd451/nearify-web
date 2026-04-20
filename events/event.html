@@ -109,7 +109,27 @@
       </aside>
     </section>
 
-    <!-- Sections hidden while loading, shown once event resolves -->
+    <!-- Intelligence section — past events only, shown by JS -->
+    <div id="eventIntelSection" style="display:none;">
+
+      <!-- Sign-in gate — shown when user is not authenticated -->
+      <section id="eventIntelSignInGate" class="section event-section" style="display:none;">
+        <div class="section-heading">
+          <h2>Your post-event report</h2>
+          <p id="eventIntelSignInDesc">Sign in to see who you connected with at this event.</p>
+        </div>
+        <div style="text-align:center; margin-top:4px;">
+          <button id="eventIntelSignInBtn" class="btn primary">Sign in with Google</button>
+          <p class="join-hint" style="margin-top:12px;">Your interactions are saved — sign in any time to see your report.</p>
+        </div>
+      </section>
+
+      <!-- Intelligence content — populated by JS when signed in -->
+      <div id="eventIntelContainer" class="section event-section"></div>
+
+    </div>
+
+    <!-- Pre-event sections — upcoming events only, shown by JS -->
     <div id="eventSections" style="display:none;">
 
       <section id="how-nearify-works" class="section dark event-section">

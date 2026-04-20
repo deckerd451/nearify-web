@@ -1,8 +1,8 @@
 import { supabase } from "./supabaseClient.js";
 import { setCurrentEventId } from "./appState.js";
+import { fetchIntelligence, fetchEventMeta, renderIntelligenceInto } from "./intelligence.js";
 
-const TESTFLIGHT_URL = "https://testflight.apple.com/join/ZayvEbAy";
-const JOIN_BASE      = "https://nearify.org/join/";
+const JOIN_BASE = "https://nearify.org/join/";
 
 function escapeHtml(str) {
   const d = document.createElement("div");
@@ -80,10 +80,68 @@ function showNotFound(message = "") {
   }
 }
 
+// ─── Intelligence for past events ────────────────────────────────────────────
+
+async function loadIntelligence(event) {
+  const intelSection   = document.getElementById("eventIntelSection");
+  const signInGate     = document.getElementById("eventIntelSignInGate");
+  const signInDesc     = document.getElementById("eventIntelSignInDesc");
+  const intelContainer = document.getElementById("eventIntelContainer");
+
+  if (!intelSection) return;
+  intelSection.style.display = "";
+
+  const { data: sessionData } = await supabase.auth.getSession();
+  const user = sessionData?.session?.user ?? null;
+
+  if (!user) {
+    if (signInDesc) {
+      signInDesc.textContent =
+        `Sign in to see who you connected with at ${event.name} and get your full interaction report.`;
+    }
+    if (signInGate) signInGate.style.display = "";
+
+    const signInBtn = document.getElementById("eventIntelSignInBtn");
+    if (signInBtn) {
+      signInBtn.addEventListener("click", async () => {
+        signInBtn.textContent = "Redirecting…";
+        signInBtn.disabled    = true;
+        try {
+          await supabase.auth.signInWithOAuth({
+            provider: "google",
+            options: { redirectTo: window.location.href }
+          });
+        } catch (err) {
+          console.error("[EventDetail] sign in error:", err);
+          signInBtn.textContent = "Sign in with Google";
+          signInBtn.disabled    = false;
+        }
+      });
+    }
+    return;
+  }
+
+  // Signed in — load intelligence
+  if (!intelContainer) return;
+
+  try {
+    const [{ data, fallbackDecision }, eventMeta] = await Promise.all([
+      fetchIntelligence(event.id),
+      fetchEventMeta(event.id),
+    ]);
+    renderIntelligenceInto(intelContainer, data, eventMeta, fallbackDecision);
+  } catch (err) {
+    console.error("[EventDetail] intelligence load error:", err);
+    intelContainer.innerHTML =
+      '<p style="color:#f87171; text-align:center; padding:24px 0;">Could not load your report. Please refresh.</p>';
+    intelContainer.style.display = "";
+  }
+}
+
+// ─── Page population ──────────────────────────────────────────────────────────
+
 function populatePage(event) {
   const isPast = !!(event.starts_at && new Date(event.starts_at) < new Date());
-  const joinUrl = "../join/?event=" + encodeURIComponent(event.id) +
-                  "&name="          + encodeURIComponent(event.name);
 
   // <head> meta
   document.title = `${event.name} | Nearify`;
@@ -100,40 +158,39 @@ function populatePage(event) {
   const kickerEl  = document.getElementById("eventKicker");
   const titleEl   = document.getElementById("eventTitle");
   const subheadEl = document.getElementById("eventSubhead");
-  const joinBtn   = document.getElementById("eventJoinBtn");
 
-  if (kickerEl)  kickerEl.textContent = isPast ? "Past Event" : "Nearify Event";
-  if (titleEl)   titleEl.textContent  = event.name;
+  if (kickerEl)  kickerEl.textContent  = isPast ? "Past Event" : "Nearify Event";
+  if (titleEl)   titleEl.textContent   = event.name;
   if (subheadEl) subheadEl.textContent = event.description ||
     (isPast
-      ? "This event has ended. Your post-event intelligence report is available if you attended with Nearify."
+      ? "This event has ended."
       : "Nearify helps you discover who is here, connect in real time, and carry the value of the event forward.");
-
-  if (joinBtn) {
-    joinBtn.href = joinUrl;
-    if (isPast) {
-      joinBtn.textContent  = "View your event report";
-      joinBtn.className    = "btn primary";
-    }
-  }
 
   renderMetaGrid(event, isPast);
   setCurrentEventId(event.id);
 
   if (isPast) {
-    // Hide side panel (QR + steps) and pre-event sections
-    const sidePanel = document.getElementById("eventSidePanel");
-    const sections  = document.getElementById("eventSections");
-    const tfBtn     = document.getElementById("eventTestflightBtn");
-    if (sidePanel) sidePanel.style.display = "none";
-    if (sections)  sections.style.display  = "none";
-    if (tfBtn)     tfBtn.style.display     = "none";
+    // Hide hero actions, side panel, and pre-event sections entirely
+    const heroActions = document.getElementById("eventHeroActions");
+    const sidePanel   = document.getElementById("eventSidePanel");
+    const sections    = document.getElementById("eventSections");
+    if (heroActions) heroActions.style.display = "none";
+    if (sidePanel)   sidePanel.style.display   = "none";
+    if (sections)    sections.style.display    = "none";
 
-    // Make hero full-width
+    // Full-width single-column hero
     const heroEl = document.querySelector(".event-hero");
     if (heroEl) heroEl.classList.add("event-hero--past");
+
+    // Load intelligence inline (handles auth gate itself)
+    loadIntelligence(event);
   } else {
-    // Upcoming: generate QR and show pre-event sections
+    // Upcoming: wire up join CTA, generate QR, show pre-event sections
+    const joinBtn = document.getElementById("eventJoinBtn");
+    if (joinBtn) {
+      joinBtn.href = "../join/?event=" + encodeURIComponent(event.id) +
+                    "&name="           + encodeURIComponent(event.name);
+    }
     renderQr(event.id, event.name);
     const sections = document.getElementById("eventSections");
     if (sections) sections.style.display = "";
@@ -145,6 +202,8 @@ function populatePage(event) {
   if (skeleton) skeleton.style.display = "none";
   if (heroCopy) heroCopy.style.display = "";
 }
+
+// ─── Init ─────────────────────────────────────────────────────────────────────
 
 async function init() {
   try {
