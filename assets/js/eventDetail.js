@@ -48,14 +48,14 @@ function renderQr(eventId, eventName) {
   });
 }
 
-function renderMetaGrid(event) {
+function renderMetaGrid(event, isPast) {
   const grid = document.getElementById("eventMetaGrid");
   if (!grid) return;
 
   const cards = [];
   if (event.location) cards.push({ label: "Location", value: event.location });
   if (event.starts_at) cards.push({ label: "Date",     value: formatDate(event.starts_at) });
-  cards.push({ label: "Experience", value: "Live attendee discovery" });
+  if (!isPast) cards.push({ label: "Experience", value: "Live attendee discovery" });
 
   grid.innerHTML = cards.map(c =>
     `<div class="event-meta-card">
@@ -81,6 +81,10 @@ function showNotFound(message = "") {
 }
 
 function populatePage(event) {
+  const isPast = !!(event.starts_at && new Date(event.starts_at) < new Date());
+  const joinUrl = "../join/?event=" + encodeURIComponent(event.id) +
+                  "&name="          + encodeURIComponent(event.name);
+
   // <head> meta
   document.title = `${event.name} | Nearify`;
   const setMeta = (sel, val) => {
@@ -93,30 +97,53 @@ function populatePage(event) {
   setMeta('meta[name="twitter:description"]', event.description || `Discover and connect with attendees at ${event.name} in real time.`);
 
   // Hero copy
+  const kickerEl  = document.getElementById("eventKicker");
   const titleEl   = document.getElementById("eventTitle");
   const subheadEl = document.getElementById("eventSubhead");
   const joinBtn   = document.getElementById("eventJoinBtn");
 
-  if (titleEl)   titleEl.textContent = event.name;
+  if (kickerEl)  kickerEl.textContent = isPast ? "Past Event" : "Nearify Event";
+  if (titleEl)   titleEl.textContent  = event.name;
   if (subheadEl) subheadEl.textContent = event.description ||
-    "Nearify helps you discover who is here, connect in real time, and carry the value of the event forward.";
+    (isPast
+      ? "This event has ended. Your post-event intelligence report is available if you attended with Nearify."
+      : "Nearify helps you discover who is here, connect in real time, and carry the value of the event forward.");
 
   if (joinBtn) {
-    joinBtn.href = "../join/?event=" + encodeURIComponent(event.id) +
-                  "&name="           + encodeURIComponent(event.name);
+    joinBtn.href = joinUrl;
+    if (isPast) {
+      joinBtn.textContent  = "View your event report";
+      joinBtn.className    = "btn primary";
+    }
   }
 
-  renderMetaGrid(event);
-  renderQr(event.id, event.name);
+  renderMetaGrid(event, isPast);
   setCurrentEventId(event.id);
 
-  // Show skeleton → real content swap
+  if (isPast) {
+    // Hide side panel (QR + steps) and pre-event sections
+    const sidePanel = document.getElementById("eventSidePanel");
+    const sections  = document.getElementById("eventSections");
+    const tfBtn     = document.getElementById("eventTestflightBtn");
+    if (sidePanel) sidePanel.style.display = "none";
+    if (sections)  sections.style.display  = "none";
+    if (tfBtn)     tfBtn.style.display     = "none";
+
+    // Make hero full-width
+    const heroEl = document.querySelector(".event-hero");
+    if (heroEl) heroEl.classList.add("event-hero--past");
+  } else {
+    // Upcoming: generate QR and show pre-event sections
+    renderQr(event.id, event.name);
+    const sections = document.getElementById("eventSections");
+    if (sections) sections.style.display = "";
+  }
+
+  // Reveal hero copy
   const skeleton = document.getElementById("eventSkeleton");
   const heroCopy = document.getElementById("eventHeroCopy");
-  const sections = document.getElementById("eventSections");
   if (skeleton) skeleton.style.display = "none";
   if (heroCopy) heroCopy.style.display = "";
-  if (sections) sections.style.display = "";
 }
 
 async function init() {
