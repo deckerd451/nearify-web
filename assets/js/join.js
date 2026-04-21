@@ -11,6 +11,8 @@ const els = {
   joinQrBox: document.getElementById("joinQrBox"),
   joinQrCode: document.getElementById("joinQrCode"),
   intentStep: document.getElementById("intentStep"),
+  getAppBtn: document.getElementById("getAppBtn"),
+  alreadyInstalledHint: document.getElementById("alreadyInstalledHint"),
 };
 
 function getQueryParams() {
@@ -75,6 +77,23 @@ async function fetchEvent(eventId) {
   return data;
 }
 
+async function fetchProfile(profileId) {
+  if (!profileId) return null;
+
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("id, name, email")
+    .eq("id", profileId)
+    .maybeSingle();
+
+  if (error) {
+    console.error("[Join] Failed to fetch profile", error);
+    throw error;
+  }
+
+  return data;
+}
+
 function renderEventMeta(event) {
   if (!els.joinEventMeta || !event) return;
 
@@ -90,24 +109,6 @@ function renderEventMeta(event) {
     .join("");
 
   show(els.joinEventMeta);
-}
-
-function renderEventDetails(event, fallbackName) {
-  const title = event?.name || fallbackName || "Join Event";
-
-  setText(els.joinKicker, "Join Event");
-  setText(els.joinTitle, title);
-
-  if (event?.description) {
-    setText(els.joinDescription, event.description);
-  } else {
-    setText(
-      els.joinDescription,
-      "Nearify shows you who's actually at this event so you can discover and connect in real time."
-    );
-  }
-
-  renderEventMeta(event);
 }
 
 function renderPayload(eventId) {
@@ -173,6 +174,56 @@ function showIntentStep() {
   show(els.intentStep);
 }
 
+function renderGenericJoinUx(event, fallbackName) {
+  const title = event?.name || fallbackName || "Join Event";
+
+  setText(els.joinKicker, "Join Event");
+  setText(els.joinTitle, title);
+
+  if (event?.description) {
+    setText(els.joinDescription, event.description);
+  } else {
+    setText(
+      els.joinDescription,
+      "Nearify shows you who's actually at this event so you can discover and connect in real time."
+    );
+  }
+
+  renderEventMeta(event);
+  renderPayload(event.id);
+
+  if (els.getAppBtn) els.getAppBtn.textContent = "Get Nearify (TestFlight)";
+  if (els.alreadyInstalledHint) {
+    els.alreadyInstalledHint.textContent =
+      "Already installed? Open the app and scan the event QR code.";
+  }
+
+  show(els.joinQrBox);
+}
+
+function renderPersonalConnectUx(event, targetProfile) {
+  const personName = targetProfile?.name || "this person";
+  const eventName = event?.name || "this event";
+
+  setText(els.joinKicker, "You’re connected");
+  setText(els.joinTitle, `You just connected with ${personName}`);
+  setText(
+    els.joinDescription,
+    `Your connection to ${personName} has been saved for ${eventName}. If you want, tell Nearify what you’re here to do so the experience can become more relevant from here.`
+  );
+
+  renderEventMeta(event);
+
+  // Keep beacon payload available below for app users, but deemphasize it.
+  renderPayload(event.id);
+
+  if (els.getAppBtn) els.getAppBtn.textContent = "Get Nearify to go further";
+  if (els.alreadyInstalledHint) {
+    els.alreadyInstalledHint.textContent =
+      "Already installed? Open the app to explore the event and discover more people around you.";
+  }
+}
+
 function renderInvalidState(message) {
   setText(els.joinKicker, "Join Event");
   setText(els.joinTitle, "Event unavailable");
@@ -189,27 +240,40 @@ function renderInvalidState(message) {
 async function initJoinPage() {
   const { eventId, eventName, profileId } = getQueryParams();
 
+  console.log("[Join] URL at startup", window.location.href);
+
   if (!eventId) {
     renderInvalidState("This link is missing an event id.");
     return;
   }
 
   try {
-    const event = await fetchEvent(eventId);
+    const [event, targetProfile] = await Promise.all([
+      fetchEvent(eventId),
+      profileId ? fetchProfile(profileId) : Promise.resolve(null),
+    ]);
 
     if (!event || event.deleted_at || event.is_active === false) {
       renderInvalidState("This event is no longer active.");
       return;
     }
 
-    renderEventDetails(event, eventName);
-    renderPayload(event.id);
-
     const ghost = await ensureGhostForEvent(event.id);
     renderGhostState(ghost);
 
+    let connectResult = null;
     if (profileId) {
-      await maybeConnectGhostToProfile(event.id, profileId);
+      connectResult = await maybeConnectGhostToProfile(event.id, profileId);
+    }
+
+    if (profileId) {
+      renderPersonalConnectUx(event, targetProfile);
+
+      if (connectResult) {
+        console.log("[Join] Personal connect UX rendered after successful connection");
+      }
+    } else {
+      renderGenericJoinUx(event, eventName);
     }
 
     showIntentStep();
