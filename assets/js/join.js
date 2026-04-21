@@ -1,5 +1,6 @@
 import { supabase } from "./supabaseClient.js";
 import { loadGhostSession, createGhostSession } from "./ghostSession.js";
+import { connectGhostToProfile } from "./ghostConnection.js";
 
 const els = {
   joinKicker: document.getElementById("joinKicker"),
@@ -17,6 +18,7 @@ function getQueryParams() {
   return {
     eventId: params.get("event"),
     eventName: params.get("name"),
+    profileId: params.get("profile"),
   };
 }
 
@@ -48,6 +50,15 @@ function hide(el) {
   el.style.display = "none";
 }
 
+function escapeHtml(str) {
+  return String(str)
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;");
+}
+
 async function fetchEvent(eventId) {
   const { data, error } = await supabase
     .from("events")
@@ -65,23 +76,20 @@ async function fetchEvent(eventId) {
 }
 
 function renderEventMeta(event) {
-  if (!document.getElementById("joinEventMeta") || !event) return;
+  if (!els.joinEventMeta || !event) return;
 
-  const bits = [
-    event.location,
-    formatDateTime(event.starts_at),
-  ].filter(Boolean);
+  const bits = [event.location, formatDateTime(event.starts_at)].filter(Boolean);
 
   if (!bits.length) {
-    hide(document.getElementById("joinEventMeta"));
+    hide(els.joinEventMeta);
     return;
   }
 
-  document.getElementById("joinEventMeta").innerHTML = bits
+  els.joinEventMeta.innerHTML = bits
     .map((bit) => `<span class="join-meta-chip">${escapeHtml(bit)}</span>`)
     .join("");
 
-  show(document.getElementById("joinEventMeta"));
+  show(els.joinEventMeta);
 }
 
 function renderEventDetails(event, fallbackName) {
@@ -142,6 +150,19 @@ async function ensureGhostForEvent(eventId, displayName = "Guest") {
   return created;
 }
 
+async function maybeConnectGhostToProfile(eventId, profileId) {
+  if (!eventId || !profileId) return null;
+
+  try {
+    const result = await connectGhostToProfile(eventId, profileId);
+    console.log("[Ghost] Auto-connected to profile", result);
+    return result;
+  } catch (error) {
+    console.error("[Ghost] Auto-connect failed", error);
+    return null;
+  }
+}
+
 function renderGhostState(ghost) {
   if (!ghost) return;
   console.log("[Ghost] Active session", ghost);
@@ -150,15 +171,6 @@ function renderGhostState(ghost) {
 function showIntentStep() {
   if (!els.intentStep) return;
   show(els.intentStep);
-}
-
-function escapeHtml(str) {
-  return String(str)
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#39;");
 }
 
 function renderInvalidState(message) {
@@ -175,7 +187,7 @@ function renderInvalidState(message) {
 }
 
 async function initJoinPage() {
-  const { eventId, eventName } = getQueryParams();
+  const { eventId, eventName, profileId } = getQueryParams();
 
   if (!eventId) {
     renderInvalidState("This link is missing an event id.");
@@ -195,6 +207,10 @@ async function initJoinPage() {
 
     const ghost = await ensureGhostForEvent(event.id);
     renderGhostState(ghost);
+
+    if (profileId) {
+      await maybeConnectGhostToProfile(event.id, profileId);
+    }
 
     showIntentStep();
   } catch (error) {
