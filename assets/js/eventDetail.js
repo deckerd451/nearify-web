@@ -1,7 +1,11 @@
 import { supabase } from "./supabaseClient.js";
 import { setCurrentEventId } from "./appState.js";
 import { fetchIntelligence, fetchEventMeta, renderIntelligenceInto } from "./intelligence.js";
-
+import {
+  buildPersonalConnectUrl,
+  getMyProfileId,
+  renderPersonalConnectQr
+} from "./personalConnect.js";
 const JOIN_BASE = "https://nearify.org/join/";
 
 function escapeHtml(str) {
@@ -35,7 +39,31 @@ async function fetchEvent() {
   if (error) throw error;
   return data;
 }
+async function renderPersonalConnectSection(eventId) {
+  const section = document.getElementById("personalConnectSection");
+  const urlEl = document.getElementById("personalConnectUrl");
+  const qrBox = document.getElementById("personalConnectQrBox");
+  const qrEl = document.getElementById("personalConnectQr");
 
+  if (!section || !urlEl || !qrBox || !qrEl || !eventId) return;
+
+  try {
+    const profileId = await getMyProfileId();
+    if (!profileId) return;
+
+    const url = buildPersonalConnectUrl(eventId, profileId);
+    if (!url) return;
+
+    urlEl.textContent = url;
+    section.style.display = "";
+    qrBox.style.display = "";
+    renderPersonalConnectQr(qrEl, url);
+
+    console.log("[PersonalConnect] Ready", { eventId, profileId, url });
+  } catch (error) {
+    console.error("[PersonalConnect] Failed to render", error);
+  }
+}
 function renderQr(eventId, eventName) {
   if (typeof QRCode === "undefined") return;
   const el = document.getElementById("eventQrCode");
@@ -209,7 +237,12 @@ async function init() {
   try {
     const event = await fetchEvent();
     if (!event) { showNotFound(); return; }
+
     populatePage(event);
+
+    // 🔥 THIS IS THE MISSING PIECE
+    await renderPersonalConnectSection(event.id);
+
   } catch (err) {
     console.error("[EventDetail] load error:", err);
     showNotFound("Something went wrong loading this event. Please try again.");
