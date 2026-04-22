@@ -77,21 +77,25 @@ async function fetchEvent(eventId) {
   return data;
 }
 
-async function fetchProfile(profileId) {
+async function fetchPublicProfileBrief(profileId) {
   if (!profileId) return null;
 
   const { data, error } = await supabase
-    .from("profiles")
-    .select("id, name, email")
-    .eq("id", profileId)
+    .rpc("get_public_profile_brief", { p_profile_id: profileId })
     .maybeSingle();
 
   if (error) {
-    console.error("[Join] Failed to fetch profile", error);
-    throw error;
+    console.warn("[Join] Public target profile lookup failed", { profileId, error });
+    return null;
   }
 
-  return data;
+  if (data?.id && data?.name) {
+    console.log("[Join] Resolved public target profile", { id: data.id, name: data.name });
+    return data;
+  }
+
+  console.log("[Join] Public target profile not found, using fallback copy", { profileId });
+  return null;
 }
 
 function renderEventMeta(event) {
@@ -250,7 +254,7 @@ async function initJoinPage() {
   try {
     const [event, targetProfile] = await Promise.all([
       fetchEvent(eventId),
-      profileId ? fetchProfile(profileId) : Promise.resolve(null),
+      profileId ? fetchPublicProfileBrief(profileId) : Promise.resolve(null),
     ]);
 
     if (!event || event.deleted_at || event.is_active === false) {
