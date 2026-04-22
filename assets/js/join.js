@@ -24,12 +24,12 @@ const els = {
   joinBottomCtaButton: document.getElementById("joinBottomCtaButton"),
   joinBottomCtaHint: document.getElementById("joinBottomCtaHint"),
   ghostReturnCard: document.getElementById("ghostReturnCard"),
+  ghostReturnKicker: document.getElementById("ghostReturnKicker"),
   ghostReturnTitle: document.getElementById("ghostReturnTitle"),
   ghostReturnLead: document.getElementById("ghostReturnLead"),
   ghostReturnConnections: document.getElementById("ghostReturnConnections"),
   ghostConnectionsList: document.getElementById("ghostConnectionsList"),
   ghostClaimBtn: document.getElementById("ghostClaimBtn"),
-  ghostClaimSecondaryBtn: document.getElementById("ghostClaimSecondaryBtn"),
   ghostClaimStatus: document.getElementById("ghostClaimStatus"),
 };
 
@@ -124,7 +124,7 @@ async function fetchPublicProfileBrief(profileId) {
 function renderEventMeta(event) {
   if (!els.joinEventMeta || !event) return;
 
-  const bits = [event.location, formatDateTime(event.starts_at)].filter(Boolean);
+  const bits = [event.name, formatDateTime(event.starts_at), event.location].filter(Boolean);
 
   if (!bits.length) {
     hide(els.joinEventMeta);
@@ -217,7 +217,7 @@ function getReconnectUrl() {
 }
 
 async function startGhostClaimAuth() {
-  setGhostClaimStatus("Claim your connections to keep them.");
+  setGhostClaimStatus("Sign in to save your connections.");
   const { error } = await supabase.auth.signInWithOAuth({
     provider: "google",
     options: { redirectTo: getReconnectUrl() },
@@ -246,38 +246,9 @@ async function fetchGhostConnectionHistory(ghost, eventId) {
   return Array.isArray(data) ? data : [];
 }
 
-function renderGhostHistoryCard(historyRows) {
-  if (!els.ghostReturnCard || !Array.isArray(historyRows) || historyRows.length === 0) return;
-
-  const primaryName = historyRows[0]?.to_profile_name || "someone here";
-  setText(els.ghostReturnTitle, `You connected with ${primaryName}`);
-  setText(els.ghostReturnLead, "Connection saved. Saved to your event network.");
-
-  if (els.ghostConnectionsList) {
-    const uniqueNames = [...new Set(historyRows.map((r) => r.to_profile_name).filter(Boolean))];
-    els.ghostConnectionsList.innerHTML = uniqueNames
-      .slice(0, 8)
-      .map((name) => `<li><span>${escapeHtml(name)}</span></li>`)
-      .join("");
-
-    if (uniqueNames.length > 1) {
-      show(els.ghostReturnConnections);
-    } else {
-      hide(els.ghostReturnConnections);
-    }
-  }
-
-  show(els.ghostReturnCard);
-}
-
-async function maybeClaimGhostActivity(ghost, historyRows) {
+async function maybeClaimGhostActivity(ghost, isClaimed) {
   if (!ghost?.ghostId || !ghost?.ghostToken) return;
-  const alreadyClaimed = historyRows.some((row) => row?.claimed_profile_id);
-
-  if (alreadyClaimed) {
-    setGhostClaimStatus("Your guest activity has already been claimed.");
-    return;
-  }
+  if (isClaimed) return;
 
   const { data: sessionData } = await supabase.auth.getSession();
   if (!sessionData?.session?.user) return;
@@ -297,17 +268,81 @@ async function maybeClaimGhostActivity(ghost, historyRows) {
   if (error) {
     console.warn("[Ghost] Claim RPC failed", error);
     setGhostClaimStatus("We couldn't claim this yet. Please try again.");
-    return;
+    return false;
   }
 
   console.log("[Ghost] Claim successful", data);
-  setGhostClaimStatus("Connection saved. Claim complete.");
+  setGhostClaimStatus("This connection is now part of your network.");
+  return true;
 }
 
 function wireClaimButtons() {
   const clickHandler = () => startGhostClaimAuth();
   if (els.ghostClaimBtn) els.ghostClaimBtn.addEventListener("click", clickHandler);
-  if (els.ghostClaimSecondaryBtn) els.ghostClaimSecondaryBtn.addEventListener("click", clickHandler);
+}
+
+function getJoinState({ session, hasHistory, isClaimed }) {
+  const state =
+    !session && !hasHistory ? "ghost_single" :
+    !session && hasHistory ? "ghost_returning" :
+    session && isClaimed ? "claimed" :
+    session ? "claiming" :
+    "unknown";
+  return state;
+}
+
+function renderGhostJourneyCard({ state, personName, historyRows }) {
+  if (!els.ghostReturnCard) return;
+
+  const uniqueNames = [...new Set((historyRows || []).map((row) => row?.to_profile_name).filter(Boolean))];
+  if (els.ghostConnectionsList) {
+    els.ghostConnectionsList.innerHTML = uniqueNames
+      .slice(0, 3)
+      .map((name) => `<li><span>${escapeHtml(name)}</span></li>`)
+      .join("");
+  }
+
+  hide(els.ghostClaimBtn);
+  hide(els.ghostReturnConnections);
+  setGhostClaimStatus("");
+
+  if (state === "ghost_single") {
+    show(els.ghostReturnKicker);
+    setText(els.ghostReturnKicker, "👻 Guest");
+    setText(els.ghostReturnTitle, `You're connected with ${personName}`);
+    setText(els.ghostReturnLead, "This connection is saved temporarily. Create your profile to keep it and continue building your network.");
+    if (els.ghostClaimBtn) {
+      setText(els.ghostClaimBtn, "Save this connection");
+      show(els.ghostClaimBtn);
+    }
+    show(els.ghostReturnCard);
+    return;
+  }
+
+  if (state === "ghost_returning") {
+    show(els.ghostReturnKicker);
+    setText(els.ghostReturnKicker, "👻 Guest");
+    setText(els.ghostReturnTitle, "Welcome back");
+    setText(els.ghostReturnLead, "These connections are saved temporarily.");
+    show(els.ghostReturnConnections);
+    if (els.ghostClaimBtn) {
+      setText(els.ghostClaimBtn, "Save your connections");
+      show(els.ghostClaimBtn);
+    }
+    show(els.ghostReturnCard);
+    return;
+  }
+
+  if (state === "claimed" || state === "claiming") {
+    hide(els.ghostReturnKicker);
+    setText(els.ghostReturnTitle, `You're connected with ${personName}`);
+    setText(els.ghostReturnLead, "This connection is now part of your Nearify profile.");
+    setGhostClaimStatus("✓ Saved to your network");
+    show(els.ghostReturnCard);
+    return;
+  }
+
+  hide(els.ghostReturnCard);
 }
 
 function showIntentStep() {
@@ -377,22 +412,18 @@ function renderPersonalConnectUx(event, targetProfile) {
   setJoinMode("personal-connect");
 
   const personName = targetProfile?.name || "this person";
-  const eventName = event?.name || "this event";
 
   show(els.joinSuccessBadge);
-  setText(els.joinKicker, "Connection saved");
-  setText(els.joinTitle, `You just connected with ${personName}`);
-  setText(
-    els.joinDescription,
-    `Your connection to ${personName} has been saved for ${eventName}. Tell Nearify what you're here to do so the experience becomes more relevant from here.`
-  );
+  setText(els.joinKicker, "");
+  setText(els.joinTitle, `You're connected with ${personName}`);
+  setText(els.joinDescription, "This connection has been saved for this event.");
 
   renderEventMeta(event);
 
   // Keep beacon payload available below for app users, but deemphasize it.
   renderPayload(event.id);
 
-  if (els.getAppBtn) els.getAppBtn.textContent = "Get Nearify to go further";
+  if (els.getAppBtn) els.getAppBtn.textContent = "Continue in the app";
   if (els.alreadyInstalledHint) {
     els.alreadyInstalledHint.textContent =
       "Already installed? Open the app to explore the event and discover more people around you.";
@@ -407,22 +438,22 @@ function renderPersonalConnectUx(event, targetProfile) {
         <div class="join-step-detail">You don't need to repeat this step — ${personName} is now in your event network.</div>
       </li>
       <li>
-        <div class="join-step-label">Tell Nearify what you're here for</div>
-        <div class="join-step-detail">Set your intent so Nearify can prioritize people and conversations that match your goals.</div>
+        <div class="join-step-label">Set your intent</div>
+        <div class="join-step-detail">Tell us what you're here to do so we can show you the right people.</div>
       </li>
       <li>
         <div class="join-step-label">Get the app to explore who's here</div>
-        <div class="join-step-detail">Open Nearify to discover more attendees nearby and keep building momentum at ${eventName}.</div>
+        <div class="join-step-detail">Open Nearify to discover more attendees nearby and keep building momentum at ${event?.name || "this event"}.</div>
       </li>
     `;
   }
 
-  if (els.joinBottomCtaTitle) els.joinBottomCtaTitle.textContent = "Take this connection further";
+  if (els.joinBottomCtaTitle) els.joinBottomCtaTitle.textContent = "Continue in the app";
   if (els.joinBottomCtaDescription) {
     els.joinBottomCtaDescription.textContent =
-      "You've already connected. Get Nearify to explore the event, discover more people nearby, and keep the momentum going.";
+      "You're connected. Open Nearify to discover more people nearby and keep building your network.";
   }
-  if (els.joinBottomCtaButton) els.joinBottomCtaButton.textContent = "Get Nearify to go further";
+  if (els.joinBottomCtaButton) els.joinBottomCtaButton.textContent = "Continue in the app";
   if (els.joinBottomCtaHint) {
     els.joinBottomCtaHint.textContent =
       "Already installed? Open the app to explore the event and discover more people around you.";
@@ -467,20 +498,38 @@ async function initJoinPage() {
       return;
     }
 
+    let connectResult = null;
     const ghost = await ensureGhostForEvent(event.id);
     renderGhostState(ghost);
-    const historyRows = await fetchGhostConnectionHistory(ghost, event.id);
-    renderGhostHistoryCard(historyRows);
-    wireClaimButtons();
-    await maybeClaimGhostActivity(ghost, historyRows);
-
-    let connectResult = null;
     if (profileId) {
       connectResult = await maybeConnectGhostToProfile(event.id, profileId);
     }
 
+    let historyRows = await fetchGhostConnectionHistory(ghost, event.id);
+    const { data: sessionData } = await supabase.auth.getSession();
+    const hasSession = !!sessionData?.session?.user;
+    let isClaimed = historyRows.some((row) => row?.claimed_profile_id);
+
+    if (hasSession && !isClaimed) {
+      const claimed = await maybeClaimGhostActivity(ghost, isClaimed);
+      if (claimed) {
+        historyRows = await fetchGhostConnectionHistory(ghost, event.id);
+        isClaimed = historyRows.some((row) => row?.claimed_profile_id);
+      }
+    }
+
+    wireClaimButtons();
+
     if (profileId) {
       renderPersonalConnectUx(event, targetProfile);
+      const uniqueNames = [...new Set(historyRows.map((row) => row?.to_profile_name).filter(Boolean))];
+      const hasHistory = uniqueNames.length > 1;
+      const state = getJoinState({ session: hasSession, hasHistory, isClaimed });
+      renderGhostJourneyCard({
+        state,
+        personName: targetProfile?.name || "this person",
+        historyRows,
+      });
 
       if (connectResult) {
         console.log("[Join] Personal connect UX rendered after successful connection");
