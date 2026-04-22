@@ -45,6 +45,10 @@
       <div class="event-hero-copy">
         <div class="event-kicker" id="joinKicker">Join Event</div>
         <h1 id="joinTitle">Get Nearify to join this event</h1>
+        <div id="joinSuccessBadge" class="join-success-badge" style="display:none;">
+          <span class="join-success-icon" aria-hidden="true">✓</span>
+          <span>Saved to your event network</span>
+        </div>
 
         <!-- Populated by JS once event metadata is fetched -->
         <div id="joinEventMeta" class="join-event-meta" style="display:none;"></div>
@@ -72,7 +76,7 @@
           </p>
         </div>
 
-        <div class="join-payload-card">
+        <div class="join-payload-card" id="joinPayloadCard">
           <div class="meta-label">Event link</div>
           <div class="join-payload" id="payloadText">Waiting for event...</div>
 
@@ -88,10 +92,10 @@
         </div>
       </div>
 
-      <aside class="event-side-panel">
-        <div class="event-panel">
-          <h2>3 steps to join</h2>
-          <ol class="join-steps-list">
+      <aside class="event-side-panel" id="joinSidePanel">
+        <div class="event-panel" id="joinPanelCard">
+          <h2 id="joinPanelTitle">3 steps to join</h2>
+          <ol class="join-steps-list" id="joinPanelList">
             <li>
               <div class="join-step-label">Install Nearify</div>
               <div class="join-step-detail">Get the app on TestFlight — takes about 2 minutes.</div>
@@ -211,10 +215,11 @@
       </div>
     </section>
 
-    <section class="cta event-cta">
-      <h2>Ready to join?</h2>
-      <p>Install the app, then scan the event QR code when you arrive.</p>
+    <section class="cta event-cta" id="joinBottomCta">
+      <h2 id="joinBottomCtaTitle">Ready to join?</h2>
+      <p id="joinBottomCtaDescription">Install the app, then scan the event QR code when you arrive.</p>
       <a
+        id="joinBottomCtaButton"
         href="https://testflight.apple.com/join/ZayvEbAy"
         class="btn primary"
         target="_blank"
@@ -222,7 +227,7 @@
       >
         Get Nearify on TestFlight
       </a>
-      <p class="join-hint" style="margin-top:12px;">
+      <p class="join-hint" id="joinBottomCtaHint" style="margin-top:12px;">
         Already installed? Open the app and scan again.
       </p>
     </section>

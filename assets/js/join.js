@@ -7,12 +7,22 @@ const els = {
   joinTitle: document.getElementById("joinTitle"),
   joinDescription: document.getElementById("joinDescription"),
   joinEventMeta: document.getElementById("joinEventMeta"),
+  joinSuccessBadge: document.getElementById("joinSuccessBadge"),
+  joinPayloadCard: document.getElementById("joinPayloadCard"),
   payloadText: document.getElementById("payloadText"),
   joinQrBox: document.getElementById("joinQrBox"),
   joinQrCode: document.getElementById("joinQrCode"),
+  joinPanelTitle: document.getElementById("joinPanelTitle"),
+  joinPanelList: document.getElementById("joinPanelList"),
+  joinPanelCard: document.getElementById("joinPanelCard"),
   intentStep: document.getElementById("intentStep"),
   getAppBtn: document.getElementById("getAppBtn"),
   alreadyInstalledHint: document.getElementById("alreadyInstalledHint"),
+  joinBottomCta: document.getElementById("joinBottomCta"),
+  joinBottomCtaTitle: document.getElementById("joinBottomCtaTitle"),
+  joinBottomCtaDescription: document.getElementById("joinBottomCtaDescription"),
+  joinBottomCtaButton: document.getElementById("joinBottomCtaButton"),
+  joinBottomCtaHint: document.getElementById("joinBottomCtaHint"),
 };
 
 function getQueryParams() {
@@ -50,6 +60,11 @@ function show(el) {
 function hide(el) {
   if (!el) return;
   el.style.display = "none";
+}
+
+function setJoinMode(mode) {
+  document.body.classList.remove("join-mode-generic", "join-mode-personal-connect");
+  document.body.classList.add(mode === "personal-connect" ? "join-mode-personal-connect" : "join-mode-generic");
 }
 
 function escapeHtml(str) {
@@ -179,8 +194,11 @@ function showIntentStep() {
 }
 
 function renderGenericJoinUx(event, fallbackName) {
+  setJoinMode("generic");
+
   const title = event?.name || fallbackName || "Join Event";
 
+  hide(els.joinSuccessBadge);
   setText(els.joinKicker, "Join Event");
   setText(els.joinTitle, title);
 
@@ -202,18 +220,49 @@ function renderGenericJoinUx(event, fallbackName) {
       "Already installed? Open the app and scan the event QR code.";
   }
 
+  if (els.joinPanelTitle) els.joinPanelTitle.textContent = "3 steps to join";
+  if (els.joinPanelList) {
+    els.joinPanelList.className = "join-steps-list";
+    els.joinPanelList.innerHTML = `
+      <li>
+        <div class="join-step-label">Install Nearify</div>
+        <div class="join-step-detail">Get the app on TestFlight — takes about 2 minutes.</div>
+      </li>
+      <li>
+        <div class="join-step-label">Sign in &amp; create your profile</div>
+        <div class="join-step-detail">Use Google or GitHub. Your profile is how people find you.</div>
+      </li>
+      <li>
+        <div class="join-step-label">Scan the event QR code</div>
+        <div class="join-step-detail">Find the Nearify QR at the venue and scan it to enter the live network.</div>
+      </li>
+    `;
+  }
+
+  if (els.joinBottomCtaTitle) els.joinBottomCtaTitle.textContent = "Ready to join?";
+  if (els.joinBottomCtaDescription) {
+    els.joinBottomCtaDescription.textContent =
+      "Install the app, then scan the event QR code when you arrive.";
+  }
+  if (els.joinBottomCtaButton) els.joinBottomCtaButton.textContent = "Get Nearify on TestFlight";
+  if (els.joinBottomCtaHint) els.joinBottomCtaHint.textContent = "Already installed? Open the app and scan again.";
+
   show(els.joinQrBox);
+  console.log("[Join] Rendering generic event join UX");
 }
 
 function renderPersonalConnectUx(event, targetProfile) {
+  setJoinMode("personal-connect");
+
   const personName = targetProfile?.name || "this person";
   const eventName = event?.name || "this event";
 
-  setText(els.joinKicker, "You’re connected");
+  show(els.joinSuccessBadge);
+  setText(els.joinKicker, "Connection saved");
   setText(els.joinTitle, `You just connected with ${personName}`);
   setText(
     els.joinDescription,
-    `Your connection to ${personName} has been saved for ${eventName}. If you want, tell Nearify what you’re here to do so the experience can become more relevant from here.`
+    `Your connection to ${personName} has been saved for ${eventName}. Tell Nearify what you're here to do so the experience becomes more relevant from here.`
   );
 
   renderEventMeta(event);
@@ -226,9 +275,43 @@ function renderPersonalConnectUx(event, targetProfile) {
     els.alreadyInstalledHint.textContent =
       "Already installed? Open the app to explore the event and discover more people around you.";
   }
+
+  if (els.joinPanelTitle) els.joinPanelTitle.textContent = "What happens next";
+  if (els.joinPanelList) {
+    els.joinPanelList.className = "join-steps-list join-steps-list--personal";
+    els.joinPanelList.innerHTML = `
+      <li>
+        <div class="join-step-label">Your connection is already saved</div>
+        <div class="join-step-detail">You don't need to repeat this step — ${personName} is now in your event network.</div>
+      </li>
+      <li>
+        <div class="join-step-label">Tell Nearify what you're here for</div>
+        <div class="join-step-detail">Set your intent so Nearify can prioritize people and conversations that match your goals.</div>
+      </li>
+      <li>
+        <div class="join-step-label">Get the app to explore who's here</div>
+        <div class="join-step-detail">Open Nearify to discover more attendees nearby and keep building momentum at ${eventName}.</div>
+      </li>
+    `;
+  }
+
+  if (els.joinBottomCtaTitle) els.joinBottomCtaTitle.textContent = "Take this connection further";
+  if (els.joinBottomCtaDescription) {
+    els.joinBottomCtaDescription.textContent =
+      "You've already connected. Get Nearify to explore the event, discover more people nearby, and keep the momentum going.";
+  }
+  if (els.joinBottomCtaButton) els.joinBottomCtaButton.textContent = "Get Nearify to go further";
+  if (els.joinBottomCtaHint) {
+    els.joinBottomCtaHint.textContent =
+      "Already installed? Open the app to explore the event and discover more people around you.";
+  }
+
+  console.log(`[Join] Rendering personal connect UX for ${personName}`);
 }
 
 function renderInvalidState(message) {
+  setJoinMode("generic");
+  hide(els.joinSuccessBadge);
   setText(els.joinKicker, "Join Event");
   setText(els.joinTitle, "Event unavailable");
   setText(
