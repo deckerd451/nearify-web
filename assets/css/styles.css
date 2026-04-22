@@ -990,6 +990,89 @@ code {
   max-width: 860px;
 }
 
+.ghost-return-card {
+  margin-top: 22px;
+  background: rgba(8, 15, 26, 0.85);
+  border: 1px solid rgba(0, 209, 255, 0.24);
+  border-radius: 16px;
+  padding: 18px 20px;
+  max-width: 700px;
+}
+
+.ghost-return-kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #8bd8ff;
+}
+
+.ghost-return-title {
+  margin-top: 10px;
+  font-size: 24px;
+  color: #ffffff;
+}
+
+.ghost-return-lead {
+  margin-top: 10px;
+  color: var(--color-text-secondary);
+  line-height: 1.6;
+}
+
+.ghost-return-connections {
+  margin-top: 14px;
+}
+
+.ghost-return-list-title {
+  font-weight: 600;
+  color: #dfe6ef;
+  margin-bottom: 8px;
+}
+
+.ghost-connections-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.ghost-connections-list li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #d7e5f2;
+  font-size: 14px;
+}
+
+.ghost-connections-list li::before {
+  content: "👻";
+  font-size: 14px;
+}
+
+.ghost-return-actions {
+  margin-top: 16px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.ghost-claim-secondary {
+  border: 1px solid rgba(0, 209, 255, 0.4);
+  background: rgba(0, 209, 255, 0.08);
+  color: #9fe8ff;
+}
+
+.ghost-claim-status {
+  margin-top: 12px;
+  color: #8fa0b8;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
 .join-payload {
   margin-top: 8px;
   color: #ffffff;
