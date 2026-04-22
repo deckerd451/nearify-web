@@ -954,6 +954,33 @@ code {
   align-items: start;
 }
 
+.join-success-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 18px;
+  padding: 7px 12px;
+  border-radius: var(--radius-full);
+  background: rgba(46, 204, 113, 0.14);
+  border: 1px solid rgba(46, 204, 113, 0.35);
+  color: #b7f6d1;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.join-success-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: rgba(46, 204, 113, 0.2);
+  color: #92f0bd;
+  font-size: 12px;
+  line-height: 1;
+}
+
 .join-payload-card {
   margin-top: 28px;
   background: rgba(22, 32, 51, 0.9);
@@ -1655,6 +1682,46 @@ code {
   font-size: 14px;
   line-height: 1.5;
   margin-top: 10px;
+}
+
+.join-mode-personal-connect .join-payload-card {
+  margin-top: 22px;
+  background: rgba(14, 22, 36, 0.72);
+  border-color: rgba(143, 160, 184, 0.2);
+}
+
+.join-mode-personal-connect .join-qr-box {
+  border-top-color: rgba(143, 160, 184, 0.2);
+}
+
+.join-mode-personal-connect #joinPanelCard {
+  background: linear-gradient(180deg, rgba(14, 26, 46, 0.9) 0%, rgba(10, 18, 30, 0.9) 100%);
+  border-color: rgba(0, 209, 255, 0.2);
+}
+
+.join-steps-list--personal {
+  list-style: disc;
+  padding-left: 18px;
+  gap: 16px;
+  counter-reset: none;
+}
+
+.join-steps-list--personal li {
+  display: block;
+  counter-increment: none;
+  padding-left: 2px;
+}
+
+.join-steps-list--personal li::before {
+  content: none;
+}
+
+.join-steps-list--personal .join-step-label {
+  margin-bottom: 6px;
+}
+
+.join-mode-personal-connect #joinBottomCta {
+  padding-top: 84px;
 }
 
 /* ============================================================
