@@ -1,4 +1,4 @@
-import { supabase } from "./supabaseClient.js";
+import { supabase, createScopedSupabaseClient } from "./supabaseClient.js";
 import { loadGhostSession, createGhostSession } from "./ghostSession.js";
 import { connectGhostToProfile } from "./ghostConnection.js";
 
@@ -23,6 +23,14 @@ const els = {
   joinBottomCtaDescription: document.getElementById("joinBottomCtaDescription"),
   joinBottomCtaButton: document.getElementById("joinBottomCtaButton"),
   joinBottomCtaHint: document.getElementById("joinBottomCtaHint"),
+  ghostReturnCard: document.getElementById("ghostReturnCard"),
+  ghostReturnTitle: document.getElementById("ghostReturnTitle"),
+  ghostReturnLead: document.getElementById("ghostReturnLead"),
+  ghostReturnConnections: document.getElementById("ghostReturnConnections"),
+  ghostConnectionsList: document.getElementById("ghostConnectionsList"),
+  ghostClaimBtn: document.getElementById("ghostClaimBtn"),
+  ghostClaimSecondaryBtn: document.getElementById("ghostClaimSecondaryBtn"),
+  ghostClaimStatus: document.getElementById("ghostClaimStatus"),
 };
 
 function getQueryParams() {
@@ -188,6 +196,120 @@ function renderGhostState(ghost) {
   console.log("[Ghost] Active session", ghost);
 }
 
+function setGhostClaimStatus(message) {
+  if (!els.ghostClaimStatus) return;
+  setText(els.ghostClaimStatus, message);
+}
+
+async function fetchCurrentProfileId() {
+  const { data, error } = await supabase.rpc("current_profile_id");
+  if (error) {
+    console.warn("[Ghost] Could not resolve current profile id", error);
+    return null;
+  }
+  return data ?? null;
+}
+
+function getReconnectUrl() {
+  const url = new URL(window.location.href);
+  url.searchParams.set("ghost_reclaim", "1");
+  return url.toString();
+}
+
+async function startGhostClaimAuth() {
+  setGhostClaimStatus("Claim your connections to keep them.");
+  const { error } = await supabase.auth.signInWithOAuth({
+    provider: "google",
+    options: { redirectTo: getReconnectUrl() },
+  });
+  if (error) {
+    console.error("[Ghost] OAuth start failed", error);
+    setGhostClaimStatus("We couldn't start sign in right now. Please try again.");
+  }
+}
+
+async function fetchGhostConnectionHistory(ghost, eventId) {
+  if (!ghost?.ghostId || !ghost?.ghostToken) return [];
+  const scoped = createScopedSupabaseClient({ "x-ghost-token": ghost.ghostToken });
+
+  const { data, error } = await scoped.rpc("get_ghost_connection_history", {
+    p_ghost_id: ghost.ghostId,
+    p_ghost_token: ghost.ghostToken,
+    p_event_id: eventId,
+  });
+
+  if (error) {
+    console.warn("[Ghost] Failed to load ghost history", error);
+    return [];
+  }
+
+  return Array.isArray(data) ? data : [];
+}
+
+function renderGhostHistoryCard(historyRows) {
+  if (!els.ghostReturnCard || !Array.isArray(historyRows) || historyRows.length === 0) return;
+
+  const primaryName = historyRows[0]?.to_profile_name || "someone here";
+  setText(els.ghostReturnTitle, `You connected with ${primaryName}`);
+  setText(els.ghostReturnLead, "Connection saved. Saved to your event network.");
+
+  if (els.ghostConnectionsList) {
+    const uniqueNames = [...new Set(historyRows.map((r) => r.to_profile_name).filter(Boolean))];
+    els.ghostConnectionsList.innerHTML = uniqueNames
+      .slice(0, 8)
+      .map((name) => `<li><span>${escapeHtml(name)}</span></li>`)
+      .join("");
+
+    if (uniqueNames.length > 1) {
+      show(els.ghostReturnConnections);
+    } else {
+      hide(els.ghostReturnConnections);
+    }
+  }
+
+  show(els.ghostReturnCard);
+}
+
+async function maybeClaimGhostActivity(ghost, historyRows) {
+  if (!ghost?.ghostId || !ghost?.ghostToken) return;
+  const alreadyClaimed = historyRows.some((row) => row?.claimed_profile_id);
+
+  if (alreadyClaimed) {
+    setGhostClaimStatus("Your guest activity has already been claimed.");
+    return;
+  }
+
+  const { data: sessionData } = await supabase.auth.getSession();
+  if (!sessionData?.session?.user) return;
+
+  const profileId = await fetchCurrentProfileId();
+  if (!profileId) {
+    setGhostClaimStatus("You're signed in. Open the app and your profile will sync automatically.");
+    return;
+  }
+
+  const scoped = createScopedSupabaseClient({ "x-ghost-token": ghost.ghostToken });
+  const { data, error } = await scoped.rpc("claim_ghost_activity", {
+    p_ghost_id: ghost.ghostId,
+    p_profile_id: profileId,
+  });
+
+  if (error) {
+    console.warn("[Ghost] Claim RPC failed", error);
+    setGhostClaimStatus("We couldn't claim this yet. Please try again.");
+    return;
+  }
+
+  console.log("[Ghost] Claim successful", data);
+  setGhostClaimStatus("Connection saved. Claim complete.");
+}
+
+function wireClaimButtons() {
+  const clickHandler = () => startGhostClaimAuth();
+  if (els.ghostClaimBtn) els.ghostClaimBtn.addEventListener("click", clickHandler);
+  if (els.ghostClaimSecondaryBtn) els.ghostClaimSecondaryBtn.addEventListener("click", clickHandler);
+}
+
 function showIntentStep() {
   if (!els.intentStep) return;
   show(els.intentStep);
@@ -347,6 +469,10 @@ async function initJoinPage() {
 
     const ghost = await ensureGhostForEvent(event.id);
     renderGhostState(ghost);
+    const historyRows = await fetchGhostConnectionHistory(ghost, event.id);
+    renderGhostHistoryCard(historyRows);
+    wireClaimButtons();
+    await maybeClaimGhostActivity(ghost, historyRows);
 
     let connectResult = null;
     if (profileId) {
