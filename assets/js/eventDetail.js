@@ -6,7 +6,21 @@ import {
   getMyProfileId,
   renderPersonalConnectQr
 } from "./personalConnect.js";
+
 const JOIN_BASE = "https://nearify.org/join/";
+const INTENT_STORAGE_KEY = "intent_primary";
+const ATTENDEE_AUTH_KEY = "nearify_attendee_auth_return";
+const ATTENDEE_JOIN_KEY = "nearify_attendee_join_pending";
+const INTENT_OPTIONS = [
+  "meet_people",
+  "find_cofounder",
+  "explore_ideas",
+  "just_browsing",
+];
+
+let currentEvent = null;
+let currentUser = null;
+let selectedIntent = null;
 
 function escapeHtml(str) {
   const d = document.createElement("div");
@@ -21,10 +35,30 @@ function formatDate(iso) {
   });
 }
 
+function getDeepLink(eventId) {
+  return `beacon://event/${encodeURIComponent(eventId)}`;
+}
+
+function parseStoredJson(key) {
+  try {
+    const raw = localStorage.getItem(key);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
+function storeIntentLocal(intent) {
+  if (!intent) return;
+  try {
+    localStorage.setItem(INTENT_STORAGE_KEY, intent);
+  } catch (_) {}
+}
+
 async function fetchEvent() {
   const params = new URLSearchParams(window.location.search);
-  const slug   = params.get("slug");
-  const id     = params.get("id");
+  const slug = params.get("slug");
+  const id = params.get("id");
 
   if (!slug && !id) return null;
 
@@ -39,6 +73,347 @@ async function fetchEvent() {
   if (error) throw error;
   return data;
 }
+
+async function fetchCurrentUser() {
+  const { data } = await supabase.auth.getSession();
+  return data?.session?.user ?? null;
+}
+
+async function fetchProfileIntent(userId) {
+  if (!userId) return null;
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("intent_primary")
+    .eq("user_id", userId)
+    .maybeSingle();
+
+  if (error) return null;
+  return data?.intent_primary || null;
+}
+
+async function saveProfileIntent(userId, intent) {
+  if (!userId || !intent) return false;
+
+  const { error } = await supabase
+    .from("profiles")
+    .update({ intent_primary: intent })
+    .eq("user_id", userId);
+
+  if (error) {
+    console.warn("[EventDetail] could not save intent_primary", error);
+    return false;
+  }
+  return true;
+}
+
+function updateIntentUI() {
+  const chips = document.querySelectorAll("[data-intent]");
+  chips.forEach((chip) => {
+    const isActive = chip.dataset.intent === selectedIntent;
+    chip.classList.toggle("active", isActive);
+    chip.setAttribute("aria-pressed", String(isActive));
+  });
+}
+
+function setIntentStatus(message = "") {
+  const status = document.getElementById("eventIntentStatus");
+  if (!status) return;
+  status.textContent = message;
+}
+
+async function persistIntent(intent) {
+  if (!INTENT_OPTIONS.includes(intent)) return;
+  selectedIntent = intent;
+  updateIntentUI();
+  storeIntentLocal(intent);
+
+  if (!currentUser?.id) {
+    setIntentStatus("Intent saved for this browser.");
+    return;
+  }
+
+  const ok = await saveProfileIntent(currentUser.id, intent);
+  setIntentStatus(ok ? "Intent saved to your profile." : "Intent saved for this browser.");
+}
+
+function renderMetaGrid(event, isPast) {
+  const grid = document.getElementById("eventMetaGrid");
+  if (!grid) return;
+
+  const cards = [];
+  if (event.location) cards.push({ label: "Location", value: event.location });
+  if (event.starts_at) cards.push({ label: "Date", value: formatDate(event.starts_at) });
+  if (!isPast) cards.push({ label: "Experience", value: "Live attendee discovery" });
+
+  grid.innerHTML = cards.map((c) =>
+    `<div class="event-meta-card">
+      <div class="meta-label">${escapeHtml(c.label)}</div>
+      <div class="meta-value">${escapeHtml(c.value)}</div>
+    </div>`
+  ).join("");
+}
+
+function renderEventDetailsSection(event) {
+  const details = document.getElementById("eventDetailsSection");
+  const title = document.getElementById("eventDetailsTitle");
+  const date = document.getElementById("eventDetailsDate");
+  const location = document.getElementById("eventDetailsLocation");
+  const description = document.getElementById("eventDetailsDescription");
+  if (!details) return;
+
+  if (title) title.textContent = event.name || "";
+  if (date) date.textContent = event.starts_at ? formatDate(event.starts_at) : "To be announced";
+  if (location) location.textContent = event.location || "Location to be announced";
+  if (description) {
+    description.textContent = event.description || "Join this event in Nearify and open the app on site for live recommendations.";
+  }
+
+  details.style.display = "";
+}
+
+function showNotFound(message = "") {
+  const skeleton = document.getElementById("eventSkeleton");
+  const notFound = document.getElementById("eventNotFound");
+  const sections = document.getElementById("eventSections");
+  if (skeleton) skeleton.style.display = "none";
+  if (sections) sections.style.display = "none";
+  if (notFound) {
+    if (message) {
+      const msg = notFound.querySelector(".event-not-found-message");
+      if (msg) msg.textContent = message;
+    }
+    notFound.style.display = "";
+  }
+}
+
+function showJoinFallback() {
+  const fallback = document.getElementById("eventAppFallback");
+  if (fallback) fallback.style.display = "";
+}
+
+function hideJoinFallback() {
+  const fallback = document.getElementById("eventAppFallback");
+  if (fallback) fallback.style.display = "none";
+}
+
+function attemptDeepLink(deepLink) {
+  if (!deepLink) return;
+
+  hideJoinFallback();
+  const start = Date.now();
+  let hidden = false;
+
+  const onVisibility = () => {
+    if (document.visibilityState === "hidden") {
+      hidden = true;
+    }
+  };
+
+  document.addEventListener("visibilitychange", onVisibility, { once: true });
+  window.location.href = deepLink;
+
+  window.setTimeout(() => {
+    const elapsed = Date.now() - start;
+    if (!hidden && document.visibilityState === "visible" && elapsed >= 900) {
+      showJoinFallback();
+    }
+  }, 950);
+}
+
+function beginJoinFlow(source = "join") {
+  if (!currentEvent?.id) return;
+  const deepLink = getDeepLink(currentEvent.id);
+
+  try {
+    localStorage.setItem(ATTENDEE_JOIN_KEY, JSON.stringify({
+      eventId: currentEvent.id,
+      source,
+      intent: selectedIntent || null,
+      startedAt: Date.now(),
+    }));
+  } catch (_) {}
+
+  attemptDeepLink(deepLink);
+}
+
+async function beginAttendeeSignIn() {
+  if (!currentEvent?.id) return;
+
+  try {
+    localStorage.setItem(ATTENDEE_AUTH_KEY, JSON.stringify({
+      eventId: currentEvent.id,
+      returnTo: window.location.href,
+      continueJoin: true,
+      intent: selectedIntent || null,
+      startedAt: Date.now(),
+    }));
+  } catch (_) {}
+
+  await supabase.auth.signInWithOAuth({
+    provider: "google",
+    options: { redirectTo: window.location.href },
+  });
+}
+
+function wireIntentCapture() {
+  const section = document.getElementById("eventIntentSection");
+  if (!section) return;
+
+  section.style.display = "";
+  const chips = section.querySelectorAll("[data-intent]");
+  chips.forEach((chip) => {
+    chip.addEventListener("click", async () => {
+      const intent = chip.dataset.intent;
+      if (!intent) return;
+      await persistIntent(intent);
+    });
+  });
+}
+
+function wireJoinActions() {
+  const joinBtn = document.getElementById("eventJoinBtn");
+  const continueBtn = document.getElementById("eventContinueWithoutSignInBtn");
+  const signInBtn = document.getElementById("eventAttendeeSignInBtn");
+  const retryBtn = document.getElementById("eventOpenAppRetryBtn");
+
+  if (joinBtn) {
+    joinBtn.addEventListener("click", (e) => {
+      e.preventDefault();
+      beginJoinFlow("join_button");
+    });
+  }
+
+  if (continueBtn) {
+    continueBtn.addEventListener("click", (e) => {
+      e.preventDefault();
+      beginJoinFlow("continue_without_sign_in");
+    });
+  }
+
+  if (signInBtn) {
+    signInBtn.addEventListener("click", async (e) => {
+      e.preventDefault();
+      signInBtn.disabled = true;
+      signInBtn.textContent = "Redirecting…";
+      try {
+        await beginAttendeeSignIn();
+      } catch (error) {
+        console.error("[EventDetail] attendee sign-in failed", error);
+        signInBtn.disabled = false;
+        signInBtn.textContent = "Sign in";
+      }
+    });
+  }
+
+  if (retryBtn) {
+    retryBtn.addEventListener("click", (e) => {
+      e.preventDefault();
+      beginJoinFlow("retry_open_app");
+    });
+  }
+}
+
+function updateAuthPositioning() {
+  const prompt = document.getElementById("eventAttendeeAuthPrompt");
+  const signedInNote = document.getElementById("eventSignedInNote");
+  if (!prompt || !signedInNote) return;
+
+  if (currentUser) {
+    prompt.style.display = "none";
+    signedInNote.style.display = "";
+  } else {
+    prompt.style.display = "";
+    signedInNote.style.display = "none";
+  }
+}
+
+async function hydrateIntentFromStorage() {
+  const localIntent = localStorage.getItem(INTENT_STORAGE_KEY);
+
+  if (!currentUser?.id) {
+    selectedIntent = INTENT_OPTIONS.includes(localIntent) ? localIntent : null;
+    updateIntentUI();
+    return;
+  }
+
+  const profileIntent = await fetchProfileIntent(currentUser.id);
+  const resolved = INTENT_OPTIONS.includes(profileIntent)
+    ? profileIntent
+    : INTENT_OPTIONS.includes(localIntent)
+      ? localIntent
+      : null;
+
+  if (resolved) {
+    selectedIntent = resolved;
+    updateIntentUI();
+  }
+}
+
+async function maybeContinueAfterAuth() {
+  const authState = parseStoredJson(ATTENDEE_AUTH_KEY);
+  if (!authState || !currentUser || !currentEvent?.id) return;
+  if (authState.eventId !== currentEvent.id || authState.continueJoin !== true) return;
+
+  if (authState.intent && INTENT_OPTIONS.includes(authState.intent)) {
+    await persistIntent(authState.intent);
+  }
+
+  localStorage.removeItem(ATTENDEE_AUTH_KEY);
+  beginJoinFlow("after_attendee_sign_in");
+}
+
+async function loadIntelligence(event) {
+  const intelSection = document.getElementById("eventIntelSection");
+  const signInGate = document.getElementById("eventIntelSignInGate");
+  const signInDesc = document.getElementById("eventIntelSignInDesc");
+  const intelContainer = document.getElementById("eventIntelContainer");
+
+  if (!intelSection) return;
+  intelSection.style.display = "";
+
+  if (!currentUser) {
+    if (signInDesc) {
+      signInDesc.textContent =
+        `Sign in to see who you connected with at ${event.name} and review your post-event report.`;
+    }
+    if (signInGate) signInGate.style.display = "";
+
+    const signInBtn = document.getElementById("eventIntelSignInBtn");
+    if (signInBtn) {
+      signInBtn.addEventListener("click", async () => {
+        signInBtn.textContent = "Redirecting…";
+        signInBtn.disabled = true;
+        try {
+          await supabase.auth.signInWithOAuth({
+            provider: "google",
+            options: { redirectTo: window.location.href }
+          });
+        } catch (err) {
+          console.error("[EventDetail] sign in error:", err);
+          signInBtn.textContent = "Sign in with Google";
+          signInBtn.disabled = false;
+        }
+      });
+    }
+    return;
+  }
+
+  if (!intelContainer) return;
+
+  try {
+    const [{ data, fallbackDecision }, eventMeta] = await Promise.all([
+      fetchIntelligence(event.id),
+      fetchEventMeta(event.id),
+    ]);
+    renderIntelligenceInto(intelContainer, data, eventMeta, fallbackDecision);
+  } catch (err) {
+    console.error("[EventDetail] intelligence load error:", err);
+    intelContainer.innerHTML =
+      '<p style="color:#f87171; text-align:center; padding:24px 0;">Could not load your report. Please refresh.</p>';
+    intelContainer.style.display = "";
+  }
+}
+
 async function renderPersonalConnectSection(eventId) {
   const section = document.getElementById("personalConnectSection");
   const urlEl = document.getElementById("personalConnectUrl");
@@ -58,12 +433,11 @@ async function renderPersonalConnectSection(eventId) {
     section.style.display = "";
     qrBox.style.display = "";
     renderPersonalConnectQr(qrEl, url);
-
-    console.log("[PersonalConnect] Ready", { eventId, profileId, url });
   } catch (error) {
     console.error("[PersonalConnect] Failed to render", error);
   }
 }
+
 function renderQr(eventId, eventName) {
   if (typeof QRCode === "undefined") return;
   const el = document.getElementById("eventQrCode");
@@ -71,178 +445,94 @@ function renderQr(eventId, eventName) {
   el.innerHTML = "";
   new QRCode(el, {
     text: JOIN_BASE + "?event=" + encodeURIComponent(eventId) +
-          "&name="  + encodeURIComponent(eventName),
+          "&name=" + encodeURIComponent(eventName),
     width: 220, height: 220
   });
 }
 
-function renderMetaGrid(event, isPast) {
-  const grid = document.getElementById("eventMetaGrid");
-  if (!grid) return;
-
-  const cards = [];
-  if (event.location) cards.push({ label: "Location", value: event.location });
-  if (event.starts_at) cards.push({ label: "Date",     value: formatDate(event.starts_at) });
-  if (!isPast) cards.push({ label: "Experience", value: "Live attendee discovery" });
-
-  grid.innerHTML = cards.map(c =>
-    `<div class="event-meta-card">
-      <div class="meta-label">${escapeHtml(c.label)}</div>
-      <div class="meta-value">${escapeHtml(c.value)}</div>
-    </div>`
-  ).join("");
-}
-
-function showNotFound(message = "") {
-  const skeleton = document.getElementById("eventSkeleton");
-  const notFound = document.getElementById("eventNotFound");
-  const sections = document.getElementById("eventSections");
-  if (skeleton) skeleton.style.display = "none";
-  if (sections) sections.style.display = "none";
-  if (notFound) {
-    if (message) {
-      const msg = notFound.querySelector(".event-not-found-message");
-      if (msg) msg.textContent = message;
-    }
-    notFound.style.display = "";
-  }
-}
-
-// ─── Intelligence for past events ────────────────────────────────────────────
-
-async function loadIntelligence(event) {
-  const intelSection   = document.getElementById("eventIntelSection");
-  const signInGate     = document.getElementById("eventIntelSignInGate");
-  const signInDesc     = document.getElementById("eventIntelSignInDesc");
-  const intelContainer = document.getElementById("eventIntelContainer");
-
-  if (!intelSection) return;
-  intelSection.style.display = "";
-
-  const { data: sessionData } = await supabase.auth.getSession();
-  const user = sessionData?.session?.user ?? null;
-
-  if (!user) {
-    if (signInDesc) {
-      signInDesc.textContent =
-        `Sign in to see who you connected with at ${event.name} and get your full interaction report.`;
-    }
-    if (signInGate) signInGate.style.display = "";
-
-    const signInBtn = document.getElementById("eventIntelSignInBtn");
-    if (signInBtn) {
-      signInBtn.addEventListener("click", async () => {
-        signInBtn.textContent = "Redirecting…";
-        signInBtn.disabled    = true;
-        try {
-          await supabase.auth.signInWithOAuth({
-            provider: "google",
-            options: { redirectTo: window.location.href }
-          });
-        } catch (err) {
-          console.error("[EventDetail] sign in error:", err);
-          signInBtn.textContent = "Sign in with Google";
-          signInBtn.disabled    = false;
-        }
-      });
-    }
-    return;
-  }
-
-  // Signed in — load intelligence
-  if (!intelContainer) return;
-
-  try {
-    const [{ data, fallbackDecision }, eventMeta] = await Promise.all([
-      fetchIntelligence(event.id),
-      fetchEventMeta(event.id),
-    ]);
-    renderIntelligenceInto(intelContainer, data, eventMeta, fallbackDecision);
-  } catch (err) {
-    console.error("[EventDetail] intelligence load error:", err);
-    intelContainer.innerHTML =
-      '<p style="color:#f87171; text-align:center; padding:24px 0;">Could not load your report. Please refresh.</p>';
-    intelContainer.style.display = "";
-  }
-}
-
-// ─── Page population ──────────────────────────────────────────────────────────
-
-function populatePage(event) {
+async function populatePage(event) {
   const isPast = !!(event.starts_at && new Date(event.starts_at) < new Date());
 
-  // <head> meta
   document.title = `${event.name} | Nearify`;
   const setMeta = (sel, val) => {
     const el = document.querySelector(sel);
     if (el) el.setAttribute("content", val);
   };
-  setMeta('meta[property="og:title"]',        `${event.name} | Nearify`);
-  setMeta('meta[name="twitter:title"]',        `${event.name} | Nearify`);
-  setMeta('meta[property="og:description"]',  event.description || `Discover and connect with attendees at ${event.name} in real time.`);
+  setMeta('meta[property="og:title"]', `${event.name} | Nearify`);
+  setMeta('meta[name="twitter:title"]', `${event.name} | Nearify`);
+  setMeta('meta[property="og:description"]', event.description || `Discover and connect with attendees at ${event.name} in real time.`);
   setMeta('meta[name="twitter:description"]', event.description || `Discover and connect with attendees at ${event.name} in real time.`);
 
-  // Hero copy
-  const kickerEl  = document.getElementById("eventKicker");
-  const titleEl   = document.getElementById("eventTitle");
+  const kickerEl = document.getElementById("eventKicker");
+  const titleEl = document.getElementById("eventTitle");
   const subheadEl = document.getElementById("eventSubhead");
 
-  if (kickerEl)  kickerEl.textContent  = isPast ? "Past Event" : "Nearify Event";
-  if (titleEl)   titleEl.textContent   = event.name;
-  if (subheadEl) subheadEl.textContent = event.description ||
-    (isPast
-      ? "This event has ended."
-      : "Nearify helps you discover who is here, connect in real time, and carry the value of the event forward.");
+  if (kickerEl) kickerEl.textContent = isPast ? "Past Event" : "Nearify Event";
+  if (titleEl) titleEl.textContent = event.name;
+  if (subheadEl) {
+    subheadEl.textContent = event.description ||
+      (isPast
+        ? "This event has ended."
+        : "Set what you want from this event, join, and open Nearify for live recommendations in the room.");
+  }
 
   renderMetaGrid(event, isPast);
   setCurrentEventId(event.id);
 
   if (isPast) {
-    // Hide hero actions, side panel, and pre-event sections entirely
     const heroActions = document.getElementById("eventHeroActions");
-    const sidePanel   = document.getElementById("eventSidePanel");
-    const sections    = document.getElementById("eventSections");
-    if (heroActions) heroActions.style.display = "none";
-    if (sidePanel)   sidePanel.style.display   = "none";
-    if (sections)    sections.style.display    = "none";
+    const sidePanel = document.getElementById("eventSidePanel");
+    const sections = document.getElementById("eventSections");
+    const detailsSection = document.getElementById("eventDetailsSection");
+    const intentSection = document.getElementById("eventIntentSection");
+    const authPrompt = document.getElementById("eventAttendeeAuthPrompt");
+    const signedInNote = document.getElementById("eventSignedInNote");
+    const fallback = document.getElementById("eventAppFallback");
 
-    // Full-width single-column hero
+    if (heroActions) heroActions.style.display = "none";
+    if (sidePanel) sidePanel.style.display = "none";
+    if (sections) sections.style.display = "none";
+    if (detailsSection) detailsSection.style.display = "none";
+    if (intentSection) intentSection.style.display = "none";
+    if (authPrompt) authPrompt.style.display = "none";
+    if (signedInNote) signedInNote.style.display = "none";
+    if (fallback) fallback.style.display = "none";
+
     const heroEl = document.querySelector(".event-hero");
     if (heroEl) heroEl.classList.add("event-hero--past");
 
-    // Load intelligence inline (handles auth gate itself)
-    loadIntelligence(event);
+    await loadIntelligence(event);
   } else {
-    // Upcoming: wire up join CTA, generate QR, show pre-event sections
-    const joinBtn = document.getElementById("eventJoinBtn");
-    if (joinBtn) {
-      joinBtn.href = "../join/?event=" + encodeURIComponent(event.id) +
-                    "&name="           + encodeURIComponent(event.name);
-    }
     renderQr(event.id, event.name);
+    renderEventDetailsSection(event);
+
     const sections = document.getElementById("eventSections");
     if (sections) sections.style.display = "";
+
+    wireIntentCapture();
+    wireJoinActions();
+    updateAuthPositioning();
+    await hydrateIntentFromStorage();
+    await maybeContinueAfterAuth();
   }
 
-  // Reveal hero copy
   const skeleton = document.getElementById("eventSkeleton");
   const heroCopy = document.getElementById("eventHeroCopy");
   if (skeleton) skeleton.style.display = "none";
   if (heroCopy) heroCopy.style.display = "";
 }
 
-// ─── Init ─────────────────────────────────────────────────────────────────────
-
 async function init() {
   try {
-    const event = await fetchEvent();
-    if (!event) { showNotFound(); return; }
+    currentEvent = await fetchEvent();
+    if (!currentEvent) {
+      showNotFound();
+      return;
+    }
 
-    populatePage(event);
-
-    // 🔥 THIS IS THE MISSING PIECE
-    await renderPersonalConnectSection(event.id);
-
+    currentUser = await fetchCurrentUser();
+    await populatePage(currentEvent);
+    await renderPersonalConnectSection(currentEvent.id);
   } catch (err) {
     console.error("[EventDetail] load error:", err);
     showNotFound("Something went wrong loading this event. Please try again.");
