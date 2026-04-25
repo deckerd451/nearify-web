@@ -9,7 +9,7 @@ import { getCurrentUser } from "./appState.js";
 
 const DIRECTION_LABELS = {
   incoming: "They noticed you",
-  outgoing: "You connected",
+  outgoing: "You crossed paths",
 };
 
 const STRENGTH_LEVELS = [
@@ -246,8 +246,8 @@ function buildPromotedFallbackExplanation(decision) {
 
 function buildPostEventSummary(decision, hasData) {
   const { P, X } = getDecisionSignals(decision);
-  if (P > 0.5 && X > 0.25) return "You made a promising connection based on shared presence and recent interaction signals.";
-  if (P > 0.5) return "You were present at the same event, which created a meaningful opportunity to connect.";
+  if (P > 0.5 && X > 0.25) return "Early signal: this could be a strong connection based on shared presence and recent interaction.";
+  if (P > 0.5) return "You crossed paths at the same event, which may be worth exploring.";
   if (X > 0.25) return "Your recent interaction signals point to a useful follow-up opportunity.";
   return hasData
     ? "Your post-event intelligence report is ready with interaction highlights."
@@ -314,7 +314,34 @@ function setConnectFallbackMessage(message = "Open the Nearify app on your phone
   }
 }
 
-function handleSuggestConnect() {
+function getShareableProfileUrl() {
+  const current = new URL(window.location.href);
+  const eventId = current.searchParams.get("event");
+  const profileId = current.searchParams.get("profile") || current.searchParams.get("profile_id");
+  const profileUrl = new URL("/profile/", window.location.origin);
+  if (profileId) profileUrl.searchParams.set("id", profileId);
+  if (eventId) profileUrl.searchParams.set("event", eventId);
+  return profileUrl.toString();
+}
+
+function showConnectFallbackActions(root) {
+  if (!root) return;
+  const fallback = root.querySelector(".intel-connect-fallback");
+  if (!fallback) return;
+  fallback.hidden = false;
+}
+
+async function copyProfileLink() {
+  const profileUrl = getShareableProfileUrl();
+  try {
+    await navigator.clipboard.writeText(profileUrl);
+    return true;
+  } catch (_) {
+    return false;
+  }
+}
+
+function handleSuggestConnect(root = null) {
   const action = resolveSuggestedConnectTarget();
   if (action.type === "route" || action.type === "fallback-url") {
     window.location.assign(action.target);
@@ -330,6 +357,7 @@ function handleSuggestConnect() {
         fallbackUsed = true;
         console.log("[CTA] deep link fallback used");
         setConnectFallbackMessage();
+        showConnectFallbackActions(root);
       }
     }, 1200);
 
@@ -354,6 +382,7 @@ function handleSuggestConnect() {
 
   console.log("[CTA] deep link fallback used");
   setConnectFallbackMessage(action.target);
+  showConnectFallbackActions(root);
 }
 
 function renderRecommendedAction(decision) {
@@ -372,7 +401,7 @@ function renderRecommendedAction(decision) {
       demo: "One of you is showcasing something worth seeing.",
     };
 
-    return intentMap[intent] || "You had a relevant interaction.";
+    return intentMap[intent] || "You crossed paths through a relevant interaction.";
   }
 
   const intent = normalizeIntent(decision?.components?.intent || localStorage.getItem("intent_primary"));
@@ -392,10 +421,37 @@ function renderRecommendedAction(decision) {
   const button = document.createElement("button");
   button.type = "button";
   button.className = "intel-connect-btn";
-  button.textContent = "Connect now";
-  button.addEventListener("click", handleSuggestConnect);
+  button.textContent = "Open Nearify to connect live";
+  button.addEventListener("click", () => handleSuggestConnect(block));
 
-  block.append(title, body, button);
+  const subtext = document.createElement("p");
+  subtext.className = "intel-connect-subtext";
+  subtext.textContent = "Live connections happen inside the app at the event.";
+
+  const fallback = document.createElement("div");
+  fallback.className = "intel-connect-fallback";
+  fallback.hidden = true;
+  fallback.innerHTML = `
+    <p class="intel-connect-fallback-title">Having trouble opening the app?</p>
+    <div class="intel-connect-fallback-actions">
+      <button type="button" class="intel-fallback-btn" data-intel-fallback="retry">Try again</button>
+      <button type="button" class="intel-fallback-btn" data-intel-fallback="copy">Copy profile link</button>
+      <button type="button" class="intel-fallback-btn" data-intel-fallback="view">View profile</button>
+    </div>
+    <p class="intel-connect-fallback-status" aria-live="polite"></p>
+  `;
+
+  fallback.querySelector("[data-intel-fallback='retry']")?.addEventListener("click", () => handleSuggestConnect(block));
+  fallback.querySelector("[data-intel-fallback='copy']")?.addEventListener("click", async () => {
+    const status = fallback.querySelector(".intel-connect-fallback-status");
+    const copied = await copyProfileLink();
+    if (status) status.textContent = copied ? "Profile link copied." : "Could not copy automatically. Use View profile instead.";
+  });
+  fallback.querySelector("[data-intel-fallback='view']")?.addEventListener("click", () => {
+    window.open(getShareableProfileUrl(), "_blank", "noopener,noreferrer");
+  });
+
+  block.append(title, body, button, subtext, fallback);
 
   console.log("[CTA] rendered suggest_connect", {
     confidence: decision.confidence,
@@ -420,7 +476,7 @@ export function appendDecisionDebug(container, decision) {
 }
 
 function renderPostEventSummary(container, decision, hasData, promoteFallback) {
-  const titleText = promoteFallback ? "You made a promising connection" : "Post-event summary";
+  const titleText = promoteFallback ? "Early signal: this could be a strong connection" : "Post-event summary";
   const bodyText = promoteFallback
     ? buildPromotedFallbackExplanation(decision)
     : buildPostEventSummary(decision, hasData);
@@ -445,6 +501,15 @@ function renderPostEventSummary(container, decision, hasData, promoteFallback) {
     insightsList.appendChild(item);
   });
   container.appendChild(insightsList);
+}
+
+function appendPersistenceSignal(container) {
+  if (!container) return;
+  container.querySelectorAll(".intel-persistence-signal").forEach((node) => node.remove());
+  const signal = document.createElement("p");
+  signal.className = "intel-persistence-signal";
+  signal.textContent = "This will appear in your People tab after you connect.";
+  container.appendChild(signal);
 }
 
 /**
@@ -871,6 +936,7 @@ export function renderIntelligenceInto(container, data, eventMeta = null, fallba
 
     console.info("[Intelligence] next_best_action", decision);
     appendDecisionDebug(container, decision);
+    appendPersistenceSignal(container);
 
     container.style.display = "";
     return;
@@ -921,5 +987,6 @@ export function renderIntelligenceInto(container, data, eventMeta = null, fallba
   appendRecommendedAction(container, decision);
 
   appendDecisionDebug(container, decision);
+  appendPersistenceSignal(container);
   container.style.display = "";
 }
