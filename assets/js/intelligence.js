@@ -38,6 +38,11 @@ const EL_ACTIONS = [
   "do_nothing",
 ];
 const STATIC_PROFILE_ROUTE = "/profile.html";
+const PRESENTATION_STATES = {
+  EARLY_SIGNAL: "early_signal",
+  POST_EVENT_SUMMARY: "post_event_summary",
+  NO_SIGNAL: "no_signal",
+};
 
 function scoreToStrength(score) {
   return STRENGTH_LEVELS.find((l) => score >= l.min) ?? STRENGTH_LEVELS[2];
@@ -222,34 +227,15 @@ function buildSuggestConnectReason(decision) {
   return parts.join(" and ") || "This looks like a good time to connect";
 }
 
-function getIntentSignalLabel(intent) {
-  const intentMap = {
-    meet_people: "came to meet people",
-    find_cofounder: "came to find a cofounder",
-    hire: "came to hire",
-    explore_ideas: "came to explore ideas",
-    demo: "came to demo",
-  };
-  return intentMap[intent] || "showed similar intent";
-}
-
 export function shouldPromoteFallbackDecision(decision) {
   return !!decision && decision.action !== "do_nothing" && Number(decision.confidence) > 0.2;
 }
 
-function buildPromotedFallbackExplanation(decision) {
-  const intent = normalizeIntent(decision?.components?.intent || localStorage.getItem("intent_primary"));
-  const { X } = getDecisionSignals(decision);
-  const intentSignal = getIntentSignalLabel(intent);
-  const interactionSignal = X > 0.2 ? "had a recent interaction" : "showed interaction activity";
-  return `You both ${intentSignal} and ${interactionSignal}.`;
-}
-
 function buildPostEventSummary(decision, hasData) {
   const { P, X } = getDecisionSignals(decision);
-  if (P > 0.5 && X > 0.25) return "Early signal: this could be a strong connection based on shared presence and recent interaction.";
+  if (P > 0.5 && X > 0.25) return "Possible signal based on shared presence and recent interaction.";
   if (P > 0.5) return "You crossed paths at the same event, which may be worth exploring.";
-  if (X > 0.25) return "Your recent interaction signals point to a useful follow-up opportunity.";
+  if (X > 0.25) return "Possible signal from recent interaction activity.";
   return hasData
     ? "Your post-event intelligence report is ready with interaction highlights."
     : "Your post-event intelligence report is taking shape from early event signals.";
@@ -407,17 +393,23 @@ function renderRecommendedAction(decision) {
   const shareableProfileUrl = getShareableProfileUrl();
 
   function generateReason(_decision, intent) {
-    if (!intent) return "You had a recent interaction.";
+    if (!intent) return isLowConfidenceFallback ? "Possible signal from a recent interaction." : "You had a recent interaction.";
 
     const intentMap = {
-      meet_people: "You’re both looking to meet people.",
-      find_cofounder: "You’re both exploring collaboration opportunities.",
-      hire: "There may be a strong hiring match here.",
-      explore_ideas: "You’re both exploring ideas.",
-      demo: "One of you is showcasing something worth seeing.",
+      meet_people: isLowConfidenceFallback ? "Possible signal: you may both be looking to meet people." : "You’re both looking to meet people.",
+      find_cofounder: isLowConfidenceFallback
+        ? "Possible signal: you may both be exploring collaboration opportunities."
+        : "You’re both exploring collaboration opportunities.",
+      hire: isLowConfidenceFallback ? "Possible signal: there may be a hiring match here." : "There may be a strong hiring match here.",
+      explore_ideas: isLowConfidenceFallback ? "Possible signal: you may both be exploring ideas." : "You’re both exploring ideas.",
+      demo: isLowConfidenceFallback
+        ? "Possible signal: one of you may be showcasing something worth seeing."
+        : "One of you is showcasing something worth seeing.",
     };
 
-    return intentMap[intent] || "You crossed paths through a relevant interaction.";
+    return intentMap[intent] || (isLowConfidenceFallback
+      ? "Possible signal from a relevant interaction."
+      : "You crossed paths through a relevant interaction.");
   }
 
   const intent = normalizeIntent(decision?.components?.intent || localStorage.getItem("intent_primary"));
@@ -509,11 +501,46 @@ export function appendDecisionDebug(container, decision) {
   container.appendChild(renderDecisionDebug(decision));
 }
 
-function renderPostEventSummary(container, decision, hasData, promoteFallback) {
-  const titleText = promoteFallback ? "Early signal: this could be a strong connection" : "Post-event summary";
-  const bodyText = promoteFallback
-    ? buildPromotedFallbackExplanation(decision)
-    : buildPostEventSummary(decision, hasData);
+function getPresentationState({ hasData, decision }) {
+  if (hasData) return PRESENTATION_STATES.POST_EVENT_SUMMARY;
+  if (hasMeaningfulFallbackDecision(decision)) return PRESENTATION_STATES.EARLY_SIGNAL;
+  return PRESENTATION_STATES.NO_SIGNAL;
+}
+
+function getStateCopy(state) {
+  if (state === PRESENTATION_STATES.EARLY_SIGNAL) {
+    return {
+      title: "Early signal: this could be useful",
+      body: "Nearify has limited confirmed event data so far. Open the app at the event to confirm live recommendations.",
+      cta: "Open Nearify to explore this signal",
+      processing: "Open Nearify at the event to confirm this early signal.",
+      footer: "This may appear in People after you connect.",
+    };
+  }
+  if (state === PRESENTATION_STATES.POST_EVENT_SUMMARY) {
+    return {
+      title: "Post-event summary",
+      body: "Review people you met and follow up while the context is fresh.",
+      cta: "Open Nearify to connect live",
+      processing: "Open Nearify at the event to see live recommendations.",
+      footer: "Saved connections appear in People for follow-up.",
+    };
+  }
+  return {
+    title: "No useful signal yet",
+    body: "Join or check in with Nearify at the event to generate live recommendations.",
+    cta: "Open Nearify at the event",
+    processing: "Open Nearify at the event to generate live recommendations.",
+    footer: "Nearify creates better summaries after real event activity.",
+  };
+}
+
+function renderPostEventSummary(container, decision, hasData, state) {
+  const stateCopy = getStateCopy(state);
+  const titleText = stateCopy.title;
+  const bodyText = state === PRESENTATION_STATES.POST_EVENT_SUMMARY
+    ? stateCopy.body
+    : stateCopy.body || buildPostEventSummary(decision, hasData);
 
   const summary = document.createElement("div");
   summary.className = "intel-post-summary";
@@ -522,6 +549,8 @@ function renderPostEventSummary(container, decision, hasData, promoteFallback) {
     <p class="intel-post-summary-body">${escapeHtml(bodyText)}</p>
   `;
   container.appendChild(summary);
+
+  if (state === PRESENTATION_STATES.NO_SIGNAL) return;
 
   const insights = buildSignalInsights(decision);
   if (!insights.length) return;
@@ -537,12 +566,13 @@ function renderPostEventSummary(container, decision, hasData, promoteFallback) {
   container.appendChild(insightsList);
 }
 
-function appendPersistenceSignal(container) {
+function appendPersistenceSignal(container, state) {
   if (!container) return;
   container.querySelectorAll(".intel-persistence-signal").forEach((node) => node.remove());
+  const copy = getStateCopy(state).footer;
   const signal = document.createElement("p");
   signal.className = "intel-persistence-signal";
-  signal.textContent = "This will appear in your People tab after you connect.";
+  signal.textContent = copy;
   container.appendChild(signal);
 }
 
@@ -550,7 +580,7 @@ function appendPersistenceSignal(container) {
  * Build the event context header shown at the top of every intelligence section.
  * Includes event name, date, and a live/pending status badge.
  */
-function buildEventHeader(eventMeta, hasData, promoteFallback) {
+function buildEventHeader(eventMeta, state) {
   const header = document.createElement("div");
   header.className = "intel-event-header";
 
@@ -558,8 +588,12 @@ function buildEventHeader(eventMeta, hasData, promoteFallback) {
     ? `<span class="intel-event-date"> · ${escapeHtml(eventMeta.date)}</span>`
     : "";
 
-  const statusClass = hasData || promoteFallback ? "intel-status-ready" : "intel-status-pending";
-  const statusText = hasData ? "Ready" : promoteFallback ? "Early signal" : "Report pending";
+  const statusClass = state === PRESENTATION_STATES.POST_EVENT_SUMMARY ? "intel-status-ready" : "intel-status-pending";
+  const statusText = state === PRESENTATION_STATES.POST_EVENT_SUMMARY
+    ? "Ready"
+    : state === PRESENTATION_STATES.EARLY_SIGNAL
+      ? "Early signal"
+      : "No signal yet";
 
   header.innerHTML =
     `<div class="intel-event-badge">` +
@@ -950,27 +984,39 @@ export function renderIntelligenceInto(container, data, eventMeta = null, fallba
 
   const hasData = !!(data && data.length > 0);
   const decision = fallbackDecision ?? computeNextBestAction(data);
-  const promoteFallback = !hasData && shouldPromoteFallbackDecision(fallbackDecision);
+  const presentationState = getPresentationState({ hasData, decision });
+  const stateCopy = getStateCopy(presentationState);
 
   if (eventMeta) {
-    container.appendChild(buildEventHeader(eventMeta, hasData, promoteFallback));
+    container.appendChild(buildEventHeader(eventMeta, presentationState));
   }
 
-  renderPostEventSummary(container, decision, hasData, promoteFallback);
+  renderPostEventSummary(container, decision, hasData, presentationState);
 
   if (!hasData) {
     console.log("[CTA] rendering decision:", decision);
 
     const pending = document.createElement("p");
     pending.className = "intel-processing-note";
-    pending.textContent = "Open Nearify at the event to see live recommendations.";
+    pending.textContent = stateCopy.processing;
     container.appendChild(pending);
 
-    appendRecommendedAction(container, decision);
+    if (presentationState !== PRESENTATION_STATES.NO_SIGNAL) {
+      appendRecommendedAction(container, decision);
+    } else {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "intel-connect-btn";
+      button.textContent = stateCopy.cta;
+      button.addEventListener("click", () => {
+        handleSuggestConnect(container, { hasAttemptedDeepLinkForThisClick: false });
+      });
+      container.appendChild(button);
+    }
 
     console.info("[Intelligence] next_best_action", decision);
     appendDecisionDebug(container, decision);
-    appendPersistenceSignal(container);
+    appendPersistenceSignal(container, presentationState);
 
     container.style.display = "";
     return;
@@ -1013,7 +1059,7 @@ export function renderIntelligenceInto(container, data, eventMeta = null, fallba
   if (!hasContent) {
     const pending = document.createElement("p");
     pending.className = "intel-processing-note";
-    pending.textContent = "Open Nearify at the event to see live recommendations.";
+    pending.textContent = stateCopy.processing;
     container.appendChild(pending);
   }
 
@@ -1021,6 +1067,6 @@ export function renderIntelligenceInto(container, data, eventMeta = null, fallba
   appendRecommendedAction(container, decision);
 
   appendDecisionDebug(container, decision);
-  appendPersistenceSignal(container);
+  appendPersistenceSignal(container, presentationState);
   container.style.display = "";
 }
