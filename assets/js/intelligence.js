@@ -864,9 +864,7 @@ export function renderIntelligenceInto(container, data, eventMeta = null, fallba
 
     const pending = document.createElement("p");
     pending.className = "intel-processing-note";
-    pending.textContent = hasMeaningfulFallback
-      ? "Early event intelligence is available. You already have a recommended next step. Full report still processing."
-      : "Full report still processing.";
+    pending.textContent = "Open Nearify at the event to see live recommendations.";
     container.appendChild(pending);
 
     appendRecommendedAction(container, decision);
@@ -915,7 +913,7 @@ export function renderIntelligenceInto(container, data, eventMeta = null, fallba
   if (!hasContent) {
     const pending = document.createElement("p");
     pending.className = "intel-processing-note";
-    pending.textContent = "Full report still processing.";
+    pending.textContent = "Open Nearify at the event to see live recommendations.";
     container.appendChild(pending);
   }
 
