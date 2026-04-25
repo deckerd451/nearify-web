@@ -1494,6 +1494,53 @@ code {
   filter: brightness(1.06);
 }
 
+.intel-connect-subtext {
+  margin: 8px 0 0;
+  font-size: 12px;
+  color: #9eb2cd;
+}
+
+.intel-connect-fallback {
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px dashed rgba(122, 184, 245, 0.28);
+}
+
+.intel-connect-fallback-title {
+  margin: 0 0 8px;
+  font-size: 12px;
+  color: #d8e7fb;
+  font-weight: 600;
+}
+
+.intel-connect-fallback-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.intel-fallback-btn {
+  border-radius: 8px;
+  border: 1px solid rgba(122, 184, 245, 0.4);
+  background: rgba(14, 26, 46, 0.8);
+  color: #cfe6ff;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 8px 10px;
+  cursor: pointer;
+}
+
+.intel-fallback-btn:hover {
+  border-color: rgba(0, 209, 255, 0.75);
+}
+
+.intel-connect-fallback-status {
+  margin: 8px 0 0;
+  min-height: 16px;
+  font-size: 12px;
+  color: #9eb2cd;
+}
+
 .intel-empty-title {
   font-size: 16px;
   font-weight: 600;
@@ -1561,6 +1608,13 @@ code {
   max-width: 700px;
   font-size: 12px;
   color: #8fa0b8;
+}
+
+.intel-persistence-signal {
+  max-width: 700px;
+  margin: 8px auto 0;
+  font-size: 12px;
+  color: #9bb0cb;
 }
 
 @media (max-width: 720px) {
