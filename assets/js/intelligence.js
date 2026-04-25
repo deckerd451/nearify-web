@@ -37,6 +37,7 @@ const EL_ACTIONS = [
   "suggest_explore",
   "do_nothing",
 ];
+const STATIC_PROFILE_ROUTE = "/profile.html";
 
 function scoreToStrength(score) {
   return STRENGTH_LEVELS.find((l) => score >= l.min) ?? STRENGTH_LEVELS[2];
@@ -286,7 +287,7 @@ function isDebugModeEnabled() {
 }
 
 function resolveSuggestedConnectTarget() {
-  const candidateRoutes = ["/connect/", "/connect", "/profile/", "/profile", "/join/"];
+  const candidateRoutes = ["/connect/", "/connect", "/join/"];
   for (const route of candidateRoutes) {
     const exists = document.querySelector(`a[href='${route}']`);
     if (exists) {
@@ -318,7 +319,9 @@ function getShareableProfileUrl() {
   const current = new URL(window.location.href);
   const eventId = current.searchParams.get("event");
   const profileId = current.searchParams.get("profile") || current.searchParams.get("profile_id");
-  const profileUrl = new URL("/profile/", window.location.origin);
+  if (!profileId || !isStaticProfileRouteAvailable()) return null;
+
+  const profileUrl = new URL(STATIC_PROFILE_ROUTE, window.location.origin);
   if (profileId) profileUrl.searchParams.set("id", profileId);
   if (eventId) profileUrl.searchParams.set("event", eventId);
   return profileUrl.toString();
@@ -331,8 +334,13 @@ function showConnectFallbackActions(root) {
   fallback.hidden = false;
 }
 
-async function copyProfileLink() {
-  const profileUrl = getShareableProfileUrl();
+function isStaticProfileRouteAvailable() {
+  if (window.location.pathname === STATIC_PROFILE_ROUTE) return true;
+  return !!document.querySelector(`a[href='${STATIC_PROFILE_ROUTE}']`);
+}
+
+async function copyProfileLink(profileUrl) {
+  if (!profileUrl) return false;
   try {
     await navigator.clipboard.writeText(profileUrl);
     return true;
@@ -341,7 +349,7 @@ async function copyProfileLink() {
   }
 }
 
-function handleSuggestConnect(root = null) {
+function handleSuggestConnect(root = null, attemptState = null) {
   const action = resolveSuggestedConnectTarget();
   if (action.type === "route" || action.type === "fallback-url") {
     window.location.assign(action.target);
@@ -349,6 +357,8 @@ function handleSuggestConnect(root = null) {
   }
 
   if (action.type === "deep-link") {
+    if (attemptState?.hasAttemptedDeepLinkForThisClick) return;
+    if (attemptState) attemptState.hasAttemptedDeepLinkForThisClick = true;
     console.log("[CTA] deep link attempted");
 
     let fallbackUsed = false;
@@ -389,6 +399,12 @@ function renderRecommendedAction(decision) {
   if (!decision || decision.action !== "suggest_connect" || Number(decision.confidence) <= 0.2) {
     return null;
   }
+  const score = Number(decision.score ?? 0);
+  const confidence = Number(decision.confidence ?? 0);
+  const isFallbackDecision = !!decision?.components?.scored_actions;
+  const isLowConfidenceFallback = isFallbackDecision && (score < 0 || confidence < 0.5);
+  const useStrongConnectLanguage = decision.action === "suggest_connect" && confidence >= 0.5 && score >= 0;
+  const shareableProfileUrl = getShareableProfileUrl();
 
   function generateReason(_decision, intent) {
     if (!intent) return "You had a recent interaction.";
@@ -421,12 +437,18 @@ function renderRecommendedAction(decision) {
   const button = document.createElement("button");
   button.type = "button";
   button.className = "intel-connect-btn";
-  button.textContent = "Open Nearify to connect live";
-  button.addEventListener("click", () => handleSuggestConnect(block));
+  button.textContent = useStrongConnectLanguage
+    ? "Open Nearify to connect live"
+    : "Open Nearify to explore this signal";
+  button.addEventListener("click", () => {
+    handleSuggestConnect(block, { hasAttemptedDeepLinkForThisClick: false });
+  });
 
   const subtext = document.createElement("p");
   subtext.className = "intel-connect-subtext";
-  subtext.textContent = "Live connections happen inside the app at the event.";
+  subtext.textContent = isLowConfidenceFallback
+    ? "This is an early signal. The app can confirm live context at the event."
+    : "Live connections happen inside the app at the event.";
 
   const fallback = document.createElement("div");
   fallback.className = "intel-connect-fallback";
@@ -441,15 +463,27 @@ function renderRecommendedAction(decision) {
     <p class="intel-connect-fallback-status" aria-live="polite"></p>
   `;
 
-  fallback.querySelector("[data-intel-fallback='retry']")?.addEventListener("click", () => handleSuggestConnect(block));
-  fallback.querySelector("[data-intel-fallback='copy']")?.addEventListener("click", async () => {
+  const retryButton = fallback.querySelector("[data-intel-fallback='retry']");
+  const copyButton = fallback.querySelector("[data-intel-fallback='copy']");
+  const viewButton = fallback.querySelector("[data-intel-fallback='view']");
+
+  retryButton?.addEventListener("click", () => {
+    handleSuggestConnect(block, { hasAttemptedDeepLinkForThisClick: false });
+  });
+  copyButton?.addEventListener("click", async () => {
     const status = fallback.querySelector(".intel-connect-fallback-status");
-    const copied = await copyProfileLink();
+    const copied = await copyProfileLink(shareableProfileUrl);
     if (status) status.textContent = copied ? "Profile link copied." : "Could not copy automatically. Use View profile instead.";
   });
-  fallback.querySelector("[data-intel-fallback='view']")?.addEventListener("click", () => {
-    window.open(getShareableProfileUrl(), "_blank", "noopener,noreferrer");
+  viewButton?.addEventListener("click", () => {
+    if (!shareableProfileUrl) return;
+    window.open(shareableProfileUrl, "_blank", "noopener,noreferrer");
   });
+
+  if (!shareableProfileUrl) {
+    copyButton?.setAttribute("hidden", "hidden");
+    viewButton?.setAttribute("hidden", "hidden");
+  }
 
   block.append(title, body, button, subtext, fallback);
 
