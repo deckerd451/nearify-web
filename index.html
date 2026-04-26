@@ -54,6 +54,7 @@
             class="btn secondary"
             target="_blank"
             rel="noopener noreferrer"
+            data-track-cta="hero_get_app"
           >Get the App</a>
         </div>
         <p class="hero-platform-note">Nearify iOS powers live event intelligence</p>
@@ -142,6 +143,7 @@
         class="btn primary"
         target="_blank"
         rel="noopener noreferrer"
+        data-track-cta="home_cta_testflight"
       >Get Nearify on TestFlight</a>
     </section>
 
@@ -160,5 +162,10 @@
   <script src="assets/js/main.js"></script>
   <script type="module" src="assets/js/home.js"></script>
   <script type="module" src="assets/js/navAuth.js"></script>
+  <script type="module">
+    import { trackPageView, wireAppCtaTracking } from "./assets/js/analytics.js";
+    trackPageView();
+    wireAppCtaTracking();
+  </script>
 </body>
 </html>

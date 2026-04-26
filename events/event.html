@@ -67,6 +67,7 @@
             class="btn secondary"
             target="_blank"
             rel="noopener noreferrer"
+            data-track-cta="event_detail_hero_get_app"
           >
             Get the App
           </a>
@@ -190,7 +191,7 @@
           <span class="intent-chip-sub">Looking around for now</span>
         </button>
       </div>
-      <p id="eventIntentStatus" class="intent-status"></p>
+      <p id="eventIntentStatus" class="intent-status" aria-live="polite"></p>
     </section>
 
     <!-- Pre-event sections — upcoming events only, shown by JS -->
@@ -238,7 +239,7 @@
     <p>© 2026 Nearify</p>
   </footer>
 
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" integrity="sha384-rRoXxn2yHlrZYB587Ki9RO1tONhLdM6XfORg7Rw4uwH4/Fh/5nP7IUX91bkaKUgs" crossorigin="anonymous"></script>
   <script type="module" src="../assets/js/eventDetail.js"></script>
   <script type="module" src="../assets/js/navAuth.js"></script>
 </body>

@@ -276,9 +276,83 @@ async function maybeClaimGhostActivity(ghost, isClaimed) {
   return true;
 }
 
-function wireClaimButtons() {
-  const clickHandler = () => startGhostClaimAuth();
-  if (els.ghostClaimBtn) els.ghostClaimBtn.addEventListener("click", clickHandler);
+async function saveGhostEmail(ghost, email) {
+  if (!ghost?.ghostId || !ghost?.ghostToken || !email) return;
+  const { createScopedSupabaseClient } = await import("./supabaseClient.js");
+  const scoped = createScopedSupabaseClient({ "x-ghost-token": ghost.ghostToken });
+  await scoped.rpc("set_ghost_email", {
+    p_ghost_id: ghost.ghostId,
+    p_ghost_token: ghost.ghostToken,
+    p_email: email,
+  });
+}
+
+function showGhostEmailCapture() {
+  const capture = document.getElementById("ghostEmailCapture");
+  if (capture) show(capture);
+  if (els.ghostClaimBtn) hide(els.ghostClaimBtn);
+}
+
+function wireEmailCapture(ghost) {
+  const capture = document.getElementById("ghostEmailCapture");
+  const emailInput = document.getElementById("ghostEmailInput");
+  const submitBtn = document.getElementById("ghostEmailSubmit");
+  const skipBtn = document.getElementById("ghostEmailSkip");
+
+  if (!capture) return;
+
+  if (submitBtn) {
+    submitBtn.addEventListener("click", async () => {
+      const email = emailInput?.value?.trim();
+      if (!email || !email.includes("@")) {
+        if (emailInput) emailInput.focus();
+        return;
+      }
+      submitBtn.disabled = true;
+      submitBtn.textContent = "Saving…";
+      try {
+        await saveGhostEmail(ghost, email);
+      } catch (err) {
+        console.warn("[Ghost] Email save failed", err);
+      }
+      hide(capture);
+      setGhostClaimStatus("Thanks — we'll send your recap after the event.");
+      await startGhostClaimAuth();
+    });
+  }
+
+  if (skipBtn) {
+    skipBtn.addEventListener("click", async () => {
+      hide(capture);
+      await startGhostClaimAuth();
+    });
+  }
+}
+
+function wireClaimButtons(ghost, isClaimed) {
+  if (!els.ghostClaimBtn) return;
+
+  wireEmailCapture(ghost);
+
+  els.ghostClaimBtn.addEventListener("click", async () => {
+    if (els.ghostClaimBtn.disabled) return;
+
+    const { data: sessionData } = await supabase.auth.getSession();
+    if (sessionData?.session?.user) {
+      els.ghostClaimBtn.disabled = true;
+      const originalLabel = els.ghostClaimBtn.textContent;
+      els.ghostClaimBtn.textContent = "Saving…";
+      const claimed = await maybeClaimGhostActivity(ghost, isClaimed);
+      if (claimed) {
+        els.ghostClaimBtn.textContent = "Saved ✓";
+      } else {
+        els.ghostClaimBtn.disabled = false;
+        els.ghostClaimBtn.textContent = originalLabel;
+      }
+    } else {
+      showGhostEmailCapture();
+    }
+  });
 }
 
 function getJoinState({ session, hasHistory, isClaimed }) {
@@ -345,9 +419,40 @@ function renderGhostJourneyCard({ state, personName, historyRows }) {
   hide(els.ghostReturnCard);
 }
 
+function wireIntentChips() {
+  if (!els.intentStep) return;
+  const chips = els.intentStep.querySelectorAll(".intent-chip");
+  const gate = document.getElementById("intentSignInGate");
+  const signInBtn = document.getElementById("intentSignInBtn");
+
+  chips.forEach((chip) => {
+    chip.addEventListener("click", () => {
+      chips.forEach((c) => c.classList.remove("active"));
+      chip.classList.add("active");
+      if (gate) show(gate);
+    });
+  });
+
+  if (signInBtn) {
+    signInBtn.addEventListener("click", async () => {
+      signInBtn.disabled = true;
+      signInBtn.textContent = "Redirecting…";
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: { redirectTo: window.location.href },
+      });
+      if (error) {
+        signInBtn.disabled = false;
+        signInBtn.textContent = "Sign in with Google";
+      }
+    });
+  }
+}
+
 function showIntentStep() {
   if (!els.intentStep) return;
   show(els.intentStep);
+  wireIntentChips();
 }
 
 function renderGenericJoinUx(event, fallbackName) {
@@ -518,7 +623,7 @@ async function initJoinPage() {
       }
     }
 
-    wireClaimButtons();
+    wireClaimButtons(ghost, isClaimed);
 
     if (profileId) {
       renderPersonalConnectUx(event, targetProfile);
