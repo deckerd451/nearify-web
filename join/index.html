@@ -66,10 +66,26 @@
             <p class="ghost-return-list-title">You've connected with:</p>
             <ul id="ghostConnectionsList" class="ghost-connections-list"></ul>
           </div>
+          <div id="ghostEmailCapture" class="ghost-email-capture" style="display:none;">
+            <p class="ghost-email-prompt">Enter your email to get a recap of your connections after the event.</p>
+            <div class="ghost-email-row">
+              <input
+                id="ghostEmailInput"
+                type="email"
+                class="ghost-email-input"
+                placeholder="your@email.com"
+                autocomplete="email"
+                inputmode="email"
+              />
+              <button id="ghostEmailSubmit" class="btn primary" type="button">Get recap</button>
+            </div>
+            <button id="ghostEmailSkip" class="btn-inline-link" type="button">Skip — just sign in</button>
+          </div>
+
           <div class="ghost-return-actions">
             <button id="ghostClaimBtn" class="btn primary" type="button">Save this connection</button>
           </div>
-          <p id="ghostClaimStatus" class="ghost-claim-status"></p>
+          <p id="ghostClaimStatus" class="ghost-claim-status" aria-live="polite"></p>
         </section>
 
         <div class="hero-actions" id="joinActions">
@@ -80,6 +96,7 @@
             class="btn primary"
             target="_blank"
             rel="noopener noreferrer"
+            data-track-cta="join_hero_get_app"
           >
             Get Nearify (TestFlight)
           </a>
@@ -200,7 +217,7 @@
       <div class="intent-actions">
         <button id="skipIntentBtn" class="intent-skip-btn">I'll decide later</button>
       </div>
-      <p id="intentStatus" class="intent-status"></p>
+      <p id="intentStatus" class="intent-status" aria-live="polite"></p>
     </section>
 
     <!-- Intelligence panel — shown when data exists for signed-in users -->
@@ -238,6 +255,7 @@
         class="btn primary"
         target="_blank"
         rel="noopener noreferrer"
+        data-track-cta="join_bottom_cta"
       >
         Get Nearify on TestFlight
       </a>
@@ -257,8 +275,13 @@
     <p>© 2026 Nearify</p>
   </footer>
 
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" integrity="sha384-rRoXxn2yHlrZYB587Ki9RO1tONhLdM6XfORg7Rw4uwH4/Fh/5nP7IUX91bkaKUgs" crossorigin="anonymous"></script>
   <script type="module" src="../assets/js/join.js"></script>
   <script type="module" src="../assets/js/navAuth.js"></script>
+  <script type="module">
+    import { trackPageView, wireAppCtaTracking } from "../assets/js/analytics.js";
+    trackPageView();
+    wireAppCtaTracking();
+  </script>
 </body>
 </html>

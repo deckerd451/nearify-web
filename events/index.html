@@ -56,6 +56,7 @@
             class="btn primary"
             target="_blank"
             rel="noopener noreferrer"
+            data-track-cta="events_hero_install"
           >
             Install Nearify (TestFlight)
           </a>
@@ -155,6 +156,7 @@
         class="btn primary"
         target="_blank"
         rel="noopener noreferrer"
+        data-track-cta="events_bottom_cta"
       >
         Open TestFlight
       </a>
@@ -172,6 +174,11 @@
   </footer>
 
   <script type="module" src="../assets/js/navAuth.js"></script>
+  <script type="module">
+    import { trackPageView, wireAppCtaTracking } from "../assets/js/analytics.js";
+    trackPageView();
+    wireAppCtaTracking();
+  </script>
   <script type="module">
     import { fetchPublicEvents } from "../assets/js/events.js";
 

@@ -6,6 +6,7 @@ import {
   getMyProfileId,
   renderPersonalConnectQr
 } from "./personalConnect.js";
+import { trackPageView, wireAppCtaTracking } from "./analytics.js";
 
 const JOIN_BASE = "https://nearify.org/join/";
 const INTENT_STORAGE_KEY = "intent_primary";
@@ -126,14 +127,20 @@ async function persistIntent(intent) {
   selectedIntent = intent;
   updateIntentUI();
   storeIntentLocal(intent);
+  setIntentStatus("Saving…");
 
   if (!currentUser?.id) {
-    setIntentStatus("Intent saved for this browser.");
+    setIntentStatus("Intent saved for this session.");
     return;
   }
 
   const ok = await saveProfileIntent(currentUser.id, intent);
-  setIntentStatus(ok ? "Intent saved to your profile." : "Intent saved for this browser.");
+  if (ok) {
+    setIntentStatus("Saved to your profile.");
+  } else {
+    setIntentStatus("Saved locally — sync will complete when the app opens.");
+  }
+  setTimeout(() => setIntentStatus(""), 3000);
 }
 
 function renderMetaGrid(event, isPast) {
@@ -533,6 +540,9 @@ async function init() {
     currentUser = await fetchCurrentUser();
     await populatePage(currentEvent);
     await renderPersonalConnectSection(currentEvent.id);
+
+    trackPageView({ eventId: currentEvent.id });
+    wireAppCtaTracking();
   } catch (err) {
     console.error("[EventDetail] load error:", err);
     showNotFound("Something went wrong loading this event. Please try again.");

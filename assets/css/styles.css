@@ -2327,3 +2327,88 @@ code {
     border-bottom: none;
   }
 }
+
+/* ============================================================
+   GHOST EMAIL CAPTURE
+   ============================================================ */
+
+.ghost-email-capture {
+  margin-top: 16px;
+  padding: 16px;
+  background: rgba(0, 209, 255, 0.06);
+  border: 1px solid rgba(0, 209, 255, 0.2);
+  border-radius: 12px;
+}
+
+.ghost-email-prompt {
+  font-size: 14px;
+  color: #c8d8e8;
+  margin: 0 0 12px;
+  line-height: 1.5;
+}
+
+.ghost-email-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.ghost-email-input {
+  flex: 1;
+  min-width: 0;
+  padding: 10px 14px;
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 8px;
+  color: #e2e8f0;
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.15s ease;
+}
+
+.ghost-email-input::placeholder {
+  color: #5a7090;
+}
+
+.ghost-email-input:focus {
+  border-color: var(--color-accent);
+}
+
+.ghost-email-skip-row {
+  margin-top: 10px;
+}
+
+/* btn-inline-link — used in admin edit mode and ghost email skip */
+.btn-inline-link {
+  background: none;
+  border: none;
+  padding: 6px 0;
+  margin-top: 8px;
+  color: #8fa0b8;
+  font-size: 13px;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  display: block;
+}
+
+.btn-inline-link:hover {
+  color: var(--color-accent);
+}
+
+/* Loading / disabled state on buttons */
+.btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* ============================================================
+   INTENT CHIP — ACTIVE STATE
+   ============================================================ */
+
+.intent-chip.active {
+  border-color: var(--color-accent);
+  background: rgba(0, 209, 255, 0.12);
+  color: var(--color-accent);
+}

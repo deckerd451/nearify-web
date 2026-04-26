@@ -1,0 +1,7 @@
+User-agent: *
+Allow: /
+
+Disallow: /admin/
+Disallow: /event-context/
+
+Sitemap: https://nearify.org/sitemap.xml
