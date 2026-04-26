@@ -655,7 +655,7 @@ export function renderIntelCard(item) {
     <div class="intel-card-body">
       <div class="intel-card-name">${escapeHtml(item.target_name || "Attendee")}</div>
       ${directionLabel}
-      <div class="intel-card-reason">${normalizeReason(item.reason)}</div>
+      <div class="intel-card-reason">${escapeHtml(normalizeReason(item.reason))}</div>
       ${strengthHtml}
       ${missedHint}
     </div>

@@ -13,9 +13,11 @@
   <meta property="og:url"         content="https://nearify.org/join/" />
   <meta property="og:title"       content="Join Event | Nearify" />
   <meta property="og:description" content="Get Nearify to join this event and discover who's around you in real time." />
-  <meta name="twitter:card"       content="summary" />
+  <meta property="og:image"       content="https://nearify.org/assets/images/og-default.png" />
+  <meta name="twitter:card"       content="summary_large_image" />
   <meta name="twitter:title"      content="Join Event | Nearify" />
   <meta name="twitter:description" content="Get Nearify to join this event and discover who's around you in real time." />
+  <meta name="twitter:image"      content="https://nearify.org/assets/images/og-default.png" />
 
   <link rel="stylesheet" href="../assets/css/styles.css" />
 </head>
@@ -280,6 +282,8 @@
   <script type="module" src="../assets/js/navAuth.js"></script>
   <script type="module">
     import { trackPageView, wireAppCtaTracking } from "../assets/js/analytics.js";
+    import { patchAppStoreLinks } from "../assets/js/config.js";
+    patchAppStoreLinks();
     trackPageView();
     wireAppCtaTracking();
   </script>
