@@ -13,9 +13,11 @@
   <meta property="og:url"         content="https://nearify.org/events/" />
   <meta property="og:title"       content="Events | Nearify" />
   <meta property="og:description" content="Browse upcoming Nearify-enabled events. Install the app and be ready to connect the moment you arrive." />
-  <meta name="twitter:card"       content="summary" />
+  <meta property="og:image"       content="https://nearify.org/assets/images/og-default.png" />
+  <meta name="twitter:card"       content="summary_large_image" />
   <meta name="twitter:title"      content="Events | Nearify" />
   <meta name="twitter:description" content="Browse upcoming Nearify-enabled events. Install the app and be ready to connect the moment you arrive." />
+  <meta name="twitter:image"      content="https://nearify.org/assets/images/og-default.png" />
 
   <link rel="stylesheet" href="../assets/css/styles.css" />
 </head>
@@ -176,6 +178,8 @@
   <script type="module" src="../assets/js/navAuth.js"></script>
   <script type="module">
     import { trackPageView, wireAppCtaTracking } from "../assets/js/analytics.js";
+    import { patchAppStoreLinks } from "../assets/js/config.js";
+    patchAppStoreLinks();
     trackPageView();
     wireAppCtaTracking();
   </script>

@@ -7,6 +7,7 @@ import {
   renderPersonalConnectQr
 } from "./personalConnect.js";
 import { trackPageView, wireAppCtaTracking } from "./analytics.js";
+import { patchAppStoreLinks } from "./config.js";
 
 const JOIN_BASE = "https://nearify.org/join/";
 const INTENT_STORAGE_KEY = "intent_primary";
@@ -469,6 +470,7 @@ async function populatePage(event) {
   setMeta('meta[name="twitter:title"]', `${event.name} | Nearify`);
   setMeta('meta[property="og:description"]', event.description || `Discover and connect with attendees at ${event.name} in real time.`);
   setMeta('meta[name="twitter:description"]', event.description || `Discover and connect with attendees at ${event.name} in real time.`);
+  setMeta('meta[property="og:url"]', `https://nearify.org/events/event.html?slug=${encodeURIComponent(event.slug || event.id)}`);
 
   const kickerEl = document.getElementById("eventKicker");
   const titleEl = document.getElementById("eventTitle");
@@ -541,6 +543,7 @@ async function init() {
     await populatePage(currentEvent);
     await renderPersonalConnectSection(currentEvent.id);
 
+    patchAppStoreLinks();
     trackPageView({ eventId: currentEvent.id });
     wireAppCtaTracking();
   } catch (err) {

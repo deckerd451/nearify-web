@@ -540,7 +540,7 @@ function renderPersonalConnectUx(event, targetProfile) {
     els.joinPanelList.innerHTML = `
       <li>
         <div class="join-step-label">Your connection is already saved</div>
-        <div class="join-step-detail">You don't need to repeat this step — ${personName} is now in your event network.</div>
+        <div class="join-step-detail">You don't need to repeat this step — ${escapeHtml(personName)} is now in your event network.</div>
       </li>
       <li>
         <div class="join-step-label">Set your intent</div>
@@ -548,7 +548,7 @@ function renderPersonalConnectUx(event, targetProfile) {
       </li>
       <li>
         <div class="join-step-label">Get the app to explore who's here</div>
-        <div class="join-step-detail">Open Nearify to discover more attendees nearby and keep building momentum at ${event?.name || "this event"}.</div>
+        <div class="join-step-detail">Open Nearify to discover more attendees nearby and keep building momentum at ${escapeHtml(event?.name || "this event")}.</div>
       </li>
     `;
   }

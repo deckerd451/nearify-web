@@ -1,0 +1,100 @@
+name: CI
+
+on:
+  push:
+    branches: ["main", "claude/**"]
+  pull_request:
+    branches: ["main"]
+
+jobs:
+  validate:
+    name: Validate
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      # -----------------------------------------------------------------------
+      # 1. JS syntax check — catches parse errors before they ship
+      # -----------------------------------------------------------------------
+      - name: Check JS syntax
+        run: |
+          find assets/js -name "*.js" | while read f; do
+            node --input-type=module < "$f" 2>&1 || { echo "SYNTAX ERROR in $f"; exit 1; }
+          done
+
+      # -----------------------------------------------------------------------
+      # 2. Enforce app URL centralisation — JS files must not hardcode the
+      #    TestFlight URL directly; they should import from config.js instead.
+      # -----------------------------------------------------------------------
+      - name: Enforce app URL in config.js only
+        run: |
+          MATCHES=$(grep -rn "testflight\.apple\.com" assets/js/ --include="*.js" \
+            | grep -v "assets/js/config\.js" || true)
+          if [ -n "$MATCHES" ]; then
+            echo "ERROR: TestFlight URL found outside config.js:"
+            echo "$MATCHES"
+            echo "Move the URL to APP_STORE_URL in assets/js/config.js"
+            exit 1
+          fi
+
+      # -----------------------------------------------------------------------
+      # 3. Check for unescaped innerHTML patterns — flag any new innerHTML
+      #    assignment that doesn't use escapeHtml() on every interpolation.
+      #    Exits non-zero only on new raw template-literal interpolations.
+      # -----------------------------------------------------------------------
+      - name: Audit innerHTML for unescaped interpolations
+        run: |
+          # Look for template literals inside innerHTML = `...` that contain
+          # ${...} without escapeHtml( wrapping them.
+          python3 - <<'PYEOF'
+          import re, sys, pathlib
+
+          RAW_INTERP = re.compile(r'\$\{(?!escapeHtml\()(?![0-9\s\`\'\"])(?![a-z]+\.length)')
+          INNER_HTML = re.compile(r'\.innerHTML\s*[+=].*`', re.DOTALL)
+
+          issues = []
+          for path in pathlib.Path('assets/js').rglob('*.js'):
+              src = path.read_text()
+              for m in INNER_HTML.finditer(src):
+                  block = m.group(0)
+                  for bad in RAW_INTERP.finditer(block):
+                      line = src[:m.start() + bad.start()].count('\n') + 1
+                      issues.append(f"{path}:{line}: unescaped interpolation in innerHTML")
+
+          if issues:
+              for i in issues:
+                  print(i)
+              sys.exit(1)
+          PYEOF
+
+      # -----------------------------------------------------------------------
+      # 4. Confirm service worker is registered on the join page
+      # -----------------------------------------------------------------------
+      - name: Check service worker registration
+        run: |
+          if ! grep -q "serviceWorker" join/index.html; then
+            echo "ERROR: service worker not registered in join/index.html"
+            exit 1
+          fi
+
+      # -----------------------------------------------------------------------
+      # 5. Confirm all HTML pages have og:image
+      # -----------------------------------------------------------------------
+      - name: Check og:image on all pages
+        run: |
+          MISSING=""
+          for f in index.html join/index.html events/index.html events/event.html admin/event-setup.html; do
+            if ! grep -q 'og:image' "$f"; then
+              MISSING="$MISSING $f"
+            fi
+          done
+          if [ -n "$MISSING" ]; then
+            echo "ERROR: og:image missing from:$MISSING"
+            exit 1
+          fi
