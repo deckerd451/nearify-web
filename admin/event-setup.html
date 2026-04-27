@@ -103,14 +103,17 @@
         <div class="admin-card">
           <form id="organizerForm" class="organizer-form">
             <div class="form-row">
-              <label for="eventName">Event name</label>
+              <label for="eventName">Event name <span class="field-required" aria-hidden="true">*</span></label>
               <input
                 id="eventName"
                 name="eventName"
                 type="text"
                 placeholder="CharlestonHacks Show & Tell Featuring Hacker Theater"
                 required
+                aria-required="true"
+                aria-describedby="eventNameError"
               />
+              <p class="field-error" id="eventNameError" role="alert" style="display:none;">Event name is required.</p>
             </div>
 
             <div class="form-row">
@@ -120,8 +123,10 @@
                 name="eventSlug"
                 type="text"
                 placeholder="charlestonhacks-show-and-tell-featuring-hacker-theater"
+                aria-describedby="eventSlugHelp eventSlugError"
               />
-              <p class="field-help">Used for the public event page URL.</p>
+              <p class="field-help" id="eventSlugHelp">Used for the public event page URL. Only letters, numbers, and hyphens.</p>
+              <p class="field-error" id="eventSlugError" role="alert" style="display:none;">Slug can only contain letters, numbers, and hyphens.</p>
             </div>
 
             <div class="form-row">
@@ -390,7 +395,34 @@
     });
 
     // --- Save / Update event ---
+    function setFieldError(inputId, errorId, message) {
+      const input = document.getElementById(inputId);
+      const error = document.getElementById(errorId);
+      if (!input || !error) return;
+      if (message) {
+        error.textContent = message;
+        error.style.display = "";
+        input.setAttribute("aria-invalid", "true");
+        input.classList.add("field-invalid");
+      } else {
+        error.style.display = "none";
+        input.removeAttribute("aria-invalid");
+        input.classList.remove("field-invalid");
+      }
+    }
+
+    function clearFieldErrors() {
+      ["eventName", "eventSlug"].forEach((id) => {
+        setFieldError(id, id + "Error", "");
+      });
+    }
+
+    // Clear errors on input
+    document.getElementById("eventName").addEventListener("input", () => setFieldError("eventName", "eventNameError", ""));
+    document.getElementById("eventSlug").addEventListener("input", () => setFieldError("eventSlug", "eventSlugError", ""));
+
     saveBtnEl.addEventListener("click", async () => {
+      clearFieldErrors();
       const eventId  = document.getElementById("eventId").value.trim();
       const name     = document.getElementById("eventName").value.trim();
       const slug     = document.getElementById("eventSlug").value.trim();
@@ -399,10 +431,21 @@
       const time        = document.getElementById("eventTime").value;
       const description = document.getElementById("eventDescription").value.trim();
 
+      let hasErrors = false;
+
       if (!name) {
-        showStatus("Enter an event name first.", true);
-        return;
+        setFieldError("eventName", "eventNameError", "Event name is required.");
+        document.getElementById("eventName").focus();
+        hasErrors = true;
       }
+
+      if (slug && !/^[a-z0-9-]+$/.test(slug)) {
+        setFieldError("eventSlug", "eventSlugError", "Slug can only contain lowercase letters, numbers, and hyphens.");
+        if (!hasErrors) document.getElementById("eventSlug").focus();
+        hasErrors = true;
+      }
+
+      if (hasErrors) return;
 
       // Auto-generate ID for new events
       const id = eventId || (crypto.randomUUID ? crypto.randomUUID() : window.generateUUID());

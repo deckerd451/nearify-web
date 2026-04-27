@@ -278,6 +278,11 @@
   </footer>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" integrity="sha384-rRoXxn2yHlrZYB587Ki9RO1tONhLdM6XfORg7Rw4uwH4/Fh/5nP7IUX91bkaKUgs" crossorigin="anonymous"></script>
+  <script>
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("/sw.js").catch(() => {});
+    }
+  </script>
   <script type="module" src="../assets/js/join.js"></script>
   <script type="module" src="../assets/js/navAuth.js"></script>
   <script type="module">

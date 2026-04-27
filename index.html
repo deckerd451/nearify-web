@@ -161,7 +161,11 @@
     <p>© 2026 Nearify</p>
   </footer>
 
-  <script src="assets/js/main.js"></script>
+  <script>
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("/sw.js").catch(() => {});
+    }
+  </script>
   <script type="module" src="assets/js/home.js"></script>
   <script type="module" src="assets/js/navAuth.js"></script>
   <script type="module">
