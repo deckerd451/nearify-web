@@ -1,48 +1,84 @@
 /**
- * Event Context API — consumed by iOS app
+ * Event Context API — consumed by iOS app via WKWebView
  *
- * Usage (from iOS WKWebView or direct fetch):
- *   GET /event-context?event=<uuid>
+ * Usage:
+ *   Load /event-context/?event=<uuid> in a WKWebView.
+ *   Poll or observe #eventContextPayload until status !== "loading".
  *
- * Since this is a static site, the iOS app calls the Supabase RPC directly.
- * This module provides the client-side helper and can be loaded in any page.
+ * The DOM element always contains a JSON object with this shape:
+ *   { "status": "loading" | "ok" | "error", "version": 1, "data": object|null, "error_code": string|null }
+ *
+ * error_code values:
+ *   "not_authenticated"  — no active Supabase session
+ *   "not_attending"      — user is authenticated but not joined to this event
+ *   "missing_event_id"   — no ?event= param in URL
+ *   "unknown"            — unexpected server or network error
  */
+
 import { supabase } from "./supabaseClient.js";
+
+const ENVELOPE_VERSION = 1;
+
+function writePayload(el, status, data, error_code = null) {
+  if (!el) return;
+  el.textContent = JSON.stringify({ status, version: ENVELOPE_VERSION, data, error_code });
+}
+
+function classifyError(error) {
+  const msg = String(error?.message ?? "").toLowerCase();
+  if (msg.includes("no profile found") || msg.includes("jwt") || msg.includes("not authenticated")) {
+    return "not_authenticated";
+  }
+  if (msg.includes("not attending")) {
+    return "not_attending";
+  }
+  return "unknown";
+}
 
 /**
  * Fetch event context for the current authenticated user.
- * @param {string} eventId - UUID of the event
- * @returns {Promise<object>} - { event_id, profile_id, intent_primary, ... }
+ * Returns the envelope object directly; never throws.
  */
 export async function getEventContext(eventId) {
-  const { data, error } = await supabase.rpc("get_event_context", {
-    p_event_id: eventId
-  });
-
-  if (error) {
-    console.error("[EventContext] Error:", error);
-    throw error;
+  if (!eventId) {
+    return { status: "error", version: ENVELOPE_VERSION, data: null, error_code: "missing_event_id" };
   }
 
-  return data;
+  const { data: session } = await supabase.auth.getSession();
+  if (!session?.session) {
+    return { status: "error", version: ENVELOPE_VERSION, data: null, error_code: "not_authenticated" };
+  }
+
+  const { data, error } = await supabase.rpc("get_event_context", { p_event_id: eventId });
+
+  if (error) {
+    return { status: "error", version: ENVELOPE_VERSION, data: null, error_code: classifyError(error) };
+  }
+
+  return { status: "ok", version: ENVELOPE_VERSION, data, error_code: null };
 }
 
-// Expose globally for iOS bridge
-window.NearifyEventContext = { getEventContext };
+// ---------------------------------------------------------------------------
+// Auto-execute when page loads with ?event= param
+// ---------------------------------------------------------------------------
 
-// Auto-execute if loaded with ?event= param (acts as pseudo-endpoint)
-const params = new URLSearchParams(window.location.search);
+const params  = new URLSearchParams(window.location.search);
 const eventId = params.get("event");
+const el      = document.getElementById("eventContextPayload");
+
+// Write loading sentinel immediately so iOS knows the page loaded
+writePayload(el, "loading", null);
 
 if (eventId) {
-  getEventContext(eventId)
-    .then((ctx) => {
-      console.log("[EventContext] Loaded:", ctx);
-      // Write to DOM for iOS WKWebView extraction
-      const el = document.getElementById("eventContextPayload");
-      if (el) el.textContent = JSON.stringify(ctx);
-    })
-    .catch((err) => {
-      console.error("[EventContext] Failed:", err);
-    });
+  getEventContext(eventId).then((envelope) => {
+    writePayload(el, envelope.status, envelope.data, envelope.error_code);
+    if (envelope.status !== "ok") {
+      console.warn("[EventContext]", envelope.error_code, envelope);
+    }
+  });
+} else {
+  writePayload(el, "error", null, "missing_event_id");
 }
+
+// Expose globally for iOS JS bridge (window.webkit.messageHandlers or evaluateJavaScript)
+window.NearifyEventContext = { getEventContext };

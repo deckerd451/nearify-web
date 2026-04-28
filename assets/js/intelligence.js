@@ -214,16 +214,11 @@ function setConnectFallbackMessage(message = "Open the Nearify app on your phone
   if (el) el.textContent = message;
 }
 
-function isStaticProfileRouteAvailable() {
-  if (window.location.pathname === STATIC_PROFILE_ROUTE) return true;
-  return !!document.querySelector(`a[href='${STATIC_PROFILE_ROUTE}']`);
-}
-
 function getShareableProfileUrl() {
   const current   = new URL(window.location.href);
   const eventId   = current.searchParams.get("event");
   const profileId = current.searchParams.get("profile") || current.searchParams.get("profile_id");
-  if (!profileId || !isStaticProfileRouteAvailable()) return null;
+  if (!profileId) return null;
   const url = new URL(STATIC_PROFILE_ROUTE, window.location.origin);
   if (profileId) url.searchParams.set("id", profileId);
   if (eventId)   url.searchParams.set("event", eventId);

@@ -248,6 +248,45 @@
       </div>
     </section>
 
+    <!-- Auth handoff — shown when user is signed in on web -->
+    <section id="authHandoffSection" class="section event-section" style="display:none;" aria-label="Sign in to the app automatically">
+      <div class="section-heading">
+        <h2>Already have the app?</h2>
+        <p>Scan this code to sign in automatically — no need to enter your password again.</p>
+      </div>
+      <div class="join-payload-card">
+        <div class="meta-label">Tap or scan to open the app as you</div>
+
+        <div class="event-inline-actions" style="margin-top:16px;">
+          <button id="authHandoffOpenBtn" type="button" class="btn primary">Open in App</button>
+        </div>
+
+        <div id="authHandoffQrBox" class="join-qr-box" style="display:none;">
+          <div class="join-qr-label">On a different device? Scan to sign in</div>
+          <div class="join-qr-shell">
+            <div id="authHandoffQr"></div>
+          </div>
+        </div>
+
+        <div id="authHandoffFallback" class="intent-signin-gate" style="display:none;">
+          <p class="intent-signin-message">Couldn't open Nearify. Install it first, then come back to this page.</p>
+          <div class="event-inline-actions">
+            <a
+              href="https://testflight.apple.com/join/ZayvEbAy"
+              class="btn secondary"
+              target="_blank"
+              rel="noopener noreferrer"
+              data-track-cta="auth_handoff_get_app"
+            >
+              Get the App
+            </a>
+          </div>
+        </div>
+
+        <p class="join-hint" style="margin-top:14px;">This link is personal — use it only on your own device.</p>
+      </div>
+    </section>
+
     <section class="cta event-cta" id="joinBottomCta">
       <h2 id="joinBottomCtaTitle">Ready to join?</h2>
       <p id="joinBottomCtaDescription">Install the app, then scan the event QR code when you arrive.</p>
