@@ -1,6 +1,7 @@
 import { supabase, createScopedSupabaseClient } from "./supabaseClient.js";
 import { loadGhostSession, createGhostSession } from "./ghostSession.js";
 import { connectGhostToProfile } from "./ghostConnection.js";
+import { trackAppCtaClick } from "./analytics.js";
 
 const els = {
   joinKicker: document.getElementById("joinKicker"),
@@ -582,6 +583,43 @@ function renderInvalidState(message) {
   hide(els.joinEventMeta);
 }
 
+async function renderAuthHandoff(eventId) {
+  const { data: sessionData } = await supabase.auth.getSession();
+  const session = sessionData?.session;
+  if (!session?.access_token) return;
+
+  const deepLink = new URL("beacon://auth");
+  deepLink.searchParams.set("token", session.access_token);
+  deepLink.searchParams.set("refresh", session.refresh_token);
+  if (eventId) deepLink.searchParams.set("event", eventId);
+  const deepLinkStr = deepLink.toString();
+
+  const section = document.getElementById("authHandoffSection");
+  if (!section) return;
+
+  const openBtn = document.getElementById("authHandoffOpenBtn");
+  if (openBtn) {
+    openBtn.addEventListener("click", () => {
+      trackAppCtaClick("join_auth_handoff_open", eventId ? { eventId } : {});
+      window.location.href = deepLinkStr;
+      setTimeout(() => {
+        const fallback = document.getElementById("authHandoffFallback");
+        if (fallback && document.visibilityState === "visible") show(fallback);
+      }, 1200);
+    });
+  }
+
+  // QR code for desktop users transferring session to their phone
+  const qrBox = document.getElementById("authHandoffQrBox");
+  const qrContainer = document.getElementById("authHandoffQr");
+  if (qrContainer && qrBox && typeof window.QRCode === "function") {
+    new window.QRCode(qrContainer, { text: deepLinkStr, width: 180, height: 180 });
+    show(qrBox);
+  }
+
+  show(section);
+}
+
 async function initJoinPage() {
   const { eventId, eventName, profileId } = getQueryParams();
 
@@ -644,6 +682,7 @@ async function initJoinPage() {
     }
 
     showIntentStep();
+    await renderAuthHandoff(event.id);
   } catch (error) {
     console.error("[Join] Initialization failed", error);
     renderInvalidState("We couldn't load this event right now.");
