@@ -102,11 +102,6 @@ function statusLabel(s) {
 
 // ─── Auth ─────────────────────────────────────────────────────────────────────
 
-async function getSession() {
-  const { data } = await supabase.auth.getSession();
-  return data?.session ?? null;
-}
-
 async function signInWithGoogle() {
   const { error } = await supabase.auth.signInWithOAuth({
     provider: "google",
@@ -275,6 +270,17 @@ function renderDashboard(events, counts) {
     : renderEmptyState();
 }
 
+function renderDashboardError(err) {
+  const list = document.getElementById("eventCardList");
+  if (!list) return;
+  list.innerHTML = `
+    <div class="cc-empty-state">
+      <p class="cc-empty-title">Couldn’t load events.</p>
+      <p class="cc-empty-body">${escapeHtml(err?.message || "Please refresh and try again.")}</p>
+    </div>
+  `;
+}
+
 // ─── Refresh ──────────────────────────────────────────────────────────────────
 
 async function refreshDashboard() {
@@ -406,6 +412,45 @@ function showDashboard() {
   document.getElementById("dashboardView").hidden = false;
 }
 
+function showLoading() {
+  showDashboard();
+  const list = document.getElementById("eventCardList");
+  if (list) list.innerHTML = renderSkeletonCards();
+}
+
+async function refreshDashboardAuthState() {
+  showLoading();
+
+  const { data, error } = await supabase.auth.getSession();
+
+  if (error) {
+    console.warn("[Dashboard] getSession error:", error);
+  }
+
+  const session = data?.session;
+  console.log("[Dashboard] session user:", session?.user?.email || null);
+
+  if (!session?.user) {
+    showLanding();
+    return;
+  }
+
+  showDashboard();
+  renderSkeletonCards();
+
+  try {
+    const events = await fetchMyEvents();
+    const counts = events.length
+      ? await fetchAttendeeCounts(events.map((e) => e.id))
+      : new Map();
+
+    renderDashboard(events, counts);
+  } catch (err) {
+    console.error("[Dashboard] failed to load events:", err);
+    renderDashboardError(err);
+  }
+}
+
 // ─── Action handlers ──────────────────────────────────────────────────────────
 
 async function handleCopyLink(btn, url) {
@@ -509,26 +554,22 @@ export function getLivePanelEl(eventId) {
 // ─── Init ─────────────────────────────────────────────────────────────────────
 
 async function init() {
+  console.log("[Dashboard] init");
   patchAppStoreLinks();
   trackPageView();
   bindHandlers();
-
-  const session = await getSession();
-
-  if (!session) {
-    showLanding();
-    return;
-  }
-
-  showDashboard();
-  document.getElementById("eventCardList").innerHTML = renderSkeletonCards();
-
-  const events = await fetchMyEvents();
-  const counts = events.length
-    ? await fetchAttendeeCounts(events.map((e) => e.id))
-    : new Map();
-
-  renderDashboard(events, counts);
+  await refreshDashboardAuthState();
+  supabase.auth.onAuthStateChange((_event, session) => {
+    console.log("[Dashboard] auth state changed:", _event, !!session?.user);
+    if (session?.user) {
+      refreshDashboardAuthState();
+    } else {
+      showLanding();
+    }
+  });
 }
-
-init();
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", init);
+} else {
+  init();
+}
