@@ -103,11 +103,21 @@ function statusLabel(s) {
 
 // ─── Auth ─────────────────────────────────────────────────────────────────────
 
-async function signInWithGoogle() {
+async function handleSignInClick() {
+  const { data } = await supabase.auth.getSession();
+
+  if (data?.session?.user) {
+    await loadDashboard();
+    return;
+  }
+
   const { error } = await supabase.auth.signInWithOAuth({
     provider: "google",
-    options: { redirectTo: window.location.href },
+    options: {
+      redirectTo: window.location.origin + "/index.html",
+    },
   });
+
   if (error) console.error("[Dashboard] sign-in failed:", error);
 }
 
@@ -421,7 +431,9 @@ function showLoading() {
 
 async function initDashboard() {
   console.log("[Dashboard] init");
-  bindStaticHandlers();
+
+  bindStaticHandlers?.();
+
   const { data, error } = await supabase.auth.getSession();
 
   if (error) {
@@ -431,12 +443,21 @@ async function initDashboard() {
   const session = data?.session;
   console.log("[Dashboard] session user:", session?.user?.email || null);
 
-  if (!session?.user) {
+  if (session?.user) {
+    await loadDashboard();
+  } else {
     showLanding();
-    return;
   }
 
-  await loadDashboard();
+  supabase.auth.onAuthStateChange(async (event, session) => {
+    console.log("[Dashboard] auth change:", event, !!session?.user);
+
+    if (session?.user) {
+      await loadDashboard();
+    } else {
+      showLanding();
+    }
+  });
 }
 
 async function loadDashboard() {
@@ -489,7 +510,7 @@ async function handleArchive(eventId, eventName) {
 function bindStaticHandlers() {
   // Landing
   document.getElementById("landingSignInBtn")
-    ?.addEventListener("click", signInWithGoogle);
+    ?.addEventListener("click", handleSignInClick);
 
   // Dashboard header
   document.getElementById("openCreateModalBtn")
@@ -566,17 +587,8 @@ function initAnalytics() {
 }
 
 document.addEventListener("DOMContentLoaded", () => {
-  console.log("[Dashboard] DOM ready");
+  console.log("[Dashboard] DOMContentLoaded");
   initAnalytics();
   initDashboard();
 });
 
-supabase.auth.onAuthStateChange((_event, session) => {
-  console.log("[Dashboard] auth change:", _event, !!session?.user);
-
-  if (session?.user) {
-    loadDashboard();
-  } else {
-    showLanding();
-  }
-});
