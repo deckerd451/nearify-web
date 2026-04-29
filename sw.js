@@ -1,4 +1,4 @@
-const CACHE_NAME = "nearify-v1";
+const CACHE_NAME = "nearify-v2";
 
 const PRECACHE = [
   "/",
@@ -16,7 +16,7 @@ const PRECACHE = [
   "/assets/js/ghostConnection.js",
   "/assets/js/navAuth.js",
   "/assets/js/personalConnect.js",
-  "https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js",
+  // External CDN scripts are not precached to avoid SRI or version conflicts
 ];
 
 self.addEventListener("install", (event) => {
@@ -38,6 +38,9 @@ self.addEventListener("activate", (event) => {
 self.addEventListener("fetch", (event) => {
   const { request } = event;
   const url = new URL(request.url);
+
+  // Only handle http(s) — skip chrome-extension://, data:, blob:, etc.
+  if (url.protocol !== "http:" && url.protocol !== "https:") return;
 
   // Never intercept Supabase API calls — always go to the network
   if (url.hostname.endsWith("supabase.co") || url.hostname === "esm.sh") return;
