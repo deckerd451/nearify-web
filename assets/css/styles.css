@@ -2515,3 +2515,489 @@ code {
   max-width: 260px;
   justify-content: center;
 }
+
+/* ============================================================
+   EVENT CONTROL CENTER
+   ============================================================ */
+
+/* ── Landing (logged-out) ── */
+.cc-landing {
+  min-height: calc(100vh - 120px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 24px;
+  text-align: center;
+}
+
+.cc-landing-inner {
+  max-width: 520px;
+}
+
+.cc-landing-inner h1 {
+  font-size: 42px;
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  line-height: 1.08;
+  margin-bottom: 16px;
+}
+
+.cc-landing-inner p {
+  font-size: 18px;
+  color: var(--color-text-secondary);
+  line-height: 1.55;
+  margin-bottom: 36px;
+}
+
+/* ── Dashboard (logged-in) ── */
+.cc-dashboard {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 48px 24px 80px;
+}
+
+.cc-dashboard-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 32px;
+  gap: 16px;
+}
+
+.cc-dashboard-title {
+  font-size: 30px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+/* ── Event list ── */
+.cc-event-list {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* ── Event card ── */
+.cc-event-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-lg);
+  padding: 28px;
+  box-shadow: var(--shadow-inset), var(--shadow-glow);
+  transition: border-color 0.2s ease;
+}
+
+.cc-event-card:hover {
+  border-color: rgba(0, 209, 255, 0.25);
+}
+
+.cc-event-card--ended {
+  opacity: 0.65;
+}
+
+.cc-event-card--skeleton {
+  opacity: 1;
+}
+
+.cc-event-core {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+/* ── Card header row ── */
+.cc-event-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.cc-event-top-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.cc-event-name {
+  font-size: 19px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  margin-bottom: 5px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cc-event-meta {
+  font-size: 13px;
+  color: var(--color-text-muted);
+}
+
+/* ── Status badge ── */
+.cc-event-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 5px 12px;
+  border-radius: var(--radius-full);
+  border: 1px solid;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.cc-event-status--live {
+  color: #22c55e;
+  border-color: rgba(34, 197, 94, 0.3);
+  background: rgba(34, 197, 94, 0.08);
+}
+
+.cc-event-status--upcoming {
+  color: var(--color-accent);
+  border-color: var(--color-border-subtle);
+  background: rgba(0, 209, 255, 0.05);
+}
+
+.cc-event-status--ended {
+  color: var(--color-text-muted);
+  border-color: rgba(255, 255, 255, 0.08);
+  background: transparent;
+}
+
+.cc-status-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+  flex-shrink: 0;
+}
+
+.cc-event-status--live .cc-status-dot {
+  animation: cc-pulse 1.6s ease-in-out infinite;
+}
+
+@keyframes cc-pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.35; }
+}
+
+/* ── Metrics row ── */
+.cc-event-metrics {
+  display: flex;
+  gap: 28px;
+  margin-bottom: 20px;
+}
+
+.cc-metric {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.cc-metric-value {
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--color-accent);
+  letter-spacing: -0.02em;
+  line-height: 1;
+}
+
+.cc-metric-label {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+/* ── Card actions ── */
+.cc-event-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.cc-action-btn {
+  padding: 8px 14px !important;
+  font-size: 13px !important;
+}
+
+.cc-btn-danger {
+  border: 1px solid rgba(248, 113, 113, 0.3) !important;
+  color: #f87171 !important;
+  background: transparent !important;
+}
+
+.cc-btn-danger:hover {
+  background: rgba(248, 113, 113, 0.08) !important;
+  border-color: rgba(248, 113, 113, 0.5) !important;
+  opacity: 1 !important;
+}
+
+.cc-btn-ghost {
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  color: var(--color-text-muted) !important;
+  background: transparent !important;
+}
+
+.cc-btn-ghost:hover {
+  border-color: rgba(255, 255, 255, 0.18) !important;
+  color: var(--color-text-secondary) !important;
+  opacity: 1 !important;
+}
+
+/* ── Live Mode panel (extensibility hook) ── */
+.cc-live-panel {
+  margin-top: 24px;
+  padding-top: 24px;
+  border-top: 1px solid var(--color-border-subtle);
+}
+
+/* ── Empty state ── */
+.cc-empty-state {
+  text-align: center;
+  padding: 64px 24px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-lg);
+}
+
+.cc-empty-title {
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.cc-empty-body {
+  font-size: 14px;
+  color: var(--color-text-muted);
+}
+
+/* ── Modal overlay ── */
+.cc-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.72);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 24px;
+  overflow-y: auto;
+}
+
+.cc-modal-overlay[hidden] {
+  display: none;
+}
+
+body.cc-modal-open {
+  overflow: hidden;
+}
+
+/* ── Modal card ── */
+.cc-modal {
+  background: var(--color-surface-deep);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: 24px;
+  padding: 32px;
+  width: 100%;
+  max-width: 480px;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.5), var(--shadow-glow);
+  position: relative;
+  animation: cc-modal-in 180ms ease both;
+}
+
+@keyframes cc-modal-in {
+  from { opacity: 0; transform: translateY(14px) scale(0.98); }
+  to   { opacity: 1; transform: translateY(0)    scale(1); }
+}
+
+.cc-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 28px;
+}
+
+.cc-modal-header h2 {
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.cc-modal-close {
+  width: 34px;
+  height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  color: var(--color-text-muted);
+  font-size: 22px;
+  line-height: 1;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  flex-shrink: 0;
+}
+
+.cc-modal-close:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--color-text-primary);
+}
+
+/* ── Create event form (inside modal) ── */
+.cc-modal-form .form-row {
+  margin-bottom: 18px;
+}
+
+.cc-modal-form label {
+  display: block;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+  margin-bottom: 7px;
+}
+
+.cc-modal-form input,
+.cc-modal-form textarea {
+  width: 100%;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: var(--radius-sm);
+  color: var(--color-text-primary);
+  font-size: 15px;
+  padding: 10px 14px;
+  outline: none;
+  transition: border-color 0.15s;
+  font-family: inherit;
+}
+
+.cc-modal-form input:focus,
+.cc-modal-form textarea:focus {
+  border-color: var(--color-accent);
+}
+
+.cc-modal-form textarea {
+  resize: vertical;
+  min-height: 80px;
+}
+
+.cc-modal-actions {
+  margin-top: 28px;
+  display: flex;
+  gap: 10px;
+}
+
+.cc-modal-actions .btn {
+  flex: 1;
+}
+
+/* ── QR modal ── */
+.cc-qr-modal {
+  max-width: 400px;
+  text-align: center;
+  padding: 40px 32px 36px;
+}
+
+.cc-qr-modal .cc-modal-close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+}
+
+.cc-qr-event-name {
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  margin-bottom: 28px;
+  line-height: 1.2;
+}
+
+.cc-qr-shell {
+  background: #fff;
+  padding: 16px;
+  border-radius: var(--radius-md);
+  display: inline-block;
+  margin-bottom: 20px;
+  line-height: 0;
+}
+
+.cc-qr-shell img,
+.cc-qr-shell canvas {
+  display: block;
+}
+
+.cc-qr-subtext {
+  font-size: 14px;
+  color: var(--color-text-muted);
+  margin-bottom: 28px;
+  line-height: 1.5;
+}
+
+.cc-qr-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+}
+
+.cc-qr-actions .btn {
+  min-width: 120px;
+}
+
+/* ── Responsive ── */
+@media (max-width: 600px) {
+  .cc-landing-inner h1 {
+    font-size: 32px;
+  }
+
+  .cc-dashboard {
+    padding: 32px 16px 60px;
+  }
+
+  .cc-dashboard-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .cc-dashboard-header .btn {
+    width: 100%;
+    text-align: center;
+  }
+
+  .cc-event-card {
+    padding: 20px;
+  }
+
+  .cc-event-name {
+    font-size: 17px;
+  }
+
+  .cc-event-actions {
+    gap: 6px;
+  }
+
+  .cc-modal {
+    padding: 24px 20px;
+    border-radius: 20px;
+  }
+
+  .cc-qr-modal {
+    padding: 32px 20px 28px;
+  }
+
+  .cc-qr-event-name {
+    font-size: 20px;
+  }
+
+  .cc-modal-form .form-row.two-up {
+    flex-direction: column;
+  }
+}

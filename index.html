@@ -3,17 +3,17 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Nearify — Real-time event networking</title>
-  <meta name="description" content="Discover and connect with people around you in real time." />
+  <title>Nearify — Event Control Center</title>
+  <meta name="description" content="Create Nearify events, generate QR codes, and manage your event network." />
 
   <meta property="og:type"        content="website" />
   <meta property="og:url"         content="https://nearify.org/" />
-  <meta property="og:title"       content="Nearify — Real-time event networking" />
-  <meta property="og:description" content="See who's around you at live events. Nearify helps you discover and connect with people in real time." />
+  <meta property="og:title"       content="Nearify — Event Control Center" />
+  <meta property="og:description" content="Create events, generate QR codes, and manage your Nearify event network." />
   <meta property="og:image"       content="https://nearify.org/assets/images/og-default.png" />
   <meta name="twitter:card"       content="summary_large_image" />
-  <meta name="twitter:title"      content="Nearify — Real-time event networking" />
-  <meta name="twitter:description" content="See who's around you at live events. Nearify helps you discover and connect with people in real time." />
+  <meta name="twitter:title"      content="Nearify — Event Control Center" />
+  <meta name="twitter:description" content="Create events, generate QR codes, and manage your Nearify event network." />
   <meta name="twitter:image"      content="https://nearify.org/assets/images/og-default.png" />
 
   <link rel="stylesheet" href="assets/css/styles.css" />
@@ -21,141 +21,135 @@
 <body>
 
   <a href="#main-content" class="skip-link">Skip to main content</a>
+
   <div class="nav-container">
-  <header class="nav">
-    <div class="logo">Nearify</div>
-    <div class="nav-links">
-      <a href="#how">How it works</a>
-      <a href="events/index.html">Events</a>
-      <a href="admin/event-setup.html">Host an Event</a>
-    </div>
-    <button class="nav-hamburger" id="navHamburger" aria-label="Open menu" aria-expanded="false">
-      <span></span><span></span><span></span>
-    </button>
-  </header>
-  <nav class="nav-drawer" id="navDrawer" aria-label="Site navigation">
-    <a href="#how">How it works</a>
-    <a href="events/index.html">Events</a>
-    <a href="admin/event-setup.html" class="nav-drawer-highlight">Host an Event</a>
-  </nav>
+    <header class="nav">
+      <div class="logo">Nearify</div>
+      <div class="nav-links">
+        <!-- navAuth.js injects the signed-in user pill here -->
+      </div>
+      <button class="nav-hamburger" id="navHamburger" aria-label="Open menu" aria-expanded="false">
+        <span></span><span></span><span></span>
+      </button>
+    </header>
+    <nav class="nav-drawer" id="navDrawer" aria-label="Site navigation">
+      <a href="events/index.html">Public Events</a>
+      <a href="admin/event-setup.html" class="nav-drawer-highlight">Advanced Setup</a>
+    </nav>
   </div>
 
   <main id="main-content">
 
-    <!-- HERO -->
-    <section class="hero">
-      <div class="hero-content">
-        <div class="event-kicker">Live event networking</div>
-        <h1>Meet the right people at live events.</h1>
-        <p>Join an event, set your intent, and open Nearify for real-time guidance on who to talk to.</p>
-
-        <div class="hero-actions">
-          <a href="events/index.html" class="btn primary">See Events</a>
-          <a
-            href="https://testflight.apple.com/join/ZayvEbAy"
-            class="btn secondary"
-            target="_blank"
-            rel="noopener noreferrer"
-            data-track-cta="hero_get_app"
-          >Get the App</a>
-        </div>
-        <p class="hero-platform-note">Nearify iOS powers live event intelligence</p>
-      </div>
-
-      <div class="hero-visual" id="network" aria-hidden="true">
-        <svg class="hero-network-svg" viewBox="0 0 400 300" xmlns="http://www.w3.org/2000/svg">
-          <line x1="200" y1="150" x2="100" y2="80"  stroke="#00d1ff" stroke-width="1.5" stroke-opacity="0.35"/>
-          <line x1="200" y1="150" x2="310" y2="90"  stroke="#00d1ff" stroke-width="1.5" stroke-opacity="0.35"/>
-          <line x1="200" y1="150" x2="320" y2="210" stroke="#00d1ff" stroke-width="1.5" stroke-opacity="0.35"/>
-          <line x1="200" y1="150" x2="90"  y2="220" stroke="#00d1ff" stroke-width="1.5" stroke-opacity="0.35"/>
-          <line x1="200" y1="150" x2="200" y2="260" stroke="#00d1ff" stroke-width="1.5" stroke-opacity="0.25"/>
-          <line x1="100" y1="80"  x2="310" y2="90"  stroke="#00d1ff" stroke-width="1"   stroke-opacity="0.15"/>
-          <line x1="310" y1="90"  x2="320" y2="210" stroke="#00d1ff" stroke-width="1"   stroke-opacity="0.15"/>
-          <line x1="90"  y1="220" x2="320" y2="210" stroke="#00d1ff" stroke-width="1"   stroke-opacity="0.12"/>
-          <circle cx="200" cy="150" r="30" fill="none" stroke="#00d1ff" stroke-width="1" stroke-opacity="0.18" class="pulse-ring"/>
-          <circle cx="100" cy="80"  r="18" fill="rgba(22,32,51,0.95)" stroke="#00d1ff" stroke-width="1.5" stroke-opacity="0.55"/>
-          <circle cx="310" cy="90"  r="18" fill="rgba(22,32,51,0.95)" stroke="#00d1ff" stroke-width="1.5" stroke-opacity="0.55"/>
-          <circle cx="320" cy="210" r="18" fill="rgba(22,32,51,0.95)" stroke="#00d1ff" stroke-width="1.5" stroke-opacity="0.55"/>
-          <circle cx="90"  cy="220" r="18" fill="rgba(22,32,51,0.95)" stroke="#00d1ff" stroke-width="1.5" stroke-opacity="0.55"/>
-          <circle cx="200" cy="260" r="14" fill="rgba(22,32,51,0.95)" stroke="#00d1ff" stroke-width="1"   stroke-opacity="0.35"/>
-          <text x="100" y="85"  text-anchor="middle" fill="#00d1ff" font-size="11" font-family="Inter,sans-serif" font-weight="600" opacity="0.8">AK</text>
-          <text x="310" y="95"  text-anchor="middle" fill="#00d1ff" font-size="11" font-family="Inter,sans-serif" font-weight="600" opacity="0.8">MJ</text>
-          <text x="320" y="215" text-anchor="middle" fill="#00d1ff" font-size="11" font-family="Inter,sans-serif" font-weight="600" opacity="0.8">RL</text>
-          <text x="90"  y="225" text-anchor="middle" fill="#00d1ff" font-size="11" font-family="Inter,sans-serif" font-weight="600" opacity="0.8">SP</text>
-          <text x="200" y="264" text-anchor="middle" fill="#00d1ff" font-size="10" font-family="Inter,sans-serif" font-weight="600" opacity="0.6">+4</text>
-          <circle cx="200" cy="150" r="22" fill="rgba(0,209,255,0.15)" stroke="#00d1ff" stroke-width="2"/>
-          <text x="200" y="155" text-anchor="middle" fill="#00d1ff" font-size="12" font-family="Inter,sans-serif" font-weight="700">YOU</text>
-        </svg>
-      </div>
-    </section>
-
-    <!-- SOCIAL PROOF -->
-    <section class="proof-bar">
-      <div class="proof-bar-inner">
-        <div class="proof-stat">
-          <span class="proof-number">Live</span>
-          <span class="proof-label">proximity networking</span>
-        </div>
-        <div class="proof-divider"></div>
-        <div class="proof-stat">
-          <span class="proof-number">Real-time</span>
-          <span class="proof-label">attendee discovery</span>
-        </div>
-        <div class="proof-divider"></div>
-        <div class="proof-stat">
-          <span class="proof-number">Launched at</span>
-          <span class="proof-label">CharlestonHacks</span>
+    <!-- ─── LOGGED-OUT LANDING ─────────────────────────────────────────── -->
+    <section id="landingView" class="cc-landing" aria-label="Create a Nearify event">
+      <div class="cc-landing-inner">
+        <h1>Create a Nearify event</h1>
+        <p>Generate a QR code your guests scan to join the live network.</p>
+        <div class="hero-actions" style="justify-content:center;">
+          <button id="landingSignInBtn" class="btn primary">Sign In to Create</button>
         </div>
       </div>
     </section>
 
-    <!-- EVENTS -->
-    <section id="events" class="section dark">
-      <div class="section-heading">
-        <h2>Events</h2>
-        <p>Select an event to learn more, set your intent, and get your join QR before you arrive.</p>
-      </div>
+    <!-- ─── LOGGED-IN DASHBOARD ───────────────────────────────────────── -->
+    <div id="dashboardView" hidden>
+      <div class="cc-dashboard">
 
-      <!-- Upcoming -->
-      <div id="homeUpcomingList">
-        <p class="home-intel-subhead">Loading events...</p>
-      </div>
+        <div class="cc-dashboard-header">
+          <h1 class="cc-dashboard-title">Events</h1>
+          <button id="openCreateModalBtn" class="btn primary">+ Create Event</button>
+        </div>
 
-      <!-- Past — hidden until there are past events -->
-      <div id="homePastSection" style="display:none;">
-        <h3 class="home-past-label">Past events</h3>
-        <div id="homePastList"></div>
-      </div>
-    </section>
+        <!-- Event cards rendered by dashboard.js -->
+        <div id="eventCardList" class="cc-event-list" aria-live="polite" aria-label="Your events"></div>
 
-    <!-- INTELLIGENCE PREVIEW (hidden by default, shown post-event for signed-in users) -->
-    <section id="homeIntelSection" class="section" style="display:none;">
-      <div class="section-heading">
-        <h2>Your event intelligence</h2>
       </div>
-      <div id="homeIntelContainer"></div>
-    </section>
-
-    <!-- CTA -->
-    <section class="cta">
-      <h2>Real connections start in real space.</h2>
-      <p class="cta-description">Install Nearify, find an event, and connect the moment you arrive.</p>
-      <a
-        href="https://testflight.apple.com/join/ZayvEbAy"
-        class="btn primary"
-        target="_blank"
-        rel="noopener noreferrer"
-        data-track-cta="home_cta_testflight"
-      >Get Nearify on TestFlight</a>
-    </section>
+    </div>
 
   </main>
 
+  <!-- ─── CREATE EVENT MODAL ────────────────────────────────────────────── -->
+  <div id="createEventModal" class="cc-modal-overlay" hidden>
+    <div class="cc-modal" role="dialog" aria-modal="true" aria-labelledby="createModalTitle">
+
+      <div class="cc-modal-header">
+        <h2 id="createModalTitle">Create Event</h2>
+        <button id="closeCreateModalBtn" class="cc-modal-close" aria-label="Close">×</button>
+      </div>
+
+      <form id="createEventForm" class="cc-modal-form" novalidate>
+
+        <div class="form-row">
+          <label for="ceEventName">Event name <span class="field-required" aria-hidden="true">*</span></label>
+          <input
+            id="ceEventName"
+            type="text"
+            placeholder="My Meetup"
+            autocomplete="off"
+            required
+            aria-required="true"
+            aria-describedby="ceEventNameError"
+          />
+          <p class="field-error" id="ceEventNameError" role="alert" style="display:none;">Event name is required.</p>
+        </div>
+
+        <div class="form-row two-up">
+          <div>
+            <label for="ceDate">Date</label>
+            <input id="ceDate" type="date" />
+          </div>
+          <div>
+            <label for="ceTime">Time</label>
+            <input id="ceTime" type="time" />
+          </div>
+        </div>
+
+        <div class="form-row">
+          <label for="ceLocation">Location</label>
+          <input id="ceLocation" type="text" placeholder="Venue or address" autocomplete="off" />
+        </div>
+
+        <div class="form-row">
+          <label for="ceDescription">Description</label>
+          <textarea id="ceDescription" rows="3" placeholder="Optional"></textarea>
+        </div>
+
+        <div class="cc-modal-actions">
+          <button type="submit" id="createEventSubmitBtn" class="btn primary">Create Event</button>
+        </div>
+
+        <p id="createEventStatus" class="field-help" aria-live="polite" style="margin-top:10px;"></p>
+
+      </form>
+    </div>
+  </div>
+
+  <!-- ─── QR MODAL ──────────────────────────────────────────────────────── -->
+  <div id="qrModal" class="cc-modal-overlay" hidden>
+    <div class="cc-modal cc-qr-modal" role="dialog" aria-modal="true" aria-labelledby="qrModalTitle">
+
+      <button id="closeQrModalBtn" class="cc-modal-close" aria-label="Close">×</button>
+
+      <div class="cc-qr-event-name" id="qrModalTitle"></div>
+
+      <div class="cc-qr-shell">
+        <div id="qrModalQrCode"></div>
+      </div>
+
+      <p class="cc-qr-subtext">Scan when you arrive to join the live network</p>
+
+      <div class="cc-qr-actions">
+        <button id="qrModalCopyBtn" class="btn primary">Copy Link</button>
+        <button id="qrModalCloseBtn" class="btn secondary">Close</button>
+      </div>
+
+    </div>
+  </div>
+
   <footer class="footer">
     <nav class="footer-links">
-      <a href="events/index.html">Events</a>
-      <a href="admin/event-setup.html">Host an Event</a>
-      <a href="https://testflight.apple.com/join/ZayvEbAy" target="_blank" rel="noopener noreferrer">Get the App</a>
+      <a href="events/index.html">Public Events</a>
+      <a href="admin/event-setup.html">Advanced Setup</a>
       <a href="mailto:hello@nearify.org">Contact</a>
     </nav>
     <p>© 2026 Nearify</p>
@@ -166,14 +160,16 @@
       navigator.serviceWorker.register("/sw.js").catch(() => {});
     }
   </script>
-  <script type="module" src="assets/js/home.js"></script>
+
+  <!-- QR code library (must load before dashboard.js) -->
+  <script
+    src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"
+    integrity="sha384-rRoXxn2yHlrZYB587Ki9RO1tONhLdM6XfORg7Rw4uwH4/Fh/5nP7IUX91bkaKUgs"
+    crossorigin="anonymous"
+  ></script>
+
+  <script type="module" src="assets/js/dashboard.js"></script>
   <script type="module" src="assets/js/navAuth.js"></script>
-  <script type="module">
-    import { trackPageView, wireAppCtaTracking } from "./assets/js/analytics.js";
-    import { patchAppStoreLinks } from "./assets/js/config.js";
-    patchAppStoreLinks();
-    trackPageView();
-    wireAppCtaTracking();
-  </script>
+
 </body>
 </html>

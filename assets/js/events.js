@@ -138,7 +138,7 @@ export async function fetchOrganizerEvents() {
 
   const { data, error } = await supabase
     .from("events")
-    .select("id, name, slug, location, starts_at, description, created_at, created_by")
+    .select("id, name, slug, location, starts_at, ends_at, is_active, description, created_at, created_by")
     .eq("created_by", profileId)
     .is("deleted_at", null)
     .order("created_at", { ascending: false })
