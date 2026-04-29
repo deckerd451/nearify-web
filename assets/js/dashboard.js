@@ -13,6 +13,7 @@ import { supabase } from "./supabaseClient.js";
 import { saveEvent, deleteEvent, getOrganizerProfileId } from "./events.js";
 import { trackAppCtaClick, trackPageView } from "./analytics.js";
 import { patchAppStoreLinks } from "./config.js";
+console.log("[Dashboard] dashboard.js loaded");
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -403,13 +404,13 @@ async function handleCreateSubmit(e) {
 // ─── Page state ───────────────────────────────────────────────────────────────
 
 function showLanding() {
-  document.getElementById("landingView").hidden  = false;
-  document.getElementById("dashboardView").hidden = true;
+  document.getElementById("landingView").style.display = "flex";
+  document.getElementById("dashboardView").style.display = "none";
 }
 
 function showDashboard() {
-  document.getElementById("landingView").hidden  = true;
-  document.getElementById("dashboardView").hidden = false;
+  document.getElementById("landingView").style.display = "none";
+  document.getElementById("dashboardView").style.display = "block";
 }
 
 function showLoading() {
@@ -418,9 +419,9 @@ function showLoading() {
   if (list) list.innerHTML = renderSkeletonCards();
 }
 
-async function refreshDashboardAuthState() {
-  showLoading();
-
+async function initDashboard() {
+  console.log("[Dashboard] init");
+  bindStaticHandlers();
   const { data, error } = await supabase.auth.getSession();
 
   if (error) {
@@ -435,18 +436,24 @@ async function refreshDashboardAuthState() {
     return;
   }
 
+  await loadDashboard();
+}
+
+async function loadDashboard() {
   showDashboard();
   renderSkeletonCards();
 
   try {
     const events = await fetchMyEvents();
+    console.log("[Dashboard] events loaded:", events.length);
+
     const counts = events.length
-      ? await fetchAttendeeCounts(events.map((e) => e.id))
+      ? await fetchAttendeeCounts(events.map((event) => event.id))
       : new Map();
 
     renderDashboard(events, counts);
   } catch (err) {
-    console.error("[Dashboard] failed to load events:", err);
+    console.error("[Dashboard] failed to load dashboard:", err);
     renderDashboardError(err);
   }
 }
@@ -479,7 +486,7 @@ async function handleArchive(eventId, eventName) {
 
 // ─── Handler wiring ───────────────────────────────────────────────────────────
 
-function bindHandlers() {
+function bindStaticHandlers() {
   // Landing
   document.getElementById("landingSignInBtn")
     ?.addEventListener("click", signInWithGoogle);
@@ -553,23 +560,23 @@ export function getLivePanelEl(eventId) {
 
 // ─── Init ─────────────────────────────────────────────────────────────────────
 
-async function init() {
-  console.log("[Dashboard] init");
+function initAnalytics() {
   patchAppStoreLinks();
   trackPageView();
-  bindHandlers();
-  await refreshDashboardAuthState();
-  supabase.auth.onAuthStateChange((_event, session) => {
-    console.log("[Dashboard] auth state changed:", _event, !!session?.user);
-    if (session?.user) {
-      refreshDashboardAuthState();
-    } else {
-      showLanding();
-    }
-  });
 }
-if (document.readyState === "loading") {
-  document.addEventListener("DOMContentLoaded", init);
-} else {
-  init();
-}
+
+document.addEventListener("DOMContentLoaded", () => {
+  console.log("[Dashboard] DOM ready");
+  initAnalytics();
+  initDashboard();
+});
+
+supabase.auth.onAuthStateChange((_event, session) => {
+  console.log("[Dashboard] auth change:", _event, !!session?.user);
+
+  if (session?.user) {
+    loadDashboard();
+  } else {
+    showLanding();
+  }
+});
