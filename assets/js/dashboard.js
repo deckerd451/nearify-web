@@ -16,7 +16,6 @@ import { patchAppStoreLinks } from "./config.js";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const JOIN_BASE        = "https://nearify.org/join/?event=";
 const EVENT_DETAIL_URL = (id) => `/events/event.html?id=${encodeURIComponent(id)}`;
 const EDIT_URL         = "/admin/event-setup.html";
 
@@ -53,9 +52,11 @@ function formatTime(ts) {
   } catch { return ""; }
 }
 
-function buildJoinUrl(eventId, eventName) {
-  return JOIN_BASE + encodeURIComponent(eventId) +
-    (eventName ? "&name=" + encodeURIComponent(eventName) : "");
+function buildJoinUrl(event) {
+  const params = new URLSearchParams();
+  params.set("event", event.id);
+  if (event.name) params.set("name", event.name);
+  return `${window.location.origin}/join/?${params.toString()}`;
 }
 
 function generateUUID() {
@@ -193,7 +194,7 @@ function renderEmptyState() {
 
 function renderEventCard(ev, count) {
   const status   = getEventStatus(ev);
-  const jUrl     = buildJoinUrl(ev.id, ev.name);
+  const jUrl     = buildJoinUrl(ev);
   const detailUrl = EVENT_DETAIL_URL(ev.id);
 
   const dateStr  = ev.starts_at
@@ -209,7 +210,7 @@ function renderEventCard(ev, count) {
       data-event-name="${escapeAttr(ev.name)}">End Event</button>` : "";
 
   return `
-    <div class="cc-event-card cc-event-card--${status}" data-event-id="${escapeAttr(ev.id)}">
+    <article class="cc-event-card cc-event-card--${status}" data-event-id="${escapeAttr(ev.id)}">
 
       <div class="cc-event-core">
 
@@ -262,7 +263,7 @@ function renderEventCard(ev, count) {
         <!-- host anchor status · live attendees · realtime intelligence · room activity -->
       </div>
 
-    </div>
+    </article>
   `;
 }
 

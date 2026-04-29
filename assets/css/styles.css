@@ -171,6 +171,7 @@ body {
 }
 
 .secondary {
+  background: transparent;
   border: 1px solid #444;
   color: white;
 }
@@ -3000,4 +3001,43 @@ body.cc-modal-open {
   .cc-modal-form .form-row.two-up {
     flex-direction: column;
   }
+}
+
+/* ── body.cc-page scoped overrides — ensures CC card styles win over global rules ── */
+body.cc-page .cc-event-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-lg);
+  padding: 28px;
+  box-shadow: var(--shadow-inset), var(--shadow-glow);
+  display: block;
+  list-style: none;
+  color: inherit;
+}
+
+body.cc-page .cc-event-card:hover {
+  border-color: rgba(0, 209, 255, 0.25);
+}
+
+body.cc-page .cc-event-name {
+  font-size: 20px;
+  font-weight: 700;
+  color: #fff;
+  margin: 0;
+}
+
+body.cc-page .cc-event-meta {
+  font-size: 13px;
+  color: var(--color-text-secondary);
+  margin: 4px 0 0;
+}
+
+body.cc-page .cc-event-actions .btn.secondary {
+  background: transparent;
+  border: 1px solid #444;
+  color: white;
+}
+
+body.cc-page .cc-event-actions .btn.secondary:hover {
+  border-color: #666;
 }
