@@ -1,22 +1,22 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,400;0,14..32,500;0,14..32,600;0,14..32,700;1,14..32,400&display=swap');
 
 :root {
-  /* Colors */
-  --color-bg: #0b0f1a;
-  --color-surface: rgba(22, 32, 51, 0.9);
-  --color-surface-deep: rgba(9, 14, 26, 0.9);
-  --color-section-dark: #111827;
-  --color-accent: #00d1ff;
+  /* Colors — matched to the Nearify iOS app */
+  --color-bg: #000000;
+  --color-surface: #1c1c1e;
+  --color-surface-deep: #141414;
+  --color-section-dark: #0f0f0f;
+  --color-accent: #30d158;
 
   /* Text */
   --color-text-primary: #ffffff;
-  --color-text-secondary: #aab4c5;
-  --color-text-muted: #8fa0b8;
-  --color-text-label: #7f8da4;
+  --color-text-secondary: #adadad;
+  --color-text-muted: #8e8e93;
+  --color-text-label: #636366;
 
   /* Borders */
-  --color-border-subtle: rgba(0, 209, 255, 0.12);
-  --color-border-featured: rgba(0, 209, 255, 0.35);
+  --color-border-subtle: rgba(255, 255, 255, 0.1);
+  --color-border-featured: rgba(48, 209, 88, 0.35);
 
   /* Radius */
   --radius-sm: 8px;
@@ -26,7 +26,7 @@
 
   /* Shadows */
   --shadow-inset: 0 0 0 1px rgba(255, 255, 255, 0.02) inset;
-  --shadow-glow: 0 0 28px rgba(0, 209, 255, 0.08);
+  --shadow-glow: 0 0 28px rgba(48, 209, 88, 0.08);
 }
 
 * {
@@ -44,7 +44,7 @@
   z-index: 999;
   padding: 10px 18px;
   background: var(--color-accent);
-  color: #0b0f1a;
+  color: #000000;
   font-weight: 600;
   font-size: 14px;
   border-radius: 0 0 8px 8px;
@@ -169,11 +169,11 @@ textarea::placeholder {
 
 .primary {
   background: var(--color-accent);
-  color: #0b0f1a;
+  color: #000000;
 }
 
 .primary:hover {
-  box-shadow: 0 4px 16px rgba(0, 209, 255, 0.25);
+  box-shadow: 0 4px 16px rgba(48, 209, 88,0.25);
 }
 
 .secondary {
@@ -189,9 +189,9 @@ textarea::placeholder {
 
 /* SOCIAL PROOF BAR */
 .proof-bar {
-  background: rgba(0, 209, 255, 0.04);
-  border-top: 1px solid rgba(0, 209, 255, 0.1);
-  border-bottom: 1px solid rgba(0, 209, 255, 0.1);
+  background: rgba(48, 209, 88,0.04);
+  border-top: 1px solid rgba(48, 209, 88,0.1);
+  border-bottom: 1px solid rgba(48, 209, 88,0.1);
   padding: 24px 40px;
 }
 
@@ -275,7 +275,7 @@ textarea::placeholder {
   width: 42px;
   height: 42px;
   border-radius: var(--radius-full);
-  background: rgba(0, 209, 255, 0.14);
+  background: rgba(48, 209, 88,0.14);
   color: var(--color-accent);
   display: inline-flex;
   align-items: center;
@@ -374,7 +374,7 @@ textarea::placeholder {
 .hero-network-svg {
   width: 100%;
   height: 100%;
-  filter: drop-shadow(0 0 24px rgba(0, 209, 255, 0.12));
+  filter: drop-shadow(0 0 24px rgba(48, 209, 88,0.12));
 }
 
 @keyframes pulse {
@@ -408,7 +408,7 @@ html {
 }
 
 .event-kicker {
-  color: #00d1ff;
+  color: var(--color-accent);
   font-size: 14px;
   font-weight: 600;
   letter-spacing: 0.08em;
@@ -446,8 +446,8 @@ html {
 .feature-card,
 .timeline-card,
 .comparison-card {
-  background: rgba(22, 32, 51, 0.9);
-  border: 1px solid rgba(0, 209, 255, 0.12);
+  background: var(--color-surface);
+  border: 1px solid rgba(48, 209, 88,0.12);
   border-radius: 16px;
   box-shadow: 0 0 0 1px rgba(255,255,255,0.02) inset;
 }
@@ -559,8 +559,8 @@ html {
   width: 42px;
   height: 42px;
   border-radius: 999px;
-  background: rgba(0, 209, 255, 0.14);
-  color: #00d1ff;
+  background: rgba(48, 209, 88,0.14);
+  color: var(--color-accent);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -577,8 +577,8 @@ html {
 }
 
 .comparison-card.active {
-  border-color: rgba(0, 209, 255, 0.35);
-  box-shadow: 0 0 24px rgba(0, 209, 255, 0.08);
+  border-color: rgba(48, 209, 88,0.35);
+  box-shadow: 0 0 24px rgba(48, 209, 88,0.08);
 }
 
 .event-cta {
@@ -663,16 +663,16 @@ html {
 }
 
 .event-list-card {
-  background: rgba(22, 32, 51, 0.9);
-  border: 1px solid rgba(0, 209, 255, 0.12);
+  background: var(--color-surface);
+  border: 1px solid rgba(48, 209, 88,0.12);
   border-radius: 18px;
   padding: 32px;
   box-shadow: 0 0 0 1px rgba(255,255,255,0.02) inset;
 }
 
 .event-list-card.featured {
-  border-color: rgba(0, 209, 255, 0.32);
-  box-shadow: 0 0 28px rgba(0, 209, 255, 0.08);
+  border-color: rgba(48, 209, 88,0.32);
+  box-shadow: 0 0 28px rgba(48, 209, 88,0.08);
 }
 
 .event-list-card.muted {
@@ -684,8 +684,8 @@ html {
   align-items: center;
   padding: 8px 12px;
   border-radius: 999px;
-  background: rgba(0, 209, 255, 0.14);
-  color: #00d1ff;
+  background: rgba(48, 209, 88,0.14);
+  color: var(--color-accent);
   font-size: 12px;
   font-weight: 700;
   text-transform: uppercase;
@@ -794,8 +794,8 @@ html {
 }
 
 .admin-card {
-  background: rgba(22, 32, 51, 0.9);
-  border: 1px solid rgba(0, 209, 255, 0.12);
+  background: var(--color-surface);
+  border: 1px solid rgba(48, 209, 88,0.12);
   border-radius: 18px;
   padding: 28px;
   box-shadow: 0 0 0 1px rgba(255,255,255,0.02) inset;
@@ -826,7 +826,7 @@ html {
 .form-row textarea {
   width: 100%;
   border: 1px solid rgba(255,255,255,0.12);
-  background: rgba(9, 14, 26, 0.9);
+  background: var(--color-surface-deep);
   color: #fff;
   border-radius: 12px;
   padding: 14px 14px;
@@ -836,8 +836,8 @@ html {
 
 .form-row input:focus,
 .form-row textarea:focus {
-  border-color: rgba(0, 209, 255, 0.55);
-  box-shadow: 0 0 0 3px rgba(0, 209, 255, 0.08);
+  border-color: rgba(48, 209, 88,0.55);
+  box-shadow: 0 0 0 3px rgba(48, 209, 88,0.08);
 }
 
 .field-help {
@@ -991,8 +991,8 @@ code {
 
 .join-payload-card {
   margin-top: 28px;
-  background: rgba(22, 32, 51, 0.9);
-  border: 1px solid rgba(0, 209, 255, 0.12);
+  background: var(--color-surface);
+  border: 1px solid rgba(48, 209, 88,0.12);
   border-radius: 16px;
   padding: 18px 20px;
   max-width: 860px;
@@ -1001,7 +1001,7 @@ code {
 .ghost-return-card {
   margin-top: 22px;
   background: rgba(8, 15, 26, 0.85);
-  border: 1px solid rgba(0, 209, 255, 0.24);
+  border: 1px solid rgba(48, 209, 88,0.24);
   border-radius: 16px;
   padding: 18px 20px;
   max-width: 700px;
@@ -1069,8 +1069,8 @@ code {
 }
 
 .ghost-claim-secondary {
-  border: 1px solid rgba(0, 209, 255, 0.4);
-  background: rgba(0, 209, 255, 0.08);
+  border: 1px solid rgba(48, 209, 88,0.4);
+  background: rgba(48, 209, 88,0.08);
   color: #9fe8ff;
 }
 
@@ -1102,9 +1102,9 @@ code {
 }
 
 .qr-tab.active {
-  background: rgba(0, 209, 255, 0.15);
-  border-color: #00d1ff;
-  color: #00d1ff;
+  background: rgba(48, 209, 88,0.15);
+  border-color: var(--color-accent);
+  color: var(--color-accent);
 }
 
 /* QR display on public event page */
@@ -1179,9 +1179,9 @@ code {
    ============================================================ */
 
 .intent-section {
-  background: rgba(0, 209, 255, 0.02);
-  border-top: 1px solid rgba(0, 209, 255, 0.08);
-  border-bottom: 1px solid rgba(0, 209, 255, 0.08);
+  background: rgba(48, 209, 88,0.02);
+  border-top: 1px solid rgba(48, 209, 88,0.08);
+  border-bottom: 1px solid rgba(48, 209, 88,0.08);
 }
 
 .intent-step-label {
@@ -1202,8 +1202,8 @@ code {
 }
 
 .intent-chip {
-  background: rgba(22, 32, 51, 0.9);
-  border: 1px solid rgba(0, 209, 255, 0.18);
+  background: var(--color-surface);
+  border: 1px solid rgba(48, 209, 88,0.18);
   border-radius: var(--radius-md);
   color: #dfe6ef;
   padding: 16px 16px 14px;
@@ -1217,21 +1217,21 @@ code {
 }
 
 .intent-chip:hover {
-  border-color: rgba(0, 209, 255, 0.5);
-  background: rgba(0, 209, 255, 0.07);
+  border-color: rgba(48, 209, 88,0.5);
+  background: rgba(48, 209, 88,0.07);
 }
 
 .intent-chip.active {
-  background: rgba(0, 209, 255, 0.13);
-  border-color: #00d1ff;
+  background: rgba(48, 209, 88,0.13);
+  border-color: var(--color-accent);
 }
 
 .intent-chip.active .intent-chip-label {
-  color: #00d1ff;
+  color: var(--color-accent);
 }
 
 .intent-chip.active .intent-chip-sub {
-  color: rgba(0, 209, 255, 0.65);
+  color: rgba(48, 209, 88,0.65);
 }
 
 .intent-chip-label {
@@ -1257,8 +1257,8 @@ code {
   max-width: 400px;
   margin: 4px auto 20px;
   padding: 20px 24px;
-  background: rgba(0, 209, 255, 0.05);
-  border: 1px solid rgba(0, 209, 255, 0.2);
+  background: rgba(48, 209, 88,0.05);
+  border: 1px solid rgba(48, 209, 88,0.2);
   border-radius: var(--radius-md);
 }
 
@@ -1337,7 +1337,7 @@ code {
 
 .intel-section-title {
   font-size: 20px;
-  color: #00d1ff;
+  color: var(--color-accent);
   margin-bottom: 16px;
   text-align: left;
 }
@@ -1352,8 +1352,8 @@ code {
   display: flex;
   gap: 14px;
   align-items: flex-start;
-  background: rgba(22, 32, 51, 0.9);
-  border: 1px solid rgba(0, 209, 255, 0.12);
+  background: var(--color-surface);
+  border: 1px solid rgba(48, 209, 88,0.12);
   border-radius: 14px;
   padding: 18px;
 }
@@ -1367,7 +1367,7 @@ code {
 }
 
 .intel-avatar-placeholder {
-  background: rgba(0, 209, 255, 0.14);
+  background: rgba(48, 209, 88,0.14);
   color: var(--color-accent);
   font-size: 13px;
   font-weight: 700;
@@ -1429,7 +1429,7 @@ code {
 }
 
 .intel-dot.filled { background: var(--color-accent); }
-.intel-dot.empty  { background: rgba(0, 209, 255, 0.18); }
+.intel-dot.empty  { background: rgba(48, 209, 88,0.18); }
 
 .intel-strength-label {
   font-size: 11px;
@@ -1467,7 +1467,7 @@ code {
   max-width: 480px;
   text-align: left;
   padding: 14px 16px;
-  border: 1px solid rgba(0, 209, 255, 0.28);
+  border: 1px solid rgba(48, 209, 88,0.28);
   border-radius: 12px;
   background: linear-gradient(180deg, rgba(14, 26, 46, 0.92) 0%, rgba(11, 18, 32, 0.92) 100%);
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.22);
@@ -1490,9 +1490,9 @@ code {
   margin-top: 12px;
   padding: 10px 14px;
   border-radius: 8px;
-  border: 1px solid rgba(0, 209, 255, 0.55);
+  border: 1px solid rgba(48, 209, 88,0.55);
   color: #04101f;
-  background: linear-gradient(180deg, rgba(0, 209, 255, 0.92) 0%, rgba(0, 176, 223, 0.92) 100%);
+  background: linear-gradient(180deg, rgba(48, 209, 88,0.92) 0%, rgba(0, 176, 223, 0.92) 100%);
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
@@ -1539,7 +1539,7 @@ code {
 }
 
 .intel-fallback-btn:hover {
-  border-color: rgba(0, 209, 255, 0.75);
+  border-color: rgba(48, 209, 88,0.75);
 }
 
 .intel-connect-fallback-status {
@@ -1638,8 +1638,8 @@ code {
 }
 
 .skeleton-card {
-  background: rgba(22, 32, 51, 0.9);
-  border: 1px solid rgba(0, 209, 255, 0.08);
+  background: var(--color-surface);
+  border: 1px solid rgba(48, 209, 88,0.08);
   border-radius: 18px;
   padding: 32px;
   display: grid;
@@ -1692,8 +1692,8 @@ code {
 }
 
 .admin-event-row {
-  background: rgba(22, 32, 51, 0.9);
-  border: 1px solid rgba(0, 209, 255, 0.12);
+  background: var(--color-surface);
+  border: 1px solid rgba(48, 209, 88,0.12);
   border-radius: 14px;
   padding: 18px 20px;
   display: grid;
@@ -1732,8 +1732,8 @@ code {
 .admin-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
 .admin-btn-edit {
-  background: #00d1ff;
-  color: #0b0f1a;
+  background: var(--color-accent);
+  color: #000000;
 }
 
 .admin-btn-copy {
@@ -1756,7 +1756,7 @@ code {
 .btn-inline-link {
   background: none;
   border: none;
-  color: #00d1ff;
+  color: var(--color-accent);
   cursor: pointer;
   font-size: inherit;
   text-decoration: underline;
@@ -1777,8 +1777,8 @@ code {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  background: rgba(0, 209, 255, 0.08);
-  border: 1px solid rgba(0, 209, 255, 0.2);
+  background: rgba(48, 209, 88,0.08);
+  border: 1px solid rgba(48, 209, 88,0.2);
   border-radius: var(--radius-full);
   color: #c5cfdd;
   font-size: 13px;
@@ -1811,7 +1811,7 @@ code {
   width: 32px;
   height: 32px;
   border-radius: var(--radius-full);
-  background: rgba(0, 209, 255, 0.14);
+  background: rgba(48, 209, 88,0.14);
   color: var(--color-accent);
   font-weight: 700;
   font-size: 13px;
@@ -1856,7 +1856,7 @@ code {
 
 .join-mode-personal-connect #joinPanelCard {
   background: linear-gradient(180deg, rgba(14, 26, 46, 0.9) 0%, rgba(10, 18, 30, 0.9) 100%);
-  border-color: rgba(0, 209, 255, 0.2);
+  border-color: rgba(48, 209, 88,0.2);
 }
 
 .join-steps-list--personal {
@@ -1898,8 +1898,8 @@ code {
   align-items: center;
   gap: 8px;
   padding: 5px 10px 5px 5px;
-  background: rgba(0, 209, 255, 0.08);
-  border: 1px solid rgba(0, 209, 255, 0.25);
+  background: rgba(48, 209, 88,0.08);
+  border: 1px solid rgba(48, 209, 88,0.25);
   border-radius: var(--radius-full);
   cursor: pointer;
   transition: background 0.15s ease, border-color 0.15s ease;
@@ -1908,13 +1908,13 @@ code {
 
 .nav-user:hover,
 .nav-user-wrapper.open .nav-user {
-  background: rgba(0, 209, 255, 0.13);
-  border-color: rgba(0, 209, 255, 0.45);
+  background: rgba(48, 209, 88,0.13);
+  border-color: rgba(48, 209, 88,0.45);
 }
 
 .nav-user-chevron {
   font-size: 10px;
-  color: rgba(0, 209, 255, 0.7);
+  color: rgba(48, 209, 88,0.7);
   line-height: 1;
   transition: transform 0.15s ease;
 }
@@ -1931,7 +1931,7 @@ code {
   right: 0;
   min-width: 200px;
   background: #161f33;
-  border: 1px solid rgba(0, 209, 255, 0.2);
+  border: 1px solid rgba(48, 209, 88,0.2);
   border-radius: var(--radius-md);
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
   padding: 8px;
@@ -1985,7 +1985,7 @@ code {
   width: 26px;
   height: 26px;
   border-radius: 50%;
-  background: rgba(0, 209, 255, 0.18);
+  background: rgba(48, 209, 88,0.18);
   color: var(--color-accent);
   font-size: 10px;
   font-weight: 700;
@@ -2102,7 +2102,7 @@ code {
 }
 
 .nav-drawer a.nav-drawer-highlight:hover {
-  background: rgba(0, 209, 255, 0.08);
+  background: rgba(48, 209, 88,0.08);
   color: var(--color-accent);
 }
 
@@ -2140,8 +2140,8 @@ code {
   gap: 8px;
   padding: 12px 16px;
   margin-bottom: 20px;
-  background: rgba(0, 209, 255, 0.04);
-  border: 1px solid rgba(0, 209, 255, 0.12);
+  background: rgba(48, 209, 88,0.04);
+  border: 1px solid rgba(48, 209, 88,0.12);
   border-radius: 10px;
 }
 
@@ -2177,9 +2177,9 @@ code {
 }
 
 .intel-status-pending {
-  background: rgba(0, 209, 255, 0.10);
+  background: rgba(48, 209, 88,0.10);
   color: var(--color-accent);
-  border: 1px solid rgba(0, 209, 255, 0.25);
+  border: 1px solid rgba(48, 209, 88,0.25);
 }
 
 .intel-status-ready {
@@ -2249,7 +2249,7 @@ code {
   padding: 8px 18px;
   background: transparent;
   color: var(--color-accent);
-  border: 1px solid rgba(0, 209, 255, 0.35);
+  border: 1px solid rgba(48, 209, 88,0.35);
   border-radius: 8px;
   font-size: 13px;
   font-weight: 600;
@@ -2258,7 +2258,7 @@ code {
 }
 
 .intel-refresh-btn:hover {
-  background: rgba(0, 209, 255, 0.08);
+  background: rgba(48, 209, 88,0.08);
   border-color: var(--color-accent);
 }
 
@@ -2298,7 +2298,7 @@ code {
   width: 26px;
   height: 26px;
   border-radius: 50%;
-  background: rgba(0, 209, 255, 0.12);
+  background: rgba(48, 209, 88,0.12);
   color: var(--color-accent);
   font-size: 12px;
   font-weight: 700;
@@ -2343,8 +2343,8 @@ code {
 .ghost-email-capture {
   margin-top: 16px;
   padding: 16px;
-  background: rgba(0, 209, 255, 0.06);
-  border: 1px solid rgba(0, 209, 255, 0.2);
+  background: rgba(48, 209, 88,0.06);
+  border: 1px solid rgba(48, 209, 88,0.2);
   border-radius: 12px;
 }
 
@@ -2454,7 +2454,7 @@ code {
 
 .intent-chip.active {
   border-color: var(--color-accent);
-  background: rgba(0, 209, 255, 0.12);
+  background: rgba(48, 209, 88,0.12);
   color: var(--color-accent);
 }
 
@@ -2523,7 +2523,7 @@ code {
   width: 80px;
   height: 80px;
   border-radius: 50%;
-  background: linear-gradient(135deg, rgba(0, 209, 255, 0.15), rgba(0, 209, 255, 0.05));
+  background: linear-gradient(135deg, rgba(48, 209, 88,0.15), rgba(48, 209, 88,0.05));
   border: 2px solid var(--color-border-subtle);
   display: flex;
   align-items: center;
@@ -2581,7 +2581,7 @@ code {
   width: 28px;
   height: 28px;
   border-radius: 50%;
-  border: 2.5px solid rgba(0, 209, 255, 0.2);
+  border: 2.5px solid rgba(48, 209, 88,0.2);
   border-top-color: var(--color-accent);
   animation: cc-spin 0.7s linear infinite;
 }
@@ -2730,7 +2730,7 @@ code {
 }
 
 .cc-event-card:hover {
-  border-color: rgba(0, 209, 255, 0.25);
+  border-color: rgba(48, 209, 88,0.25);
 }
 
 .cc-event-card--ended {
@@ -2801,7 +2801,7 @@ code {
 .cc-event-status--upcoming {
   color: var(--color-accent);
   border-color: var(--color-border-subtle);
-  background: rgba(0, 209, 255, 0.05);
+  background: rgba(48, 209, 88,0.05);
 }
 
 .cc-event-status--ended {
@@ -3157,7 +3157,7 @@ body.cc-page .cc-event-card {
 }
 
 body.cc-page .cc-event-card:hover {
-  border-color: rgba(0, 209, 255, 0.25);
+  border-color: rgba(48, 209, 88,0.25);
 }
 
 body.cc-page .cc-event-name {
