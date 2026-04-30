@@ -2565,6 +2565,27 @@ code {
    EVENT CONTROL CENTER
    ============================================================ */
 
+/* ── Auth loading state ── */
+@keyframes cc-spin {
+  to { transform: rotate(360deg); }
+}
+
+.cc-loading-view {
+  min-height: calc(100vh - 120px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cc-loading-spinner {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 2.5px solid rgba(0, 209, 255, 0.2);
+  border-top-color: var(--color-accent);
+  animation: cc-spin 0.7s linear infinite;
+}
+
 /* ── Landing (logged-out) ── */
 .cc-landing {
   min-height: calc(100vh - 120px);
@@ -2576,7 +2597,16 @@ code {
 }
 
 .cc-landing-inner {
-  max-width: 520px;
+  max-width: 600px;
+}
+
+.cc-landing-kicker {
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-accent);
+  margin-bottom: 20px;
 }
 
 .cc-landing-inner h1 {
@@ -2587,11 +2617,58 @@ code {
   margin-bottom: 16px;
 }
 
-.cc-landing-inner p {
+.cc-landing-inner > p {
   font-size: 18px;
   color: var(--color-text-secondary);
   line-height: 1.55;
   margin-bottom: 36px;
+  max-width: 480px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.cc-landing-features {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  text-align: left;
+}
+
+.cc-landing-feature {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-md);
+  padding: 20px 18px;
+  box-shadow: var(--shadow-inset);
+}
+
+.cc-landing-feature-icon {
+  font-size: 22px;
+  margin-bottom: 10px;
+  line-height: 1;
+}
+
+.cc-landing-feature-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #ffffff;
+  margin-bottom: 6px;
+}
+
+.cc-landing-feature-desc {
+  font-size: 13px;
+  color: var(--color-text-muted);
+  line-height: 1.55;
+}
+
+@media (max-width: 600px) {
+  .cc-landing-features {
+    grid-template-columns: 1fr;
+  }
+
+  .cc-landing-inner h1 {
+    font-size: 32px;
+  }
 }
 
 /* ── Dashboard (logged-in) ── */
