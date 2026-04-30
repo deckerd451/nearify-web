@@ -1,75 +1,26 @@
-const CACHE_NAME = "nearify-v2";
+// Kill-switch service worker.
+//
+// The previous SW used "cache-first" for static assets, which caused stale
+// JS/CSS to be served after deployments even when files changed on disk.
+//
+// This replacement does three things and nothing else:
+//   1. Installs immediately (skipWaiting).
+//   2. On activate, deletes every cache entry the old SW created.
+//   3. Unregisters itself so no SW is active going forward.
+//
+// Browsers that already have the old SW installed will fetch this file
+// (SW updates are always network-first), run this, wipe the caches, and
+// remove the registration. Fresh page loads after that will hit the network
+// for every asset, and normal HTTP cache headers take over from there.
 
-const PRECACHE = [
-  "/",
-  "/index.html",
-  "/join/index.html",
-  "/events/index.html",
-  "/events/event.html",
-  "/assets/css/styles.css",
-  "/assets/js/analytics.js",
-  "/assets/js/config.js",
-  "/assets/js/supabaseClient.js",
-  "/assets/js/appState.js",
-  "/assets/js/join.js",
-  "/assets/js/ghostSession.js",
-  "/assets/js/ghostConnection.js",
-  "/assets/js/navAuth.js",
-  "/assets/js/personalConnect.js",
-  // External CDN scripts are not precached to avoid SRI or version conflicts
-];
-
-self.addEventListener("install", (event) => {
-  event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(PRECACHE))
-  );
-  self.skipWaiting();
-});
+self.addEventListener("install", () => self.skipWaiting());
 
 self.addEventListener("activate", (event) => {
   event.waitUntil(
-    caches.keys().then((keys) =>
-      Promise.all(keys.filter((k) => k !== CACHE_NAME).map((k) => caches.delete(k)))
-    )
+    caches
+      .keys()
+      .then((keys) => Promise.all(keys.map((k) => caches.delete(k))))
+      .then(() => self.registration.unregister())
   );
   self.clients.claim();
-});
-
-self.addEventListener("fetch", (event) => {
-  const { request } = event;
-  const url = new URL(request.url);
-
-  // Only handle http(s) — skip chrome-extension://, data:, blob:, etc.
-  if (url.protocol !== "http:" && url.protocol !== "https:") return;
-
-  // Never intercept Supabase API calls — always go to the network
-  if (url.hostname.endsWith("supabase.co") || url.hostname === "esm.sh") return;
-
-  // For navigation requests (HTML pages), try network first then fall back to cache
-  if (request.mode === "navigate") {
-    event.respondWith(
-      fetch(request)
-        .then((res) => {
-          const clone = res.clone();
-          caches.open(CACHE_NAME).then((c) => c.put(request, clone));
-          return res;
-        })
-        .catch(() => caches.match(request))
-    );
-    return;
-  }
-
-  // For static assets, cache first
-  event.respondWith(
-    caches.match(request).then((cached) => {
-      if (cached) return cached;
-      return fetch(request).then((res) => {
-        if (res.ok) {
-          const clone = res.clone();
-          caches.open(CACHE_NAME).then((c) => c.put(request, clone));
-        }
-        return res;
-      });
-    })
-  );
 });

@@ -16,7 +16,7 @@
   <meta name="twitter:description" content="Create events, generate QR codes, and manage your Nearify event network." />
   <meta name="twitter:image"      content="https://nearify.org/assets/images/og-default.png" />
 
-  <link rel="stylesheet" href="assets/css/styles.css" />
+  <link rel="stylesheet" href="assets/css/styles.css?v=20260430" />
 </head>
 <body class="cc-page">
 
@@ -203,16 +203,21 @@
   </footer>
 
   <script>
+    // Unregister any previously installed service worker.
+    // The SW used cache-first for static assets which caused stale JS/CSS
+    // after deployments. We no longer use a SW on this site.
     if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("/sw.js").catch(() => {});
+      navigator.serviceWorker.getRegistrations().then((regs) => {
+        regs.forEach((r) => r.unregister());
+      });
     }
   </script>
 
   <!-- QR code library (must load before dashboard.js) -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
-  <script type="module" src="/assets/js/dashboard.js"></script>
-  <script type="module" src="/assets/js/navAuth.js"></script>
+  <script type="module" src="/assets/js/dashboard.js?v=20260430"></script>
+  <script type="module" src="/assets/js/navAuth.js?v=20260430"></script>
 
 </body>
 </html>

@@ -19,7 +19,7 @@
   <meta name="twitter:description" content="Get Nearify to join this event and discover who's around you in real time." />
   <meta name="twitter:image"      content="https://nearify.org/assets/images/og-default.png" />
 
-  <link rel="stylesheet" href="../assets/css/styles.css" />
+  <link rel="stylesheet" href="../assets/css/styles.css?v=20260430" />
 </head>
 <body>
   <a href="#main-content" class="skip-link">Skip to main content</a>
@@ -316,15 +316,18 @@
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" crossorigin="anonymous"></script>
   <script>
+    // Unregister any previously installed service worker.
     if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("/sw.js").catch(() => {});
+      navigator.serviceWorker.getRegistrations().then((regs) => {
+        regs.forEach((r) => r.unregister());
+      });
     }
   </script>
-  <script type="module" src="../assets/js/join.js"></script>
-  <script type="module" src="../assets/js/navAuth.js"></script>
+  <script type="module" src="../assets/js/join.js?v=20260430"></script>
+  <script type="module" src="../assets/js/navAuth.js?v=20260430"></script>
   <script type="module">
-    import { trackPageView, wireAppCtaTracking } from "../assets/js/analytics.js";
-    import { patchAppStoreLinks } from "../assets/js/config.js";
+    import { trackPageView, wireAppCtaTracking } from "../assets/js/analytics.js?v=20260430";
+    import { patchAppStoreLinks } from "../assets/js/config.js?v=20260430";
     patchAppStoreLinks();
     trackPageView();
     wireAppCtaTracking();

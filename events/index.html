@@ -19,7 +19,7 @@
   <meta name="twitter:description" content="Browse upcoming Nearify-enabled events. Install the app and be ready to connect the moment you arrive." />
   <meta name="twitter:image"      content="https://nearify.org/assets/images/og-default.png" />
 
-  <link rel="stylesheet" href="../assets/css/styles.css" />
+  <link rel="stylesheet" href="../assets/css/styles.css?v=20260430" />
 </head>
 <body>
   <a href="#main-content" class="skip-link">Skip to main content</a>
@@ -173,17 +173,17 @@
     <p>© 2026 Nearify</p>
   </footer>
 
-  <script type="module" src="../assets/js/navAuth.js"></script>
+  <script type="module" src="../assets/js/navAuth.js?v=20260430"></script>
   <script type="module">
-    import { trackPageView, wireAppCtaTracking } from "../assets/js/analytics.js";
-    import { patchAppStoreLinks } from "../assets/js/config.js";
+    import { trackPageView, wireAppCtaTracking } from "../assets/js/analytics.js?v=20260430";
+    import { patchAppStoreLinks } from "../assets/js/config.js?v=20260430";
     patchAppStoreLinks();
     trackPageView();
     wireAppCtaTracking();
   </script>
   <script type="module">
-    import { fetchPublicEvents } from "../assets/js/events.js";
-    import { escapeHtml } from "../assets/js/utils.js";
+    import { fetchPublicEvents } from "../assets/js/events.js?v=20260430";
+    import { escapeHtml } from "../assets/js/utils.js?v=20260430";
 
     const upcomingGrid   = document.getElementById("eventsListGrid");
     const pastSection    = document.getElementById("pastEventsSection");
