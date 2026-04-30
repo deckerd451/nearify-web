@@ -40,13 +40,36 @@
 
   <main id="main-content">
 
+    <!-- ─── INITIAL LOADING STATE ─────────────────────────────────────────── -->
+    <div id="loadingView" class="cc-loading-view" aria-label="Loading…" role="status">
+      <div class="cc-loading-spinner"></div>
+    </div>
+
     <!-- ─── LOGGED-OUT LANDING ─────────────────────────────────────────── -->
-    <section id="landingView" class="cc-landing" aria-label="Create a Nearify event">
+    <section id="landingView" class="cc-landing" aria-label="Create a Nearify event" style="display:none;">
       <div class="cc-landing-inner">
-        <h1>Create a Nearify event</h1>
-        <p>Generate a QR code your guests scan to join the live network.</p>
-        <div class="hero-actions" style="justify-content:center;">
-          <button id="landingSignInBtn" class="btn primary">Sign In to Create</button>
+        <div class="cc-landing-kicker">For event organizers</div>
+        <h1>Run better events with Nearify</h1>
+        <p>Create an event, generate a QR code, and let attendees join your live network in seconds — no app installs required for you.</p>
+        <div class="hero-actions" style="justify-content:center; margin-bottom: 48px;">
+          <button id="landingSignInBtn" class="btn primary">Sign in with Google</button>
+        </div>
+        <div class="cc-landing-features">
+          <div class="cc-landing-feature">
+            <div class="cc-landing-feature-icon">⚡</div>
+            <div class="cc-landing-feature-label">Create in seconds</div>
+            <div class="cc-landing-feature-desc">Name your event, pick a date, and get a shareable QR code instantly.</div>
+          </div>
+          <div class="cc-landing-feature">
+            <div class="cc-landing-feature-icon">📡</div>
+            <div class="cc-landing-feature-label">Live attendance</div>
+            <div class="cc-landing-feature-desc">Attendees scan your QR to join the live network — you see who's in the room.</div>
+          </div>
+          <div class="cc-landing-feature">
+            <div class="cc-landing-feature-icon">🔗</div>
+            <div class="cc-landing-feature-label">Persistent connections</div>
+            <div class="cc-landing-feature-desc">Every connection made at your event is saved for follow-up after it ends.</div>
+          </div>
         </div>
       </div>
     </section>

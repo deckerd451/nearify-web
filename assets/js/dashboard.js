@@ -413,13 +413,19 @@ async function handleCreateSubmit(e) {
 
 // ─── Page state ───────────────────────────────────────────────────────────────
 
-function showLanding() {
-  document.getElementById("landingView").style.display = "flex";
+function hideAllViews() {
+  document.getElementById("loadingView").style.display  = "none";
+  document.getElementById("landingView").style.display  = "none";
   document.getElementById("dashboardView").style.display = "none";
 }
 
+function showLanding() {
+  hideAllViews();
+  document.getElementById("landingView").style.display = "flex";
+}
+
 function showDashboard() {
-  document.getElementById("landingView").style.display = "none";
+  hideAllViews();
   document.getElementById("dashboardView").style.display = "block";
 }
 
@@ -434,30 +440,37 @@ async function initDashboard() {
 
   bindStaticHandlers?.();
 
-  const { data, error } = await supabase.auth.getSession();
-
-  if (error) {
-    console.warn("[Dashboard] getSession error:", error);
-  }
-
-  const session = data?.session;
-  console.log("[Dashboard] session user:", session?.user?.email || null);
-
-  if (session?.user) {
-    await loadDashboard();
-  } else {
-    showLanding();
-  }
-
+  // Register auth change listener BEFORE getSession so we never miss a
+  // SIGNED_IN event that fires while the initial session fetch is in flight.
+  let resolved = false;
   supabase.auth.onAuthStateChange(async (event, session) => {
     console.log("[Dashboard] auth change:", event, !!session?.user);
-
+    resolved = true;
     if (session?.user) {
       await loadDashboard();
     } else {
       showLanding();
     }
   });
+
+  const { data, error } = await supabase.auth.getSession();
+
+  if (error) {
+    console.warn("[Dashboard] getSession error:", error);
+  }
+
+  // Only act on getSession result if onAuthStateChange hasn't already settled
+  // the view — prevents the race where the listener fires after getSession
+  // returns null but before the restored session is available.
+  if (!resolved) {
+    const session = data?.session;
+    console.log("[Dashboard] session user:", session?.user?.email || null);
+    if (session?.user) {
+      await loadDashboard();
+    } else {
+      showLanding();
+    }
+  }
 }
 
 async function loadDashboard() {
