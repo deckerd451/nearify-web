@@ -19,7 +19,7 @@
   <meta name="twitter:description" content="Create a Nearify event, generate QR codes, and set up the live attendee network for your gathering." />
   <meta name="twitter:image"      content="https://nearify.org/assets/images/og-default.png" />
 
-  <link rel="stylesheet" href="../assets/css/styles.css" />
+  <link rel="stylesheet" href="../assets/css/styles.css?v=20260430" />
 </head>
 <body>
   <a href="#main-content" class="skip-link">Skip to main content</a>
@@ -275,16 +275,16 @@
   </footer>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-  <script type="module" src="../assets/js/navAuth.js"></script>
+  <script type="module" src="../assets/js/navAuth.js?v=20260430"></script>
   <script type="module">
-    import { patchAppStoreLinks } from "../assets/js/config.js";
+    import { patchAppStoreLinks } from "../assets/js/config.js?v=20260430";
     patchAppStoreLinks();
   </script>
 
   <!-- Supabase auth gate + event management -->
   <script type="module">
-    import { supabase } from "../assets/js/supabaseClient.js";
-    import { saveEvent, getOrganizerProfileId } from "../assets/js/events.js";
+    import { supabase } from "../assets/js/supabaseClient.js?v=20260430";
+    import { saveEvent, getOrganizerProfileId } from "../assets/js/events.js?v=20260430";
 
     const authGate     = document.getElementById("adminAuthGate");
     const adminContent = document.getElementById("adminContent");
@@ -453,7 +453,7 @@
   </script>
 
  <script type="module">
-  import { copyText } from "../assets/js/utils.js";
+  import { copyText } from "../assets/js/utils.js?v=20260430";
 
   const form = document.getElementById("organizerForm");
   const eventNameInput = document.getElementById("eventName");
