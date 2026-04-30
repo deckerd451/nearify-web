@@ -435,47 +435,32 @@ function showLoading() {
   if (list) list.innerHTML = renderSkeletonCards();
 }
 
-async function initDashboard() {
+function initDashboard() {
   console.log("[Dashboard] init");
 
-  bindStaticHandlers?.();
+  bindStaticHandlers();
 
-  // Register auth change listener BEFORE getSession so we never miss a
-  // SIGNED_IN event that fires while the initial session fetch is in flight.
-  let resolved = false;
-  supabase.auth.onAuthStateChange(async (event, session) => {
+  // Supabase fires INITIAL_SESSION synchronously on registration (with the
+  // session from storage, or null if a token exchange is still pending).
+  // SIGNED_IN fires when a new sign-in completes (e.g. after OAuth redirect).
+  // We do NOT use an async callback here — Supabase doesn't await them, so any
+  // thrown error would be silently swallowed and leave the page blank.
+  supabase.auth.onAuthStateChange((event, session) => {
     console.log("[Dashboard] auth change:", event, !!session?.user);
-    resolved = true;
-    if (session?.user) {
-      await loadDashboard();
-    } else {
+
+    if (event === "SIGNED_OUT" || (event === "INITIAL_SESSION" && !session?.user)) {
       showLanding();
+    } else if (event === "SIGNED_IN" || (event === "INITIAL_SESSION" && session?.user)) {
+      loadDashboard().catch((err) => {
+        console.error("[Dashboard] loadDashboard failed:", err);
+        renderDashboardError(err);
+      });
     }
   });
-
-  const { data, error } = await supabase.auth.getSession();
-
-  if (error) {
-    console.warn("[Dashboard] getSession error:", error);
-  }
-
-  // Only act on getSession result if onAuthStateChange hasn't already settled
-  // the view — prevents the race where the listener fires after getSession
-  // returns null but before the restored session is available.
-  if (!resolved) {
-    const session = data?.session;
-    console.log("[Dashboard] session user:", session?.user?.email || null);
-    if (session?.user) {
-      await loadDashboard();
-    } else {
-      showLanding();
-    }
-  }
 }
 
 async function loadDashboard() {
-  showDashboard();
-  renderSkeletonCards();
+  showLoading();
 
   try {
     const events = await fetchMyEvents();
