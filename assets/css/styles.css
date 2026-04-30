@@ -73,6 +73,12 @@ body {
   color: var(--color-text-primary);
 }
 
+input::placeholder,
+textarea::placeholder {
+  color: var(--color-text-label);
+  opacity: 1;
+}
+
 /* NAV */
 .nav {
   display: flex;
@@ -90,7 +96,7 @@ body {
 .nav-links a {
   margin-left: 20px;
   text-decoration: none;
-  color: #ccc;
+  color: var(--color-text-secondary);
   transition: color 0.15s ease;
 }
 
@@ -172,12 +178,13 @@ body {
 
 .secondary {
   background: transparent;
-  border: 1px solid #444;
+  border: 1px solid rgba(255, 255, 255, 0.22);
   color: white;
 }
 
 .secondary:hover {
-  border-color: #666;
+  border-color: rgba(255, 255, 255, 0.42);
+  background: rgba(255, 255, 255, 0.04);
 }
 
 /* SOCIAL PROOF BAR */
@@ -325,7 +332,7 @@ body {
 .footer {
   text-align: center;
   padding: 40px 40px 32px;
-  color: #666;
+  color: var(--color-text-muted);
   border-top: 1px solid rgba(255, 255, 255, 0.06);
   display: flex;
   flex-direction: column;
@@ -2400,8 +2407,45 @@ code {
 
 /* Loading / disabled state on buttons */
 .btn:disabled {
-  opacity: 0.6;
+  opacity: 0.5;
   cursor: not-allowed;
+  pointer-events: none;
+  transform: none;
+  box-shadow: none;
+}
+
+@keyframes btn-spin {
+  to { transform: rotate(360deg); }
+}
+
+.btn.loading {
+  pointer-events: none;
+  position: relative;
+  color: transparent !important;
+}
+
+.btn.loading::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 2px solid currentColor;
+  border-top-color: transparent;
+  animation: btn-spin 0.6s linear infinite;
+  color: inherit;
+}
+
+.btn.primary.loading::after {
+  border-color: rgba(11, 15, 26, 0.5);
+  border-top-color: transparent;
+}
+
+.btn.secondary.loading::after {
+  border-color: rgba(255, 255, 255, 0.5);
+  border-top-color: transparent;
 }
 
 /* ============================================================
@@ -2492,7 +2536,7 @@ code {
 }
 
 .profile-name {
-  font-size: 24px;
+  font-size: 30px;
   font-weight: 700;
   letter-spacing: -0.02em;
   margin-bottom: 6px;

@@ -310,7 +310,7 @@ function wireEmailCapture(ghost) {
         return;
       }
       submitBtn.disabled = true;
-      submitBtn.textContent = "Saving…";
+      submitBtn.classList.add("loading");
       try {
         await saveGhostEmail(ghost, email);
       } catch (err) {
@@ -427,9 +427,14 @@ function wireIntentChips() {
   const signInBtn = document.getElementById("intentSignInBtn");
 
   chips.forEach((chip) => {
+    chip.setAttribute("aria-pressed", "false");
     chip.addEventListener("click", () => {
-      chips.forEach((c) => c.classList.remove("active"));
+      chips.forEach((c) => {
+        c.classList.remove("active");
+        c.setAttribute("aria-pressed", "false");
+      });
       chip.classList.add("active");
+      chip.setAttribute("aria-pressed", "true");
       if (gate) show(gate);
     });
   });
@@ -437,13 +442,14 @@ function wireIntentChips() {
   if (signInBtn) {
     signInBtn.addEventListener("click", async () => {
       signInBtn.disabled = true;
-      signInBtn.textContent = "Redirecting…";
+      signInBtn.classList.add("loading");
       const { error } = await supabase.auth.signInWithOAuth({
         provider: "google",
         options: { redirectTo: window.location.href },
       });
       if (error) {
         signInBtn.disabled = false;
+        signInBtn.classList.remove("loading");
         signInBtn.textContent = "Sign in with Google";
       }
     });

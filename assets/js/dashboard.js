@@ -392,12 +392,12 @@ async function handleCreateSubmit(e) {
   const starts_at = date && time ? `${date}T${time}:00` : date || null;
 
   const submitBtn = document.getElementById("createEventSubmitBtn");
-  if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = "Creating…"; }
+  if (submitBtn) { submitBtn.disabled = true; submitBtn.classList.add("loading"); }
   setCreateStatus("Saving…");
 
   const { error } = await createEvent({ name, location, starts_at, description: desc });
 
-  if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = "Create Event"; }
+  if (submitBtn) { submitBtn.disabled = false; submitBtn.classList.remove("loading"); }
 
   if (error) {
     setCreateStatus("Error: " + error.message, true);
