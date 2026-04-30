@@ -58,7 +58,7 @@
             rel="noopener noreferrer"
             data-track-cta="events_hero_install"
           >
-            Install Nearify (TestFlight)
+            Get Nearify on TestFlight
           </a>
           <a href="#upcoming-events" class="btn secondary">See Events</a>
         </div>
@@ -70,22 +70,22 @@
       <div class="event-how-step">
         <div class="event-how-num">1</div>
         <div>
-          <div class="event-how-step-title">Install the app</div>
-          <div class="event-how-step-desc">Get Nearify on TestFlight and create your profile before the event.</div>
+          <div class="event-how-step-title">Install Nearify on TestFlight</div>
+          <div class="event-how-step-desc">Get the app and create your profile before the event.</div>
         </div>
       </div>
       <div class="event-how-step">
         <div class="event-how-num">2</div>
         <div>
-          <div class="event-how-step-title">Set your intent</div>
-          <div class="event-how-step-desc">Tell Nearify why you're attending so it can surface the right people for you.</div>
+          <div class="event-how-step-title">Sign in and create your profile</div>
+          <div class="event-how-step-desc">Use Google or GitHub. Your profile is how other attendees find and understand you.</div>
         </div>
       </div>
       <div class="event-how-step">
         <div class="event-how-num">3</div>
         <div>
-          <div class="event-how-step-title">Scan when you arrive</div>
-          <div class="event-how-step-desc">Use the event QR code at the venue to join the live network and see who's there.</div>
+          <div class="event-how-step-title">Scan the event QR code when you arrive</div>
+          <div class="event-how-step-desc">Use the QR at the venue to join the live network and see who's there.</div>
         </div>
       </div>
     </div>
@@ -158,7 +158,7 @@
         rel="noopener noreferrer"
         data-track-cta="events_bottom_cta"
       >
-        Open TestFlight
+        Get Nearify on TestFlight
       </a>
     </section>
   </main>
@@ -183,16 +183,11 @@
   </script>
   <script type="module">
     import { fetchPublicEvents } from "../assets/js/events.js";
+    import { escapeHtml } from "../assets/js/utils.js";
 
     const upcomingGrid   = document.getElementById("eventsListGrid");
     const pastSection    = document.getElementById("pastEventsSection");
     const pastGrid       = document.getElementById("pastEventsGrid");
-
-    function escapeHtml(str) {
-      const d = document.createElement("div");
-      d.textContent = str;
-      return d.innerHTML;
-    }
 
     function renderCard(ev, { featured = false, past = false } = {}) {
       const dateStr  = ev.starts_at

@@ -153,6 +153,13 @@
           <textarea id="ceDescription" rows="3" placeholder="Optional"></textarea>
         </div>
 
+        <div class="form-row">
+          <label for="ceSlug">Event slug</label>
+          <input id="ceSlug" type="text" placeholder="my-meetup" autocomplete="off" aria-describedby="ceSlugHelp ceSlugError" />
+          <p class="field-help" id="ceSlugHelp">Sets the public URL: nearify.org/events/<em>slug</em>.html — auto-filled from name.</p>
+          <p class="field-error" id="ceSlugError" role="alert" style="display:none;">Slug can only contain lowercase letters, numbers, and hyphens.</p>
+        </div>
+
         <div class="cc-modal-actions">
           <button type="submit" id="createEventSubmitBtn" class="btn primary">Create Event</button>
         </div>

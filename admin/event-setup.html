@@ -254,43 +254,11 @@
 
     <section class="section event-section">
       <div class="section-heading">
-        <h2>Your events</h2>
-        <p>Events you've created. Edit, copy join links, or delete from here.</p>
+        <h2>Manage your events</h2>
+        <p>View, edit, and manage all your events from the dashboard.</p>
       </div>
-      <div id="myEventsList" class="admin-events-list">
-        <p class="field-help">Loading...</p>
-      </div>
-    </section>
-
-    <section class="section dark event-section">
-      <div class="section-heading">
-        <h2>How this works</h2>
-        <p>
-          This is the organizer bridge between the web and mobile experience.
-          Events you create here appear on the public events page and generate
-          the QR codes and join links attendees use to enter the event network.
-        </p>
-      </div>
-
-      <div class="feature-grid">
-        <div class="feature-card">
-          <h3>Creates real events</h3>
-          <p>
-            Events are saved to Supabase and immediately appear on the public events page for attendees to discover.
-          </p>
-        </div>
-        <div class="feature-card">
-          <h3>Generates join links and QR codes</h3>
-          <p>
-            Each event gets a unique join URL and QR code. Print the QR for the venue so attendees can scan and join.
-          </p>
-        </div>
-        <div class="feature-card">
-          <h3>Full event management</h3>
-          <p>
-            Edit event details, regenerate QR codes, copy join links, or delete events you no longer need.
-          </p>
-        </div>
+      <div style="text-align:center; padding: 16px 0;">
+        <a href="../index.html" class="btn primary">Go to Dashboard</a>
       </div>
     </section>
     </div><!-- /adminContent -->
@@ -316,7 +284,7 @@
   <!-- Supabase auth gate + event management -->
   <script type="module">
     import { supabase } from "../assets/js/supabaseClient.js";
-    import { saveEvent, deleteEvent, fetchOrganizerEvents, getOrganizerProfileId } from "../assets/js/events.js";
+    import { saveEvent, getOrganizerProfileId } from "../assets/js/events.js";
 
     const authGate     = document.getElementById("adminAuthGate");
     const adminContent = document.getElementById("adminContent");
@@ -357,30 +325,31 @@
     }
 
     // --- Auth gate ---
-    async function checkAuth() {
-      const { data, error } = await supabase.auth.getSession();
-      if (error) { console.error("[Admin] Auth error:", error); return null; }
-      return data.session?.user ?? null;
+    function showAuthGate() {
+      authGate.style.display = "";
+      adminContent.style.display = "none";
     }
 
-    async function initAuthGate() {
-      const user = await checkAuth();
-      if (user) {
-        authGate.style.display = "none";
-        adminContent.style.display = "";
-        console.log("[Admin] Authenticated:", user.email);
-
-        // Pre-resolve profile so save/delete work immediately
-        const profileId = await getOrganizerProfileId();
+    function showAdminContent(user) {
+      authGate.style.display = "none";
+      adminContent.style.display = "";
+      console.log("[Admin] Authenticated:", user.email);
+      getOrganizerProfileId().then(profileId => {
         if (!profileId) {
           saveStatus.textContent = "Warning: no organizer profile found. Create a profile in the Nearify app first.";
         }
+      });
+    }
 
-        loadMyEvents();
-      } else {
-        authGate.style.display = "";
-        adminContent.style.display = "none";
-      }
+    function initAuthGate() {
+      supabase.auth.onAuthStateChange((event, session) => {
+        console.log("[Admin] auth change:", event, !!session?.user);
+        if (event === "SIGNED_OUT" || (event === "INITIAL_SESSION" && !session?.user)) {
+          showAuthGate();
+        } else if (event === "SIGNED_IN" || (event === "INITIAL_SESSION" && session?.user)) {
+          showAdminContent(session.user);
+        }
+      });
     }
 
     signInBtn.addEventListener("click", async () => {
@@ -446,7 +415,7 @@
       if (hasErrors) return;
 
       // Auto-generate ID for new events
-      const id = eventId || (crypto.randomUUID ? crypto.randomUUID() : window.generateUUID());
+      const id = eventId || crypto.randomUUID();
       if (!eventId) document.getElementById("eventId").value = id;
 
       const isUpdate = !!editingEventId;
@@ -471,7 +440,6 @@
       // Sync QR fields after save
       document.getElementById("eventName").dispatchEvent(new Event("input"));
 
-      loadMyEvents();
       setTimeout(() => { saveStatus.textContent = ""; }, 4000);
     });
 
@@ -480,154 +448,13 @@
       saveStatus.style.color = isError ? "#f87171" : "#8fa0b8";
     }
 
-    // --- Event listing (organizer's own events) ---
-    async function loadMyEvents() {
-      const container = document.getElementById("myEventsList");
-      if (!container) return;
-
-      const events = await fetchOrganizerEvents();
-
-      if (!events.length) {
-        container.innerHTML = '<p class="field-help">No events yet. Create one above.</p>';
-        return;
-      }
-
-      container.innerHTML = events.map(ev => {
-        const joinUrl = "https://nearify.org/join/?event=" + encodeURIComponent(ev.id) + "&name=" + encodeURIComponent(ev.name);
-        const dateStr = ev.starts_at ? new Date(ev.starts_at).toLocaleDateString() : "";
-        const meta = [ev.location, dateStr].filter(Boolean).join(" \u00b7 ");
-
-        return '<div class="admin-event-row">' +
-          '<div class="admin-event-name">' + escapeHtml(ev.name) + '</div>' +
-          (meta ? '<div class="admin-event-meta">' + escapeHtml(meta) + '</div>' : '') +
-          '<div class="admin-event-actions">' +
-            '<button class="btn admin-btn admin-btn-edit admin-edit-event" ' +
-              'data-id="' + ev.id + '" ' +
-              'data-name="' + escapeAttr(ev.name) + '" ' +
-              'data-slug="' + escapeAttr(ev.slug || "") + '" ' +
-              'data-location="' + escapeAttr(ev.location || "") + '" ' +
-              'data-starts-at="' + escapeAttr(ev.starts_at || "") + '" ' +
-              'data-description="' + escapeAttr(ev.description || "") + '"' +
-            '>Edit</button>' +
-            '<button class="btn admin-btn admin-btn-copy admin-copy-link" data-url="' + joinUrl + '">Copy join link</button>' +
-            '<button class="btn admin-btn admin-btn-delete admin-delete-event" data-id="' + ev.id + '" data-name="' + escapeAttr(ev.name) + '">Archive</button>' +
-          '</div>' +
-        '</div>';
-      }).join("");
-
-      bindEventHandlers(container);
-    }
-
-    function bindEventHandlers(container) {
-      // Edit
-      container.querySelectorAll(".admin-edit-event").forEach(btn => {
-        btn.addEventListener("click", () => {
-          document.getElementById("eventId").value = btn.dataset.id;
-          document.getElementById("eventName").value = btn.dataset.name;
-          document.getElementById("eventSlug").value = btn.dataset.slug;
-          document.getElementById("eventLocation").value = btn.dataset.location;
-
-          if (btn.dataset.startsAt) {
-            try {
-              const dt = new Date(btn.dataset.startsAt);
-              document.getElementById("eventDate").value = dt.toISOString().split("T")[0];
-              document.getElementById("eventTime").value =
-                String(dt.getHours()).padStart(2, "0") + ":" + String(dt.getMinutes()).padStart(2, "0");
-            } catch (_) {}
-          } else {
-            document.getElementById("eventDate").value = "";
-            document.getElementById("eventTime").value = "";
-          }
-
-          document.getElementById("eventDescription").value = btn.dataset.description || "";
-          document.getElementById("eventName").dispatchEvent(new Event("input"));
-          enterEditMode(btn.dataset.id, btn.dataset.name);
-          document.getElementById("event-form").scrollIntoView({ behavior: "smooth" });
-        });
-      });
-
-      // Copy link
-      container.querySelectorAll(".admin-copy-link").forEach(btn => {
-        btn.addEventListener("click", async () => {
-          const url = btn.dataset.url;
-          const ok = await copyToClipboard(url);
-          btn.textContent = ok ? "Copied" : "Copy failed";
-          if (!ok) console.warn("[Admin] Clipboard copy failed for:", url);
-          setTimeout(() => { btn.textContent = "Copy join link"; }, ok ? 1200 : 2500);
-        });
-      });
-
-      // Delete
-      container.querySelectorAll(".admin-delete-event").forEach(btn => {
-        btn.addEventListener("click", async () => {
-          const name = btn.dataset.name || "this event";
-          if (!confirm('Archive "' + name + '"? It will be removed from public listings.')) return;
-
-          btn.textContent = "Archiving...";
-          btn.disabled = true;
-
-          const { error } = await deleteEvent(btn.dataset.id);
-
-          if (error) {
-            console.error("[Admin] Archive failed:", error);
-            btn.textContent = "Failed";
-            btn.disabled = false;
-            showStatus("Archive failed: " + error.message, true);
-            setTimeout(() => { btn.textContent = "Archive"; }, 2000);
-            return;
-          }
-
-          showStatus("Event archived.");
-          setTimeout(() => { saveStatus.textContent = ""; }, 3000);
-          loadMyEvents();
-        });
-      });
-    }
-
-    function escapeHtml(str) {
-      const d = document.createElement("div");
-      d.textContent = str || "";
-      return d.innerHTML;
-    }
-
-    function escapeAttr(str) {
-      return (str || "").replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;");
-    }
-
-    // --- Clipboard helper with fallback ---
-    async function copyToClipboard(text) {
-      // Try modern API first
-      if (navigator.clipboard && navigator.clipboard.writeText) {
-        try {
-          await navigator.clipboard.writeText(text);
-          return true;
-        } catch (e) {
-          console.warn("[Admin] clipboard.writeText failed, trying fallback:", e.message);
-        }
-      }
-      // Fallback: temporary textarea + execCommand
-      try {
-        const ta = document.createElement("textarea");
-        ta.value = text;
-        ta.style.position = "fixed";
-        ta.style.left = "-9999px";
-        ta.style.opacity = "0";
-        document.body.appendChild(ta);
-        ta.select();
-        const ok = document.execCommand("copy");
-        document.body.removeChild(ta);
-        return ok;
-      } catch (e) {
-        console.error("[Admin] Fallback copy failed:", e);
-        return false;
-      }
-    }
-
     exitEditMode();
     initAuthGate();
   </script>
 
- <script>
+ <script type="module">
+  import { copyText } from "../assets/js/utils.js";
+
   const form = document.getElementById("organizerForm");
   const eventNameInput = document.getElementById("eventName");
   const eventSlugInput = document.getElementById("eventSlug");
@@ -661,8 +488,6 @@
       return (c === "x" ? r : (r & 0x3 | 0x8)).toString(16);
     });
   }
-  // Expose for module script
-  window.generateUUID = generateUUID;
 
   function buildState() {
     const name = eventNameInput.value.trim();
@@ -724,28 +549,6 @@
     eventIdInput.value = generateUUID();
     syncFields();
   };
-
-  // Clipboard helper with fallback
-  function copyText(text) {
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      return navigator.clipboard.writeText(text).then(() => true).catch(() => fallbackCopy(text));
-    }
-    return Promise.resolve(fallbackCopy(text));
-  }
-  function fallbackCopy(text) {
-    try {
-      const ta = document.createElement("textarea");
-      ta.value = text;
-      ta.style.position = "fixed";
-      ta.style.left = "-9999px";
-      ta.style.opacity = "0";
-      document.body.appendChild(ta);
-      ta.select();
-      const ok = document.execCommand("copy");
-      document.body.removeChild(ta);
-      return ok;
-    } catch (_) { return false; }
-  }
 
   copyJoinUrlBtn.onclick = async () => {
     if (!joinPageUrlInput.value) return;
