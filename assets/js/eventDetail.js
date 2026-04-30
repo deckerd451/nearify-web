@@ -8,6 +8,7 @@ import {
 } from "./personalConnect.js";
 import { trackPageView, wireAppCtaTracking } from "./analytics.js";
 import { patchAppStoreLinks } from "./config.js";
+import { escapeHtml } from "./utils.js";
 
 const JOIN_BASE = "https://nearify.org/join/";
 const INTENT_STORAGE_KEY = "intent_primary";
@@ -16,19 +17,14 @@ const ATTENDEE_JOIN_KEY = "nearify_attendee_join_pending";
 const INTENT_OPTIONS = [
   "meet_people",
   "find_cofounder",
+  "hire",
   "explore_ideas",
-  "just_browsing",
+  "demo",
 ];
 
 let currentEvent = null;
 let currentUser = null;
 let selectedIntent = null;
-
-function escapeHtml(str) {
-  const d = document.createElement("div");
-  d.textContent = String(str ?? "");
-  return d.innerHTML;
-}
 
 function formatDate(iso) {
   if (!iso) return null;

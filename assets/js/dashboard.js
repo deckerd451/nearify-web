@@ -13,27 +13,13 @@ import { supabase } from "./supabaseClient.js";
 import { saveEvent, deleteEvent, getOrganizerProfileId } from "./events.js";
 import { trackAppCtaClick, trackPageView } from "./analytics.js";
 import { patchAppStoreLinks } from "./config.js";
+import { escapeHtml, escapeAttr, copyText } from "./utils.js";
 console.log("[Dashboard] dashboard.js loaded");
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const EVENT_DETAIL_URL = (id) => `/events/event.html?id=${encodeURIComponent(id)}`;
 const EDIT_URL         = "/admin/event-setup.html";
-
-// ─── Utilities ────────────────────────────────────────────────────────────────
-
-function escapeHtml(str) {
-  const d = document.createElement("div");
-  d.textContent = String(str ?? "");
-  return d.innerHTML;
-}
-
-function escapeAttr(str) {
-  return String(str ?? "")
-    .replace(/&/g, "&amp;")
-    .replace(/"/g, "&quot;")
-    .replace(/</g, "&lt;");
-}
 
 function formatDate(ts) {
   if (!ts) return "";
@@ -66,22 +52,6 @@ function generateUUID() {
     const r = Math.random() * 16 | 0;
     return (c === "x" ? r : (r & 0x3 | 0x8)).toString(16);
   });
-}
-
-async function copyText(text) {
-  if (navigator.clipboard?.writeText) {
-    try { await navigator.clipboard.writeText(text); return true; } catch { /* fall */ }
-  }
-  try {
-    const ta = document.createElement("textarea");
-    ta.value = text;
-    ta.style.cssText = "position:fixed;left:-9999px;opacity:0;";
-    document.body.appendChild(ta);
-    ta.select();
-    const ok = document.execCommand("copy");
-    document.body.removeChild(ta);
-    return ok;
-  } catch { return false; }
 }
 
 // ─── Status ───────────────────────────────────────────────────────────────────
@@ -358,8 +328,12 @@ function closeCreateModal() {
   setCreateStatus("", false);
   const nameErr = document.getElementById("ceEventNameError");
   const nameIn  = document.getElementById("ceEventName");
+  const slugEl  = document.getElementById("ceSlug");
+  const slugErr = document.getElementById("ceSlugError");
   if (nameErr) nameErr.style.display = "none";
   if (nameIn)  nameIn.classList.remove("field-invalid");
+  if (slugErr) slugErr.style.display = "none";
+  if (slugEl)  { slugEl.classList.remove("field-invalid"); delete slugEl.dataset.userEdited; }
 }
 
 function setCreateStatus(msg, isError = false) {
@@ -369,12 +343,18 @@ function setCreateStatus(msg, isError = false) {
   el.style.color = isError ? "#f87171" : "var(--color-text-muted)";
 }
 
+function slugify(text) {
+  return text.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+}
+
 async function handleCreateSubmit(e) {
   e.preventDefault();
 
   const nameEl  = document.getElementById("ceEventName");
   const name    = nameEl?.value.trim();
   const nameErr = document.getElementById("ceEventNameError");
+  const slugEl  = document.getElementById("ceSlug");
+  const slugErr = document.getElementById("ceSlugError");
 
   if (!name) {
     if (nameErr) nameErr.style.display = "";
@@ -384,6 +364,17 @@ async function handleCreateSubmit(e) {
   }
   if (nameErr) nameErr.style.display = "none";
   nameEl?.classList.remove("field-invalid");
+
+  const rawSlug = slugEl?.value.trim();
+  const slug = rawSlug || slugify(name) || null;
+  if (rawSlug && !/^[a-z0-9-]+$/.test(rawSlug)) {
+    if (slugErr) { slugErr.style.display = ""; slugErr.textContent = "Slug can only contain lowercase letters, numbers, and hyphens."; }
+    slugEl?.classList.add("field-invalid");
+    slugEl?.focus();
+    return;
+  }
+  if (slugErr) slugErr.style.display = "none";
+  slugEl?.classList.remove("field-invalid");
 
   const date     = document.getElementById("ceDate")?.value || null;
   const time     = document.getElementById("ceTime")?.value || null;
@@ -395,7 +386,7 @@ async function handleCreateSubmit(e) {
   if (submitBtn) { submitBtn.disabled = true; submitBtn.classList.add("loading"); }
   setCreateStatus("Saving…");
 
-  const { error } = await createEvent({ name, location, starts_at, description: desc });
+  const { error } = await createEvent({ name, slug, location, starts_at, description: desc });
 
   if (submitBtn) { submitBtn.disabled = false; submitBtn.classList.remove("loading"); }
 
@@ -523,6 +514,17 @@ function bindStaticHandlers() {
     ?.addEventListener("input", () => {
       document.getElementById("ceEventNameError").style.display = "none";
       document.getElementById("ceEventName").classList.remove("field-invalid");
+      // Auto-fill slug from name only while slug field is empty
+      const slugEl = document.getElementById("ceSlug");
+      if (slugEl && !slugEl.dataset.userEdited) {
+        slugEl.value = slugify(document.getElementById("ceEventName").value.trim());
+      }
+    });
+  document.getElementById("ceSlug")
+    ?.addEventListener("input", (e) => {
+      e.target.dataset.userEdited = e.target.value ? "1" : "";
+      document.getElementById("ceSlugError").style.display = "none";
+      e.target.classList.remove("field-invalid");
     });
 
   // QR modal buttons

@@ -2,6 +2,7 @@ import { supabase, createScopedSupabaseClient } from "./supabaseClient.js";
 import { loadGhostSession, createGhostSession } from "./ghostSession.js";
 import { connectGhostToProfile } from "./ghostConnection.js";
 import { trackAppCtaClick } from "./analytics.js";
+import { escapeHtml, copyText } from "./utils.js";
 
 const els = {
   joinKicker: document.getElementById("joinKicker"),
@@ -74,15 +75,6 @@ function hide(el) {
 function setJoinMode(mode) {
   document.body.classList.remove("join-mode-generic", "join-mode-personal-connect");
   document.body.classList.add(mode === "personal-connect" ? "join-mode-personal-connect" : "join-mode-generic");
-}
-
-function escapeHtml(str) {
-  return String(str)
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#39;");
 }
 
 async function fetchEvent(eventId) {

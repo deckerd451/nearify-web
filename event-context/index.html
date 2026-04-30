@@ -10,6 +10,10 @@
     GET /event-context/?event=<uuid>
     Returns event context JSON for the authenticated user.
     Consumed by iOS app via WKWebView or direct JS bridge.
+
+    TODO: migrate to a serverless/edge function at /api/event-context when
+    the hosting environment supports it — this HTML wrapper exists solely
+    because the iOS WKWebView needs a URL to load that can run JS.
   -->
   <pre id="eventContextPayload"></pre>
   <script type="module" src="../assets/js/eventContext.js"></script>
