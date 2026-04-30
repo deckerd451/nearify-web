@@ -302,13 +302,13 @@ function wireJoinActions() {
     signInBtn.addEventListener("click", async (e) => {
       e.preventDefault();
       signInBtn.disabled = true;
-      signInBtn.textContent = "Redirecting…";
+      signInBtn.classList.add("loading");
       try {
         await beginAttendeeSignIn();
       } catch (error) {
         console.error("[EventDetail] attendee sign-in failed", error);
         signInBtn.disabled = false;
-        signInBtn.textContent = "Sign in";
+        signInBtn.classList.remove("loading");
       }
     });
   }
@@ -389,8 +389,8 @@ async function loadIntelligence(event) {
     const signInBtn = document.getElementById("eventIntelSignInBtn");
     if (signInBtn) {
       signInBtn.addEventListener("click", async () => {
-        signInBtn.textContent = "Redirecting…";
         signInBtn.disabled = true;
+        signInBtn.classList.add("loading");
         try {
           await supabase.auth.signInWithOAuth({
             provider: "google",
@@ -398,8 +398,8 @@ async function loadIntelligence(event) {
           });
         } catch (err) {
           console.error("[EventDetail] sign in error:", err);
-          signInBtn.textContent = "Sign in with Google";
           signInBtn.disabled = false;
+          signInBtn.classList.remove("loading");
         }
       });
     }

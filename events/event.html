@@ -43,7 +43,7 @@
     <section class="event-hero">
 
       <!-- Loading skeleton (shown while fetch is in flight) -->
-      <div id="eventSkeleton" class="event-hero-copy">
+      <div id="eventSkeleton" class="event-hero-copy" role="status" aria-label="Loading event…" aria-busy="true">
         <div class="skeleton-line title" style="max-width:560px; height:44px; margin-bottom:18px;"></div>
         <div class="skeleton-line body"  style="max-width:480px; margin-bottom:10px;"></div>
         <div class="skeleton-line body"  style="max-width:360px; margin-bottom:28px;"></div>
@@ -110,7 +110,7 @@
       <aside id="eventSidePanel" class="event-side-panel">
         <div class="event-panel">
           <div class="event-kicker" style="margin-bottom:14px;">Scan to join this event</div>
-          <div class="event-qr-shell">
+          <div class="event-qr-shell" aria-label="Event QR code">
             <div id="eventQrCode"></div>
           </div>
           <p class="event-qr-caption">Scan with your iPhone camera or Nearify in-app scanner</p>
