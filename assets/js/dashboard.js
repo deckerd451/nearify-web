@@ -19,7 +19,7 @@ console.log("[Dashboard] dashboard.js loaded");
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const EVENT_DETAIL_URL = (id) => `/events/event.html?id=${encodeURIComponent(id)}`;
-const EDIT_URL         = "/admin/event-setup.html";
+const EDIT_URL         = (id) => `/admin/event-setup.html?edit=${encodeURIComponent(id)}`;
 
 function formatDate(ts) {
   if (!ts) return "";
@@ -222,7 +222,7 @@ function renderEventCard(ev, count) {
             href="${escapeAttr(detailUrl)}">View Event</a>
 
           <a class="btn secondary cc-action-btn"
-            href="${escapeAttr(EDIT_URL)}">Edit</a>
+            href="${escapeAttr(EDIT_URL(ev.id))}">Edit</a>
 
           ${endBtn}
 
@@ -591,4 +591,3 @@ document.addEventListener("DOMContentLoaded", () => {
   initAnalytics();
   initDashboard();
 });
-
