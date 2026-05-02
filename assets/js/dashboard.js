@@ -56,14 +56,28 @@ function generateUUID() {
 
 // ─── Status ───────────────────────────────────────────────────────────────────
 
-function getEventStatus(ev) {
-  const now   = Date.now();
-  const start = ev.starts_at ? new Date(ev.starts_at).getTime() : null;
-  const end   = ev.ends_at   ? new Date(ev.ends_at).getTime()   : null;
+function isSameLocalDay(a, b) {
+  return a.getFullYear() === b.getFullYear()
+    && a.getMonth() === b.getMonth()
+    && a.getDate() === b.getDate();
+}
 
-  if (ev.is_active === false)                            return "ended";
-  if (end && now > end)                                  return "ended";
-  if (start && now >= start && (!end || now <= end))     return "live";
+function getEventStatus(ev) {
+  const nowMs = Date.now();
+  const now = new Date(nowMs);
+  const startDate = ev.starts_at ? new Date(ev.starts_at) : null;
+  const endDate = ev.ends_at ? new Date(ev.ends_at) : null;
+  const start = startDate?.getTime() ?? null;
+  const end = endDate?.getTime() ?? null;
+
+  if (ev.is_active === false) return "ended";
+  if (end && nowMs > end) return "ended";
+
+  if (start && nowMs >= start) {
+    if (end) return "live";
+    return isSameLocalDay(startDate, now) ? "live" : "ended";
+  }
+
   return "upcoming";
 }
 
