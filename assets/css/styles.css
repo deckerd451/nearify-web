@@ -1107,33 +1107,61 @@ code {
   color: var(--color-accent);
 }
 
-/* QR display on public event page */
-.event-qr-shell {
-  background: #fff;
-  border-radius: 12px;
-  padding: 14px;
-  width: fit-content;
-  margin-bottom: 12px;
+/* Event poster display on public event page */
+.event-poster-panel {
+  display: grid;
+  gap: 14px;
 }
 
-.event-qr-shell img,
-.event-qr-shell canvas {
+.event-poster-card {
+  overflow: hidden;
+  border-radius: 14px;
+  border: 1px solid rgba(255,255,255,0.08);
+  background: linear-gradient(155deg, #141f2f 0%, #0c1422 56%, #0b1220 100%);
+}
+
+.event-poster-media img {
   display: block;
-  width: 220px !important;
-  height: 220px !important;
+  width: 100%;
+  max-height: 420px;
+  object-fit: cover;
 }
 
-.event-qr-caption {
-  color: #8fa0b8;
-  font-size: 13px;
+.event-poster-fallback {
+  padding: 22px 20px;
+  display: grid;
+  gap: 12px;
+}
+
+.event-poster-brand {
+  color: #8bd8ff;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.event-poster-fallback h2 {
+  margin: 0;
+  font-size: 28px;
+  line-height: 1.2;
+}
+
+.event-poster-fallback p {
+  margin: 0;
+  color: #b9c8db;
   line-height: 1.5;
-  margin-bottom: 4px;
+  font-size: 14px;
 }
 
-.event-panel-divider {
-  border: none;
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
-  margin: 20px 0;
+.event-poster-actions {
+  display: grid;
+  gap: 10px;
+}
+
+.event-poster-actions .btn {
+  width: 100%;
+  justify-content: center;
 }
 
 /* In-app event QR on join page */
