@@ -478,7 +478,7 @@ function renderGenericJoinUx(event, fallbackName) {
   if (els.getAppBtn) els.getAppBtn.textContent = "Get Nearify (TestFlight)";
   if (els.alreadyInstalledHint) {
     els.alreadyInstalledHint.textContent =
-      "Already installed? Open the app and scan the event QR code.";
+      "Already installed? Open the app to browse, join, and check in (or scan the event QR code).";
   }
 
   if (els.joinPanelTitle) els.joinPanelTitle.textContent = "3 steps to join";
@@ -494,8 +494,8 @@ function renderGenericJoinUx(event, fallbackName) {
         <div class="join-step-detail">Use Google or GitHub. Your profile is how people find you.</div>
       </li>
       <li>
-        <div class="join-step-label">Scan the event QR code</div>
-        <div class="join-step-detail">Find the Nearify QR at the venue and scan it to enter the live network.</div>
+        <div class="join-step-label">Check in when you arrive</div>
+        <div class="join-step-detail">Check in from the Nearify iOS app, or scan the venue QR to enter the live network.</div>
       </li>
     `;
   }
@@ -503,10 +503,10 @@ function renderGenericJoinUx(event, fallbackName) {
   if (els.joinBottomCtaTitle) els.joinBottomCtaTitle.textContent = "Ready to join?";
   if (els.joinBottomCtaDescription) {
     els.joinBottomCtaDescription.textContent =
-      "Install the app, then scan the event QR code when you arrive.";
+      "Install the app, then join and check in when you arrive (in app or via event QR).";
   }
   if (els.joinBottomCtaButton) els.joinBottomCtaButton.textContent = "Get Nearify on TestFlight";
-  if (els.joinBottomCtaHint) els.joinBottomCtaHint.textContent = "Already installed? Open the app and scan again.";
+  if (els.joinBottomCtaHint) els.joinBottomCtaHint.textContent = "Already installed? Open the app to browse, join, and check in.";
 
   show(els.joinQrBox);
   console.log("[Join] Rendering generic event join UX");
