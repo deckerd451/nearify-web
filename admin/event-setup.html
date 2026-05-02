@@ -285,7 +285,7 @@
   <!-- Supabase auth gate + event management -->
   <script type="module">
     import { supabase } from "../assets/js/supabaseClient.js?v=20260430";
-    import { saveEvent, getOrganizerProfileId } from "../assets/js/events.js?v=20260430";
+    import { saveEvent, getOrganizerProfileId, fetchOrganizerEvents } from "../assets/js/events.js?v=20260430";
 
     const authGate     = document.getElementById("adminAuthGate");
     const adminContent = document.getElementById("adminContent");
@@ -340,6 +340,43 @@
           saveStatus.textContent = "Warning: no organizer profile found. Create a profile in the Nearify app first.";
         }
       });
+      hydrateEditFromUrl();
+    }
+
+    async function hydrateEditFromUrl() {
+      const params = new URLSearchParams(window.location.search);
+      const editId = params.get("edit");
+      if (!editId) return;
+
+      showStatus("Loading event…");
+      const events = await fetchOrganizerEvents();
+      const event = events.find((ev) => ev.id === editId);
+
+      if (!event) {
+        showStatus("Could not load this event for editing.", true);
+        return;
+      }
+
+      document.getElementById("eventId").value = event.id || "";
+      document.getElementById("eventName").value = event.name || "";
+      document.getElementById("eventSlug").value = event.slug || "";
+      document.getElementById("eventLocation").value = event.location || "";
+      document.getElementById("eventDescription").value = event.description || "";
+
+      if (event.starts_at) {
+        const start = new Date(event.starts_at);
+        const y = start.getFullYear();
+        const m = String(start.getMonth() + 1).padStart(2, "0");
+        const d = String(start.getDate()).padStart(2, "0");
+        const h = String(start.getHours()).padStart(2, "0");
+        const min = String(start.getMinutes()).padStart(2, "0");
+        document.getElementById("eventDate").value = `${y}-${m}-${d}`;
+        document.getElementById("eventTime").value = `${h}:${min}`;
+      }
+
+      enterEditMode(event.id, event.name || "event");
+      document.getElementById("eventName").dispatchEvent(new Event("input"));
+      showStatus("Editing loaded.");
     }
 
     function initAuthGate() {
