@@ -364,16 +364,12 @@
       document.getElementById("eventDescription").value = event.description || "";
 
       if (event.starts_at) {
-        const startsAtRaw = String(event.starts_at);
-        const [datePart, timePartRaw] = startsAtRaw.split("T");
-
-        if (datePart) document.getElementById("eventDate").value = datePart;
-
-        if (timePartRaw) {
-          const timeMatch = timePartRaw.match(/^(\d{2}:\d{2})/);
-          if (timeMatch) {
-            document.getElementById("eventTime").value = timeMatch[1];
-          }
+        const startsAtDate = new Date(event.starts_at);
+        if (!Number.isNaN(startsAtDate.getTime())) {
+          const localDate = `${startsAtDate.getFullYear()}-${String(startsAtDate.getMonth() + 1).padStart(2, "0")}-${String(startsAtDate.getDate()).padStart(2, "0")}`;
+          const localTime = `${String(startsAtDate.getHours()).padStart(2, "0")}:${String(startsAtDate.getMinutes()).padStart(2, "0")}`;
+          document.getElementById("eventDate").value = localDate;
+          document.getElementById("eventTime").value = localTime;
         }
       }
 
@@ -462,7 +458,9 @@
       const isUpdate = !!editingEventId;
       showStatus(isUpdate ? "Updating..." : "Saving...");
 
-      const starts_at = date && time ? date + "T" + time + ":00" : date || null;
+      const starts_at = date && time
+        ? new Date(`${date}T${time}:00`).toISOString()
+        : date || null;
 
       const { data, error } = await saveEvent(
         { id, name, slug: slug || null, location: location || null, starts_at, description: description || null },
