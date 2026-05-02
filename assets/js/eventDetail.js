@@ -435,6 +435,71 @@ async function renderPersonalConnectSection(eventId) {
 }
 
 
+
+let html2canvasLoader = null;
+
+function slugifyPosterFileName(eventName) {
+  const base = String(eventName || "nearify-event")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "") || "nearify-event";
+  return `nearify-${base}-poster.png`;
+}
+
+function loadHtml2Canvas() {
+  if (window.html2canvas) return Promise.resolve(window.html2canvas);
+  if (html2canvasLoader) return html2canvasLoader;
+
+  html2canvasLoader = new Promise((resolve, reject) => {
+    const script = document.createElement("script");
+    script.src = "https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js";
+    script.async = true;
+    script.onload = () => resolve(window.html2canvas);
+    script.onerror = () => reject(new Error("Failed to load html2canvas"));
+    document.head.appendChild(script);
+  });
+
+  return html2canvasLoader;
+}
+
+async function downloadPosterCard(event) {
+  const button = document.getElementById("eventDownloadPosterBtn");
+  const posterCard = document.getElementById("eventPosterCard");
+  if (!button || !posterCard) return;
+
+  const originalText = button.textContent;
+  button.disabled = true;
+  button.textContent = "Preparing...";
+
+  try {
+    const html2canvas = await loadHtml2Canvas();
+    const scale = Math.min(3, Math.max(2, window.devicePixelRatio || 2));
+    const canvas = await html2canvas(posterCard, {
+      backgroundColor: null,
+      scale,
+      useCORS: true,
+      logging: false,
+    });
+
+    const link = document.createElement("a");
+    link.href = canvas.toDataURL("image/png");
+    link.download = slugifyPosterFileName(event?.name);
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+  } catch (error) {
+    console.error("[EventDetail] poster download error:", error);
+    button.textContent = "Download failed";
+    setTimeout(() => {
+      button.textContent = originalText;
+      button.disabled = false;
+    }, 1500);
+    return;
+  }
+
+  button.textContent = originalText;
+  button.disabled = false;
+}
 function resolvePosterImage(event) {
   const candidates = [
     event.poster_url,
@@ -458,6 +523,7 @@ function renderPosterCard(event) {
   const description = document.getElementById("eventPosterDescription");
   const actions = document.getElementById("eventPosterActions");
   const tfBtn = document.getElementById("eventTestflightBtn");
+  const downloadBtn = document.getElementById("eventDownloadPosterBtn");
 
   if (title) title.textContent = event.name || "Nearify Event";
   if (date) date.textContent = event.starts_at ? formatDateTime(event.starts_at) : "Date to be announced";
@@ -469,11 +535,14 @@ function renderPosterCard(event) {
     image.src = posterUrl;
     image.alt = `${event.name || "Event"} poster`;
     media.style.display = "";
-    fallback.style.display = "none";
   }
 
   if (actions) {
     actions.innerHTML = "";
+    if (downloadBtn) {
+      actions.appendChild(downloadBtn);
+      downloadBtn.onclick = () => downloadPosterCard(event);
+    }
     if (tfBtn) actions.appendChild(tfBtn);
   }
 }
