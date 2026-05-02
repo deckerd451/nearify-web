@@ -364,14 +364,17 @@
       document.getElementById("eventDescription").value = event.description || "";
 
       if (event.starts_at) {
-        const start = new Date(event.starts_at);
-        const y = start.getFullYear();
-        const m = String(start.getMonth() + 1).padStart(2, "0");
-        const d = String(start.getDate()).padStart(2, "0");
-        const h = String(start.getHours()).padStart(2, "0");
-        const min = String(start.getMinutes()).padStart(2, "0");
-        document.getElementById("eventDate").value = `${y}-${m}-${d}`;
-        document.getElementById("eventTime").value = `${h}:${min}`;
+        const startsAtRaw = String(event.starts_at);
+        const [datePart, timePartRaw] = startsAtRaw.split("T");
+
+        if (datePart) document.getElementById("eventDate").value = datePart;
+
+        if (timePartRaw) {
+          const timeMatch = timePartRaw.match(/^(\d{2}:\d{2})/);
+          if (timeMatch) {
+            document.getElementById("eventTime").value = timeMatch[1];
+          }
+        }
       }
 
       enterEditMode(event.id, event.name || "event");

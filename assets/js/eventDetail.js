@@ -26,10 +26,11 @@ let currentEvent = null;
 let currentUser = null;
 let selectedIntent = null;
 
-function formatDate(iso) {
+function formatDateTime(iso) {
   if (!iso) return null;
-  return new Date(iso).toLocaleDateString(undefined, {
-    weekday: "short", month: "short", day: "numeric", year: "numeric"
+  return new Date(iso).toLocaleString(undefined, {
+    weekday: "short", month: "short", day: "numeric", year: "numeric",
+    hour: "numeric", minute: "2-digit"
   });
 }
 
@@ -146,7 +147,7 @@ function renderMetaGrid(event, isPast) {
 
   const cards = [];
   if (event.location) cards.push({ label: "Location", value: event.location });
-  if (event.starts_at) cards.push({ label: "Date", value: formatDate(event.starts_at) });
+  if (event.starts_at) cards.push({ label: "Date & time", value: formatDateTime(event.starts_at) });
   if (!isPast) cards.push({ label: "Experience", value: "Live attendee discovery" });
 
   grid.innerHTML = cards.map((c) =>
@@ -166,7 +167,7 @@ function renderEventDetailsSection(event) {
   if (!details) return;
 
   if (title) title.textContent = event.name || "";
-  if (date) date.textContent = event.starts_at ? formatDate(event.starts_at) : "To be announced";
+  if (date) date.textContent = event.starts_at ? formatDateTime(event.starts_at) : "To be announced";
   if (location) location.textContent = event.location || "Location to be announced";
   if (description) {
     description.textContent = event.description || "Join this event in Nearify and open the app on site for live recommendations.";
