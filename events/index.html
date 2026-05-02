@@ -191,10 +191,16 @@
     const pastGrid       = document.getElementById("pastEventsGrid");
 
     function renderCard(ev, { featured = false, past = false } = {}) {
-      const dateStr  = ev.starts_at
-        ? new Date(ev.starts_at).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })
+      const dateTimeStr = ev.starts_at
+        ? new Date(ev.starts_at).toLocaleString(undefined, {
+            month: "short",
+            day: "numeric",
+            year: "numeric",
+            hour: "numeric",
+            minute: "2-digit"
+          })
         : "";
-      const meta     = [ev.location, dateStr].filter(Boolean).join(" \u00b7 ");
+      const meta     = [ev.location, dateTimeStr].filter(Boolean).join(" \u00b7 ");
       const desc     = ev.description
         ? '<p class="event-list-desc">' + escapeHtml(ev.description) + '</p>'
         : "";
