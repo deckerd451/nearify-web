@@ -6,8 +6,17 @@ export const supabaseKey = "sb_publishable_G0KAfCFTovYCWDeEEKWBfg_8UpPHWWZ";
 export const supabase = createClient(supabaseUrl, supabaseKey);
 
 export function createScopedSupabaseClient(headers = {}) {
+  const headerScope = Object.keys(headers)
+    .sort()
+    .map((key) => `${key}:${headers[key]}`)
+    .join("|");
+
   return createClient(supabaseUrl, supabaseKey, {
     global: { headers },
+    auth: {
+      persistSession: false,
+      storageKey: `nearify-scoped-${headerScope || "default"}`,
+    },
   });
 }
 
