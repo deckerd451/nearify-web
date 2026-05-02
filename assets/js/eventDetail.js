@@ -157,24 +157,6 @@ function renderMetaGrid(event, isPast) {
   ).join("");
 }
 
-function renderEventDetailsSection(event) {
-  const details = document.getElementById("eventDetailsSection");
-  const title = document.getElementById("eventDetailsTitle");
-  const date = document.getElementById("eventDetailsDate");
-  const location = document.getElementById("eventDetailsLocation");
-  const description = document.getElementById("eventDetailsDescription");
-  if (!details) return;
-
-  if (title) title.textContent = event.name || "";
-  if (date) date.textContent = event.starts_at ? formatDateTime(event.starts_at) : "To be announced";
-  if (location) location.textContent = event.location || "Location to be announced";
-  if (description) {
-    description.textContent = event.description || "Join this event in Nearify and open the app on site for live recommendations.";
-  }
-
-  details.style.display = "";
-}
-
 function showNotFound(message = "") {
   const skeleton = document.getElementById("eventSkeleton");
   const notFound = document.getElementById("eventNotFound");
@@ -581,7 +563,6 @@ async function populatePage(event) {
     const heroActions = document.getElementById("eventHeroActions");
     const sidePanel = document.getElementById("eventSidePanel");
     const sections = document.getElementById("eventSections");
-    const detailsSection = document.getElementById("eventDetailsSection");
     const intentSection = document.getElementById("eventIntentSection");
     const authPrompt = document.getElementById("eventAttendeeAuthPrompt");
     const signedInNote = document.getElementById("eventSignedInNote");
@@ -590,7 +571,6 @@ async function populatePage(event) {
     if (heroActions) heroActions.style.display = "none";
     if (sidePanel) sidePanel.style.display = "none";
     if (sections) sections.style.display = "none";
-    if (detailsSection) detailsSection.style.display = "none";
     if (intentSection) intentSection.style.display = "none";
     if (authPrompt) authPrompt.style.display = "none";
     if (signedInNote) signedInNote.style.display = "none";
@@ -602,7 +582,6 @@ async function populatePage(event) {
     await loadIntelligence(event);
   } else {
     renderPosterCard(event);
-    renderEventDetailsSection(event);
 
     const sections = document.getElementById("eventSections");
     if (sections) sections.style.display = "";
