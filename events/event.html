@@ -104,23 +104,23 @@
         </div>
       </div>
 
-      <!-- Side panel — QR and steps (upcoming events only) -->
+      <!-- Side panel — Event poster (upcoming events only) -->
       <aside id="eventSidePanel" class="event-side-panel">
-        <div class="event-panel">
-          <div class="event-kicker" style="margin-bottom:14px;">Check in to this event</div>
-          <div class="event-qr-shell" aria-label="Event QR code">
-            <div id="eventQrCode"></div>
-          </div>
-          <p class="event-qr-caption">Scan with your iPhone camera or Nearify in-app scanner</p>
-
-          <hr class="event-panel-divider" />
-
-          <h2>Use Nearify at this event</h2>
-          <ol class="event-steps-list">
-            <li>Install Nearify on TestFlight</li>
-            <li>Sign in and create your profile</li>
-            <li>Check in when you arrive (in app or by scanning the QR code)</li>
-          </ol>
+        <div class="event-panel event-poster-panel">
+          <div class="event-kicker" style="margin-bottom:14px;">Event poster</div>
+          <article id="eventPosterCard" class="event-poster-card" aria-label="Event poster">
+            <div class="event-poster-media" id="eventPosterMedia" style="display:none;">
+              <img id="eventPosterImage" alt="Event poster image" loading="lazy" />
+            </div>
+            <div class="event-poster-fallback" id="eventPosterFallback">
+              <div class="event-poster-brand">Nearify</div>
+              <h2 id="eventPosterTitle">Loading event…</h2>
+              <p id="eventPosterDate">Date to be announced</p>
+              <p id="eventPosterLocation">Location to be announced</p>
+              <p id="eventPosterDescription">Join this event in Nearify for live attendee recommendations.</p>
+            </div>
+          </article>
+          <div class="event-poster-actions" id="eventPosterActions"></div>
         </div>
       </aside>
     </section>

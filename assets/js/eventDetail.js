@@ -10,7 +10,6 @@ import { trackPageView, wireAppCtaTracking } from "./analytics.js";
 import { patchAppStoreLinks } from "./config.js";
 import { escapeHtml } from "./utils.js";
 
-const JOIN_BASE = "https://nearify.org/join/";
 const INTENT_STORAGE_KEY = "intent_primary";
 const ATTENDEE_AUTH_KEY = "nearify_attendee_auth_return";
 const ATTENDEE_JOIN_KEY = "nearify_attendee_join_pending";
@@ -63,7 +62,7 @@ async function fetchEvent() {
 
   let query = supabase
     .from("events")
-    .select("id, name, slug, location, starts_at, description")
+    .select("*")
     .is("deleted_at", null);
 
   query = slug ? query.eq("slug", slug) : query.eq("id", id);
@@ -443,16 +442,50 @@ async function renderPersonalConnectSection(eventId) {
   }
 }
 
-function renderQr(eventId, eventName) {
-  if (typeof QRCode === "undefined") return;
-  const el = document.getElementById("eventQrCode");
-  if (!el) return;
-  el.innerHTML = "";
-  new QRCode(el, {
-    text: JOIN_BASE + "?event=" + encodeURIComponent(eventId) +
-          "&name=" + encodeURIComponent(eventName),
-    width: 220, height: 220
-  });
+
+function resolvePosterImage(event) {
+  const candidates = [
+    event.poster_url,
+    event.poster_image_url,
+    event.image_url,
+    event.cover_image_url,
+    event.banner_url,
+    event.image,
+    event.poster,
+  ];
+  return candidates.find((value) => typeof value === "string" && value.trim()) || null;
+}
+
+function renderPosterCard(event) {
+  const media = document.getElementById("eventPosterMedia");
+  const image = document.getElementById("eventPosterImage");
+  const fallback = document.getElementById("eventPosterFallback");
+  const title = document.getElementById("eventPosterTitle");
+  const date = document.getElementById("eventPosterDate");
+  const location = document.getElementById("eventPosterLocation");
+  const description = document.getElementById("eventPosterDescription");
+  const actions = document.getElementById("eventPosterActions");
+  const joinBtn = document.getElementById("eventJoinBtn");
+  const tfBtn = document.getElementById("eventTestflightBtn");
+
+  if (title) title.textContent = event.name || "Nearify Event";
+  if (date) date.textContent = event.starts_at ? formatDateTime(event.starts_at) : "Date to be announced";
+  if (location) location.textContent = event.location || "Location to be announced";
+  if (description) description.textContent = event.description || "Join this event in Nearify for live attendee recommendations.";
+
+  const posterUrl = resolvePosterImage(event);
+  if (posterUrl && media && image && fallback) {
+    image.src = posterUrl;
+    image.alt = `${event.name || "Event"} poster`;
+    media.style.display = "";
+    fallback.style.display = "none";
+  }
+
+  if (actions) {
+    actions.innerHTML = "";
+    if (joinBtn) actions.appendChild(joinBtn);
+    if (tfBtn) actions.appendChild(tfBtn);
+  }
 }
 
 async function populatePage(event) {
@@ -509,7 +542,7 @@ async function populatePage(event) {
 
     await loadIntelligence(event);
   } else {
-    renderQr(event.id, event.name);
+    renderPosterCard(event);
     renderEventDetailsSection(event);
 
     const sections = document.getElementById("eventSections");
