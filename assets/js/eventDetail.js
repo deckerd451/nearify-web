@@ -275,17 +275,9 @@ function wireIntentCapture() {
 }
 
 function wireJoinActions() {
-  const joinBtn = document.getElementById("eventJoinBtn");
   const continueBtn = document.getElementById("eventContinueWithoutSignInBtn");
   const signInBtn = document.getElementById("eventAttendeeSignInBtn");
   const retryBtn = document.getElementById("eventOpenAppRetryBtn");
-
-  if (joinBtn) {
-    joinBtn.addEventListener("click", (e) => {
-      e.preventDefault();
-      beginJoinFlow("join_button");
-    });
-  }
 
   if (continueBtn) {
     continueBtn.addEventListener("click", (e) => {
@@ -465,7 +457,6 @@ function renderPosterCard(event) {
   const location = document.getElementById("eventPosterLocation");
   const description = document.getElementById("eventPosterDescription");
   const actions = document.getElementById("eventPosterActions");
-  const joinBtn = document.getElementById("eventJoinBtn");
   const tfBtn = document.getElementById("eventTestflightBtn");
 
   if (title) title.textContent = event.name || "Nearify Event";
@@ -483,7 +474,6 @@ function renderPosterCard(event) {
 
   if (actions) {
     actions.innerHTML = "";
-    if (joinBtn) actions.appendChild(joinBtn);
     if (tfBtn) actions.appendChild(tfBtn);
   }
 }

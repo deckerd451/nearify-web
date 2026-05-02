@@ -59,19 +59,7 @@
 
         <div class="event-meta-grid" id="eventMetaGrid"></div>
 
-        <div class="hero-actions" id="eventHeroActions">
-          <button id="eventJoinBtn" class="btn primary">Join Event</button>
-          <a
-            id="eventTestflightBtn"
-            href="https://testflight.apple.com/join/ZayvEbAy"
-            class="btn secondary"
-            target="_blank"
-            rel="noopener noreferrer"
-            data-track-cta="event_detail_hero_get_app"
-          >
-            Get Nearify on TestFlight
-          </a>
-        </div>
+        
 
         <div id="eventAttendeeAuthPrompt" class="intent-signin-gate" style="display:none;">
           <p class="intent-signin-message">Sign in to personalize your event brief.</p>
@@ -83,13 +71,7 @@
 
         <p id="eventSignedInNote" class="join-hint" style="display:none;">You're signed in. Your event intent will personalize recommendations in the app.</p>
 
-        <div id="eventAppFallback" class="intent-signin-gate" style="display:none; margin-top:16px;">
-          <p class="intent-signin-message">Open Nearify to get live recommendations at this event.</p>
-          <div class="event-inline-actions">
-            <button id="eventOpenAppRetryBtn" class="btn primary" type="button">Open App</button>
-            <a href="https://testflight.apple.com/join/ZayvEbAy" class="btn secondary" target="_blank" rel="noopener noreferrer">Get the App</a>
-          </div>
-        </div>
+        
       </div>
 
       <!-- Not-found / error state -->
@@ -120,7 +102,18 @@
               <p id="eventPosterDescription">Join this event in Nearify for live attendee recommendations.</p>
             </div>
           </article>
-          <div class="event-poster-actions" id="eventPosterActions"></div>
+          <div class="event-poster-actions" id="eventPosterActions">
+            <a
+              id="eventTestflightBtn"
+              href="https://testflight.apple.com/join/ZayvEbAy"
+              class="btn primary"
+              target="_blank"
+              rel="noopener noreferrer"
+              data-track-cta="event_detail_get_app"
+            >
+              Get Nearify on TestFlight
+            </a>
+          </div>
         </div>
       </aside>
     </section>
@@ -197,18 +190,6 @@
 
     <!-- Pre-event sections — upcoming events only, shown by JS -->
     <div id="eventSections" style="display:none;">
-      <section class="cta event-cta">
-        <h2>Open Nearify at this event</h2>
-        <p>Join Event here, then open Nearify for live recommendations on who to talk to.</p>
-        <a
-          href="https://testflight.apple.com/join/ZayvEbAy"
-          class="btn primary"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Get Nearify on TestFlight
-        </a>
-      </section>
 <section class="section event-section" id="personalConnectSection" style="display:none;">
   <div class="section-heading">
     <h2>Your personal connect QR</h2>
