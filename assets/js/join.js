@@ -87,11 +87,11 @@ async function fetchEvent(eventId) {
     .maybeSingle();
 
   if (error) {
-    console.error("[Join] event query error:", error);
+    console.error("[Join] Supabase event query error:", error);
     throw error;
   }
 
-  console.log("[Join] event query result:", data);
+  console.log("[Join] Supabase event query result:", data);
   return data;
 }
 
@@ -623,7 +623,7 @@ async function renderAuthHandoff(eventId) {
 async function initJoinPage() {
   const { eventId, eventName, profileId } = getQueryParams();
 
-  console.log("[Join] URL at startup", window.location.href);
+  console.log("[Join] raw URL:", window.location.href);
 
   if (!eventId) {
     renderInvalidState("This link is missing an event id.");
