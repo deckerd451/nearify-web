@@ -78,18 +78,20 @@ function setJoinMode(mode) {
 }
 
 async function fetchEvent(eventId) {
+  console.log("[Join] event param:", eventId);
+
   const { data, error } = await supabase
     .from("events")
     .select("id, name, description, location, starts_at, ends_at, is_active, deleted_at")
     .eq("id", eventId)
-    .is("deleted_at", null)
     .maybeSingle();
 
   if (error) {
-    console.error("[Join] Failed to fetch event", error);
+    console.error("[Join] event query error:", error);
     throw error;
   }
 
+  console.log("[Join] event query result:", data);
   return data;
 }
 
@@ -634,8 +636,21 @@ async function initJoinPage() {
       profileId ? fetchPublicProfileBrief(profileId) : Promise.resolve(null),
     ]);
 
-    if (!event || event.deleted_at || event.is_active === false) {
+    if (!event) {
+      console.warn("[Join] No event row found for id:", eventId);
+      renderInvalidState("No event found with this ID.");
+      return;
+    }
+
+    if (event.is_active === false) {
+      console.warn("[Join] Event is inactive:", eventId);
       renderInvalidState("This event is no longer active.");
+      return;
+    }
+
+    if (event.deleted_at) {
+      console.warn("[Join] Event is archived:", eventId);
+      renderInvalidState("This event has been archived.");
       return;
     }
 
