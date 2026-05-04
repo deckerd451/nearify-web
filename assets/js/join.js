@@ -84,14 +84,25 @@ async function fetchEvent(eventId) {
     .from("events")
     .select("id, name, description, location, starts_at, ends_at, is_active, deleted_at")
     .eq("id", eventId)
-    .maybeSingle();
+    .single();
+
+  console.log("[Join] Supabase event data:", data);
+  console.log("[Join] Supabase event error:", error);
 
   if (error) {
-    console.error("[Join] Supabase event query error:", error);
+    // PGRST116 = "no rows returned" from .single() — not a fatal error, just means event doesn't exist
+    if (error.code === "PGRST116") {
+      return null;
+    }
     throw error;
   }
 
-  console.log("[Join] Supabase event query result:", data);
+  // Validate we got a real row with an id
+  if (!data || !data.id) {
+    console.warn("[Join] Query returned but no valid row:", data);
+    return null;
+  }
+
   return data;
 }
 
