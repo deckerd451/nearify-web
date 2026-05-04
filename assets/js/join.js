@@ -151,23 +151,35 @@ function renderPayload(eventId) {
 }
 
 function renderQrCode(value) {
-  if (!els.joinQrBox || !els.joinQrCode || !value) return;
-
-  els.joinQrCode.innerHTML = "";
-
+  if (!els.joinQrBox || !els.joinQrCode) {
+    console.log("[Join] QR skipped: no container element");
+    return;
+  }
+  if (!value) {
+    console.log("[Join] QR skipped: no value");
+    return;
+  }
   if (typeof window.QRCode !== "function") {
-    console.warn("[Join] QRCode library not available");
+    console.log("[Join] QR skipped: QRCode library not available");
     hide(els.joinQrBox);
     return;
   }
 
-  new window.QRCode(els.joinQrCode, {
-    text: value,
-    width: 180,
-    height: 180,
-  });
-
+  // Ensure container is visible before QRCode renders (it needs dimensions)
   show(els.joinQrBox);
+  els.joinQrCode.innerHTML = "";
+
+  try {
+    new window.QRCode(els.joinQrCode, {
+      text: value,
+      width: 180,
+      height: 180,
+    });
+    console.log("[Join] QR rendered");
+  } catch (err) {
+    console.warn("[Join] QR skipped: render error", err.message);
+    hide(els.joinQrBox);
+  }
 }
 
 async function ensureGhostForEvent(eventId, displayName = "Guest") {
