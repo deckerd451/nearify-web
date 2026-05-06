@@ -2148,6 +2148,28 @@ code {
   color: var(--color-accent);
 }
 
+.nav-drawer-signout {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 11px 14px;
+  background: none;
+  border: none;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  margin-top: 4px;
+  padding-top: 15px;
+  color: #f87171;
+  font-size: 15px;
+  font-family: inherit;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.12s ease;
+}
+
+.nav-drawer-signout:hover {
+  background: rgba(248, 113, 113, 0.08);
+}
+
 /* On desktop: hide the hamburger since nav-links are visible */
 @media (min-width: 721px) {
   .nav-hamburger {
