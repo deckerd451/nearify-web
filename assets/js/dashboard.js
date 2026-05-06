@@ -291,9 +291,11 @@ async function refreshDashboard() {
 // ─── QR Modal ─────────────────────────────────────────────────────────────────
 
 let _currentJoinUrl = null;
+let _focusBeforeModal = null;
 
 function openQrModal(eventId, eventName, jUrl) {
   _currentJoinUrl = jUrl;
+  _focusBeforeModal = document.activeElement;
 
   const modal  = document.getElementById("qrModal");
   const title  = document.getElementById("qrModalTitle");
@@ -308,6 +310,7 @@ function openQrModal(eventId, eventName, jUrl) {
 
   modal.hidden = false;
   document.body.classList.add("cc-modal-open");
+  document.getElementById("closeQrModalBtn")?.focus();
   trackAppCtaClick("dashboard_show_qr", { eventId });
 }
 
@@ -315,6 +318,8 @@ function closeQrModal() {
   document.getElementById("qrModal").hidden = true;
   document.body.classList.remove("cc-modal-open");
   _currentJoinUrl = null;
+  _focusBeforeModal?.focus();
+  _focusBeforeModal = null;
 }
 
 async function copyCurrentJoinLink(btn) {
@@ -330,6 +335,7 @@ async function copyCurrentJoinLink(btn) {
 // ─── Create Event Modal ───────────────────────────────────────────────────────
 
 function openCreateModal() {
+  _focusBeforeModal = document.activeElement;
   document.getElementById("createEventModal").hidden = false;
   document.body.classList.add("cc-modal-open");
   setTimeout(() => document.getElementById("ceEventName")?.focus(), 60);
@@ -338,6 +344,8 @@ function openCreateModal() {
 function closeCreateModal() {
   document.getElementById("createEventModal").hidden = true;
   document.body.classList.remove("cc-modal-open");
+  _focusBeforeModal?.focus();
+  _focusBeforeModal = null;
   document.getElementById("createEventForm")?.reset();
   setCreateStatus("", false);
   const nameErr = document.getElementById("ceEventNameError");

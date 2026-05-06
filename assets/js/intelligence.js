@@ -6,6 +6,7 @@
  */
 import { supabase } from "./supabaseClient.js";
 import { getCurrentUser } from "./appState.js";
+import { escapeHtml, escapeAttr } from "./utils.js";
 import {
   DECISION_ACTIONS,
   EL_ACTIONS,
@@ -59,12 +60,6 @@ function getInitials(name) {
   return name.trim().split(/\s+/).slice(0, 2).map((w) => w[0]).join("").toUpperCase();
 }
 
-function escapeHtml(str) {
-  const d = document.createElement("div");
-  d.textContent = String(str ?? "");
-  return d.innerHTML;
-}
-
 function normalizeReason(reason) {
   if (!reason) return "";
   let r = reason
@@ -77,8 +72,7 @@ function normalizeReason(reason) {
 }
 
 function isDebugModeEnabled() {
-  const params = new URLSearchParams(window.location.search);
-  return params.get("debug") === "1" || localStorage.getItem("nearify_intel_debug") === "1";
+  return localStorage.getItem("nearify_intel_debug") === "1";
 }
 
 // ---------------------------------------------------------------------------
@@ -91,7 +85,7 @@ export function renderIntelCard(item) {
 
   const initials = getInitials(item.target_name);
   const avatar = item.target_avatar
-    ? `<img class="intel-avatar" src="${escapeHtml(item.target_avatar)}" alt="${escapeHtml(initials)}" />`
+    ? `<img class="intel-avatar" src="${escapeAttr(item.target_avatar)}" alt="${escapeAttr(initials)}" />`
     : `<div class="intel-avatar intel-avatar-placeholder" aria-hidden="true">${escapeHtml(initials)}</div>`;
 
   const directionText  = DIRECTION_LABELS[item.direction] ?? "Interaction";
@@ -412,25 +406,33 @@ export async function fetchRawSignals(eventId) {
   const [
     { data: attendees,    error: attendeesError },
     { data: interactions, error: interactionsError },
-    { data: profiles,     error: profilesError },
   ] = await Promise.all([
     supabase.from("event_attendees").select("profile_id").eq("event_id", eventId),
     supabase.from("interaction_events")
       .select("from_profile_id, to_profile_id, interaction_type, strength, dwell_seconds, signal_strength, created_at")
       .eq("event_id", eventId)
       .or(`from_profile_id.eq.${profileId},to_profile_id.eq.${profileId}`),
-    supabase.from("profiles").select("*"),
   ]);
 
   if (attendeesError)    console.error("[EL] attendees error:", attendeesError);
   if (interactionsError) console.error("[EL] interactions error:", interactionsError);
-  if (profilesError)     console.error("[EL] profiles error:", profilesError);
 
   const attendeeRows    = attendees    || [];
   const interactionRows = interactions || [];
-  const profileRows     = profiles     || [];
   const attendeeIds     = new Set(attendeeRows.map((a) => a.profile_id));
-  const relevantProfiles = profileRows.filter((p) => attendeeIds.has(p.id));
+
+  const attendeeIdList = [...attendeeIds];
+  const { data: profiles, error: profilesError } = attendeeIdList.length
+    ? await supabase
+        .from("profiles")
+        .select("id, name, intent_primary, intent_secondary, interests, tags, topics")
+        .in("id", attendeeIdList)
+    : { data: [], error: null };
+
+  if (profilesError) console.error("[EL] profiles error:", profilesError);
+
+  const profileRows      = profiles || [];
+  const relevantProfiles = profileRows;
   const me    = relevantProfiles.find((p) => p.id === profileId);
   const peers = relevantProfiles.filter((p) => p.id !== profileId);
   const intent = await getCurrentIntent();

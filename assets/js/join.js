@@ -322,7 +322,7 @@ function wireEmailCapture(ghost) {
   if (submitBtn) {
     submitBtn.addEventListener("click", async () => {
       const email = emailInput?.value?.trim();
-      if (!email || !email.includes("@")) {
+      if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
         if (emailInput) emailInput.focus();
         return;
       }
@@ -332,6 +332,10 @@ function wireEmailCapture(ghost) {
         await saveGhostEmail(ghost, email);
       } catch (err) {
         console.warn("[Ghost] Email save failed", err);
+        submitBtn.disabled = false;
+        submitBtn.classList.remove("loading");
+        setGhostClaimStatus("We couldn't save your email. Please try again.");
+        return;
       }
       hide(capture);
       setGhostClaimStatus("Thanks — we'll send your recap after the event.");
@@ -445,7 +449,9 @@ function wireIntentChips() {
 
   chips.forEach((chip) => {
     chip.setAttribute("aria-pressed", "false");
-    chip.addEventListener("click", () => {
+    if (!chip.hasAttribute("tabindex")) chip.setAttribute("tabindex", "0");
+
+    const activateChip = () => {
       chips.forEach((c) => {
         c.classList.remove("active");
         c.setAttribute("aria-pressed", "false");
@@ -453,6 +459,14 @@ function wireIntentChips() {
       chip.classList.add("active");
       chip.setAttribute("aria-pressed", "true");
       if (gate) show(gate);
+    };
+
+    chip.addEventListener("click", activateChip);
+    chip.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        activateChip();
+      }
     });
   });
 
@@ -710,7 +724,7 @@ async function initJoinPage() {
 
     if (profileId) {
       renderPersonalConnectUx(event, targetProfile);
-      const uniqueNames = [...new Set(historyRows.map((row) => row?.to_profile_name).filter(Boolean))];
+      const uniqueNames = [...new Set((historyRows || []).map((row) => row?.to_profile_name).filter(Boolean))];
       const hasHistory = uniqueNames.length > 1;
       const state = getJoinState({ session: hasSession, hasHistory, isClaimed });
       renderGhostJourneyCard({
