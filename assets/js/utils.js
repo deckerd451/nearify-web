@@ -9,6 +9,10 @@ export function escapeHtml(str) {
   return d.innerHTML;
 }
 
+export function escapeAttr(str) {
+  return escapeHtml(str).replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+}
+
 export async function copyText(text) {
   if (navigator.clipboard && navigator.clipboard.writeText) {
     try {
