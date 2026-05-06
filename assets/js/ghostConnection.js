@@ -1,10 +1,32 @@
-/**
- * ghostConnection.js — Stub for ghost-to-profile connection logic.
- * Provides the export expected by join.js.
- */
+import { supabase } from "./supabaseClient.js";
+import { loadGhostSession } from "./ghostSession.js";
 
+/**
+ * Record a connection between the current ghost participant and a profile.
+ * Called when an app-less user lands on a personal connect URL (?event=&profile=).
+ * The ghost token authenticates the write — no user session required.
+ */
 export async function connectGhostToProfile(eventId, profileId) {
-  console.log("[GhostConnection] connectGhostToProfile called", { eventId, profileId });
-  // No-op stub — real implementation pending
-  return null;
+  if (!eventId || !profileId) return null;
+
+  const ghost = loadGhostSession(eventId);
+  if (!ghost?.ghostToken) {
+    console.warn("[GhostConnection] No ghost session found for event", eventId);
+    return null;
+  }
+
+  const { data, error } = await supabase.rpc("record_ghost_connection", {
+    p_event_id: eventId,
+    p_ghost_token: ghost.ghostToken,
+    p_target_profile_id: profileId,
+  });
+
+  if (error) {
+    console.error("[GhostConnection] record_ghost_connection failed", error);
+    throw error;
+  }
+
+  const result = Array.isArray(data) ? data[0] : data;
+  console.log("[GhostConnection] connection recorded", result);
+  return result;
 }
