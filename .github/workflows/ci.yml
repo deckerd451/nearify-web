@@ -50,13 +50,14 @@ jobs:
       # -----------------------------------------------------------------------
       - name: Audit innerHTML for unescaped interpolations
         run: |
-          # Look for template literals inside innerHTML = `...` that contain
-          # ${...} without escapeHtml( wrapping them.
+          # Look for template literals directly assigned to innerHTML that contain
+          # ${...} without escapeHtml( or escapeAttr( wrapping them.
+          # INNER_HTML scopes to a single template literal (no greedy cross-file match).
           python3 - <<'PYEOF'
           import re, sys, pathlib
 
-          RAW_INTERP = re.compile(r'\$\{(?!escapeHtml\()(?![0-9\s\`\'\"])(?![a-z]+\.length)')
-          INNER_HTML = re.compile(r'\.innerHTML\s*[+=].*`', re.DOTALL)
+          RAW_INTERP = re.compile(r'\$\{(?!escapeHtml\()(?!escapeAttr\()(?![0-9\s\`\'\"])(?![a-zA-Z_.]+\.length)')
+          INNER_HTML = re.compile(r'\.innerHTML\s*[+=]\s*`[^`]*`', re.DOTALL)
 
           issues = []
           for path in pathlib.Path('assets/js').rglob('*.js'):
