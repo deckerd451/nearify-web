@@ -84,35 +84,63 @@ export function renderIntelCard(item) {
   card.className = "intel-card";
 
   const initials = getInitials(item.target_name);
-  const avatar = item.target_avatar
-    ? `<img class="intel-avatar" src="${escapeAttr(item.target_avatar)}" alt="${escapeAttr(initials)}" />`
-    : `<div class="intel-avatar intel-avatar-placeholder" aria-hidden="true">${escapeHtml(initials)}</div>`;
+
+  // Avatar — use DOM so pre-built HTML fragments never touch innerHTML
+  if (item.target_avatar) {
+    const img = document.createElement("img");
+    img.className = "intel-avatar";
+    img.src = item.target_avatar;
+    img.alt = initials;
+    card.appendChild(img);
+  } else {
+    const placeholder = document.createElement("div");
+    placeholder.className = "intel-avatar intel-avatar-placeholder";
+    placeholder.setAttribute("aria-hidden", "true");
+    placeholder.textContent = initials;
+    card.appendChild(placeholder);
+  }
+
+  const body = document.createElement("div");
+  body.className = "intel-card-body";
+
+  const nameEl = document.createElement("div");
+  nameEl.className = "intel-card-name";
+  nameEl.textContent = item.target_name || "Attendee";
+  body.appendChild(nameEl);
 
   const directionText  = DIRECTION_LABELS[item.direction] ?? "Interaction";
   const directionClass = item.direction === "incoming" ? "incoming" : "outgoing";
-  const directionLabel = `<span class="intel-direction ${directionClass}">${directionText}</span>`;
+  const dirLabel = document.createElement("span");
+  dirLabel.className = `intel-direction ${directionClass}`;
+  dirLabel.textContent = directionText;
+  body.appendChild(dirLabel);
+
+  const reasonEl = document.createElement("div");
+  reasonEl.className = "intel-card-reason";
+  reasonEl.textContent = normalizeReason(item.reason);
+  body.appendChild(reasonEl);
 
   const strength = scoreToStrength(Math.round(item.score ?? 0));
-  const strengthHtml = `
-    <div class="intel-strength">
-      <span class="intel-dots">${renderStrengthDots(strength.dots)}</span>
-      <span class="intel-strength-label">${strength.label}</span>
-    </div>`;
+  const strengthEl = document.createElement("div");
+  strengthEl.className = "intel-strength";
+  const dotsSpan = document.createElement("span");
+  dotsSpan.className = "intel-dots";
+  dotsSpan.innerHTML = renderStrengthDots(strength.dots); // only hardcoded class names + numbers
+  strengthEl.appendChild(dotsSpan);
+  const strengthLabelEl = document.createElement("span");
+  strengthLabelEl.className = "intel-strength-label";
+  strengthLabelEl.textContent = strength.label;
+  strengthEl.appendChild(strengthLabelEl);
+  body.appendChild(strengthEl);
 
-  const missedHint = item.type === "missed"
-    ? `<p class="intel-missed-hint">You were near each other but didn't connect — worth a reach-out.</p>`
-    : "";
+  if (item.type === "missed") {
+    const hint = document.createElement("p");
+    hint.className = "intel-missed-hint";
+    hint.textContent = "You were near each other but didn't connect — worth a reach-out.";
+    body.appendChild(hint);
+  }
 
-  card.innerHTML = `
-    ${avatar}
-    <div class="intel-card-body">
-      <div class="intel-card-name">${escapeHtml(item.target_name || "Attendee")}</div>
-      ${directionLabel}
-      <div class="intel-card-reason">${escapeHtml(normalizeReason(item.reason))}</div>
-      ${strengthHtml}
-      ${missedHint}
-    </div>
-  `;
+  card.appendChild(body);
   return card;
 }
 
@@ -587,7 +615,7 @@ export function renderIntelligenceInto(container, data, eventMeta = null, fallba
 
     const title = document.createElement("h3");
     title.className = "intel-section-title";
-    title.innerHTML = `${bucket.title} <span class="intel-section-count">${bucket.items.length}</span>`;
+    title.innerHTML = `${escapeHtml(bucket.title)} <span class="intel-section-count">${bucket.items.length}</span>`;
     section.appendChild(title);
 
     const cards = document.createElement("div");
