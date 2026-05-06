@@ -298,6 +298,7 @@
 
     // --- Edit mode state ---
     let editingEventId = null;
+    let hasHydrated = false;
 
     function enterEditMode(eventId, eventName) {
       editingEventId = eventId;
@@ -347,6 +348,8 @@
       const params = new URLSearchParams(window.location.search);
       const editId = params.get("edit");
       if (!editId) return;
+      if (hasHydrated) return;
+      hasHydrated = true;
 
       showStatus("Loading event…");
       const events = await fetchOrganizerEvents();
@@ -383,9 +386,12 @@
         console.log("[Admin] auth change:", event, !!session?.user);
         if (event === "SIGNED_OUT" || (event === "INITIAL_SESSION" && !session?.user)) {
           showAuthGate();
-        } else if (event === "SIGNED_IN" || (event === "INITIAL_SESSION" && session?.user)) {
+        } else if (
+          (event === "SIGNED_IN" || event === "INITIAL_SESSION") && session?.user
+        ) {
           showAdminContent(session.user);
         }
+        // Ignore TOKEN_REFRESHED and other events — no need to re-hydrate
       });
     }
 
