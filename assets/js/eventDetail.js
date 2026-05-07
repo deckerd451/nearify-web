@@ -19,7 +19,7 @@ const INTENT_OPTIONS = [
   "find_cofounder",
   "hire",
   "explore_ideas",
-  "demo",
+  "demo_something",
 ];
 
 let currentEvent = null;
@@ -45,13 +45,6 @@ function parseStoredJson(key) {
   } catch {
     return null;
   }
-}
-
-function storeIntentLocal(intent) {
-  if (!intent) return;
-  try {
-    localStorage.setItem(INTENT_STORAGE_KEY, intent);
-  } catch (_) {}
 }
 
 async function fetchEvent() {
@@ -80,31 +73,21 @@ async function fetchCurrentUser() {
   return data?.session?.user ?? null;
 }
 
-async function fetchProfileIntent(userId) {
-  if (!userId) return null;
-  const { data, error } = await supabase
+async function fetchAttendeeIntent(userId, eventId) {
+  if (!userId || !eventId) return null;
+  const { data: profile } = await supabase
     .from("profiles")
-    .select("intent_primary")
+    .select("id")
     .eq("user_id", userId)
     .maybeSingle();
-
-  if (error) return null;
+  if (!profile?.id) return null;
+  const { data } = await supabase
+    .from("event_attendees")
+    .select("intent_primary")
+    .eq("event_id", eventId)
+    .eq("profile_id", profile.id)
+    .maybeSingle();
   return data?.intent_primary || null;
-}
-
-async function saveProfileIntent(userId, intent) {
-  if (!userId || !intent) return false;
-
-  const { error } = await supabase
-    .from("profiles")
-    .update({ intent_primary: intent })
-    .eq("user_id", userId);
-
-  if (error) {
-    logger.warn("[EventDetail] could not save intent_primary", error);
-    return false;
-  }
-  return true;
 }
 
 function updateIntentUI() {
@@ -126,19 +109,26 @@ async function persistIntent(intent) {
   if (!INTENT_OPTIONS.includes(intent)) return;
   selectedIntent = intent;
   updateIntentUI();
-  storeIntentLocal(intent);
   setIntentStatus("Saving…");
 
-  if (!currentUser?.id) {
-    setIntentStatus("Intent saved for this session.");
+  if (!currentUser?.id || !currentEvent?.id) {
+    try { localStorage.setItem(INTENT_STORAGE_KEY, intent); } catch (_) {}
+    setIntentStatus("Sign in to sync your goal with the Nearify app.");
+    setTimeout(() => setIntentStatus(""), 3000);
     return;
   }
 
-  const ok = await saveProfileIntent(currentUser.id, intent);
-  if (ok) {
-    setIntentStatus("Saved to your profile.");
+  const { error } = await supabase.rpc("update_attendee_intent", {
+    p_event_id: currentEvent.id,
+    p_intent_primary: intent,
+  });
+
+  if (error) {
+    logger.warn("[EventDetail] update_attendee_intent failed", error);
+    try { localStorage.setItem(INTENT_STORAGE_KEY, intent); } catch (_) {}
+    setIntentStatus("Saved locally — sync will complete when you open the app.");
   } else {
-    setIntentStatus("Saved locally — sync will complete when the app opens.");
+    setIntentStatus("Saved — Nearify will use this in the app.");
   }
   setTimeout(() => setIntentStatus(""), 3000);
 }
@@ -308,24 +298,26 @@ function updateAuthPositioning() {
   }
 }
 
-async function hydrateIntentFromStorage() {
-  const localIntent = localStorage.getItem(INTENT_STORAGE_KEY);
-
+async function hydrateIntent() {
   if (!currentUser?.id) {
+    const localIntent = localStorage.getItem(INTENT_STORAGE_KEY);
     selectedIntent = INTENT_OPTIONS.includes(localIntent) ? localIntent : null;
     updateIntentUI();
     return;
   }
 
-  const profileIntent = await fetchProfileIntent(currentUser.id);
-  const resolved = INTENT_OPTIONS.includes(profileIntent)
-    ? profileIntent
-    : INTENT_OPTIONS.includes(localIntent)
-      ? localIntent
-      : null;
+  // Source of truth: event_attendees for this event
+  const attendeeIntent = await fetchAttendeeIntent(currentUser.id, currentEvent?.id);
+  if (attendeeIntent && INTENT_OPTIONS.includes(attendeeIntent)) {
+    selectedIntent = attendeeIntent;
+    updateIntentUI();
+    return;
+  }
 
-  if (resolved) {
-    selectedIntent = resolved;
+  // No attendee record yet — surface localStorage pre-selection without writing it back
+  const localIntent = localStorage.getItem(INTENT_STORAGE_KEY);
+  if (localIntent && INTENT_OPTIONS.includes(localIntent)) {
+    selectedIntent = localIntent;
     updateIntentUI();
   }
 }
@@ -592,7 +584,7 @@ async function populatePage(event) {
     wireIntentCapture();
     wireJoinActions();
     updateAuthPositioning();
-    await hydrateIntentFromStorage();
+    await hydrateIntent();
     await maybeContinueAfterAuth();
   }
 
