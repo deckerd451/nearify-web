@@ -35,12 +35,16 @@ const els = {
   ghostClaimStatus: document.getElementById("ghostClaimStatus"),
 };
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 function getQueryParams() {
   const params = new URLSearchParams(window.location.search);
+  const eventId   = params.get("event");
+  const profileId = params.get("profile");
   return {
-    eventId: params.get("event"),
+    eventId:   eventId   && UUID_RE.test(eventId)   ? eventId   : null,
     eventName: params.get("name"),
-    profileId: params.get("profile"),
+    profileId: profileId && UUID_RE.test(profileId) ? profileId : null,
   };
 }
 

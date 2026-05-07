@@ -65,9 +65,12 @@ function renderProfile(profile, eventId, eventName) {
 async function init() {
   patchAppStoreLinks();
 
+  const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
   const params    = new URLSearchParams(window.location.search);
-  const profileId = params.get("id");
-  const eventId   = params.get("event");
+  const rawProfileId = params.get("id");
+  const rawEventId   = params.get("event");
+  const profileId = rawProfileId && UUID_RE.test(rawProfileId) ? rawProfileId : null;
+  const eventId   = rawEventId   && UUID_RE.test(rawEventId)   ? rawEventId   : null;
 
   trackPageView({ profileId: profileId ?? undefined, eventId: eventId ?? undefined });
 
