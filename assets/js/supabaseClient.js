@@ -22,5 +22,3 @@ export function createScopedSupabaseClient(headers = {}) {
 
 // Helpful for browser-console testing
 window.supabase = supabase;
-
-console.log("Nearify Supabase client initialized");

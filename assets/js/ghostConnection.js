@@ -1,5 +1,6 @@
 import { supabase } from "./supabaseClient.js";
 import { loadGhostSession } from "./ghostSession.js";
+import { logger } from "./logger.js";
 
 /**
  * Record a connection between the current ghost participant and a profile.
@@ -11,7 +12,7 @@ export async function connectGhostToProfile(eventId, profileId) {
 
   const ghost = loadGhostSession(eventId);
   if (!ghost?.ghostToken) {
-    console.warn("[GhostConnection] No ghost session found for event", eventId);
+    logger.warn("[GhostConnection] No ghost session found for event", eventId);
     return null;
   }
 
@@ -22,11 +23,11 @@ export async function connectGhostToProfile(eventId, profileId) {
   });
 
   if (error) {
-    console.error("[GhostConnection] record_ghost_connection failed", error);
+    logger.error("[GhostConnection] record_ghost_connection failed", error);
     throw error;
   }
 
   const result = Array.isArray(data) ? data[0] : data;
-  console.log("[GhostConnection] connection recorded", result);
+  logger.log("[GhostConnection] connection recorded", result);
   return result;
 }

@@ -14,7 +14,8 @@ import { saveEvent, deleteEvent, getOrganizerProfileId } from "./events.js";
 import { trackAppCtaClick, trackPageView } from "./analytics.js";
 import { patchAppStoreLinks } from "./config.js";
 import { escapeHtml, escapeAttr, copyText } from "./utils.js";
-console.log("[Dashboard] dashboard.js loaded");
+import { logger } from "./logger.js";
+logger.log("[Dashboard] dashboard.js loaded");
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -102,7 +103,7 @@ async function handleSignInClick() {
     },
   });
 
-  if (error) console.error("[Dashboard] sign-in failed:", error);
+  if (error) logger.error("[Dashboard] sign-in failed:", error);
 }
 
 // ─── Data ─────────────────────────────────────────────────────────────────────
@@ -119,7 +120,7 @@ async function fetchMyEvents() {
     .order("created_at", { ascending: false })
     .limit(50);
 
-  if (error) { console.error("[Dashboard] fetchMyEvents:", error); return []; }
+  if (error) { logger.error("[Dashboard] fetchMyEvents:", error); return []; }
   return data || [];
 }
 
@@ -131,7 +132,7 @@ async function fetchAttendeeCounts(eventIds) {
     .select("event_id")
     .in("event_id", eventIds);
 
-  if (error) { console.warn("[Dashboard] attendee counts:", error); return new Map(); }
+  if (error) { logger.warn("[Dashboard] attendee counts:", error); return new Map(); }
 
   const counts = new Map();
   for (const row of (data || [])) {
@@ -413,7 +414,7 @@ async function handleCreateSubmit(e) {
   if (submitBtn) { submitBtn.disabled = false; submitBtn.classList.remove("loading"); }
 
   if (error) {
-    console.error("[Dashboard] createEvent error:", error);
+    logger.error("[Dashboard] createEvent error:", error);
     setCreateStatus("Something went wrong. Please try again.", true);
     return;
   }
@@ -450,7 +451,7 @@ function showLoading() {
 }
 
 function initDashboard() {
-  console.log("[Dashboard] init");
+  logger.log("[Dashboard] init");
 
   bindStaticHandlers();
 
@@ -460,13 +461,13 @@ function initDashboard() {
   // We do NOT use an async callback here — Supabase doesn't await them, so any
   // thrown error would be silently swallowed and leave the page blank.
   supabase.auth.onAuthStateChange((event, session) => {
-    console.log("[Dashboard] auth change:", event, !!session?.user);
+    logger.log("[Dashboard] auth change:", event, !!session?.user);
 
     if (event === "SIGNED_OUT" || (event === "INITIAL_SESSION" && !session?.user)) {
       showLanding();
     } else if (event === "SIGNED_IN" || (event === "INITIAL_SESSION" && session?.user)) {
       loadDashboard().catch((err) => {
-        console.error("[Dashboard] loadDashboard failed:", err);
+        logger.error("[Dashboard] loadDashboard failed:", err);
         renderDashboardError(err);
       });
     }
@@ -478,7 +479,7 @@ async function loadDashboard() {
 
   try {
     const events = await fetchMyEvents();
-    console.log("[Dashboard] events loaded:", events.length);
+    logger.log("[Dashboard] events loaded:", events.length);
 
     const counts = events.length
       ? await fetchAttendeeCounts(events.map((event) => event.id))
@@ -486,7 +487,7 @@ async function loadDashboard() {
 
     renderDashboard(events, counts);
   } catch (err) {
-    console.error("[Dashboard] failed to load dashboard:", err);
+    logger.error("[Dashboard] failed to load dashboard:", err);
     renderDashboardError(err);
   }
 }
@@ -506,14 +507,14 @@ async function handleCopyLink(btn, url) {
 async function handleEndEvent(eventId, eventName) {
   if (!confirm(`End "${eventName}"?\n\nThis marks the event as finished. Attendees can still view their post-event report.`)) return;
   const { error } = await endEvent(eventId);
-  if (error) { console.error("[Dashboard] endEvent error:", error); alert("Could not end this event. Please try again."); return; }
+  if (error) { logger.error("[Dashboard] endEvent error:", error); alert("Could not end this event. Please try again."); return; }
   await refreshDashboard();
 }
 
 async function handleArchive(eventId, eventName) {
   if (!confirm(`Archive "${eventName}"?\n\nIt will be removed from your dashboard. This cannot be undone.`)) return;
   const { error } = await deleteEvent(eventId);
-  if (error) { console.error("[Dashboard] archiveEvent error:", error); alert("Could not archive this event. Please try again."); return; }
+  if (error) { logger.error("[Dashboard] archiveEvent error:", error); alert("Could not archive this event. Please try again."); return; }
   await refreshDashboard();
 }
 
@@ -610,7 +611,7 @@ function initAnalytics() {
 }
 
 document.addEventListener("DOMContentLoaded", () => {
-  console.log("[Dashboard] DOMContentLoaded");
+  logger.log("[Dashboard] DOMContentLoaded");
   initAnalytics();
   initDashboard();
 });
