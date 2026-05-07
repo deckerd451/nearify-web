@@ -1,4 +1,5 @@
 import { supabase } from "./supabaseClient.js";
+import { logger } from "./logger.js";
 
 function getBaseUrl() {
   return window.location.origin;
@@ -34,7 +35,7 @@ export function renderPersonalConnectQr(containerEl, url) {
   containerEl.innerHTML = "";
 
   if (typeof window.QRCode !== "function") {
-    console.warn("[PersonalConnect] QRCode library not available");
+    logger.warn("[PersonalConnect] QRCode library not available");
     return;
   }
 

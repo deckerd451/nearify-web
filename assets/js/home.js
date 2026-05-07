@@ -1,6 +1,7 @@
 import { getCurrentUser, getCurrentEventId } from "./appState.js";
 import { fetchIntelligence, fetchEventMeta, renderIntelligenceInto } from "./intelligence.js";
 import { fetchPublicEvents } from "./events.js";
+import { logger } from "./logger.js";
 
 // DOM refs
 const upcomingListEl = document.getElementById("homeUpcomingList");
@@ -89,15 +90,15 @@ async function init() {
   const eventId = getCurrentEventId();
 
   if (!user) {
-    console.log("[Home] Not signed in — public mode");
+    logger.log("[Home] Not signed in — public mode");
     return;
   }
 
-  console.log("[Home] Signed in as:", user.email);
+  logger.log("[Home] Signed in as:", user.email);
 
   if (eventId) {
     await loadHomeIntelligence(eventId);
   }
 }
 
-init().catch(err => console.error("[Home] init failed:", err));
+init().catch(err => logger.error("[Home] init failed:", err));

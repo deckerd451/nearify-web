@@ -16,6 +16,7 @@
  */
 
 import { supabase } from "./supabaseClient.js";
+import { logger } from "./logger.js";
 
 const ENVELOPE_VERSION = 1;
 
@@ -73,7 +74,7 @@ if (eventId) {
   getEventContext(eventId).then((envelope) => {
     writePayload(el, envelope.status, envelope.data, envelope.error_code);
     if (envelope.status !== "ok") {
-      console.warn("[EventContext]", envelope.error_code, envelope);
+      logger.warn("[EventContext]", envelope.error_code, envelope);
     }
   });
 } else {

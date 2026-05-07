@@ -25,6 +25,7 @@ import {
   getPresentationState,
   getStateCopy,
 } from "./intelligence-algo.js";
+import { logger } from "./logger.js";
 
 export { computeNextBestAction, shouldPromoteFallbackDecision, hasMeaningfulFallbackDecision };
 
@@ -367,7 +368,7 @@ function renderRecommendedAction(decision) {
   }
 
   block.append(title, body, button, subtext, fallback);
-  console.log("[CTA] rendered suggest_connect", { confidence: decision.confidence, action: decision.action });
+  logger.log("[CTA] rendered suggest_connect", { confidence: decision.confidence, action: decision.action });
   return block;
 }
 
@@ -414,13 +415,13 @@ async function getCurrentIntent() {
         .from("profiles").select("intent_primary").eq("user_id", user.id).maybeSingle();
       if (!error && data?.intent_primary) {
         const intent = normalizeIntent(data.intent_primary);
-        console.log("[Intent] current:", intent);
+        logger.log("[Intent] current:", intent);
         return intent;
       }
     }
   } catch (_) { /* fall through */ }
   const intent = normalizeIntent(localStorage.getItem("intent_primary"));
-  console.log("[Intent] current:", intent);
+  logger.log("[Intent] current:", intent);
   return intent;
 }
 
@@ -442,8 +443,8 @@ export async function fetchRawSignals(eventId) {
       .or(`from_profile_id.eq.${profileId},to_profile_id.eq.${profileId}`),
   ]);
 
-  if (attendeesError)    console.error("[EL] attendees error:", attendeesError);
-  if (interactionsError) console.error("[EL] interactions error:", interactionsError);
+  if (attendeesError)    logger.error("[EL] attendees error:", attendeesError);
+  if (interactionsError) logger.error("[EL] interactions error:", interactionsError);
 
   const attendeeRows    = attendees    || [];
   const interactionRows = interactions || [];
@@ -457,7 +458,7 @@ export async function fetchRawSignals(eventId) {
         .in("id", attendeeIdList)
     : { data: [], error: null };
 
-  if (profilesError) console.error("[EL] profiles error:", profilesError);
+  if (profilesError) logger.error("[EL] profiles error:", profilesError);
 
   const profileRows      = profiles || [];
   const relevantProfiles = profileRows;
@@ -466,7 +467,7 @@ export async function fetchRawSignals(eventId) {
   const intent = await getCurrentIntent();
 
   if (!attendeeRows.length && !interactionRows.length) {
-    console.log("[EL] action:", fallback.action);
+    logger.log("[EL] action:", fallback.action);
     return fallback;
   }
 
@@ -521,7 +522,7 @@ export async function fetchRawSignals(eventId) {
     },
   };
 
-  console.log("[EL] action:", result.action, "score:", result.score);
+  logger.log("[EL] action:", result.action, "score:", result.score);
   return result;
 }
 
@@ -532,7 +533,7 @@ export async function fetchIntelligence(eventId) {
   const { data, error } = await supabase.rpc("get_my_intelligence", { p_event_id: eventId });
 
   if (error) {
-    console.error("[Intelligence] load error:", error);
+    logger.error("[Intelligence] load error:", error);
     const fallbackDecision = await fetchRawSignals(eventId);
     return { data: null, fallbackDecision };
   }

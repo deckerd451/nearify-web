@@ -1,4 +1,5 @@
 import { supabase } from "./supabaseClient.js";
+import { logger } from "./logger.js";
 
 const GHOST_STORAGE_PREFIX = "nearify_ghost";
 
@@ -11,7 +12,7 @@ export function loadGhostSession(eventId) {
     const raw = localStorage.getItem(getGhostStorageKey(eventId));
     return raw ? JSON.parse(raw) : null;
   } catch (error) {
-    console.error("[Ghost] Failed to load ghost session", error);
+    logger.error("[Ghost] Failed to load ghost session", error);
     return null;
   }
 }
@@ -20,7 +21,7 @@ export function saveGhostSession(eventId, session) {
   try {
     localStorage.setItem(getGhostStorageKey(eventId), JSON.stringify(session));
   } catch (error) {
-    console.error("[Ghost] Failed to save ghost session", error);
+    logger.error("[Ghost] Failed to save ghost session", error);
   }
 }
 
@@ -31,7 +32,7 @@ export async function createGhostSession(eventId, displayName) {
   });
 
   if (error) {
-    console.error("[Ghost] Failed to create ghost participant", error);
+    logger.error("[Ghost] Failed to create ghost participant", error);
     throw error;
   }
 

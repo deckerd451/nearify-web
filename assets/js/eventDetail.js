@@ -9,6 +9,7 @@ import {
 import { trackPageView, wireAppCtaTracking } from "./analytics.js";
 import { patchAppStoreLinks } from "./config.js";
 import { escapeHtml } from "./utils.js";
+import { logger } from "./logger.js";
 
 const INTENT_STORAGE_KEY = "intent_primary";
 const ATTENDEE_AUTH_KEY = "nearify_attendee_auth_return";
@@ -100,7 +101,7 @@ async function saveProfileIntent(userId, intent) {
     .eq("user_id", userId);
 
   if (error) {
-    console.warn("[EventDetail] could not save intent_primary", error);
+    logger.warn("[EventDetail] could not save intent_primary", error);
     return false;
   }
   return true;
@@ -278,7 +279,7 @@ function wireJoinActions() {
       try {
         await beginAttendeeSignIn();
       } catch (error) {
-        console.error("[EventDetail] attendee sign-in failed", error);
+        logger.error("[EventDetail] attendee sign-in failed", error);
         signInBtn.disabled = false;
         signInBtn.classList.remove("loading");
       }
@@ -369,7 +370,7 @@ async function loadIntelligence(event) {
             options: { redirectTo: window.location.href }
           });
         } catch (err) {
-          console.error("[EventDetail] sign in error:", err);
+          logger.error("[EventDetail] sign in error:", err);
           signInBtn.disabled = false;
           signInBtn.classList.remove("loading");
         }
@@ -387,7 +388,7 @@ async function loadIntelligence(event) {
     ]);
     renderIntelligenceInto(intelContainer, data, eventMeta, fallbackDecision);
   } catch (err) {
-    console.error("[EventDetail] intelligence load error:", err);
+    logger.error("[EventDetail] intelligence load error:", err);
     intelContainer.innerHTML =
       '<p style="color:#f87171; text-align:center; padding:24px 0;">Could not load your report. Please refresh.</p>';
     intelContainer.style.display = "";
@@ -414,7 +415,7 @@ async function renderPersonalConnectSection(eventId) {
     qrBox.style.display = "";
     renderPersonalConnectQr(qrEl, url);
   } catch (error) {
-    console.error("[PersonalConnect] Failed to render", error);
+    logger.error("[PersonalConnect] Failed to render", error);
   }
 }
 
@@ -472,7 +473,7 @@ async function downloadPosterCard(event) {
     link.click();
     link.remove();
   } catch (error) {
-    console.error("[EventDetail] poster download error:", error);
+    logger.error("[EventDetail] poster download error:", error);
     button.textContent = "Download failed";
     setTimeout(() => {
       button.textContent = originalText;
@@ -617,7 +618,7 @@ async function init() {
     trackPageView({ eventId: currentEvent.id });
     wireAppCtaTracking();
   } catch (err) {
-    console.error("[EventDetail] load error:", err);
+    logger.error("[EventDetail] load error:", err);
     showNotFound("Something went wrong loading this event. Please try again.");
   }
 }

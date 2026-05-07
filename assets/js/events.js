@@ -8,6 +8,7 @@
  * All ownership operations resolve the current user's profile_id first.
  */
 import { supabase } from "./supabaseClient.js";
+import { logger } from "./logger.js";
 
 // ---- Profile resolution (cached per session) ----
 
@@ -32,15 +33,15 @@ export async function getOrganizerProfileId() {
     .maybeSingle();
 
   if (error) {
-    console.error("[Events] profile lookup error:", error);
+    logger.error("[Events] profile lookup error:", error);
     return null;
   }
 
   _cachedProfileId = data?.id ?? null;
   if (_cachedProfileId) {
-    console.log("[Events] resolved profile_id:", _cachedProfileId);
+    logger.log("[Events] resolved profile_id:", _cachedProfileId);
   } else {
-    console.warn("[Events] no profile found for user_id:", authUserId);
+    logger.warn("[Events] no profile found for user_id:", authUserId);
   }
   return _cachedProfileId;
 }
@@ -61,7 +62,7 @@ export async function fetchPublicEvents() {
     .limit(50);
 
   if (error) {
-    console.error("[Events] fetchPublicEvents error:", error);
+    logger.error("[Events] fetchPublicEvents error:", error);
     return [];
   }
   return data || [];
@@ -82,7 +83,7 @@ export async function saveEvent(eventFields, isUpdate = false) {
   const profileId = await getOrganizerProfileId();
   if (!profileId) {
     const msg = "Could not resolve your organizer profile. Make sure you have a Nearify profile.";
-    console.error("[Events]", msg);
+    logger.error("[Events]", msg);
     return { data: null, error: { message: msg } };
   }
 
@@ -96,7 +97,7 @@ export async function saveEvent(eventFields, isUpdate = false) {
       .eq("created_by", profileId)
       .select();
 
-    if (error) console.error("[Events] updateEvent error:", error);
+    if (error) logger.error("[Events] updateEvent error:", error);
     return { data, error };
   } else {
     // Create: set created_by to organizer's profile.id
@@ -106,7 +107,7 @@ export async function saveEvent(eventFields, isUpdate = false) {
       .insert(payload)
       .select();
 
-    if (error) console.error("[Events] createEvent error:", error);
+    if (error) logger.error("[Events] createEvent error:", error);
     return { data, error };
   }
 }
@@ -124,7 +125,7 @@ export async function deleteEvent(eventId) {
     .update({ deleted_at: new Date().toISOString() })
     .eq("id", eventId);
 
-  if (error) console.error("[Events] deleteEvent (soft) error:", error);
+  if (error) logger.error("[Events] deleteEvent (soft) error:", error);
   return { error };
 }
 
@@ -145,7 +146,7 @@ export async function fetchOrganizerEvents() {
     .limit(50);
 
   if (error) {
-    console.error("[Events] fetchOrganizerEvents error:", error);
+    logger.error("[Events] fetchOrganizerEvents error:", error);
     return [];
   }
   return data || [];

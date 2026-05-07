@@ -3,6 +3,7 @@ import { loadGhostSession, createGhostSession } from "./ghostSession.js";
 import { connectGhostToProfile } from "./ghostConnection.js";
 import { trackAppCtaClick } from "./analytics.js";
 import { escapeHtml, copyText } from "./utils.js";
+import { logger } from "./logger.js";
 
 const els = {
   joinKicker: document.getElementById("joinKicker"),
@@ -82,7 +83,7 @@ function setJoinMode(mode) {
 }
 
 async function fetchEvent(eventId) {
-  console.log("[Join] event param:", eventId);
+  logger.log("[Join] event param:", eventId);
 
   const { data, error } = await supabase
     .from("events")
@@ -90,8 +91,8 @@ async function fetchEvent(eventId) {
     .eq("id", eventId)
     .single();
 
-  console.log("[Join] Supabase event data:", data);
-  console.log("[Join] Supabase event error:", error);
+  logger.log("[Join] Supabase event data:", data);
+  logger.log("[Join] Supabase event error:", error);
 
   if (error) {
     // PGRST116 = "no rows returned" from .single() — not a fatal error, just means event doesn't exist
@@ -103,7 +104,7 @@ async function fetchEvent(eventId) {
 
   // Validate we got a real row with an id
   if (!data || !data.id) {
-    console.warn("[Join] Query returned but no valid row:", data);
+    logger.warn("[Join] Query returned but no valid row:", data);
     return null;
   }
 
@@ -118,16 +119,16 @@ async function fetchPublicProfileBrief(profileId) {
     .maybeSingle();
 
   if (error) {
-    console.warn("[Join] Public target profile lookup failed", { profileId, error });
+    logger.warn("[Join] Public target profile lookup failed", { profileId, error });
     return null;
   }
 
   if (data?.id && data?.name) {
-    console.log("[Join] Resolved public target profile", { id: data.id, name: data.name });
+    logger.log("[Join] Resolved public target profile", { id: data.id, name: data.name });
     return data;
   }
 
-  console.log("[Join] Public target profile not found, using fallback copy", { profileId });
+  logger.log("[Join] Public target profile not found, using fallback copy", { profileId });
   return null;
 }
 
@@ -156,15 +157,15 @@ function renderPayload(eventId) {
 
 function renderQrCode(value) {
   if (!els.joinQrBox || !els.joinQrCode) {
-    console.log("[Join] QR skipped: no container element");
+    logger.log("[Join] QR skipped: no container element");
     return;
   }
   if (!value) {
-    console.log("[Join] QR skipped: no value");
+    logger.log("[Join] QR skipped: no value");
     return;
   }
   if (typeof window.QRCode !== "function") {
-    console.log("[Join] QR skipped: QRCode library not available");
+    logger.log("[Join] QR skipped: QRCode library not available");
     hide(els.joinQrBox);
     return;
   }
@@ -179,9 +180,9 @@ function renderQrCode(value) {
       width: 180,
       height: 180,
     });
-    console.log("[Join] QR rendered");
+    logger.log("[Join] QR rendered");
   } catch (err) {
-    console.warn("[Join] QR skipped: render error", err.message);
+    logger.warn("[Join] QR skipped: render error", err.message);
     hide(els.joinQrBox);
   }
 }
@@ -191,12 +192,12 @@ async function ensureGhostForEvent(eventId, displayName = "Guest") {
 
   const existing = loadGhostSession(eventId);
   if (existing?.ghostToken) {
-    console.log("[Ghost] Reusing existing ghost session", existing);
+    logger.log("[Ghost] Reusing existing ghost session", existing);
     return existing;
   }
 
   const created = await createGhostSession(eventId, displayName);
-  console.log("[Ghost] Created new ghost session", created);
+  logger.log("[Ghost] Created new ghost session", created);
   return created;
 }
 
@@ -205,17 +206,17 @@ async function maybeConnectGhostToProfile(eventId, profileId) {
 
   try {
     const result = await connectGhostToProfile(eventId, profileId);
-    console.log("[Ghost] Auto-connected to profile", result);
+    logger.log("[Ghost] Auto-connected to profile", result);
     return result;
   } catch (error) {
-    console.error("[Ghost] Auto-connect failed", error);
+    logger.error("[Ghost] Auto-connect failed", error);
     return null;
   }
 }
 
 function renderGhostState(ghost) {
   if (!ghost) return;
-  console.log("[Ghost] Active session", ghost);
+  logger.log("[Ghost] Active session", ghost);
 }
 
 function setGhostClaimStatus(message) {
@@ -226,7 +227,7 @@ function setGhostClaimStatus(message) {
 async function fetchCurrentProfileId() {
   const { data, error } = await supabase.rpc("current_profile_id");
   if (error) {
-    console.warn("[Ghost] Could not resolve current profile id", error);
+    logger.warn("[Ghost] Could not resolve current profile id", error);
     return null;
   }
   return data ?? null;
@@ -245,7 +246,7 @@ async function startGhostClaimAuth() {
     options: { redirectTo: getReconnectUrl() },
   });
   if (error) {
-    console.error("[Ghost] OAuth start failed", error);
+    logger.error("[Ghost] OAuth start failed", error);
     setGhostClaimStatus("We couldn't start sign in right now. Please try again.");
   }
 }
@@ -261,7 +262,7 @@ async function fetchGhostConnectionHistory(ghost, eventId) {
   });
 
   if (error) {
-    console.warn("[Ghost] Failed to load ghost history", error);
+    logger.warn("[Ghost] Failed to load ghost history", error);
     return [];
   }
 
@@ -288,12 +289,12 @@ async function maybeClaimGhostActivity(ghost, isClaimed) {
   });
 
   if (error) {
-    console.warn("[Ghost] Claim RPC failed", error);
+    logger.warn("[Ghost] Claim RPC failed", error);
     setGhostClaimStatus("We couldn't claim this yet. Please try again.");
     return false;
   }
 
-  console.log("[Ghost] Claim successful", data);
+  logger.log("[Ghost] Claim successful", data);
   setGhostClaimStatus("This connection is now part of your network.");
   return true;
 }
@@ -335,7 +336,7 @@ function wireEmailCapture(ghost) {
       try {
         await saveGhostEmail(ghost, email);
       } catch (err) {
-        console.warn("[Ghost] Email save failed", err);
+        logger.warn("[Ghost] Email save failed", err);
         submitBtn.disabled = false;
         submitBtn.classList.remove("loading");
         setGhostClaimStatus("We couldn't save your email. Please try again.");
@@ -552,7 +553,7 @@ function renderGenericJoinUx(event, fallbackName) {
   if (els.joinBottomCtaHint) els.joinBottomCtaHint.textContent = "Already installed? Open the app to browse, join, and check in.";
 
   show(els.joinQrBox);
-  console.log("[Join] Rendering generic event join UX");
+  logger.log("[Join] Rendering generic event join UX");
 }
 
 function renderPersonalConnectUx(event, targetProfile) {
@@ -606,7 +607,7 @@ function renderPersonalConnectUx(event, targetProfile) {
       "Already installed? Open the app to explore the event and discover more people around you.";
   }
 
-  console.log(`[Join] Rendering personal connect UX for ${personName}`);
+  logger.log(`[Join] Rendering personal connect UX for ${personName}`);
 }
 
 function renderInvalidState(message) {
@@ -657,23 +658,23 @@ async function renderAuthHandoff(eventId) {
       try {
         show(qrBox);
         new window.QRCode(qrContainer, { text: deepLinkStr, width: 180, height: 180 });
-        console.log("[Join] QR rendered (auth handoff)");
+        logger.log("[Join] QR rendered (auth handoff)");
       } catch (err) {
-        console.log("[Join] QR skipped (auth handoff):", err.message);
+        logger.log("[Join] QR skipped (auth handoff):", err.message);
         hide(qrBox);
       }
     }
 
     show(section);
   } catch (err) {
-    console.log("[Join] auth handoff skipped:", err.message);
+    logger.log("[Join] auth handoff skipped:", err.message);
   }
 }
 
 async function initJoinPage() {
   const { eventId, eventName, profileId } = getQueryParams();
 
-  console.log("[Join] raw URL:", window.location.href);
+  logger.log("[Join] raw URL:", window.location.href);
 
   if (!eventId) {
     renderInvalidState("This link is missing an event id.");
@@ -687,19 +688,19 @@ async function initJoinPage() {
     ]);
 
     if (!event) {
-      console.warn("[Join] No event row found for id:", eventId);
+      logger.warn("[Join] No event row found for id:", eventId);
       renderInvalidState("No event found with this ID.");
       return;
     }
 
     if (event.is_active === false) {
-      console.warn("[Join] Event is inactive:", eventId);
+      logger.warn("[Join] Event is inactive:", eventId);
       renderInvalidState("This event is no longer active.");
       return;
     }
 
     if (event.deleted_at) {
-      console.warn("[Join] Event is archived:", eventId);
+      logger.warn("[Join] Event is archived:", eventId);
       renderInvalidState("This event has been archived.");
       return;
     }
@@ -738,7 +739,7 @@ async function initJoinPage() {
       });
 
       if (connectResult) {
-        console.log("[Join] Personal connect UX rendered after successful connection");
+        logger.log("[Join] Personal connect UX rendered after successful connection");
       }
     } else {
       renderGenericJoinUx(event, eventName);
@@ -747,7 +748,7 @@ async function initJoinPage() {
     showIntentStep();
     await renderAuthHandoff(event.id);
   } catch (error) {
-    console.error("[Join] Initialization failed", error);
+    logger.error("[Join] Initialization failed", error);
     renderInvalidState("We couldn't load this event right now.");
   }
 }
