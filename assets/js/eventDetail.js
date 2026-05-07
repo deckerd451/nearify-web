@@ -54,9 +54,11 @@ function storeIntentLocal(intent) {
 }
 
 async function fetchEvent() {
+  const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
   const params = new URLSearchParams(window.location.search);
   const slug = params.get("slug");
-  const id = params.get("id");
+  const rawId = params.get("id");
+  const id = rawId && UUID_RE.test(rawId) ? rawId : null;
 
   if (!slug && !id) return null;
 

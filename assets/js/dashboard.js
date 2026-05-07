@@ -413,7 +413,8 @@ async function handleCreateSubmit(e) {
   if (submitBtn) { submitBtn.disabled = false; submitBtn.classList.remove("loading"); }
 
   if (error) {
-    setCreateStatus("Error: " + error.message, true);
+    console.error("[Dashboard] createEvent error:", error);
+    setCreateStatus("Something went wrong. Please try again.", true);
     return;
   }
 
@@ -505,14 +506,14 @@ async function handleCopyLink(btn, url) {
 async function handleEndEvent(eventId, eventName) {
   if (!confirm(`End "${eventName}"?\n\nThis marks the event as finished. Attendees can still view their post-event report.`)) return;
   const { error } = await endEvent(eventId);
-  if (error) { alert("Could not end event: " + error.message); return; }
+  if (error) { console.error("[Dashboard] endEvent error:", error); alert("Could not end this event. Please try again."); return; }
   await refreshDashboard();
 }
 
 async function handleArchive(eventId, eventName) {
   if (!confirm(`Archive "${eventName}"?\n\nIt will be removed from your dashboard. This cannot be undone.`)) return;
   const { error } = await deleteEvent(eventId);
-  if (error) { alert("Could not archive: " + error.message); return; }
+  if (error) { console.error("[Dashboard] archiveEvent error:", error); alert("Could not archive this event. Please try again."); return; }
   await refreshDashboard();
 }
 
