@@ -20,7 +20,15 @@ jobs:
           node-version: 20
 
       # -----------------------------------------------------------------------
-      # 1. JS syntax check — catches parse errors before they ship
+      # 1. Unit tests
+      # -----------------------------------------------------------------------
+      - name: Run unit tests
+        run: |
+          npm ci
+          npm test
+
+      # -----------------------------------------------------------------------
+      # 2. JS syntax check — catches parse errors before they ship
       # -----------------------------------------------------------------------
       - name: Check JS syntax
         run: |
