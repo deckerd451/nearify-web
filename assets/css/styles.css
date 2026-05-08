@@ -1342,6 +1342,46 @@ code {
   min-height: 20px;
 }
 
+/* Intent read-only display — shown when intent already set (e.g. via iOS app) */
+.intent-display-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  max-width: 640px;
+  margin: 24px auto 0;
+  flex-wrap: wrap;
+}
+
+.intent-display-label {
+  font-size: 15px;
+  color: var(--color-text-secondary);
+}
+
+.intent-display-value {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--color-accent);
+}
+
+.intent-display-badge {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--color-accent);
+  background: rgba(48, 209, 88, 0.10);
+  border: 1px solid rgba(48, 209, 88, 0.28);
+  border-radius: 20px;
+  padding: 3px 10px;
+  letter-spacing: 0.03em;
+}
+
+.intent-display-hint {
+  font-size: 13px;
+  color: var(--color-text-secondary);
+  max-width: 640px;
+  margin: 10px auto 0;
+  opacity: 0.65;
+}
+
 .event-inline-actions {
   display: flex;
   gap: 10px;

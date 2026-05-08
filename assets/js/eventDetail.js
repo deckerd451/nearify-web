@@ -1,3 +1,7 @@
+// eslint-disable-next-line no-console
+console.log("[EVENT-DETAIL-BOOTED]");
+window.__EVENT_DETAIL_BOOTED__ = true;
+
 import { supabase } from "./supabaseClient.js";
 import { setCurrentEventId } from "./appState.js";
 import { fetchIntelligence, fetchEventMeta, renderIntelligenceInto } from "./intelligence.js";
@@ -21,6 +25,14 @@ const INTENT_OPTIONS = [
   "explore_ideas",
   "demo_something",
 ];
+
+const INTENT_LABELS = {
+  meet_people:    "Meet people",
+  find_cofounder: "Find a cofounder",
+  hire:           "Hire",
+  explore_ideas:  "Explore ideas",
+  demo_something: "Demo something",
+};
 
 let currentEvent = null;
 let currentUser = null;
@@ -99,6 +111,18 @@ function updateIntentUI() {
   });
 }
 
+function renderIntentReadOnly(intent) {
+  const display  = document.getElementById("eventIntentDisplay");
+  const valueEl  = document.getElementById("eventIntentDisplayValue");
+  const picker   = document.getElementById("eventIntentPicker");
+  const heading  = document.getElementById("eventIntentHeading");
+
+  if (valueEl) valueEl.textContent = INTENT_LABELS[intent] || intent;
+  if (display) display.style.display = "";
+  if (picker)  picker.style.display  = "none";
+  if (heading) heading.textContent   = "Your event goal";
+}
+
 function setIntentStatus(message = "") {
   const status = document.getElementById("eventIntentStatus");
   if (!status) return;
@@ -113,8 +137,8 @@ async function persistIntent(intent) {
 
   if (!currentUser?.id || !currentEvent?.id) {
     try { localStorage.setItem(INTENT_STORAGE_KEY, intent); } catch (_) {}
-    setIntentStatus("Sign in to sync your goal with the Nearify app.");
-    setTimeout(() => setIntentStatus(""), 3000);
+    setIntentStatus("Your goal is saved for this session — open Nearify to keep it.");
+    setTimeout(() => setIntentStatus(""), 4000);
     return;
   }
 
@@ -300,21 +324,24 @@ function updateAuthPositioning() {
 
 async function hydrateIntent() {
   if (!currentUser?.id) {
+    // Ghost / unauthenticated: localStorage only, no RPC available
     const localIntent = localStorage.getItem(INTENT_STORAGE_KEY);
     selectedIntent = INTENT_OPTIONS.includes(localIntent) ? localIntent : null;
     updateIntentUI();
     return;
   }
 
-  // Source of truth: event_attendees for this event
+  // Source of truth: event_attendees.intent_primary for this event
   const attendeeIntent = await fetchAttendeeIntent(currentUser.id, currentEvent?.id);
   if (attendeeIntent && INTENT_OPTIONS.includes(attendeeIntent)) {
+    // Intent already set (from iOS or a previous web session) — show read-only
     selectedIntent = attendeeIntent;
-    updateIntentUI();
+    renderIntentReadOnly(attendeeIntent);
     return;
   }
 
-  // No attendee record yet — surface localStorage pre-selection without writing it back
+  // Attendee exists but no intent set — show editable picker
+  // Surface any localStorage pre-selection without persisting it
   const localIntent = localStorage.getItem(INTENT_STORAGE_KEY);
   if (localIntent && INTENT_OPTIONS.includes(localIntent)) {
     selectedIntent = localIntent;
@@ -594,6 +621,40 @@ async function populatePage(event) {
   if (heroCopy) heroCopy.style.display = "";
 }
 
+// PHASE 2 — RLS VERIFICATION PROBE
+// Temp: remove after confirming attendee discovery access works for signed-in users.
+async function verifyAttendeeDiscoveryAccess(eventId) {
+  const { data: sessionData } = await supabase.auth.getSession();
+  const userId = sessionData?.session?.user?.id ?? null;
+  console.log("[RLS-VERIFY] signed_in:", !!userId, "| event_id:", eventId);
+
+  const { data: attendeeRows, error: attendeeError } = await supabase
+    .from("event_attendees")
+    .select("profile_id, intent_primary")
+    .eq("event_id", eventId);
+
+  console.log("[RLS-VERIFY] event_attendees rows:", attendeeRows?.length ?? 0,
+    "| error:", attendeeError?.message ?? null);
+
+  if (!attendeeRows?.length) return;
+
+  const profileIds = attendeeRows.map((r) => r.profile_id);
+  const { data: profileRows, error: profileError } = await supabase
+    .from("profiles")
+    .select("id, name, avatar_url, intent_primary, interests, tags, topics")
+    .in("id", profileIds);
+
+  console.log("[RLS-VERIFY] profiles rows:", profileRows?.length ?? 0,
+    "| error:", profileError?.message ?? null);
+
+  if (profileRows?.length) {
+    const sample = profileRows[0];
+    console.log("[RLS-VERIFY] sample profile fields visible:", Object.keys(sample).join(", "));
+    console.log("[RLS-VERIFY] sample name:", sample.name, "| intent:", sample.intent_primary,
+      "| interests:", sample.interests, "| tags:", sample.tags);
+  }
+}
+
 async function init() {
   try {
     currentEvent = await fetchEvent();
@@ -609,6 +670,9 @@ async function init() {
     patchAppStoreLinks();
     trackPageView({ eventId: currentEvent.id });
     wireAppCtaTracking();
+
+    // PHASE 2 probe — runs on every event page load, remove after verification
+    await verifyAttendeeDiscoveryAccess(currentEvent.id);
   } catch (err) {
     logger.error("[EventDetail] load error:", err);
     showNotFound("Something went wrong loading this event. Please try again.");
