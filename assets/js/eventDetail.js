@@ -1,5 +1,6 @@
 // eslint-disable-next-line no-console
-console.log("[EVENT-DETAIL-BOOTED] eventDetail.js executing");
+console.log("[EVENT-DETAIL-BOOTED]");
+window.__EVENT_DETAIL_BOOTED__ = true;
 
 import { supabase } from "./supabaseClient.js";
 import { setCurrentEventId } from "./appState.js";
