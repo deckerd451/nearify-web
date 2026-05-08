@@ -1,3 +1,6 @@
+// eslint-disable-next-line no-console
+console.log("[EVENT-DETAIL-BOOTED] eventDetail.js executing");
+
 import { supabase } from "./supabaseClient.js";
 import { setCurrentEventId } from "./appState.js";
 import { fetchIntelligence, fetchEventMeta, renderIntelligenceInto } from "./intelligence.js";
