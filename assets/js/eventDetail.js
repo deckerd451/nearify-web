@@ -616,3 +616,4 @@ async function init() {
 }
 
 init();
+window.__EVENT_DETAIL_BOOTED__ = true;
