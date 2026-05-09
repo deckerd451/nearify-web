@@ -3,20 +3,20 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Nearify — Event Control Center</title>
-  <meta name="description" content="Create Nearify events, generate QR codes, and manage your event network." />
+  <title>Nearify — Events</title>
+  <meta name="description" content="Discover events, track participation, and coordinate your event ecosystem with Nearify." />
 
   <meta property="og:type"        content="website" />
   <meta property="og:url"         content="https://nearify.org/" />
-  <meta property="og:title"       content="Nearify — Event Control Center" />
-  <meta property="og:description" content="Create events, generate QR codes, and manage your Nearify event network." />
+  <meta property="og:title"       content="Nearify — Events" />
+  <meta property="og:description" content="Discover events, track participation, and coordinate your event ecosystem with Nearify." />
   <meta property="og:image"       content="https://nearify.org/assets/images/og-default.png" />
   <meta name="twitter:card"       content="summary_large_image" />
-  <meta name="twitter:title"      content="Nearify — Event Control Center" />
-  <meta name="twitter:description" content="Create events, generate QR codes, and manage your Nearify event network." />
+  <meta name="twitter:title"      content="Nearify — Events" />
+  <meta name="twitter:description" content="Discover events, track participation, and coordinate your event ecosystem with Nearify." />
   <meta name="twitter:image"      content="https://nearify.org/assets/images/og-default.png" />
 
-  <link rel="stylesheet" href="assets/css/styles.css?v=20260508" />
+  <link rel="stylesheet" href="assets/css/styles.css?v=20260510" />
 </head>
 <body class="cc-page">
 
@@ -92,10 +92,14 @@
 
     <!-- ─── LOGGED-IN DASHBOARD ───────────────────────────────────────── -->
     <div id="dashboardView" style="display:none;">
+
+      <!-- Ecosystem hero — populated by dashboard.js after events load -->
+      <div id="ecosystemHero" class="cc-ecosystem-hero" style="display:none;" aria-label="Event ecosystem overview"></div>
+
       <div class="cc-dashboard">
 
         <div class="cc-dashboard-header">
-          <h1 class="cc-dashboard-title">Events</h1>
+          <h1 class="cc-dashboard-title">Your Events</h1>
           <button id="openCreateModalBtn" class="btn primary">+ Create Event</button>
         </div>
 
@@ -217,7 +221,7 @@
   <!-- QR code library (must load before dashboard.js) -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" integrity="sha384-3zSEDfvllQohrq0PHL1fOXJuC/jSOO34H46t6UQfobFOmxE5BpjjaIJY5F2/bMnU" crossorigin="anonymous"></script>
 
-  <script type="module" src="/assets/js/dashboard.js?v=20260508"></script>
+  <script type="module" src="/assets/js/dashboard.js?v=20260510"></script>
   <script type="module" src="/assets/js/navAuth.js?v=20260508"></script>
 
 </body>

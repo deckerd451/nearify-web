@@ -22,6 +22,14 @@ logger.log("[Dashboard] dashboard.js loaded");
 const EVENT_DETAIL_URL = (id) => `/events/event.html?id=${encodeURIComponent(id)}`;
 const EDIT_URL         = (id) => `/admin/event-setup.html?edit=${encodeURIComponent(id)}`;
 
+const INTENT_LABELS = {
+  meet_people:    "Meet people",
+  find_cofounder: "Find a cofounder",
+  hire:           "Hire",
+  explore_ideas:  "Explore ideas",
+  demo_something: "Demo something",
+};
+
 function formatDate(ts) {
   if (!ts) return "";
   try {
@@ -141,6 +149,27 @@ async function fetchAttendeeCounts(eventIds) {
   return counts;
 }
 
+async function fetchIntentDistribution(eventIds) {
+  if (!eventIds.length) return new Map();
+
+  const { data, error } = await supabase
+    .from("event_attendees")
+    .select("event_id, intent_primary")
+    .in("event_id", eventIds)
+    .not("intent_primary", "is", null);
+
+  if (error) { logger.warn("[Dashboard] intent distribution:", error); return new Map(); }
+
+  // Map<eventId, Map<intent, count>>
+  const result = new Map();
+  for (const row of (data || [])) {
+    if (!result.has(row.event_id)) result.set(row.event_id, new Map());
+    const m = result.get(row.event_id);
+    m.set(row.intent_primary, (m.get(row.intent_primary) || 0) + 1);
+  }
+  return result;
+}
+
 async function endEvent(id) {
   return saveEvent({ id, is_active: false }, true);
 }
@@ -183,19 +212,29 @@ function renderEmptyState() {
   `;
 }
 
-function renderEventCard(ev, count) {
-  const status   = getEventStatus(ev);
-  const jUrl     = buildJoinUrl(ev);
+function renderEventCard(ev, count, intentMap) {
+  const status    = getEventStatus(ev);
+  const jUrl      = buildJoinUrl(ev);
   const detailUrl = EVENT_DETAIL_URL(ev.id);
 
-  const dateStr  = ev.starts_at
+  const dateStr   = ev.starts_at
     ? `${formatDate(ev.starts_at)} · ${formatTime(ev.starts_at)}`
     : "";
   const metaParts = [ev.location, dateStr].filter(Boolean);
   const metaStr   = metaParts.join(" · ");
 
+  // Participation context line
+  const sortedGoals = intentMap ? [...intentMap.entries()].sort((a, b) => b[1] - a[1]) : [];
+  const withGoals   = sortedGoals.reduce((s, [, n]) => s + n, 0);
+  const topGoalKey  = sortedGoals[0]?.[0];
+  const participationParts = [];
+  if (withGoals) participationParts.push(`${withGoals} with goals`);
+  if (topGoalKey && INTENT_LABELS[topGoalKey]) participationParts.push(INTENT_LABELS[topGoalKey]);
+  const participationCtx = participationParts.join(" · ");
+
+  // End Event: now a ghost+danger button, visually receded
   const endBtn = status !== "ended" ? `
-    <button class="btn cc-btn-danger cc-action-btn"
+    <button class="btn cc-btn-ghost cc-action-btn cc-danger-action"
       data-action="end-event"
       data-event-id="${escapeAttr(ev.id)}"
       data-event-name="${escapeAttr(ev.name)}">End Event</button>` : "";
@@ -218,12 +257,20 @@ function renderEventCard(ev, count) {
         <div class="cc-event-metrics">
           <div class="cc-metric">
             <span class="cc-metric-value">${count ?? "—"}</span>
-            <span class="cc-metric-label">checked in</span>
+            <span class="cc-metric-label">joined</span>
           </div>
         </div>
 
+        ${participationCtx ? `<p class="cc-participation-context">${escapeHtml(participationCtx)}</p>` : ""}
+
         <div class="cc-event-actions">
-          <button class="btn primary cc-action-btn"
+
+          <!-- Primary: participation-oriented -->
+          <a class="btn primary cc-action-btn"
+            href="${escapeAttr(detailUrl)}">View Event</a>
+
+          <!-- Secondary: organizer coordination -->
+          <button class="btn secondary cc-action-btn"
             data-action="show-qr"
             data-event-id="${escapeAttr(ev.id)}"
             data-event-name="${escapeAttr(ev.name)}"
@@ -231,20 +278,19 @@ function renderEventCard(ev, count) {
 
           <button class="btn secondary cc-action-btn"
             data-action="copy-link"
-            data-url="${escapeAttr(jUrl)}">Copy Join Link</button>
+            data-url="${escapeAttr(jUrl)}">Copy Link</button>
 
-          <a class="btn secondary cc-action-btn"
-            href="${escapeAttr(detailUrl)}">View Event</a>
+          <!-- Tertiary: admin controls — visually receded -->
+          <div class="cc-organizer-controls">
+            <a class="btn cc-btn-ghost cc-action-btn"
+              href="${escapeAttr(EDIT_URL(ev.id))}">Edit</a>
+            ${endBtn}
+            <button class="btn cc-btn-ghost cc-action-btn"
+              data-action="archive"
+              data-event-id="${escapeAttr(ev.id)}"
+              data-event-name="${escapeAttr(ev.name)}">Archive</button>
+          </div>
 
-          <a class="btn secondary cc-action-btn"
-            href="${escapeAttr(EDIT_URL(ev.id))}">Edit</a>
-
-          ${endBtn}
-
-          <button class="btn cc-btn-ghost cc-action-btn"
-            data-action="archive"
-            data-event-id="${escapeAttr(ev.id)}"
-            data-event-name="${escapeAttr(ev.name)}">Archive</button>
         </div>
 
       </div>
@@ -258,11 +304,92 @@ function renderEventCard(ev, count) {
   `;
 }
 
-function renderDashboard(events, counts) {
+function renderEcosystemHero(events, counts, intentsByEvent) {
+  const hero = document.getElementById("ecosystemHero");
+  if (!hero) return;
+
+  if (!events.length) { hero.style.display = "none"; return; }
+
+  // Pick featured event: live > next upcoming > most recently created ended
+  const byStatus = (s) => events.filter((e) => getEventStatus(e) === s);
+  const featured = byStatus("live")[0] || byStatus("upcoming")[0] || byStatus("ended")[0];
+  if (!featured) { hero.style.display = "none"; return; }
+
+  const status     = getEventStatus(featured);
+  const count      = counts.get(featured.id) || 0;
+  const intentMap  = intentsByEvent.get(featured.id) || new Map();
+  const sortedGoals = [...intentMap.entries()].sort((a, b) => b[1] - a[1]);
+  const withGoals  = sortedGoals.reduce((s, [, n]) => s + n, 0);
+  const topGoals   = sortedGoals.slice(0, 3);
+
+  const totalAttendees = [...counts.values()].reduce((s, n) => s + n, 0);
+
+  const metaParts = [featured.location, featured.starts_at ? formatDate(featured.starts_at) : ""].filter(Boolean);
+  const metaStr   = metaParts.join(" · ");
+
+  const isLive    = status === "live";
+  const kicker    = isLive
+    ? `<span class="cc-ecosystem-live-dot"></span>Live now`
+    : `Your event ecosystem`;
+
+  const goalPillsHtml = topGoals.map(([intent, n]) => `
+    <span class="cc-goal-pill">
+      <span class="cc-goal-pill-label">${escapeHtml(INTENT_LABELS[intent] || intent)}</span>
+      <span class="cc-goal-pill-count">${n}</span>
+    </span>`).join("");
+
+  const aggregateHtml = events.length > 1 && totalAttendees > count
+    ? `<p class="cc-ecosystem-aggregate">${totalAttendees} total attendees across your ${events.length} events</p>`
+    : "";
+
+  const detailUrl = EVENT_DETAIL_URL(featured.id);
+  const jUrl      = buildJoinUrl(featured);
+
+  hero.innerHTML = `
+    <div class="cc-ecosystem-kicker">${kicker}</div>
+    <div class="cc-featured-event${isLive ? " cc-featured-event--live" : ""}">
+      <div class="cc-featured-event-header">
+        <div class="cc-featured-event-info">
+          <h2 class="cc-featured-event-name">${escapeHtml(featured.name)}</h2>
+          ${metaStr ? `<p class="cc-featured-event-meta">${escapeHtml(metaStr)}</p>` : ""}
+        </div>
+        <span class="cc-event-status cc-event-status--${status}">
+          <span class="cc-status-dot"></span>${statusLabel(status)}
+        </span>
+      </div>
+      <div class="cc-featured-participation">
+        <span class="cc-featured-count">${count}</span>
+        <span class="cc-featured-count-label">people joined</span>
+        ${withGoals ? `<span class="cc-featured-goal-note">· ${withGoals} with goals set</span>` : ""}
+      </div>
+      ${topGoals.length ? `<div class="cc-featured-goals-row">${goalPillsHtml}</div>` : ""}
+      <div class="cc-featured-actions">
+        <a href="${escapeAttr(detailUrl)}" class="btn primary">View Event</a>
+        <button class="btn secondary cc-action-btn"
+          data-action="show-qr"
+          data-event-id="${escapeAttr(featured.id)}"
+          data-event-name="${escapeAttr(featured.name)}"
+          data-join-url="${escapeAttr(jUrl)}">Show QR</button>
+      </div>
+    </div>
+    ${aggregateHtml}
+  `;
+
+  hero.style.display = "";
+
+  // Wire hero QR button (outside #eventCardList delegation scope)
+  hero.querySelector("[data-action='show-qr']")
+    ?.addEventListener("click", (e) => {
+      const btn = e.currentTarget;
+      openQrModal(btn.dataset.eventId, btn.dataset.eventName, btn.dataset.joinUrl);
+    });
+}
+
+function renderDashboard(events, counts, intentsByEvent) {
   const list = document.getElementById("eventCardList");
   if (!list) return;
   list.innerHTML = events.length
-    ? events.map((ev) => renderEventCard(ev, counts.get(ev.id) ?? 0)).join("")
+    ? events.map((ev) => renderEventCard(ev, counts.get(ev.id) ?? 0, intentsByEvent.get(ev.id) || new Map())).join("")
     : renderEmptyState();
 }
 
@@ -282,11 +409,14 @@ function renderDashboardError(err) {
 async function refreshDashboard() {
   const list = document.getElementById("eventCardList");
   if (list) list.innerHTML = renderSkeletonCards();
-  const events = await fetchMyEvents();
-  const counts = events.length
-    ? await fetchAttendeeCounts(events.map((e) => e.id))
-    : new Map();
-  renderDashboard(events, counts);
+  const events   = await fetchMyEvents();
+  const eventIds = events.map((e) => e.id);
+  const [counts, intentsByEvent] = await Promise.all([
+    eventIds.length ? fetchAttendeeCounts(eventIds) : Promise.resolve(new Map()),
+    eventIds.length ? fetchIntentDistribution(eventIds) : Promise.resolve(new Map()),
+  ]);
+  renderEcosystemHero(events, counts, intentsByEvent);
+  renderDashboard(events, counts, intentsByEvent);
 }
 
 // ─── QR Modal ─────────────────────────────────────────────────────────────────
@@ -478,14 +608,17 @@ async function loadDashboard() {
   showLoading();
 
   try {
-    const events = await fetchMyEvents();
+    const events   = await fetchMyEvents();
     logger.log("[Dashboard] events loaded:", events.length);
+    const eventIds = events.map((e) => e.id);
 
-    const counts = events.length
-      ? await fetchAttendeeCounts(events.map((event) => event.id))
-      : new Map();
+    const [counts, intentsByEvent] = await Promise.all([
+      eventIds.length ? fetchAttendeeCounts(eventIds) : Promise.resolve(new Map()),
+      eventIds.length ? fetchIntentDistribution(eventIds) : Promise.resolve(new Map()),
+    ]);
 
-    renderDashboard(events, counts);
+    renderEcosystemHero(events, counts, intentsByEvent);
+    renderDashboard(events, counts, intentsByEvent);
   } catch (err) {
     logger.error("[Dashboard] failed to load dashboard:", err);
     renderDashboardError(err);
