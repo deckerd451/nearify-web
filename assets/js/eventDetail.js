@@ -641,7 +641,7 @@ async function verifyAttendeeDiscoveryAccess(eventId) {
   const profileIds = attendeeRows.map((r) => r.profile_id);
   const { data: profileRows, error: profileError } = await supabase
     .from("profiles")
-    .select("id, name, avatar_url, intent_primary, interests, tags, topics")
+    .select("id, name, avatar_url, intent_primary, interests, skills")
     .in("id", profileIds);
 
   console.log("[RLS-VERIFY] profiles rows:", profileRows?.length ?? 0,
@@ -651,7 +651,7 @@ async function verifyAttendeeDiscoveryAccess(eventId) {
     const sample = profileRows[0];
     console.log("[RLS-VERIFY] sample profile fields visible:", Object.keys(sample).join(", "));
     console.log("[RLS-VERIFY] sample name:", sample.name, "| intent:", sample.intent_primary,
-      "| interests:", sample.interests, "| tags:", sample.tags);
+      "| interests:", sample.interests, "| skills:", sample.skills);
   }
 }
 
