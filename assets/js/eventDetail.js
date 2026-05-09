@@ -11,6 +11,7 @@ import { patchAppStoreLinks } from "./config.js";
 import { escapeHtml } from "./utils.js";
 import { logger } from "./logger.js";
 import { canManageEvent } from "./events.js";
+import { loadOrganizerInsights } from "./organizerInsights.js";
 
 const INTENT_STORAGE_KEY = "intent_primary";
 const ATTENDEE_AUTH_KEY = "nearify_attendee_auth_return";
@@ -777,7 +778,9 @@ async function maybeShowOrganizerSection(event) {
   const section = document.getElementById("organizerSection");
   if (!section) return;
   const canManage = await canManageEvent(event);
-  if (canManage) section.style.display = "";
+  if (!canManage) return;
+  section.style.display = "";
+  await loadOrganizerInsights(event);
 }
 
 async function init() {
