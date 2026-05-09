@@ -207,7 +207,7 @@ function renderEmptyState() {
   return `
     <div class="cc-empty-state">
       <p class="cc-empty-title">No events yet.</p>
-      <p class="cc-empty-body">Create your first event to generate a QR code for your guests.</p>
+      <p class="cc-empty-body">Create your first event — or <a href="/events/index.html" class="cc-empty-link">browse what's happening</a> across the community.</p>
     </div>
   `;
 }
@@ -328,9 +328,11 @@ function renderEcosystemHero(events, counts, intentsByEvent) {
   const metaStr   = metaParts.join(" · ");
 
   const isLive    = status === "live";
-  const kicker    = isLive
+  const kicker = isLive
     ? `<span class="cc-ecosystem-live-dot"></span>Live now`
-    : `Your event ecosystem`;
+    : status === "upcoming"
+      ? "Coming up"
+      : "Recent event";
 
   const goalPillsHtml = topGoals.map(([intent, n]) => `
     <span class="cc-goal-pill">
