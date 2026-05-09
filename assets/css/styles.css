@@ -2929,7 +2929,7 @@ code {
 
 .cc-dashboard-header {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
   margin-bottom: 32px;
   gap: 16px;
@@ -3812,4 +3812,22 @@ body.cc-page .cc-event-actions .btn.secondary:hover {
   .cc-featured-count {
     font-size: 30px;
   }
+}
+
+/* ── Dashboard header subtitle ── */
+.cc-dashboard-subtitle {
+  font-size: 13px;
+  color: var(--color-text-muted);
+  margin-top: 3px;
+}
+
+.cc-dashboard-subtitle-link,
+.cc-empty-link {
+  color: var(--color-accent);
+  text-decoration: none;
+}
+
+.cc-dashboard-subtitle-link:hover,
+.cc-empty-link:hover {
+  text-decoration: underline;
 }
