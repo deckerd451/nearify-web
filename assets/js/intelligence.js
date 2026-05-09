@@ -302,7 +302,7 @@ function renderRecommendedAction(decision) {
   const isLowConfidence    = isFallbackDecision && (score < 0 || confidence < 0.5);
   const useStrongLanguage  = decision.action === "suggest_connect" && confidence >= 0.5 && score >= 0;
   const shareableUrl       = getShareableProfileUrl();
-  const intent             = normalizeIntent(decision?.components?.intent || localStorage.getItem("intent_primary"));
+  const intent             = normalizeIntent(decision?.components?.intent);
 
   const intentReasons = {
     meet_people:    isLowConfidence ? "You may both be looking to meet people at this event." : "You're both here to meet people.",
@@ -407,22 +407,19 @@ async function resolveCurrentProfileId() {
   return data?.id ?? null;
 }
 
-async function getCurrentIntent() {
+async function getCurrentIntent(eventId) {
+  if (!eventId) return "";
   try {
-    const user = await getCurrentUser();
-    if (user?.id) {
-      const { data, error } = await supabase
-        .from("profiles").select("intent_primary").eq("user_id", user.id).maybeSingle();
-      if (!error && data?.intent_primary) {
-        const intent = normalizeIntent(data.intent_primary);
-        logger.log("[Intent] current:", intent);
-        return intent;
-      }
-    }
-  } catch (_) { /* fall through */ }
-  const intent = normalizeIntent(localStorage.getItem("intent_primary"));
-  logger.log("[Intent] current:", intent);
-  return intent;
+    const profileId = await resolveCurrentProfileId();
+    if (!profileId) return "";
+    const { data } = await supabase
+      .from("event_attendees")
+      .select("intent_primary")
+      .eq("event_id", eventId)
+      .eq("profile_id", profileId)
+      .maybeSingle();
+    return normalizeIntent(data?.intent_primary);
+  } catch (_) { return ""; }
 }
 
 export async function fetchRawSignals(eventId) {
@@ -464,7 +461,7 @@ export async function fetchRawSignals(eventId) {
   const relevantProfiles = profileRows;
   const me    = relevantProfiles.find((p) => p.id === profileId);
   const peers = relevantProfiles.filter((p) => p.id !== profileId);
-  const intent = await getCurrentIntent();
+  const intent = await getCurrentIntent(eventId);
 
   if (!attendeeRows.length && !interactionRows.length) {
     logger.log("[EL] action:", fallback.action);
