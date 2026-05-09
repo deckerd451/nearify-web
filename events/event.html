@@ -183,6 +183,19 @@
 
     <!-- Pre-event sections — upcoming events only, shown by JS -->
     <div id="eventSections" style="display:none;">
+
+    <!-- Attendee discovery — populated by JS -->
+    <section class="section event-section" id="attendeeDiscoverySection" style="display:none;">
+      <div class="section-heading">
+        <h2>Who's attending</h2>
+        <p id="attendeeDiscoverySubhead">See who's coming and what they're here for.</p>
+      </div>
+      <div id="attendeeDiscoveryGrid" class="attendee-discovery-grid"></div>
+      <div id="attendeeDiscoveryGate" class="attendee-discovery-gate" style="display:none;">
+        <p class="attendee-gate-message"></p>
+      </div>
+    </section>
+
 <section class="section event-section" id="personalConnectSection" style="display:none;">
   <div class="section-heading">
     <h2>Your personal connect QR</h2>
