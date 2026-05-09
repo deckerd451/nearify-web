@@ -1,7 +1,3 @@
-// eslint-disable-next-line no-console
-console.log("[EVENT-DETAIL-BOOTED]");
-window.__EVENT_DETAIL_BOOTED__ = true;
-
 import { supabase } from "./supabaseClient.js";
 import { setCurrentEventId } from "./appState.js";
 import { fetchIntelligence, fetchEventMeta, renderIntelligenceInto } from "./intelligence.js";
@@ -423,10 +419,10 @@ function getInitials(name) {
   return name.trim().split(/\s+/).slice(0, 2).map((w) => w[0]).join("").toUpperCase();
 }
 
-function formatTagList(value, limit = 4) {
-  if (!value) return "";
+function getTagArray(value, limit = 3) {
+  if (!value) return [];
   const arr = Array.isArray(value) ? value : typeof value === "string" ? [value] : [];
-  return arr.slice(0, limit).map((s) => String(s).trim()).filter(Boolean).join(" · ");
+  return arr.slice(0, limit).map((s) => String(s).trim()).filter(Boolean);
 }
 
 async function fetchEventAttendees(eventId) {
@@ -465,11 +461,11 @@ async function fetchEventAttendees(eventId) {
 }
 
 function buildAttendeeCard(attendee, showDetails) {
-  const initials   = getInitials(attendee.name);
+  const initials    = getInitials(attendee.name);
   const intentLabel = attendee.intent ? (INTENT_LABELS[attendee.intent] || attendee.intent) : null;
-  const tagLine    = showDetails
-    ? formatTagList(attendee.interests) || formatTagList(attendee.skills)
-    : "";
+  const tags        = showDetails
+    ? (getTagArray(attendee.interests).length ? getTagArray(attendee.interests) : getTagArray(attendee.skills))
+    : [];
 
   const card = document.createElement("div");
   card.className = "attendee-card";
@@ -501,14 +497,19 @@ function buildAttendeeCard(attendee, showDetails) {
   if (intentLabel) {
     const goalEl = document.createElement("div");
     goalEl.className = "attendee-goal";
-    goalEl.textContent = intentLabel;
+    goalEl.textContent = "Goal: " + intentLabel;
     infoEl.appendChild(goalEl);
   }
 
-  if (tagLine) {
+  if (tags.length) {
     const tagsEl = document.createElement("div");
     tagsEl.className = "attendee-interests";
-    tagsEl.textContent = tagLine;
+    tags.forEach((tag) => {
+      const pill = document.createElement("span");
+      pill.className = "attendee-interest-pill";
+      pill.textContent = tag;
+      tagsEl.appendChild(pill);
+    });
     infoEl.appendChild(tagsEl);
   }
 
@@ -771,40 +772,6 @@ async function populatePage(event) {
   if (heroCopy) heroCopy.style.display = "";
 }
 
-// PHASE 2 — RLS VERIFICATION PROBE
-// Temp: remove after confirming attendee discovery access works for signed-in users.
-async function verifyAttendeeDiscoveryAccess(eventId) {
-  const { data: sessionData } = await supabase.auth.getSession();
-  const userId = sessionData?.session?.user?.id ?? null;
-  console.log("[RLS-VERIFY] signed_in:", !!userId, "| event_id:", eventId);
-
-  const { data: attendeeRows, error: attendeeError } = await supabase
-    .from("event_attendees")
-    .select("profile_id, intent_primary")
-    .eq("event_id", eventId);
-
-  console.log("[RLS-VERIFY] event_attendees rows:", attendeeRows?.length ?? 0,
-    "| error:", attendeeError?.message ?? null);
-
-  if (!attendeeRows?.length) return;
-
-  const profileIds = attendeeRows.map((r) => r.profile_id);
-  const { data: profileRows, error: profileError } = await supabase
-    .from("profiles")
-    .select("id, name, avatar_url, intent_primary, interests, skills")
-    .in("id", profileIds);
-
-  console.log("[RLS-VERIFY] profiles rows:", profileRows?.length ?? 0,
-    "| error:", profileError?.message ?? null);
-
-  if (profileRows?.length) {
-    const sample = profileRows[0];
-    console.log("[RLS-VERIFY] sample profile fields visible:", Object.keys(sample).join(", "));
-    console.log("[RLS-VERIFY] sample name:", sample.name, "| intent:", sample.intent_primary,
-      "| interests:", sample.interests, "| skills:", sample.skills);
-  }
-}
-
 async function init() {
   try {
     currentEvent = await fetchEvent();
@@ -820,9 +787,6 @@ async function init() {
     patchAppStoreLinks();
     trackPageView({ eventId: currentEvent.id });
     wireAppCtaTracking();
-
-    // PHASE 2 probe — runs on every event page load, remove after verification
-    await verifyAttendeeDiscoveryAccess(currentEvent.id);
   } catch (err) {
     logger.error("[EventDetail] load error:", err);
     showNotFound("Something went wrong loading this event. Please try again.");

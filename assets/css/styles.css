@@ -492,7 +492,14 @@ html {
 }
 
 .event-section {
+  padding: 52px 40px;
   text-align: left;
+}
+
+@media (max-width: 600px) {
+  .event-section {
+    padding: 40px 24px;
+  }
 }
 
 .section-heading {
@@ -1386,20 +1393,26 @@ code {
 
 .attendee-discovery-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
-  gap: 12px;
-  max-width: 800px;
-  margin: 24px auto 0;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 14px;
+  max-width: 860px;
+  margin: 20px auto 0;
 }
 
 .attendee-card {
   background: var(--color-surface);
-  border: 1px solid rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: var(--radius-md);
-  padding: 14px 16px;
+  padding: 18px 20px;
   display: flex;
-  gap: 12px;
+  gap: 14px;
   align-items: flex-start;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.attendee-card:hover {
+  border-color: rgba(48, 209, 88, 0.32);
+  box-shadow: 0 0 0 1px rgba(48, 209, 88, 0.08), 0 4px 16px rgba(0, 0, 0, 0.25);
 }
 
 .attendee-avatar {
@@ -1407,16 +1420,16 @@ code {
 }
 
 .attendee-avatar-img {
-  width: 40px;
-  height: 40px;
+  width: 44px;
+  height: 44px;
   border-radius: 50%;
   object-fit: cover;
   display: block;
 }
 
 .attendee-avatar-placeholder {
-  width: 40px;
-  height: 40px;
+  width: 44px;
+  height: 44px;
   border-radius: 50%;
   background: rgba(48, 209, 88, 0.12);
   border: 1px solid rgba(48, 209, 88, 0.22);
@@ -1431,38 +1444,44 @@ code {
 
 .attendee-info {
   min-width: 0;
+  flex: 1;
 }
 
 .attendee-name {
   font-size: 14px;
   font-weight: 600;
   color: var(--color-text);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  line-height: 1.3;
 }
 
 .attendee-goal {
   font-size: 12px;
+  font-weight: 600;
   color: var(--color-accent);
-  margin-top: 3px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  margin-top: 5px;
+  line-height: 1.4;
 }
 
 .attendee-interests {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 8px;
+}
+
+.attendee-interest-pill {
   font-size: 11px;
   color: var(--color-text-secondary);
-  margin-top: 4px;
-  opacity: 0.8;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 20px;
+  padding: 2px 8px;
   white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  line-height: 1.5;
 }
 
 .attendee-discovery-gate {
-  max-width: 800px;
+  max-width: 860px;
   margin: 16px auto 0;
   padding-top: 16px;
   border-top: 1px solid rgba(255, 255, 255, 0.06);
@@ -1475,13 +1494,14 @@ code {
   opacity: 0.75;
 }
 
-@media (max-width: 600px) {
+@media (max-width: 640px) {
   .attendee-discovery-grid {
     grid-template-columns: 1fr 1fr;
+    gap: 10px;
   }
 }
 
-@media (max-width: 380px) {
+@media (max-width: 400px) {
   .attendee-discovery-grid {
     grid-template-columns: 1fr;
   }
