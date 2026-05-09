@@ -10,6 +10,7 @@ import { trackPageView, wireAppCtaTracking } from "./analytics.js";
 import { patchAppStoreLinks } from "./config.js";
 import { escapeHtml } from "./utils.js";
 import { logger } from "./logger.js";
+import { canManageEvent } from "./events.js";
 
 const INTENT_STORAGE_KEY = "intent_primary";
 const ATTENDEE_AUTH_KEY = "nearify_attendee_auth_return";
@@ -772,6 +773,13 @@ async function populatePage(event) {
   if (heroCopy) heroCopy.style.display = "";
 }
 
+async function maybeShowOrganizerSection(event) {
+  const section = document.getElementById("organizerSection");
+  if (!section) return;
+  const canManage = await canManageEvent(event);
+  if (canManage) section.style.display = "";
+}
+
 async function init() {
   try {
     currentEvent = await fetchEvent();
@@ -783,6 +791,7 @@ async function init() {
     currentUser = await fetchCurrentUser();
     await populatePage(currentEvent);
     await renderPersonalConnectSection(currentEvent.id);
+    await maybeShowOrganizerSection(currentEvent);
 
     patchAppStoreLinks();
     trackPageView({ eventId: currentEvent.id });
