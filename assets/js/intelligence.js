@@ -34,8 +34,8 @@ export { computeNextBestAction, shouldPromoteFallbackDecision, hasMeaningfulFall
 // ---------------------------------------------------------------------------
 
 const DIRECTION_LABELS = {
-  incoming: "They noticed you",
-  outgoing: "You crossed paths",
+  incoming: "They connected with you",
+  outgoing: "You connected with them",
 };
 
 const STRENGTH_LEVELS = [
@@ -137,7 +137,7 @@ export function renderIntelCard(item) {
   if (item.type === "missed") {
     const hint = document.createElement("p");
     hint.className = "intel-missed-hint";
-    hint.textContent = "You were near each other but didn't connect — worth a reach-out.";
+    hint.textContent = "You were at the same event but didn't connect — worth a reach-out.";
     body.appendChild(hint);
   }
 
@@ -305,22 +305,22 @@ function renderRecommendedAction(decision) {
   const intent             = normalizeIntent(decision?.components?.intent || localStorage.getItem("intent_primary"));
 
   const intentReasons = {
-    meet_people:    isLowConfidence ? "Possible signal: you may both be looking to meet people." : "You're both looking to meet people.",
-    find_cofounder: isLowConfidence ? "Possible signal: you may both be exploring collaboration opportunities." : "You're both exploring collaboration opportunities.",
-    hire:           isLowConfidence ? "Possible signal: there may be a hiring match here." : "There may be a strong hiring match here.",
-    explore_ideas:  isLowConfidence ? "Possible signal: you may both be exploring ideas." : "You're both exploring ideas.",
-    demo:           isLowConfidence ? "Possible signal: one of you may be showcasing something worth seeing." : "One of you is showcasing something worth seeing.",
+    meet_people:    isLowConfidence ? "You may both be looking to meet people at this event." : "You're both here to meet people.",
+    find_cofounder: isLowConfidence ? "You may both be exploring collaboration opportunities." : "You're both exploring collaboration opportunities.",
+    hire:           isLowConfidence ? "There may be a hiring match worth exploring." : "There may be a strong hiring match here.",
+    explore_ideas:  isLowConfidence ? "You may both be here to explore ideas." : "You're both here to explore ideas.",
+    demo:           isLowConfidence ? "One of you may be showcasing something worth seeing." : "One of you is showcasing something worth seeing.",
   };
   const reason = intent
-    ? (intentReasons[intent] || (isLowConfidence ? "Possible signal from a relevant interaction." : "You crossed paths through a relevant interaction."))
-    : (isLowConfidence ? "Possible signal from a recent interaction." : "You had a recent interaction.");
+    ? (intentReasons[intent] || (isLowConfidence ? "You may have overlapping goals at this event." : "You connected through a relevant interaction."))
+    : (isLowConfidence ? "You may have shared goals at this event." : "You had a notable interaction at this event.");
 
   const block = document.createElement("div");
   block.className = "intel-recommended-action";
 
   const title = document.createElement("h3");
   title.className = "intel-recommended-title";
-  title.textContent = "Recommended next step";
+  title.textContent = "Recommended connection";
 
   const body = document.createElement("p");
   body.className = "intel-recommended-body";
@@ -329,14 +329,14 @@ function renderRecommendedAction(decision) {
   const button = document.createElement("button");
   button.type = "button";
   button.className = "intel-connect-btn";
-  button.textContent = useStrongLanguage ? "Open Nearify to connect live" : "Open Nearify to explore this signal";
+  button.textContent = useStrongLanguage ? "Open Nearify to connect" : "Open Nearify to follow up";
   button.addEventListener("click", () => handleSuggestConnect(block, { hasAttemptedDeepLinkForThisClick: false }));
 
   const subtext = document.createElement("p");
   subtext.className = "intel-connect-subtext";
   subtext.textContent = isLowConfidence
-    ? "This is an early signal. The app can confirm live context at the event."
-    : "Live connections happen inside the app at the event.";
+    ? "This is an early match. Use the Nearify app to connect at the event."
+    : "Use the Nearify app to connect in person at the event.";
 
   const fallback = document.createElement("div");
   fallback.className = "intel-connect-fallback";
@@ -601,8 +601,8 @@ export function renderIntelligenceInto(container, data, eventMeta = null, fallba
 
   const buckets = {
     recommended: { title: "Strongest interactions", items: [] },
-    follow_up:   { title: "People you met",          items: [] },
-    missed:      { title: "You missed",               items: [] },
+    follow_up:   { title: "People you met",         items: [] },
+    missed:      { title: "Didn't connect",          items: [] },
   };
   data.forEach((d) => { if (buckets[d.type]) buckets[d.type].items.push(d); });
 
