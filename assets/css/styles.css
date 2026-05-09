@@ -3411,3 +3411,197 @@ body.cc-page .cc-event-actions .btn.secondary {
 body.cc-page .cc-event-actions .btn.secondary:hover {
   border-color: #666;
 }
+
+/* ============================================================
+   Organizer Insights
+   Visible only to the event creator (gated by canManageEvent).
+   Aggregate counts only — no individual data exposed.
+   ============================================================ */
+
+.organizer-section {
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.organizer-heading-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.organizer-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: var(--radius-full);
+  background: rgba(48, 209, 88, 0.12);
+  border: 1px solid rgba(48, 209, 88, 0.28);
+  color: var(--color-accent);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+/* Natural-language summary strip */
+.organizer-summary {
+  max-width: 760px;
+  margin: 0 auto 28px;
+  padding: 16px 22px;
+  background: rgba(48, 209, 88, 0.05);
+  border: 1px solid rgba(48, 209, 88, 0.14);
+  border-radius: var(--radius-md);
+  font-size: 15px;
+  line-height: 1.6;
+  color: rgba(255, 255, 255, 0.75);
+  font-style: italic;
+  text-align: center;
+}
+
+/* Card grid */
+.organizer-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  max-width: 860px;
+  margin: 0 auto 16px;
+}
+
+@media (max-width: 640px) {
+  .organizer-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.organizer-card {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-md);
+  padding: 20px 22px;
+}
+
+.organizer-card-title {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+  margin-bottom: 14px;
+}
+
+/* Participation card */
+.organizer-stat {
+  font-size: 40px;
+  font-weight: 700;
+  color: var(--color-text-primary);
+  line-height: 1;
+  margin-bottom: 4px;
+}
+
+.organizer-stat-label {
+  font-size: 13px;
+  color: var(--color-text-secondary);
+  margin-bottom: 10px;
+}
+
+.organizer-stat-sub {
+  font-size: 13px;
+  color: var(--color-text-muted);
+  margin-bottom: 14px;
+}
+
+.organizer-pct {
+  color: var(--color-accent);
+}
+
+/* Shared bar component */
+.organizer-bar-track {
+  height: 5px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-full);
+  overflow: hidden;
+}
+
+.organizer-bar-fill {
+  height: 100%;
+  background: var(--color-accent);
+  border-radius: var(--radius-full);
+  min-width: 4px;
+}
+
+/* Goal distribution rows */
+.organizer-goal-row {
+  margin-bottom: 14px;
+}
+
+.organizer-goal-row:last-child {
+  margin-bottom: 0;
+}
+
+.organizer-goal-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 6px;
+}
+
+.organizer-goal-label {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.organizer-goal-count {
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+
+/* Interest / skill tag cloud */
+.organizer-tag-cloud {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.organizer-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 11px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: var(--radius-full);
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.75);
+}
+
+.organizer-tag-count {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--color-text-muted);
+}
+
+/* Empty / loading states */
+.organizer-empty {
+  max-width: 860px;
+  margin: 0 auto;
+  text-align: center;
+  padding: 40px 20px;
+  font-size: 14px;
+  color: var(--color-text-muted);
+}
+
+.organizer-empty-note {
+  font-size: 13px;
+  color: var(--color-text-muted);
+  margin: 0;
+}
+
+.organizer-loading {
+  max-width: 860px;
+  margin: 0 auto;
+  text-align: center;
+  padding: 32px 20px;
+  font-size: 14px;
+  color: var(--color-text-muted);
+}
