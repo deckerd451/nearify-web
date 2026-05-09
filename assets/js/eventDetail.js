@@ -414,6 +414,155 @@ async function loadIntelligence(event) {
   }
 }
 
+// ---------------------------------------------------------------------------
+// Attendee discovery
+// ---------------------------------------------------------------------------
+
+function getInitials(name) {
+  if (!name) return "?";
+  return name.trim().split(/\s+/).slice(0, 2).map((w) => w[0]).join("").toUpperCase();
+}
+
+function formatTagList(value, limit = 4) {
+  if (!value) return "";
+  const arr = Array.isArray(value) ? value : typeof value === "string" ? [value] : [];
+  return arr.slice(0, limit).map((s) => String(s).trim()).filter(Boolean).join(" · ");
+}
+
+async function fetchEventAttendees(eventId) {
+  const { data: attendeeRows, error: attendeeError } = await supabase
+    .from("event_attendees")
+    .select("profile_id, intent_primary")
+    .eq("event_id", eventId);
+
+  if (attendeeError || !attendeeRows?.length) return [];
+
+  const profileIds = attendeeRows.map((r) => r.profile_id);
+  const { data: profileRows, error: profileError } = await supabase
+    .from("profiles")
+    .select("id, name, avatar_url, interests, skills")
+    .in("id", profileIds);
+
+  if (profileError) {
+    logger.error("[EventDetail] attendee discovery profiles error:", profileError);
+    return [];
+  }
+
+  const profileMap = new Map((profileRows || []).map((p) => [p.id, p]));
+
+  return attendeeRows.map((a) => {
+    const profile = profileMap.get(a.profile_id);
+    if (!profile) return null;
+    return {
+      profileId:  a.profile_id,
+      name:       profile.name || "Attendee",
+      avatarUrl:  profile.avatar_url || null,
+      intent:     a.intent_primary || null,  // event_attendees is source of truth
+      interests:  profile.interests || null,
+      skills:     profile.skills || null,
+    };
+  }).filter(Boolean);
+}
+
+function buildAttendeeCard(attendee, showDetails) {
+  const initials   = getInitials(attendee.name);
+  const intentLabel = attendee.intent ? (INTENT_LABELS[attendee.intent] || attendee.intent) : null;
+  const tagLine    = showDetails
+    ? formatTagList(attendee.interests) || formatTagList(attendee.skills)
+    : "";
+
+  const card = document.createElement("div");
+  card.className = "attendee-card";
+
+  const avatarEl = document.createElement("div");
+  avatarEl.className = "attendee-avatar";
+  if (attendee.avatarUrl) {
+    const img = document.createElement("img");
+    img.className = "attendee-avatar-img";
+    img.src = attendee.avatarUrl;
+    img.alt = initials;
+    img.loading = "lazy";
+    avatarEl.appendChild(img);
+  } else {
+    const placeholder = document.createElement("div");
+    placeholder.className = "attendee-avatar-placeholder";
+    placeholder.textContent = initials;
+    avatarEl.appendChild(placeholder);
+  }
+
+  const infoEl = document.createElement("div");
+  infoEl.className = "attendee-info";
+
+  const nameEl = document.createElement("div");
+  nameEl.className = "attendee-name";
+  nameEl.textContent = attendee.name;
+  infoEl.appendChild(nameEl);
+
+  if (intentLabel) {
+    const goalEl = document.createElement("div");
+    goalEl.className = "attendee-goal";
+    goalEl.textContent = intentLabel;
+    infoEl.appendChild(goalEl);
+  }
+
+  if (tagLine) {
+    const tagsEl = document.createElement("div");
+    tagsEl.className = "attendee-interests";
+    tagsEl.textContent = tagLine;
+    infoEl.appendChild(tagsEl);
+  }
+
+  card.appendChild(avatarEl);
+  card.appendChild(infoEl);
+  return card;
+}
+
+function renderAttendeeDiscovery(attendees, myProfileId, isFullAccess) {
+  const grid    = document.getElementById("attendeeDiscoveryGrid");
+  const gate    = document.getElementById("attendeeDiscoveryGate");
+  const section = document.getElementById("attendeeDiscoverySection");
+  if (!grid || !section) return;
+
+  const others  = attendees.filter((a) => a.profileId !== myProfileId);
+  if (!others.length) return;
+
+  const GATE_LIMIT = 6;
+  const visible   = isFullAccess ? others : others.slice(0, GATE_LIMIT);
+  const gated     = !isFullAccess && others.length > 0;
+
+  grid.innerHTML = "";
+  visible.forEach((a) => grid.appendChild(buildAttendeeCard(a, isFullAccess)));
+
+  if (gated && gate) {
+    const msg = gate.querySelector(".attendee-gate-message");
+    if (msg) {
+      msg.textContent = currentUser
+        ? "Join in the Nearify app to see all attendees and connect."
+        : "Sign in to see everyone attending and what they're here for.";
+    }
+    gate.style.display = "";
+  }
+
+  section.style.display = "";
+}
+
+async function loadAttendeeDiscovery(eventId) {
+  const attendees = await fetchEventAttendees(eventId);
+  if (!attendees.length) return;
+
+  let myProfileId = null;
+  if (currentUser?.id) {
+    const { data: p } = await supabase
+      .from("profiles").select("id").eq("user_id", currentUser.id).maybeSingle();
+    myProfileId = p?.id ?? null;
+  }
+
+  const isAttendee  = myProfileId ? attendees.some((a) => a.profileId === myProfileId) : false;
+  const isFullAccess = !!currentUser && isAttendee;
+
+  renderAttendeeDiscovery(attendees, myProfileId, isFullAccess);
+}
+
 async function renderPersonalConnectSection(eventId) {
   const section = document.getElementById("personalConnectSection");
   const urlEl = document.getElementById("personalConnectUrl");
@@ -613,6 +762,7 @@ async function populatePage(event) {
     updateAuthPositioning();
     await hydrateIntent();
     await maybeContinueAfterAuth();
+    await loadAttendeeDiscovery(event.id);
   }
 
   const skeleton = document.getElementById("eventSkeleton");
