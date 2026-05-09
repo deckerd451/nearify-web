@@ -454,7 +454,7 @@ export async function fetchRawSignals(eventId) {
   const { data: profiles, error: profilesError } = attendeeIdList.length
     ? await supabase
         .from("profiles")
-        .select("id, name, intent_primary, intent_secondary, interests, tags, topics")
+        .select("id, name, intent_primary, intent_secondary, interests, skills")
         .in("id", attendeeIdList)
     : { data: [], error: null };
 
