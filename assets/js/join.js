@@ -702,29 +702,43 @@ function saveGhostFlatKeys(ghost) {
 let guestEventAttendees = [];
 
 async function fetchGuestEventAttendees(eventId) {
-  if (!eventId) return [];
+  console.log("[GuestAttendees] Loading attendees for event", eventId);
+  if (!eventId) return { attendees: [] };
 
   const { data: attendeeRows, error: attendeeError } = await supabase
     .from("event_attendees")
     .select("profile_id, intent_primary")
     .eq("event_id", eventId);
 
-  if (attendeeError || !attendeeRows?.length) return [];
+  console.log("[GuestAttendees] event_attendees result", attendeeRows, attendeeError);
+
+  if (attendeeError) {
+    logger.warn("[GuestAttendees] event_attendees query failed", attendeeError);
+    return { attendees: [], loadError: "Couldn't load attendees." };
+  }
+
+  if (!attendeeRows?.length) {
+    return { attendees: [], empty: "No attendees found for this event yet." };
+  }
 
   const profileIds = attendeeRows.map((r) => r.profile_id);
+  console.log("[GuestAttendees] profile ids", profileIds);
+
   const { data: profileRows, error: profileError } = await supabase
     .from("profiles")
     .select("id, name, avatar_url")
     .in("id", profileIds);
 
+  console.log("[GuestAttendees] profiles result", profileRows, profileError);
+
   if (profileError) {
-    logger.warn("[GuestConnect] Failed to fetch attendee profiles", profileError);
-    return [];
+    logger.warn("[GuestAttendees] profiles query failed", profileError);
+    return { attendees: [], loadError: "Couldn't load attendees." };
   }
 
   const profileMap = new Map((profileRows || []).map((p) => [p.id, p]));
 
-  return attendeeRows
+  const normalized = attendeeRows
     .map((a) => {
       const profile = profileMap.get(a.profile_id);
       if (!profile?.name) return null;
@@ -736,6 +750,10 @@ async function fetchGuestEventAttendees(eventId) {
       };
     })
     .filter(Boolean);
+
+  console.log("[GuestAttendees] normalized attendees", normalized);
+
+  return { attendees: normalized };
 }
 
 function getAttendeeInitials(name) {
@@ -793,11 +811,19 @@ function renderAttendeeSuggestions(query) {
   if (!listEl) return;
 
   const q = query.toLowerCase().trim();
-  const matches = q
-    ? guestEventAttendees.filter((a) => a.name.toLowerCase().includes(q)).slice(0, 8)
-    : [];
+  if (!q) { closeSuggestions(); return; }
 
-  if (!matches.length) { closeSuggestions(); return; }
+  const matches = guestEventAttendees.filter((a) => a.name.toLowerCase().includes(q)).slice(0, 8);
+
+  if (!matches.length) {
+    if (guestEventAttendees.length > 0) {
+      listEl.innerHTML = `<li class="guest-attendee-empty">No matching attendees.</li>`;
+      listEl.style.display = "";
+    } else {
+      closeSuggestions();
+    }
+    return;
+  }
 
   listEl.innerHTML = matches.map((a, i) => {
     const initials   = getAttendeeInitials(a.name);
@@ -892,11 +918,19 @@ function showGuestJoinedState(ghost) {
   wireGuestConnectSection();
   loadGuestConnectionHistory().then(renderGuestConnectionHistory);
 
-  const connectEventId = ghost.eventId || localStorage.getItem("nearify_ghost_event_id");
+  const connectEventId = ghost.eventId
+    || localStorage.getItem("nearify_ghost_event_id")
+    || new URLSearchParams(window.location.search).get("event");
+
   if (connectEventId) {
-    fetchGuestEventAttendees(connectEventId).then((attendees) => {
+    fetchGuestEventAttendees(connectEventId).then(({ attendees, loadError, empty }) => {
       guestEventAttendees = attendees;
       logger.log("[GuestConnect] Loaded", attendees.length, "attendees");
+      const statusEl = document.getElementById("guestConnectStatus");
+      if (statusEl) {
+        if (loadError) statusEl.textContent = loadError;
+        else if (empty) statusEl.textContent = empty;
+      }
     });
   }
 
