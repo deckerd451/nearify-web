@@ -765,8 +765,11 @@ async function maybeClaimPendingGhostSession() {
     return;
   }
 
-  const { data: sessionData } = await supabase.auth.getSession();
-  const userId = sessionData?.session?.user?.id;
+  const { data: { session } } = await supabase.auth.getSession();
+  const userId = session?.user?.id;
+
+  console.log("[GuestClaim] Auth user id", userId);
+
   if (!userId) {
     logger.warn("[GuestClaim] Pending claim found but no authenticated user");
     return;
@@ -780,14 +783,26 @@ async function maybeClaimPendingGhostSession() {
 
   if (profileError || !profileData?.id) {
     logger.warn("[GuestClaim] Could not resolve profile id", profileError);
-    if (statusEl) statusEl.textContent = "Sign-in succeeded but we couldn't link your profile. Please try again.";
+    if (statusEl) statusEl.textContent = "We couldn't find your Nearify profile after sign-in. Your guest session is still saved.";
     return;
   }
 
+  const profileId = profileData.id;
+  console.log("[GuestClaim] Resolved profile id", profileId);
+
+  // The scoped client starts with no auth session (persistSession: false).
+  // Inject the current user's JWT so auth.uid() resolves correctly inside
+  // claim_ghost_activity — without this, current_profile_id() returns null
+  // and the function raises P0001 Forbidden.
   const scoped = createScopedSupabaseClient({ "x-ghost-token": ghostToken });
+  await scoped.auth.setSession({
+    access_token: session.access_token,
+    refresh_token: session.refresh_token,
+  });
+
   const { error } = await scoped.rpc("claim_ghost_activity", {
     p_ghost_id: ghostId,
-    p_profile_id: profileData.id,
+    p_profile_id: profileId,
   });
 
   if (error) {
