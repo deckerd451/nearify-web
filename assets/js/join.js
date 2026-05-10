@@ -705,51 +705,29 @@ async function fetchGuestEventAttendees(eventId) {
   console.log("[GuestAttendees] Loading attendees for event", eventId);
   if (!eventId) return { attendees: [] };
 
-  const { data: attendeeRows, error: attendeeError } = await supabase
-    .from("event_attendees")
-    .select("profile_id, intent_primary")
-    .eq("event_id", eventId);
+  const { data, error } = await supabase.rpc("get_public_event_attendees", {
+    p_event_id: eventId,
+  });
 
-  console.log("[GuestAttendees] event_attendees result", attendeeRows, attendeeError);
+  console.log("[GuestAttendees] get_public_event_attendees result", data, error);
 
-  if (attendeeError) {
-    logger.warn("[GuestAttendees] event_attendees query failed", attendeeError);
+  if (error) {
+    logger.warn("[GuestAttendees] RPC failed", error.message, error.code);
     return { attendees: [], loadError: "Couldn't load attendees." };
   }
 
-  if (!attendeeRows?.length) {
+  if (!data?.length) {
     return { attendees: [], empty: "No attendees found for this event yet." };
   }
 
-  const profileIds = attendeeRows.map((r) => r.profile_id);
-  console.log("[GuestAttendees] profile ids", profileIds);
-
-  const { data: profileRows, error: profileError } = await supabase
-    .from("profiles")
-    .select("id, name, avatar_url")
-    .in("id", profileIds);
-
-  console.log("[GuestAttendees] profiles result", profileRows, profileError);
-
-  if (profileError) {
-    logger.warn("[GuestAttendees] profiles query failed", profileError);
-    return { attendees: [], loadError: "Couldn't load attendees." };
-  }
-
-  const profileMap = new Map((profileRows || []).map((p) => [p.id, p]));
-
-  const normalized = attendeeRows
-    .map((a) => {
-      const profile = profileMap.get(a.profile_id);
-      if (!profile?.name) return null;
-      return {
-        profileId: a.profile_id,
-        name:      profile.name,
-        avatarUrl: profile.avatar_url || null,
-        intent:    a.intent_primary || null,
-      };
-    })
-    .filter(Boolean);
+  const normalized = data
+    .filter((r) => r.name)
+    .map((r) => ({
+      profileId: r.profile_id,
+      name:      r.name,
+      avatarUrl: r.avatar_url || null,
+      intent:    r.intent_primary || null,
+    }));
 
   console.log("[GuestAttendees] normalized attendees", normalized);
 
