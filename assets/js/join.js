@@ -774,7 +774,7 @@ function renderGuestConnectionHistory(connections) {
   }
 
   listEl.innerHTML = names
-    .map((name) => `<li>Connected with ${escapeHtml(name)}</li>`)
+    .map((name) => `<li>Met ${escapeHtml(name)}</li>`)
     .join("");
   historyEl.style.display = "";
 }
@@ -783,9 +783,9 @@ function updateClaimButtonCount(count) {
   const btn = document.getElementById("guestClaimSignInBtn");
   if (!btn) return;
   if (count > 0) {
-    btn.textContent = count === 1 ? "Claim your 1 connection" : `Claim your ${count} connections`;
+    btn.textContent = count === 1 ? "Claim your 1 interaction" : `Claim your ${count} interactions`;
   } else {
-    btn.textContent = "Sign in to claim connections";
+    btn.textContent = "Sign in to save your interactions";
   }
 }
 
@@ -860,14 +860,14 @@ async function handleAttendeeSelect(attendee) {
     logger.warn("[GuestConnect] record_ghost_connection failed", error);
     if (statusEl) {
       statusEl.textContent = (error.message || "").includes("Connection already exists")
-        ? `You've already connected with ${attendee.name}.`
+        ? `You already saved an interaction with ${attendee.name}.`
         : `Connection failed: ${error.message || "Unknown error"}`;
     }
   } else {
     if (statusEl) {
       statusEl.innerHTML =
-        `<strong>Connected with ${escapeHtml(attendee.name)}</strong>` +
-        `<br><span class="guest-connect-claim-hint">You can claim this connection later by signing in.</span>`;
+        `<strong>You met ${escapeHtml(attendee.name)} at this event.</strong>` +
+        `<br><span class="guest-connect-claim-hint">You can save this interaction to your Nearify profile later.</span>`;
     }
     const connections = await loadGuestConnectionHistory();
     renderGuestConnectionHistory(connections);
@@ -931,7 +931,7 @@ function showGuestJoinedState(ghost) {
         } else if (attendees.length > 0) {
           // Attendees loaded — placeholder is no longer needed; clear only if
           // no connection message is already showing.
-          if (statusEl.textContent === "Search for someone you just met and save the connection.") {
+          if (statusEl.textContent === "Search for someone you met and save the interaction.") {
             statusEl.textContent = "";
           }
         }
@@ -1040,7 +1040,7 @@ async function maybeClaimPendingGhostSession() {
       status: error?.status,
       raw: JSON.stringify(error || {}, null, 2),
     });
-    if (statusEl) statusEl.textContent = `We couldn't claim your session: ${error?.message || "Unknown error"}. Your connections are still saved as a guest.`;
+    if (statusEl) statusEl.textContent = `We couldn't save your session: ${error?.message || "Unknown error"}. Your interactions are still saved on this device.`;
     return;
   }
 

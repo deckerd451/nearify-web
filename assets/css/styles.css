@@ -2194,7 +2194,14 @@ code {
   font-size: 14px;
   font-weight: 600;
   color: #c5d5e8;
+  margin: 0 0 4px;
+}
+
+.guest-connect-subtitle {
+  font-size: 13px;
+  color: #8fa0b8;
   margin: 0 0 12px;
+  line-height: 1.5;
 }
 
 /* Search wrap keeps suggestions in document flow (no z-index stacking) */
