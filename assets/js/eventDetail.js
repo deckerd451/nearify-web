@@ -48,6 +48,14 @@ function getDeepLink(eventId) {
   return `beacon://event/${encodeURIComponent(eventId)}`;
 }
 
+function isMobile() {
+  return /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+}
+
+function getWebJoinUrl(eventId) {
+  return `/join/?event=${encodeURIComponent(eventId)}`;
+}
+
 function parseStoredJson(key) {
   try {
     const raw = localStorage.getItem(key);
@@ -223,6 +231,13 @@ function attemptDeepLink(deepLink) {
 
 function beginJoinFlow(source = "join") {
   if (!currentEvent?.id) return;
+
+  if (!isMobile()) {
+    // Desktop: navigate to the web join page — no beacon:// attempt
+    window.location.href = getWebJoinUrl(currentEvent.id);
+    return;
+  }
+
   const deepLink = getDeepLink(currentEvent.id);
 
   try {
@@ -357,7 +372,11 @@ async function maybeContinueAfterAuth() {
   }
 
   localStorage.removeItem(ATTENDEE_AUTH_KEY);
-  beginJoinFlow("after_attendee_sign_in");
+
+  // Only attempt the app deep link on mobile — desktop stays on the event page
+  if (isMobile()) {
+    beginJoinFlow("after_attendee_sign_in");
+  }
 }
 
 async function loadIntelligence(event) {
