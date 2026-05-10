@@ -689,17 +689,124 @@ function showGuestForm() {
   if (input) input.focus();
 }
 
+function saveGhostFlatKeys(ghost) {
+  try {
+    if (ghost.ghostId) localStorage.setItem("nearify_ghost_id", ghost.ghostId);
+    if (ghost.ghostToken) localStorage.setItem("nearify_ghost_token", ghost.ghostToken);
+    if (ghost.eventId) localStorage.setItem("nearify_ghost_event_id", ghost.eventId);
+    if (ghost.displayName) localStorage.setItem("nearify_ghost_display_name", ghost.displayName);
+  } catch (_) {}
+}
+
 function showGuestJoinedState(ghost) {
   const section = document.getElementById("guestJoinSection");
   const form = document.getElementById("guestForm");
   const joined = document.getElementById("guestJoinedState");
   const nameEl = document.getElementById("guestJoinedName");
   const cta = document.getElementById("guestJoinCta");
+
+  saveGhostFlatKeys(ghost);
+
   hide(form);
   hide(cta);
   show(section);
   show(joined);
   if (nameEl) nameEl.textContent = ghost.displayName || "";
+
+  // Wire the claim sign-in button every time the joined state is shown
+  // (runs for both new-join and restored-session paths)
+  const claimBtn = document.getElementById("guestClaimSignInBtn");
+  if (claimBtn) {
+    claimBtn.addEventListener("click", async () => {
+      const ghostId = localStorage.getItem("nearify_ghost_id");
+      const ghostToken = localStorage.getItem("nearify_ghost_token");
+      const statusEl = document.getElementById("guestClaimStatus");
+
+      if (!ghostId || !ghostToken) {
+        if (statusEl) statusEl.textContent = "Guest session missing. Please join as guest again.";
+        return;
+      }
+
+      logger.log("[GuestClaim] Starting sign-in to claim guest session");
+      localStorage.setItem("nearify_pending_ghost_claim", "true");
+
+      claimBtn.disabled = true;
+      claimBtn.textContent = "Signing in…";
+
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: { redirectTo: window.location.href },
+      });
+
+      if (error) {
+        logger.error("[GuestClaim] OAuth start failed", error);
+        localStorage.removeItem("nearify_pending_ghost_claim");
+        claimBtn.disabled = false;
+        claimBtn.textContent = "Sign in to claim connections";
+        const statusEl2 = document.getElementById("guestClaimStatus");
+        if (statusEl2) statusEl2.textContent = "Sign-in failed. Please try again.";
+      }
+    });
+  }
+}
+
+async function maybeClaimPendingGhostSession() {
+  if (localStorage.getItem("nearify_pending_ghost_claim") !== "true") return;
+
+  logger.log("[GuestClaim] Pending claim detected after auth");
+
+  const ghostId = localStorage.getItem("nearify_ghost_id");
+  const ghostToken = localStorage.getItem("nearify_ghost_token");
+  const statusEl = document.getElementById("guestClaimStatus");
+
+  if (!ghostId || !ghostToken) {
+    localStorage.removeItem("nearify_pending_ghost_claim");
+    logger.warn("[GuestClaim] Pending claim found but ghost keys missing");
+    return;
+  }
+
+  const { data: sessionData } = await supabase.auth.getSession();
+  const userId = sessionData?.session?.user?.id;
+  if (!userId) {
+    logger.warn("[GuestClaim] Pending claim found but no authenticated user");
+    return;
+  }
+
+  const { data: profileData, error: profileError } = await supabase
+    .from("profiles")
+    .select("id")
+    .eq("user_id", userId)
+    .maybeSingle();
+
+  if (profileError || !profileData?.id) {
+    logger.warn("[GuestClaim] Could not resolve profile id", profileError);
+    if (statusEl) statusEl.textContent = "Sign-in succeeded but we couldn't link your profile. Please try again.";
+    return;
+  }
+
+  const scoped = createScopedSupabaseClient({ "x-ghost-token": ghostToken });
+  const { error } = await scoped.rpc("claim_ghost_activity", {
+    p_ghost_id: ghostId,
+    p_profile_id: profileData.id,
+  });
+
+  if (error) {
+    logger.error("[GuestClaim] Claim failed", error);
+    if (statusEl) statusEl.textContent = "We couldn't claim your session. Your connections are still saved as a guest.";
+    return;
+  }
+
+  logger.log("[GuestClaim] Claim successful");
+
+  localStorage.removeItem("nearify_pending_ghost_claim");
+  localStorage.removeItem("nearify_ghost_id");
+  localStorage.removeItem("nearify_ghost_token");
+  localStorage.removeItem("nearify_ghost_event_id");
+  localStorage.removeItem("nearify_ghost_display_name");
+
+  const claimBtn = document.getElementById("guestClaimSignInBtn");
+  if (claimBtn) claimBtn.style.display = "none";
+  if (statusEl) statusEl.textContent = "Your event history is now saved to your profile.";
 }
 
 async function handleGuestSubmit(eventId) {
@@ -743,7 +850,6 @@ function wireGuestJoinFlow(eventId) {
   const joinAsGuestBtn = document.getElementById("joinAsGuestBtn");
   const submitBtn = document.getElementById("guestSubmitBtn");
   const cancelBtn = document.getElementById("guestCancelBtn");
-  const signInPromptBtn = document.getElementById("guestSignInPrompt");
   const nameInput = document.getElementById("guestDisplayName");
 
   if (joinAsGuestBtn) {
@@ -773,28 +879,14 @@ function wireGuestJoinFlow(eventId) {
       show(cta);
     });
   }
-
-  if (signInPromptBtn) {
-    signInPromptBtn.addEventListener("click", async () => {
-      signInPromptBtn.disabled = true;
-      signInPromptBtn.textContent = "Signing in…";
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: "google",
-        options: { redirectTo: window.location.href },
-      });
-      if (error) {
-        signInPromptBtn.disabled = false;
-        signInPromptBtn.textContent = "Sign in to claim connections";
-        logger.error("[Guest] Sign-in prompt failed", error);
-      }
-    });
-  }
+  // guestClaimSignInBtn is wired inside showGuestJoinedState, not here,
+  // so it fires for both new-join and restored-session paths.
 }
 
 function initGuestJoinSection(eventId) {
   const existing = loadGhostSession(eventId);
   if (existing?.ghostId) {
-    showGuestJoinedState(existing);
+    showGuestJoinedState(existing);  // saves flat keys + wires claim btn
     logger.log("[Guest] Restored existing ghost session on page load");
     return;
   }
@@ -880,6 +972,7 @@ async function initJoinPage() {
       logger.log("[Join] No authenticated profile; rendering guest join flow");
       renderGenericJoinUx(event, eventName);
       initGuestJoinSection(event.id);
+      await maybeClaimPendingGhostSession();
     }
 
     showIntentStep();
