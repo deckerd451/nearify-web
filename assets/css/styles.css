@@ -2281,6 +2281,18 @@ code {
   color: #30d158;
 }
 
+.guest-connect-history-note {
+  font-size: 12px;
+  color: #8fa0b8;
+  margin: 8px 0 0;
+  line-height: 1.5;
+}
+
+.guest-connect-claim-hint {
+  font-size: 13px;
+  color: #8fa0b8;
+}
+
 /* Join page hint text */
 .join-hint {
   color: #8fa0b8;

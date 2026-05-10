@@ -19,7 +19,7 @@
   <meta name="twitter:description" content="Get Nearify to join this event and discover who's around you in real time." />
   <meta name="twitter:image"      content="https://nearify.org/assets/images/og-default.png" />
 
-  <link rel="stylesheet" href="../assets/css/styles.css?v=20260510" />
+  <link rel="stylesheet" href="../assets/css/styles.css?v=20260516" />
 </head>
 <body>
   <a href="#main-content" class="skip-link">Skip to main content</a>
@@ -151,11 +151,11 @@
               <span class="guest-joined-label">You're in as Guest.</span>
             </div>
             <p id="guestJoinedName" class="guest-joined-name"></p>
-            <p class="guest-joined-sub">You can connect with people at this event now.</p>
+            <p class="guest-joined-sub">Your guest session will stay active on this device.</p>
 
             <!-- Connection capture -->
             <div class="guest-connect-section">
-              <p class="guest-connect-title">Connect with someone</p>
+              <p class="guest-connect-title">Connect with someone you just met</p>
               <div class="guest-search-wrap">
                 <input
                   id="guestAttendeeSearch"
@@ -175,10 +175,11 @@
                   style="display:none;"
                 ></ul>
               </div>
-              <p id="guestConnectStatus" class="intent-status" aria-live="polite" style="margin-top:8px;"></p>
+              <p id="guestConnectStatus" class="intent-status" aria-live="polite" style="margin-top:8px;">Search for someone you just met and save the connection.</p>
               <div id="guestConnectionHistory" class="guest-connection-history" style="display:none;">
                 <p class="guest-connect-history-label">Your connections</p>
                 <ul id="guestConnectionList" class="ghost-connections-list"></ul>
+                <p class="guest-connect-history-note">These connections are temporarily saved to your guest session.</p>
               </div>
             </div>
 
@@ -407,7 +408,7 @@
       });
     }
   </script>
-  <script type="module" src="../assets/js/join.js?v=20260515"></script>
+  <script type="module" src="../assets/js/join.js?v=20260516"></script>
   <script type="module" src="../assets/js/navAuth.js?v=20260508"></script>
   <script type="module">
     import { trackPageView, wireAppCtaTracking } from "../assets/js/analytics.js?v=20260508";
