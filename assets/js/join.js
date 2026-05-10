@@ -779,6 +779,16 @@ function renderGuestConnectionHistory(connections) {
   historyEl.style.display = "";
 }
 
+function updateClaimButtonCount(count) {
+  const btn = document.getElementById("guestClaimSignInBtn");
+  if (!btn) return;
+  if (count > 0) {
+    btn.textContent = count === 1 ? "Claim your 1 connection" : `Claim your ${count} connections`;
+  } else {
+    btn.textContent = "Sign in to claim connections";
+  }
+}
+
 function closeSuggestions() {
   const el = document.getElementById("guestAttendeeSuggestions");
   if (el) { el.innerHTML = ""; el.style.display = "none"; }
@@ -850,13 +860,18 @@ async function handleAttendeeSelect(attendee) {
     logger.warn("[GuestConnect] record_ghost_connection failed", error);
     if (statusEl) {
       statusEl.textContent = (error.message || "").includes("Connection already exists")
-        ? `Already connected with ${attendee.name}.`
+        ? `You've already connected with ${attendee.name}.`
         : `Connection failed: ${error.message || "Unknown error"}`;
     }
   } else {
-    if (statusEl) statusEl.textContent = `Connected with ${attendee.name}.`;
+    if (statusEl) {
+      statusEl.innerHTML =
+        `<strong>Connected with ${escapeHtml(attendee.name)}</strong>` +
+        `<br><span class="guest-connect-claim-hint">You can claim this connection later by signing in.</span>`;
+    }
     const connections = await loadGuestConnectionHistory();
     renderGuestConnectionHistory(connections);
+    updateClaimButtonCount(connections.length);
   }
 }
 
@@ -894,7 +909,10 @@ function showGuestJoinedState(ghost) {
   if (nameEl) nameEl.textContent = ghost.displayName || "";
 
   wireGuestConnectSection();
-  loadGuestConnectionHistory().then(renderGuestConnectionHistory);
+  loadGuestConnectionHistory().then((connections) => {
+    renderGuestConnectionHistory(connections);
+    updateClaimButtonCount(connections.length);
+  });
 
   const connectEventId = ghost.eventId
     || localStorage.getItem("nearify_ghost_event_id")
@@ -906,8 +924,17 @@ function showGuestJoinedState(ghost) {
       logger.log("[GuestConnect] Loaded", attendees.length, "attendees");
       const statusEl = document.getElementById("guestConnectStatus");
       if (statusEl) {
-        if (loadError) statusEl.textContent = loadError;
-        else if (empty) statusEl.textContent = empty;
+        if (loadError) {
+          statusEl.textContent = loadError;
+        } else if (empty) {
+          statusEl.textContent = empty;
+        } else if (attendees.length > 0) {
+          // Attendees loaded — placeholder is no longer needed; clear only if
+          // no connection message is already showing.
+          if (statusEl.textContent === "Search for someone you just met and save the connection.") {
+            statusEl.textContent = "";
+          }
+        }
       }
     });
   }
@@ -941,7 +968,7 @@ function showGuestJoinedState(ghost) {
         logger.error("[GuestClaim] OAuth start failed", error);
         localStorage.removeItem("nearify_pending_ghost_claim");
         claimBtn.disabled = false;
-        claimBtn.textContent = "Sign in to claim connections";
+        updateClaimButtonCount(0);
         const statusEl2 = document.getElementById("guestClaimStatus");
         if (statusEl2) statusEl2.textContent = "Sign-in failed. Please try again.";
       }
