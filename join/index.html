@@ -152,7 +152,34 @@
             </div>
             <p id="guestJoinedName" class="guest-joined-name"></p>
             <p class="guest-joined-sub">You can connect with people at this event now.</p>
-            <div class="guest-joined-actions">
+
+            <!-- Connection capture -->
+            <div class="guest-connect-section">
+              <p class="guest-connect-title">Connect with someone</p>
+              <div class="form-row" style="margin-bottom:0;">
+                <label for="guestConnectProfileId" class="guest-join-label">Attendee profile ID</label>
+                <input
+                  id="guestConnectProfileId"
+                  type="text"
+                  class="guest-join-input"
+                  placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+                  autocomplete="off"
+                  autocorrect="off"
+                  spellcheck="false"
+                  autocapitalize="none"
+                />
+              </div>
+              <div class="guest-join-actions" style="margin-top:10px;">
+                <button id="guestConnectSubmitBtn" class="btn primary" type="button">Save connection</button>
+              </div>
+              <p id="guestConnectStatus" class="intent-status" aria-live="polite" style="margin-top:8px;"></p>
+              <div id="guestConnectionHistory" class="guest-connection-history" style="display:none;">
+                <p class="guest-connect-history-label">Your connections</p>
+                <ul id="guestConnectionList" class="ghost-connections-list"></ul>
+              </div>
+            </div>
+
+            <div class="guest-joined-actions" style="margin-top:18px;">
               <button id="guestClaimSignInBtn" class="btn secondary" type="button">Sign in to claim connections</button>
             </div>
             <p id="guestClaimStatus" class="intent-status" aria-live="polite" style="margin-top:8px;"></p>
@@ -377,7 +404,7 @@
       });
     }
   </script>
-  <script type="module" src="../assets/js/join.js?v=20260511"></script>
+  <script type="module" src="../assets/js/join.js?v=20260512"></script>
   <script type="module" src="../assets/js/navAuth.js?v=20260508"></script>
   <script type="module">
     import { trackPageView, wireAppCtaTracking } from "../assets/js/analytics.js?v=20260508";

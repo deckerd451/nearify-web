@@ -698,6 +698,104 @@ function saveGhostFlatKeys(ghost) {
   } catch (_) {}
 }
 
+async function loadGuestConnectionHistory() {
+  const ghostId    = localStorage.getItem("nearify_ghost_id");
+  const ghostToken = localStorage.getItem("nearify_ghost_token");
+  const eventId    = localStorage.getItem("nearify_ghost_event_id");
+  if (!ghostId || !ghostToken || !eventId) return [];
+
+  const scoped = createScopedSupabaseClient({ "x-ghost-token": ghostToken });
+  const { data, error } = await scoped.rpc("get_ghost_connection_history", {
+    p_ghost_id:    ghostId,
+    p_ghost_token: ghostToken,
+    p_event_id:    eventId,
+  });
+
+  if (error) {
+    logger.warn("[GuestConnect] Failed to load connection history", error);
+    return [];
+  }
+  return Array.isArray(data) ? data : [];
+}
+
+function renderGuestConnectionHistory(connections) {
+  const historyEl = document.getElementById("guestConnectionHistory");
+  const listEl    = document.getElementById("guestConnectionList");
+  if (!historyEl || !listEl) return;
+
+  const names = [...new Set(
+    connections.map((r) => r?.to_profile_name).filter(Boolean)
+  )];
+
+  if (!names.length) {
+    historyEl.style.display = "none";
+    return;
+  }
+
+  listEl.innerHTML = names
+    .map((name) => `<li>Connected with ${escapeHtml(name)}</li>`)
+    .join("");
+  historyEl.style.display = "";
+}
+
+function wireGuestConnectSection() {
+  const submitBtn = document.getElementById("guestConnectSubmitBtn");
+  const input     = document.getElementById("guestConnectProfileId");
+  if (!submitBtn) return;
+
+  const doSubmit = async () => {
+    const statusEl      = document.getElementById("guestConnectStatus");
+    const targetProfileId = input?.value?.trim();
+    const ghostToken    = localStorage.getItem("nearify_ghost_token");
+    const eventId       = localStorage.getItem("nearify_ghost_event_id");
+
+    if (statusEl) statusEl.textContent = "";
+
+    if (!targetProfileId || !UUID_RE.test(targetProfileId)) {
+      if (statusEl) statusEl.textContent = "Please enter a valid profile ID.";
+      return;
+    }
+
+    if (!ghostToken || !eventId) {
+      if (statusEl) statusEl.textContent = "Guest session missing. Please join as guest again.";
+      return;
+    }
+
+    submitBtn.disabled = true;
+    submitBtn.textContent = "Saving…";
+
+    const { error } = await supabase.rpc("record_ghost_connection", {
+      p_event_id:          eventId,
+      p_ghost_token:       ghostToken,
+      p_target_profile_id: targetProfileId,
+    });
+
+    if (error) {
+      logger.warn("[GuestConnect] record_ghost_connection failed", error);
+      if (statusEl) {
+        statusEl.textContent = (error.message || "").includes("Connection already exists")
+          ? "Already connected."
+          : `Connection failed: ${error.message || "Unknown error"}`;
+      }
+    } else {
+      if (statusEl) statusEl.textContent = "Connection saved.";
+      if (input) input.value = "";
+      const connections = await loadGuestConnectionHistory();
+      renderGuestConnectionHistory(connections);
+    }
+
+    submitBtn.disabled = false;
+    submitBtn.textContent = "Save connection";
+  };
+
+  submitBtn.addEventListener("click", doSubmit);
+  if (input) {
+    input.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") { e.preventDefault(); doSubmit(); }
+    });
+  }
+}
+
 function showGuestJoinedState(ghost) {
   const section = document.getElementById("guestJoinSection");
   const form = document.getElementById("guestForm");
@@ -712,6 +810,9 @@ function showGuestJoinedState(ghost) {
   show(section);
   show(joined);
   if (nameEl) nameEl.textContent = ghost.displayName || "";
+
+  wireGuestConnectSection();
+  loadGuestConnectionHistory().then(renderGuestConnectionHistory);
 
   // Wire the claim sign-in button every time the joined state is shown
   // (runs for both new-join and restored-session paths)
