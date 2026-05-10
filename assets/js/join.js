@@ -671,6 +671,137 @@ async function renderAuthHandoff(eventId) {
   }
 }
 
+// ── Guest entry flow ────────────────────────────────────────────────────────
+
+function showGuestJoinCta() {
+  const cta = document.getElementById("guestJoinCta");
+  show(cta);
+}
+
+function showGuestForm() {
+  const section = document.getElementById("guestJoinSection");
+  const form = document.getElementById("guestForm");
+  const joined = document.getElementById("guestJoinedState");
+  show(section);
+  show(form);
+  hide(joined);
+  const input = document.getElementById("guestDisplayName");
+  if (input) input.focus();
+}
+
+function showGuestJoinedState(ghost) {
+  const section = document.getElementById("guestJoinSection");
+  const form = document.getElementById("guestForm");
+  const joined = document.getElementById("guestJoinedState");
+  const nameEl = document.getElementById("guestJoinedName");
+  const cta = document.getElementById("guestJoinCta");
+  hide(form);
+  hide(cta);
+  show(section);
+  show(joined);
+  if (nameEl) nameEl.textContent = ghost.displayName || "";
+}
+
+async function handleGuestSubmit(eventId) {
+  const input = document.getElementById("guestDisplayName");
+  const errorEl = document.getElementById("guestNameError");
+  const statusEl = document.getElementById("guestJoinStatus");
+  const submitBtn = document.getElementById("guestSubmitBtn");
+
+  const name = input?.value?.trim();
+
+  if (errorEl) errorEl.style.display = "none";
+  if (statusEl) statusEl.textContent = "";
+
+  if (!name) {
+    if (errorEl) errorEl.style.display = "";
+    if (input) input.focus();
+    return;
+  }
+
+  if (submitBtn) {
+    submitBtn.disabled = true;
+    submitBtn.textContent = "Joining…";
+  }
+
+  try {
+    const ghost = await createGhostSession(eventId, name);
+    if (!ghost) throw new Error("create_ghost_participant returned null");
+    showGuestJoinedState(ghost);
+    logger.log("[Guest] Joined as guest", ghost);
+  } catch (err) {
+    logger.error("[Guest] Failed to create ghost session", err);
+    if (statusEl) statusEl.textContent = "Something went wrong. Please try again.";
+    if (submitBtn) {
+      submitBtn.disabled = false;
+      submitBtn.textContent = "Join as Guest";
+    }
+  }
+}
+
+function wireGuestJoinFlow(eventId) {
+  const joinAsGuestBtn = document.getElementById("joinAsGuestBtn");
+  const submitBtn = document.getElementById("guestSubmitBtn");
+  const cancelBtn = document.getElementById("guestCancelBtn");
+  const signInPromptBtn = document.getElementById("guestSignInPrompt");
+  const nameInput = document.getElementById("guestDisplayName");
+
+  if (joinAsGuestBtn) {
+    joinAsGuestBtn.addEventListener("click", showGuestForm);
+  }
+
+  if (submitBtn) {
+    submitBtn.addEventListener("click", () => handleGuestSubmit(eventId));
+  }
+
+  if (nameInput) {
+    nameInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        handleGuestSubmit(eventId);
+      }
+    });
+  }
+
+  if (cancelBtn) {
+    cancelBtn.addEventListener("click", () => {
+      const form = document.getElementById("guestForm");
+      const cta = document.getElementById("guestJoinCta");
+      const section = document.getElementById("guestJoinSection");
+      hide(form);
+      hide(section);
+      show(cta);
+    });
+  }
+
+  if (signInPromptBtn) {
+    signInPromptBtn.addEventListener("click", async () => {
+      signInPromptBtn.disabled = true;
+      signInPromptBtn.textContent = "Signing in…";
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: { redirectTo: window.location.href },
+      });
+      if (error) {
+        signInPromptBtn.disabled = false;
+        signInPromptBtn.textContent = "Sign in to claim connections";
+        logger.error("[Guest] Sign-in prompt failed", error);
+      }
+    });
+  }
+}
+
+function initGuestJoinSection(eventId) {
+  const existing = loadGhostSession(eventId);
+  if (existing?.ghostId) {
+    showGuestJoinedState(existing);
+    logger.log("[Guest] Restored existing ghost session on page load");
+    return;
+  }
+  showGuestJoinCta();
+  wireGuestJoinFlow(eventId);
+}
+
 async function initJoinPage() {
   const { eventId, eventName, profileId } = getQueryParams();
 
@@ -705,29 +836,28 @@ async function initJoinPage() {
       return;
     }
 
-    let connectResult = null;
-    const ghost = await ensureGhostForEvent(event.id);
-    renderGhostState(ghost);
     if (profileId) {
+      // ── Personal connect flow: auto-ghost the visitor ──────────────────
+      let connectResult = null;
+      const ghost = await ensureGhostForEvent(event.id);
+      renderGhostState(ghost);
       connectResult = await maybeConnectGhostToProfile(event.id, profileId);
-    }
 
-    let historyRows = await fetchGhostConnectionHistory(ghost, event.id);
-    const { data: sessionData } = await supabase.auth.getSession();
-    const hasSession = !!sessionData?.session?.user;
-    let isClaimed = historyRows.some((row) => row?.claimed_profile_id);
+      let historyRows = await fetchGhostConnectionHistory(ghost, event.id);
+      const { data: sessionData } = await supabase.auth.getSession();
+      const hasSession = !!sessionData?.session?.user;
+      let isClaimed = historyRows.some((row) => row?.claimed_profile_id);
 
-    if (hasSession && !isClaimed) {
-      const claimed = await maybeClaimGhostActivity(ghost, isClaimed);
-      if (claimed) {
-        historyRows = await fetchGhostConnectionHistory(ghost, event.id);
-        isClaimed = historyRows.some((row) => row?.claimed_profile_id);
+      if (hasSession && !isClaimed) {
+        const claimed = await maybeClaimGhostActivity(ghost, isClaimed);
+        if (claimed) {
+          historyRows = await fetchGhostConnectionHistory(ghost, event.id);
+          isClaimed = historyRows.some((row) => row?.claimed_profile_id);
+        }
       }
-    }
 
-    wireClaimButtons(ghost, isClaimed);
+      wireClaimButtons(ghost, isClaimed);
 
-    if (profileId) {
       renderPersonalConnectUx(event, targetProfile);
       const uniqueNames = [...new Set((historyRows || []).map((row) => row?.to_profile_name).filter(Boolean))];
       const hasHistory = uniqueNames.length > 1;
@@ -742,7 +872,9 @@ async function initJoinPage() {
         logger.log("[Join] Personal connect UX rendered after successful connection");
       }
     } else {
+      // ── Generic flow: show event info, offer explicit guest join ────────
       renderGenericJoinUx(event, eventName);
+      initGuestJoinSection(event.id);
     }
 
     showIntentStep();
