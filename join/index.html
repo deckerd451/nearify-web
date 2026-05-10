@@ -19,7 +19,7 @@
   <meta name="twitter:description" content="Get Nearify to join this event and discover who's around you in real time." />
   <meta name="twitter:image"      content="https://nearify.org/assets/images/og-default.png" />
 
-  <link rel="stylesheet" href="../assets/css/styles.css?v=20260516" />
+  <link rel="stylesheet" href="../assets/css/styles.css?v=20260517" />
 </head>
 <body>
   <a href="#main-content" class="skip-link">Skip to main content</a>
@@ -111,7 +111,7 @@
         <div id="guestJoinCta" class="guest-join-cta" style="display:none;">
           <div class="guest-join-divider" aria-hidden="true">or</div>
           <button id="joinAsGuestBtn" class="btn secondary" type="button">Join as Guest</button>
-          <p class="join-hint">No app required. Claim your connections after the event.</p>
+          <p class="join-hint">No app required. Sign in after the event to save your interactions.</p>
         </div>
 
         <!-- Guest join section — either form or success state, populated by JS -->
@@ -120,7 +120,7 @@
           <!-- Name form -->
           <div id="guestForm" class="guest-join-card" style="display:none;">
             <h2 class="guest-join-title">Join as Guest</h2>
-            <p class="guest-join-sub">No account needed — you can sign in after to claim your connections.</p>
+            <p class="guest-join-sub">No account needed — sign in after the event to save your interactions to your profile.</p>
             <div class="form-row" style="margin-bottom:0;">
               <label for="guestDisplayName" class="guest-join-label">Your display name</label>
               <input
@@ -155,7 +155,8 @@
 
             <!-- Connection capture -->
             <div class="guest-connect-section">
-              <p class="guest-connect-title">Connect with someone you just met</p>
+              <p class="guest-connect-title">People you met</p>
+              <p class="guest-connect-subtitle">Nearify helps you remember people you interacted with at events.</p>
               <div class="guest-search-wrap">
                 <input
                   id="guestAttendeeSearch"
@@ -175,16 +176,16 @@
                   style="display:none;"
                 ></ul>
               </div>
-              <p id="guestConnectStatus" class="intent-status" aria-live="polite" style="margin-top:8px;">Search for someone you just met and save the connection.</p>
+              <p id="guestConnectStatus" class="intent-status" aria-live="polite" style="margin-top:8px;">Search for someone you met and save the interaction.</p>
               <div id="guestConnectionHistory" class="guest-connection-history" style="display:none;">
-                <p class="guest-connect-history-label">Your connections</p>
+                <p class="guest-connect-history-label">People you met</p>
                 <ul id="guestConnectionList" class="ghost-connections-list"></ul>
-                <p class="guest-connect-history-note">These connections are temporarily saved to your guest session.</p>
+                <p class="guest-connect-history-note">These interactions are temporarily saved to this device.</p>
               </div>
             </div>
 
             <div class="guest-joined-actions" style="margin-top:18px;">
-              <button id="guestClaimSignInBtn" class="btn secondary" type="button">Sign in to claim connections</button>
+              <button id="guestClaimSignInBtn" class="btn secondary" type="button">Sign in to save your interactions</button>
             </div>
             <p id="guestClaimStatus" class="intent-status" aria-live="polite" style="margin-top:8px;"></p>
           </div>
@@ -408,7 +409,7 @@
       });
     }
   </script>
-  <script type="module" src="../assets/js/join.js?v=20260516"></script>
+  <script type="module" src="../assets/js/join.js?v=20260517"></script>
   <script type="module" src="../assets/js/navAuth.js?v=20260508"></script>
   <script type="module">
     import { trackPageView, wireAppCtaTracking } from "../assets/js/analytics.js?v=20260508";
