@@ -698,6 +698,51 @@ function saveGhostFlatKeys(ghost) {
   } catch (_) {}
 }
 
+// Module-level cache populated once per page load when the joined state renders
+let guestEventAttendees = [];
+
+async function fetchGuestEventAttendees(eventId) {
+  if (!eventId) return [];
+
+  const { data: attendeeRows, error: attendeeError } = await supabase
+    .from("event_attendees")
+    .select("profile_id, intent_primary")
+    .eq("event_id", eventId);
+
+  if (attendeeError || !attendeeRows?.length) return [];
+
+  const profileIds = attendeeRows.map((r) => r.profile_id);
+  const { data: profileRows, error: profileError } = await supabase
+    .from("profiles")
+    .select("id, name, avatar_url")
+    .in("id", profileIds);
+
+  if (profileError) {
+    logger.warn("[GuestConnect] Failed to fetch attendee profiles", profileError);
+    return [];
+  }
+
+  const profileMap = new Map((profileRows || []).map((p) => [p.id, p]));
+
+  return attendeeRows
+    .map((a) => {
+      const profile = profileMap.get(a.profile_id);
+      if (!profile?.name) return null;
+      return {
+        profileId: a.profile_id,
+        name:      profile.name,
+        avatarUrl: profile.avatar_url || null,
+        intent:    a.intent_primary || null,
+      };
+    })
+    .filter(Boolean);
+}
+
+function getAttendeeInitials(name) {
+  if (!name) return "?";
+  return name.trim().split(/\s+/).slice(0, 2).map((w) => w[0]).join("").toUpperCase();
+}
+
 async function loadGuestConnectionHistory() {
   const ghostId    = localStorage.getItem("nearify_ghost_id");
   const ghostToken = localStorage.getItem("nearify_ghost_token");
@@ -738,62 +783,95 @@ function renderGuestConnectionHistory(connections) {
   historyEl.style.display = "";
 }
 
-function wireGuestConnectSection() {
-  const submitBtn = document.getElementById("guestConnectSubmitBtn");
-  const input     = document.getElementById("guestConnectProfileId");
-  if (!submitBtn) return;
+function closeSuggestions() {
+  const el = document.getElementById("guestAttendeeSuggestions");
+  if (el) { el.innerHTML = ""; el.style.display = "none"; }
+}
 
-  const doSubmit = async () => {
-    const statusEl      = document.getElementById("guestConnectStatus");
-    const targetProfileId = input?.value?.trim();
-    const ghostToken    = localStorage.getItem("nearify_ghost_token");
-    const eventId       = localStorage.getItem("nearify_ghost_event_id");
+function renderAttendeeSuggestions(query) {
+  const listEl = document.getElementById("guestAttendeeSuggestions");
+  if (!listEl) return;
 
-    if (statusEl) statusEl.textContent = "";
+  const q = query.toLowerCase().trim();
+  const matches = q
+    ? guestEventAttendees.filter((a) => a.name.toLowerCase().includes(q)).slice(0, 8)
+    : [];
 
-    if (!targetProfileId || !UUID_RE.test(targetProfileId)) {
-      if (statusEl) statusEl.textContent = "Please enter a valid profile ID.";
-      return;
-    }
+  if (!matches.length) { closeSuggestions(); return; }
 
-    if (!ghostToken || !eventId) {
-      if (statusEl) statusEl.textContent = "Guest session missing. Please join as guest again.";
-      return;
-    }
+  listEl.innerHTML = matches.map((a, i) => {
+    const initials   = getAttendeeInitials(a.name);
+    const intentText = a.intent ? a.intent.replace(/_/g, " ") : "";
+    return `<li role="option" class="guest-attendee-option" data-idx="${i}" tabindex="0">` +
+      `<span class="guest-attendee-avatar" aria-hidden="true">${escapeHtml(initials)}</span>` +
+      `<span class="guest-attendee-name">${escapeHtml(a.name)}</span>` +
+      (intentText ? `<span class="guest-attendee-intent">${escapeHtml(intentText)}</span>` : "") +
+      `</li>`;
+  }).join("");
 
-    submitBtn.disabled = true;
-    submitBtn.textContent = "Saving…";
+  listEl.style.display = "";
 
-    const { error } = await supabase.rpc("record_ghost_connection", {
-      p_event_id:          eventId,
-      p_ghost_token:       ghostToken,
-      p_target_profile_id: targetProfileId,
+  listEl.querySelectorAll("[data-idx]").forEach((item) => {
+    const attendee = matches[+item.dataset.idx];
+    item.addEventListener("click",   () => handleAttendeeSelect(attendee));
+    item.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" || e.key === " ") { e.preventDefault(); handleAttendeeSelect(attendee); }
     });
+  });
+}
 
-    if (error) {
-      logger.warn("[GuestConnect] record_ghost_connection failed", error);
-      if (statusEl) {
-        statusEl.textContent = (error.message || "").includes("Connection already exists")
-          ? "Already connected."
-          : `Connection failed: ${error.message || "Unknown error"}`;
-      }
-    } else {
-      if (statusEl) statusEl.textContent = "Connection saved.";
-      if (input) input.value = "";
-      const connections = await loadGuestConnectionHistory();
-      renderGuestConnectionHistory(connections);
-    }
+async function handleAttendeeSelect(attendee) {
+  const searchInput = document.getElementById("guestAttendeeSearch");
+  const statusEl    = document.getElementById("guestConnectStatus");
 
-    submitBtn.disabled = false;
-    submitBtn.textContent = "Save connection";
-  };
+  closeSuggestions();
+  if (searchInput) searchInput.value = "";
+  if (statusEl) statusEl.textContent = "";
 
-  submitBtn.addEventListener("click", doSubmit);
-  if (input) {
-    input.addEventListener("keydown", (e) => {
-      if (e.key === "Enter") { e.preventDefault(); doSubmit(); }
-    });
+  const ghostToken = localStorage.getItem("nearify_ghost_token");
+  const eventId    = localStorage.getItem("nearify_ghost_event_id");
+
+  if (!ghostToken || !eventId) {
+    if (statusEl) statusEl.textContent = "Guest session missing. Please join as guest again.";
+    return;
   }
+
+  const { error } = await supabase.rpc("record_ghost_connection", {
+    p_event_id:          eventId,
+    p_ghost_token:       ghostToken,
+    p_target_profile_id: attendee.profileId,
+  });
+
+  if (error) {
+    logger.warn("[GuestConnect] record_ghost_connection failed", error);
+    if (statusEl) {
+      statusEl.textContent = (error.message || "").includes("Connection already exists")
+        ? `Already connected with ${attendee.name}.`
+        : `Connection failed: ${error.message || "Unknown error"}`;
+    }
+  } else {
+    if (statusEl) statusEl.textContent = `Connected with ${attendee.name}.`;
+    const connections = await loadGuestConnectionHistory();
+    renderGuestConnectionHistory(connections);
+  }
+}
+
+function wireGuestConnectSection() {
+  const searchInput = document.getElementById("guestAttendeeSearch");
+  if (!searchInput) return;
+
+  searchInput.addEventListener("input", () => renderAttendeeSuggestions(searchInput.value));
+  searchInput.addEventListener("focus", () => {
+    if (searchInput.value.trim()) renderAttendeeSuggestions(searchInput.value);
+  });
+
+  // Close suggestions when clicking outside the search area
+  document.addEventListener("click", (e) => {
+    const suggestEl = document.getElementById("guestAttendeeSuggestions");
+    if (suggestEl && !searchInput.contains(e.target) && !suggestEl.contains(e.target)) {
+      closeSuggestions();
+    }
+  }, { capture: true, once: false });
 }
 
 function showGuestJoinedState(ghost) {
@@ -813,6 +891,14 @@ function showGuestJoinedState(ghost) {
 
   wireGuestConnectSection();
   loadGuestConnectionHistory().then(renderGuestConnectionHistory);
+
+  const connectEventId = ghost.eventId || localStorage.getItem("nearify_ghost_event_id");
+  if (connectEventId) {
+    fetchGuestEventAttendees(connectEventId).then((attendees) => {
+      guestEventAttendees = attendees;
+      logger.log("[GuestConnect] Loaded", attendees.length, "attendees");
+    });
+  }
 
   // Wire the claim sign-in button every time the joined state is shown
   // (runs for both new-join and restored-session paths)

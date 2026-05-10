@@ -156,21 +156,24 @@
             <!-- Connection capture -->
             <div class="guest-connect-section">
               <p class="guest-connect-title">Connect with someone</p>
-              <div class="form-row" style="margin-bottom:0;">
-                <label for="guestConnectProfileId" class="guest-join-label">Attendee profile ID</label>
+              <div class="guest-search-wrap">
                 <input
-                  id="guestConnectProfileId"
+                  id="guestAttendeeSearch"
                   type="text"
                   class="guest-join-input"
-                  placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+                  placeholder="Search attendees..."
                   autocomplete="off"
                   autocorrect="off"
                   spellcheck="false"
                   autocapitalize="none"
                 />
-              </div>
-              <div class="guest-join-actions" style="margin-top:10px;">
-                <button id="guestConnectSubmitBtn" class="btn primary" type="button">Save connection</button>
+                <ul
+                  id="guestAttendeeSuggestions"
+                  class="guest-attendee-suggestions"
+                  role="listbox"
+                  aria-label="Matching attendees"
+                  style="display:none;"
+                ></ul>
               </div>
               <p id="guestConnectStatus" class="intent-status" aria-live="polite" style="margin-top:8px;"></p>
               <div id="guestConnectionHistory" class="guest-connection-history" style="display:none;">
@@ -404,7 +407,7 @@
       });
     }
   </script>
-  <script type="module" src="../assets/js/join.js?v=20260512"></script>
+  <script type="module" src="../assets/js/join.js?v=20260513"></script>
   <script type="module" src="../assets/js/navAuth.js?v=20260508"></script>
   <script type="module">
     import { trackPageView, wireAppCtaTracking } from "../assets/js/analytics.js?v=20260508";
