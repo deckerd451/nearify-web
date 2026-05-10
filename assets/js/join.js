@@ -836,19 +836,23 @@ async function initJoinPage() {
       return;
     }
 
-    if (profileId) {
-      // ── Personal connect flow: auto-ghost the visitor ──────────────────
+    // Resolve auth session before branching — determines which experience to render.
+    const { data: sessionData } = await supabase.auth.getSession();
+    const hasSession = !!sessionData?.session?.user;
+
+    if (profileId && hasSession) {
+      // ── Personal connect flow: authenticated visitor scanned someone's QR ─
+      logger.log("[Join] Authenticated profile detected; rendering personal connect");
+
       let connectResult = null;
       const ghost = await ensureGhostForEvent(event.id);
       renderGhostState(ghost);
       connectResult = await maybeConnectGhostToProfile(event.id, profileId);
 
       let historyRows = await fetchGhostConnectionHistory(ghost, event.id);
-      const { data: sessionData } = await supabase.auth.getSession();
-      const hasSession = !!sessionData?.session?.user;
       let isClaimed = historyRows.some((row) => row?.claimed_profile_id);
 
-      if (hasSession && !isClaimed) {
+      if (!isClaimed) {
         const claimed = await maybeClaimGhostActivity(ghost, isClaimed);
         if (claimed) {
           historyRows = await fetchGhostConnectionHistory(ghost, event.id);
@@ -872,7 +876,8 @@ async function initJoinPage() {
         logger.log("[Join] Personal connect UX rendered after successful connection");
       }
     } else {
-      // ── Generic flow: show event info, offer explicit guest join ────────
+      // ── Generic flow: no auth session (or no profile param) ────────────
+      logger.log("[Join] No authenticated profile; rendering guest join flow");
       renderGenericJoinUx(event, eventName);
       initGuestJoinSection(event.id);
     }
