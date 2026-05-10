@@ -791,8 +791,15 @@ async function maybeClaimPendingGhostSession() {
   });
 
   if (error) {
-    logger.error("[GuestClaim] Claim failed", error);
-    if (statusEl) statusEl.textContent = "We couldn't claim your session. Your connections are still saved as a guest.";
+    console.error("[GuestClaim] Claim failed", {
+      message: error?.message,
+      details: error?.details,
+      hint: error?.hint,
+      code: error?.code,
+      status: error?.status,
+      raw: JSON.stringify(error || {}, null, 2),
+    });
+    if (statusEl) statusEl.textContent = `We couldn't claim your session: ${error?.message || "Unknown error"}. Your connections are still saved as a guest.`;
     return;
   }
 
