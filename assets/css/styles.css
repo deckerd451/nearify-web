@@ -3411,3 +3411,66 @@ body.cc-page .cc-event-actions .btn.secondary {
 body.cc-page .cc-event-actions .btn.secondary:hover {
   border-color: #666;
 }
+
+
+/* ============================================================
+   MOMENTUM INDICATORS — Social proof / attendee counts
+   ============================================================ */
+
+/* Event detail page momentum */
+.event-momentum {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+}
+
+.momentum-count {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-accent);
+  letter-spacing: -0.01em;
+}
+
+.momentum-count::before {
+  content: "";
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--color-accent);
+  opacity: 0.7;
+  flex-shrink: 0;
+}
+
+.momentum-flavor {
+  font-size: 13px;
+  color: var(--color-text-muted);
+  font-weight: 400;
+}
+
+/* Event card momentum (listing page) */
+.event-card-momentum {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 8px 0 12px;
+  flex-wrap: wrap;
+}
+
+.event-card-momentum .momentum-count {
+  font-size: 13px;
+}
+
+.event-card-momentum .momentum-count::before {
+  width: 5px;
+  height: 5px;
+}
+
+.event-card-momentum .momentum-flavor {
+  font-size: 12px;
+}

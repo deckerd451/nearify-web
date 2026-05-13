@@ -547,8 +547,12 @@ function renderAttendeeDiscovery(attendees, myProfileId, isFullAccess) {
   section.style.display = "";
 }
 
-async function loadAttendeeDiscovery(eventId) {
+async function loadAttendeeDiscovery(eventId, isPast = false) {
   const attendees = await fetchEventAttendees(eventId);
+
+  // Render momentum indicator regardless of attendee count
+  renderMomentumIndicator(attendees, isPast);
+
   if (!attendees.length) return;
 
   let myProfileId = null;
@@ -701,18 +705,135 @@ function renderPosterCard(event) {
   }
 }
 
+// ---------------------------------------------------------------------------
+// SEO: JSON-LD + Canonical
+// ---------------------------------------------------------------------------
+
+function injectJsonLd(event, isPast) {
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Event",
+    "name": event.name,
+    "description": event.description || `Connect with attendees at ${event.name} in real time.`,
+    "url": `https://nearify.org/events/event.html?slug=${encodeURIComponent(event.slug || event.id)}`,
+    "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+    "eventStatus": "https://schema.org/EventScheduled",
+    "organizer": {
+      "@type": "Organization",
+      "name": "Nearify",
+      "url": "https://nearify.org"
+    }
+  };
+  if (event.starts_at) jsonLd.startDate = event.starts_at;
+  if (event.ends_at) jsonLd.endDate = event.ends_at;
+  if (event.location) {
+    jsonLd.location = { "@type": "Place", "name": event.location };
+  }
+
+  let script = document.getElementById("nearify-jsonld");
+  if (!script) {
+    script = document.createElement("script");
+    script.id = "nearify-jsonld";
+    script.type = "application/ld+json";
+    document.head.appendChild(script);
+  }
+  script.textContent = JSON.stringify(jsonLd);
+}
+
+function injectCanonical(event) {
+  const slug = event.slug || event.id;
+  const href = `https://nearify.org/events/event.html?slug=${encodeURIComponent(slug)}`;
+  let link = document.querySelector('link[rel="canonical"]');
+  if (!link) {
+    link = document.createElement("link");
+    link.rel = "canonical";
+    document.head.appendChild(link);
+  }
+  link.href = href;
+}
+
+// ---------------------------------------------------------------------------
+// Social proof: attendee count + momentum
+// ---------------------------------------------------------------------------
+
+function buildMomentumLine(attendees) {
+  const count = attendees.length;
+  if (count === 0) return null;
+
+  // Compute intent breakdown for flavor text
+  const intentCounts = {};
+  attendees.forEach((a) => {
+    if (a.intent) intentCounts[a.intent] = (intentCounts[a.intent] || 0) + 1;
+  });
+
+  const intentLabelsShort = {
+    meet_people: "Networkers",
+    find_cofounder: "Builders",
+    hire: "Hiring",
+    explore_ideas: "Explorers",
+    demo_something: "Demos",
+  };
+
+  // Find top 2 intents (only if they represent meaningful portion)
+  const sorted = Object.entries(intentCounts)
+    .sort((a, b) => b[1] - a[1])
+    .filter(([, c]) => c >= 2 && c / count >= 0.2);
+
+  let flavor = "";
+  if (sorted.length >= 2) {
+    flavor = `${intentLabelsShort[sorted[0][0]] || ""} + ${intentLabelsShort[sorted[1][0]] || ""} attending`;
+  } else if (sorted.length === 1 && sorted[0][1] >= 3) {
+    flavor = `${intentLabelsShort[sorted[0][0]] || ""} attending`;
+  }
+
+  return { count, flavor };
+}
+
+function renderMomentumIndicator(attendees, isPast) {
+  const el = document.getElementById("eventMomentum");
+  if (!el) return;
+
+  const momentum = buildMomentumLine(attendees);
+  if (!momentum) return;
+
+  const countText = isPast
+    ? `${momentum.count} attended`
+    : `${momentum.count} attending`;
+
+  let html = `<span class="momentum-count">${escapeHtml(countText)}</span>`;
+  if (momentum.flavor && !isPast) {
+    html += `<span class="momentum-flavor">${escapeHtml(momentum.flavor)}</span>`;
+  }
+
+  el.innerHTML = html;
+  el.style.display = "";
+}
+
 async function populatePage(event) {
   const isPast = !!(event.starts_at && new Date(event.starts_at) < new Date());
 
-  document.title = `${event.name} | Nearify`;
+  // SEO
+  injectJsonLd(event, isPast);
+  injectCanonical(event);
+
+  // Better page title with location context
+  const titleParts = [event.name];
+  if (event.location) titleParts.push(event.location);
+  titleParts.push("Nearify");
+  document.title = titleParts.join(" | ");
+
   const setMeta = (sel, val) => {
     const el = document.querySelector(sel);
     if (el) el.setAttribute("content", val);
   };
+
+  const ogDescription = event.description
+    || `Join ${event.name}${event.location ? ` at ${event.location}` : ""} — discover and connect with attendees in real time.`;
+
   setMeta('meta[property="og:title"]', `${event.name} | Nearify`);
   setMeta('meta[name="twitter:title"]', `${event.name} | Nearify`);
-  setMeta('meta[property="og:description"]', event.description || `Discover and connect with attendees at ${event.name} in real time.`);
-  setMeta('meta[name="twitter:description"]', event.description || `Discover and connect with attendees at ${event.name} in real time.`);
+  setMeta('meta[property="og:description"]', ogDescription);
+  setMeta('meta[name="twitter:description"]', ogDescription);
   setMeta('meta[property="og:url"]', `https://nearify.org/events/event.html?slug=${encodeURIComponent(event.slug || event.id)}`);
 
   const kickerEl = document.getElementById("eventKicker");
@@ -751,6 +872,7 @@ async function populatePage(event) {
     const heroEl = document.querySelector(".event-hero");
     if (heroEl) heroEl.classList.add("event-hero--past");
 
+    await loadAttendeeDiscovery(event.id, true);
     await loadIntelligence(event);
   } else {
     renderPosterCard(event);
@@ -763,7 +885,7 @@ async function populatePage(event) {
     updateAuthPositioning();
     await hydrateIntent();
     await maybeContinueAfterAuth();
-    await loadAttendeeDiscovery(event.id);
+    await loadAttendeeDiscovery(event.id, false);
   }
 
   const skeleton = document.getElementById("eventSkeleton");
