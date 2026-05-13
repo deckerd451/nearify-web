@@ -19,7 +19,7 @@
   <meta name="twitter:description" content="Get Nearify to join this event and discover who's around you in real time." />
   <meta name="twitter:image"      content="https://nearify.org/assets/images/og-default.png" />
 
-  <link rel="stylesheet" href="../assets/css/styles.css?v=20260508" />
+  <link rel="stylesheet" href="../assets/css/styles.css?v=20260517" />
 </head>
 <body>
   <a href="#main-content" class="skip-link">Skip to main content</a>
@@ -105,6 +105,91 @@
           <p id="alreadyInstalledHint" class="join-hint">
             Already installed? Open the app to browse, join, and check in (or scan the event QR code).
           </p>
+        </div>
+
+        <!-- Guest join CTA — shown for generic event URLs; hidden until JS confirms event is valid -->
+        <div id="guestJoinCta" class="guest-join-cta" style="display:none;">
+          <div class="guest-join-divider" aria-hidden="true">or</div>
+          <button id="joinAsGuestBtn" class="btn secondary" type="button">Join as Guest</button>
+          <p class="join-hint">No app required. Sign in after the event to save your interactions.</p>
+        </div>
+
+        <!-- Guest join section — either form or success state, populated by JS -->
+        <div id="guestJoinSection" style="display:none;">
+
+          <!-- Name form -->
+          <div id="guestForm" class="guest-join-card" style="display:none;">
+            <h2 class="guest-join-title">Join as Guest</h2>
+            <p class="guest-join-sub">No account needed — sign in after the event to save your interactions to your profile.</p>
+            <div class="form-row" style="margin-bottom:0;">
+              <label for="guestDisplayName" class="guest-join-label">Your display name</label>
+              <input
+                id="guestDisplayName"
+                type="text"
+                class="guest-join-input"
+                placeholder="How should people know you?"
+                autocomplete="given-name"
+                autocorrect="off"
+                autocapitalize="words"
+                maxlength="60"
+              />
+              <p class="field-error" id="guestNameError" role="alert" style="display:none;">
+                Please enter a display name to continue.
+              </p>
+            </div>
+            <div class="guest-join-actions">
+              <button id="guestSubmitBtn" class="btn primary" type="button">Join as Guest</button>
+              <button id="guestCancelBtn" class="btn-inline-link" type="button">Cancel</button>
+            </div>
+            <p id="guestJoinStatus" class="intent-status" aria-live="polite"></p>
+          </div>
+
+          <!-- Success state -->
+          <div id="guestJoinedState" class="guest-joined-card" style="display:none;" aria-live="polite">
+            <div class="guest-joined-header">
+              <span class="guest-joined-check" aria-hidden="true">✓</span>
+              <span class="guest-joined-label">You're in as Guest.</span>
+            </div>
+            <p id="guestJoinedName" class="guest-joined-name"></p>
+            <p class="guest-joined-sub">Your guest session will stay active on this device.</p>
+
+            <!-- Connection capture -->
+            <div class="guest-connect-section">
+              <p class="guest-connect-title">People you met</p>
+              <p class="guest-connect-subtitle">Nearify helps you remember people you interacted with at events.</p>
+              <div class="guest-search-wrap">
+                <input
+                  id="guestAttendeeSearch"
+                  type="text"
+                  class="guest-join-input"
+                  placeholder="Search attendees..."
+                  autocomplete="off"
+                  autocorrect="off"
+                  spellcheck="false"
+                  autocapitalize="none"
+                />
+                <ul
+                  id="guestAttendeeSuggestions"
+                  class="guest-attendee-suggestions"
+                  role="listbox"
+                  aria-label="Matching attendees"
+                  style="display:none;"
+                ></ul>
+              </div>
+              <p id="guestConnectStatus" class="intent-status" aria-live="polite" style="margin-top:8px;">Search for someone you met and save the interaction.</p>
+              <div id="guestConnectionHistory" class="guest-connection-history" style="display:none;">
+                <p class="guest-connect-history-label">People you met</p>
+                <ul id="guestConnectionList" class="ghost-connections-list"></ul>
+                <p class="guest-connect-history-note">These interactions are temporarily saved to this device.</p>
+              </div>
+            </div>
+
+            <div class="guest-joined-actions" style="margin-top:18px;">
+              <button id="guestClaimSignInBtn" class="btn secondary" type="button">Sign in to save your interactions</button>
+            </div>
+            <p id="guestClaimStatus" class="intent-status" aria-live="polite" style="margin-top:8px;"></p>
+          </div>
+
         </div>
 
         <div class="join-payload-card" id="joinPayloadCard">
@@ -324,7 +409,7 @@
       });
     }
   </script>
-  <script type="module" src="../assets/js/join.js?v=20260508"></script>
+  <script type="module" src="../assets/js/join.js?v=20260517"></script>
   <script type="module" src="../assets/js/navAuth.js?v=20260508"></script>
   <script type="module">
     import { trackPageView, wireAppCtaTracking } from "../assets/js/analytics.js?v=20260508";

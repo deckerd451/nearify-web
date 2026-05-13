@@ -671,6 +671,477 @@ async function renderAuthHandoff(eventId) {
   }
 }
 
+// ── Guest entry flow ────────────────────────────────────────────────────────
+
+function showGuestJoinCta() {
+  const cta = document.getElementById("guestJoinCta");
+  show(cta);
+}
+
+function showGuestForm() {
+  const section = document.getElementById("guestJoinSection");
+  const form = document.getElementById("guestForm");
+  const joined = document.getElementById("guestJoinedState");
+  show(section);
+  show(form);
+  hide(joined);
+  const input = document.getElementById("guestDisplayName");
+  if (input) input.focus();
+}
+
+function saveGhostFlatKeys(ghost) {
+  try {
+    if (ghost.ghostId) localStorage.setItem("nearify_ghost_id", ghost.ghostId);
+    if (ghost.ghostToken) localStorage.setItem("nearify_ghost_token", ghost.ghostToken);
+    if (ghost.eventId) localStorage.setItem("nearify_ghost_event_id", ghost.eventId);
+    if (ghost.displayName) localStorage.setItem("nearify_ghost_display_name", ghost.displayName);
+  } catch (_) {}
+}
+
+// Module-level cache populated once per page load when the joined state renders
+let guestEventAttendees = [];
+
+async function fetchGuestEventAttendees(eventId) {
+  console.log("[GuestAttendees] Loading attendees for event", eventId);
+  if (!eventId) return { attendees: [] };
+
+  const { data, error } = await supabase.rpc("get_public_event_attendees", {
+    p_event_id: eventId,
+  });
+
+  console.log("[GuestAttendees] get_public_event_attendees result", data, error);
+
+  if (error) {
+    logger.warn("[GuestAttendees] RPC failed", error.message, error.code);
+    return { attendees: [], loadError: "Couldn't load attendees." };
+  }
+
+  if (!data?.length) {
+    return { attendees: [], empty: "No attendees found for this event yet." };
+  }
+
+  const normalized = data
+    .filter((r) => r.name)
+    .map((r) => ({
+      profileId: r.profile_id,
+      name:      r.name,
+      avatarUrl: r.avatar_url || null,
+      intent:    r.intent_primary || null,
+    }));
+
+  console.log("[GuestAttendees] normalized attendees", normalized);
+
+  return { attendees: normalized };
+}
+
+function getAttendeeInitials(name) {
+  if (!name) return "?";
+  return name.trim().split(/\s+/).slice(0, 2).map((w) => w[0]).join("").toUpperCase();
+}
+
+async function loadGuestConnectionHistory() {
+  const ghostId    = localStorage.getItem("nearify_ghost_id");
+  const ghostToken = localStorage.getItem("nearify_ghost_token");
+  const eventId    = localStorage.getItem("nearify_ghost_event_id");
+  if (!ghostId || !ghostToken || !eventId) return [];
+
+  const scoped = createScopedSupabaseClient({ "x-ghost-token": ghostToken });
+  const { data, error } = await scoped.rpc("get_ghost_connection_history", {
+    p_ghost_id:    ghostId,
+    p_ghost_token: ghostToken,
+    p_event_id:    eventId,
+  });
+
+  if (error) {
+    logger.warn("[GuestConnect] Failed to load connection history", error);
+    return [];
+  }
+  return Array.isArray(data) ? data : [];
+}
+
+function renderGuestConnectionHistory(connections) {
+  const historyEl = document.getElementById("guestConnectionHistory");
+  const listEl    = document.getElementById("guestConnectionList");
+  if (!historyEl || !listEl) return;
+
+  const names = [...new Set(
+    connections.map((r) => r?.to_profile_name).filter(Boolean)
+  )];
+
+  if (!names.length) {
+    historyEl.style.display = "none";
+    return;
+  }
+
+  listEl.innerHTML = names
+    .map((name) => `<li>Met ${escapeHtml(name)}</li>`)
+    .join("");
+  historyEl.style.display = "";
+}
+
+function updateClaimButtonCount(count) {
+  const btn = document.getElementById("guestClaimSignInBtn");
+  if (!btn) return;
+  if (count > 0) {
+    btn.textContent = count === 1 ? "Claim your 1 interaction" : `Claim your ${count} interactions`;
+  } else {
+    btn.textContent = "Sign in to save your interactions";
+  }
+}
+
+function closeSuggestions() {
+  const el = document.getElementById("guestAttendeeSuggestions");
+  if (el) { el.innerHTML = ""; el.style.display = "none"; }
+}
+
+function renderAttendeeSuggestions(query) {
+  const listEl = document.getElementById("guestAttendeeSuggestions");
+  if (!listEl) return;
+
+  const q = query.toLowerCase().trim();
+  if (!q) { closeSuggestions(); return; }
+
+  const matches = guestEventAttendees.filter((a) => a.name.toLowerCase().includes(q)).slice(0, 8);
+
+  if (!matches.length) {
+    if (guestEventAttendees.length > 0) {
+      listEl.innerHTML = `<li class="guest-attendee-empty">No matching attendees.</li>`;
+      listEl.style.display = "";
+    } else {
+      closeSuggestions();
+    }
+    return;
+  }
+
+  listEl.innerHTML = matches.map((a, i) => {
+    const initials   = getAttendeeInitials(a.name);
+    const intentText = a.intent ? a.intent.replace(/_/g, " ") : "";
+    return `<li role="option" class="guest-attendee-option" data-idx="${i}" tabindex="0">` +
+      `<span class="guest-attendee-avatar" aria-hidden="true">${escapeHtml(initials)}</span>` +
+      `<span class="guest-attendee-name">${escapeHtml(a.name)}</span>` +
+      (intentText ? `<span class="guest-attendee-intent">${escapeHtml(intentText)}</span>` : "") +
+      `</li>`;
+  }).join("");
+
+  listEl.style.display = "";
+
+  listEl.querySelectorAll("[data-idx]").forEach((item) => {
+    const attendee = matches[+item.dataset.idx];
+    item.addEventListener("click",   () => handleAttendeeSelect(attendee));
+    item.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" || e.key === " ") { e.preventDefault(); handleAttendeeSelect(attendee); }
+    });
+  });
+}
+
+async function handleAttendeeSelect(attendee) {
+  const searchInput = document.getElementById("guestAttendeeSearch");
+  const statusEl    = document.getElementById("guestConnectStatus");
+
+  closeSuggestions();
+  if (searchInput) searchInput.value = "";
+  if (statusEl) statusEl.textContent = "";
+
+  const ghostToken = localStorage.getItem("nearify_ghost_token");
+  const eventId    = localStorage.getItem("nearify_ghost_event_id");
+
+  if (!ghostToken || !eventId) {
+    if (statusEl) statusEl.textContent = "Guest session missing. Please join as guest again.";
+    return;
+  }
+
+  const { error } = await supabase.rpc("record_ghost_connection", {
+    p_event_id:          eventId,
+    p_ghost_token:       ghostToken,
+    p_target_profile_id: attendee.profileId,
+  });
+
+  if (error) {
+    logger.warn("[GuestConnect] record_ghost_connection failed", error);
+    if (statusEl) {
+      statusEl.textContent = (error.message || "").includes("Connection already exists")
+        ? `You already saved an interaction with ${attendee.name}.`
+        : `Connection failed: ${error.message || "Unknown error"}`;
+    }
+  } else {
+    if (statusEl) {
+      statusEl.innerHTML =
+        `<strong>You met ${escapeHtml(attendee.name)} at this event.</strong>` +
+        `<br><span class="guest-connect-claim-hint">You can save this interaction to your Nearify profile later.</span>`;
+    }
+    const connections = await loadGuestConnectionHistory();
+    renderGuestConnectionHistory(connections);
+    updateClaimButtonCount(connections.length);
+  }
+}
+
+function wireGuestConnectSection() {
+  const searchInput = document.getElementById("guestAttendeeSearch");
+  if (!searchInput) return;
+
+  searchInput.addEventListener("input", () => renderAttendeeSuggestions(searchInput.value));
+  searchInput.addEventListener("focus", () => {
+    if (searchInput.value.trim()) renderAttendeeSuggestions(searchInput.value);
+  });
+
+  // Close suggestions when clicking outside the search area
+  document.addEventListener("click", (e) => {
+    const suggestEl = document.getElementById("guestAttendeeSuggestions");
+    if (suggestEl && !searchInput.contains(e.target) && !suggestEl.contains(e.target)) {
+      closeSuggestions();
+    }
+  }, { capture: true, once: false });
+}
+
+function showGuestJoinedState(ghost) {
+  const section = document.getElementById("guestJoinSection");
+  const form = document.getElementById("guestForm");
+  const joined = document.getElementById("guestJoinedState");
+  const nameEl = document.getElementById("guestJoinedName");
+  const cta = document.getElementById("guestJoinCta");
+
+  saveGhostFlatKeys(ghost);
+
+  hide(form);
+  hide(cta);
+  show(section);
+  show(joined);
+  if (nameEl) nameEl.textContent = ghost.displayName || "";
+
+  wireGuestConnectSection();
+  loadGuestConnectionHistory().then((connections) => {
+    renderGuestConnectionHistory(connections);
+    updateClaimButtonCount(connections.length);
+  });
+
+  const connectEventId = ghost.eventId
+    || localStorage.getItem("nearify_ghost_event_id")
+    || new URLSearchParams(window.location.search).get("event");
+
+  if (connectEventId) {
+    fetchGuestEventAttendees(connectEventId).then(({ attendees, loadError, empty }) => {
+      guestEventAttendees = attendees;
+      logger.log("[GuestConnect] Loaded", attendees.length, "attendees");
+      const statusEl = document.getElementById("guestConnectStatus");
+      if (statusEl) {
+        if (loadError) {
+          statusEl.textContent = loadError;
+        } else if (empty) {
+          statusEl.textContent = empty;
+        } else if (attendees.length > 0) {
+          // Attendees loaded — placeholder is no longer needed; clear only if
+          // no connection message is already showing.
+          if (statusEl.textContent === "Search for someone you met and save the interaction.") {
+            statusEl.textContent = "";
+          }
+        }
+      }
+    });
+  }
+
+  // Wire the claim sign-in button every time the joined state is shown
+  // (runs for both new-join and restored-session paths)
+  const claimBtn = document.getElementById("guestClaimSignInBtn");
+  if (claimBtn) {
+    claimBtn.addEventListener("click", async () => {
+      const ghostId = localStorage.getItem("nearify_ghost_id");
+      const ghostToken = localStorage.getItem("nearify_ghost_token");
+      const statusEl = document.getElementById("guestClaimStatus");
+
+      if (!ghostId || !ghostToken) {
+        if (statusEl) statusEl.textContent = "Guest session missing. Please join as guest again.";
+        return;
+      }
+
+      logger.log("[GuestClaim] Starting sign-in to claim guest session");
+      localStorage.setItem("nearify_pending_ghost_claim", "true");
+
+      claimBtn.disabled = true;
+      claimBtn.textContent = "Signing in…";
+
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: { redirectTo: window.location.href },
+      });
+
+      if (error) {
+        logger.error("[GuestClaim] OAuth start failed", error);
+        localStorage.removeItem("nearify_pending_ghost_claim");
+        claimBtn.disabled = false;
+        updateClaimButtonCount(0);
+        const statusEl2 = document.getElementById("guestClaimStatus");
+        if (statusEl2) statusEl2.textContent = "Sign-in failed. Please try again.";
+      }
+    });
+  }
+}
+
+async function maybeClaimPendingGhostSession() {
+  if (localStorage.getItem("nearify_pending_ghost_claim") !== "true") return;
+
+  logger.log("[GuestClaim] Pending claim detected after auth");
+
+  const ghostId = localStorage.getItem("nearify_ghost_id");
+  const ghostToken = localStorage.getItem("nearify_ghost_token");
+  const statusEl = document.getElementById("guestClaimStatus");
+
+  if (!ghostId || !ghostToken) {
+    localStorage.removeItem("nearify_pending_ghost_claim");
+    logger.warn("[GuestClaim] Pending claim found but ghost keys missing");
+    return;
+  }
+
+  const { data: { session } } = await supabase.auth.getSession();
+  const userId = session?.user?.id;
+
+  console.log("[GuestClaim] Auth user id", userId);
+
+  if (!userId) {
+    logger.warn("[GuestClaim] Pending claim found but no authenticated user");
+    return;
+  }
+
+  const { data: profileData, error: profileError } = await supabase
+    .from("profiles")
+    .select("id")
+    .eq("user_id", userId)
+    .maybeSingle();
+
+  if (profileError || !profileData?.id) {
+    logger.warn("[GuestClaim] Could not resolve profile id", profileError);
+    if (statusEl) statusEl.textContent = "We couldn't find your Nearify profile after sign-in. Your guest session is still saved.";
+    return;
+  }
+
+  const profileId = profileData.id;
+  console.log("[GuestClaim] Resolved profile id", profileId);
+
+  // The scoped client starts with no auth session (persistSession: false).
+  // Inject the current user's JWT so auth.uid() resolves correctly inside
+  // claim_ghost_activity — without this, current_profile_id() returns null
+  // and the function raises P0001 Forbidden.
+  const scoped = createScopedSupabaseClient({ "x-ghost-token": ghostToken });
+  await scoped.auth.setSession({
+    access_token: session.access_token,
+    refresh_token: session.refresh_token,
+  });
+
+  const { error } = await scoped.rpc("claim_ghost_activity", {
+    p_ghost_id: ghostId,
+    p_profile_id: profileId,
+  });
+
+  if (error) {
+    console.error("[GuestClaim] Claim failed", {
+      message: error?.message,
+      details: error?.details,
+      hint: error?.hint,
+      code: error?.code,
+      status: error?.status,
+      raw: JSON.stringify(error || {}, null, 2),
+    });
+    if (statusEl) statusEl.textContent = `We couldn't save your session: ${error?.message || "Unknown error"}. Your interactions are still saved on this device.`;
+    return;
+  }
+
+  logger.log("[GuestClaim] Claim successful");
+
+  localStorage.removeItem("nearify_pending_ghost_claim");
+  localStorage.removeItem("nearify_ghost_id");
+  localStorage.removeItem("nearify_ghost_token");
+  localStorage.removeItem("nearify_ghost_event_id");
+  localStorage.removeItem("nearify_ghost_display_name");
+
+  const claimBtn = document.getElementById("guestClaimSignInBtn");
+  if (claimBtn) claimBtn.style.display = "none";
+  if (statusEl) statusEl.textContent = "Your event history is now saved to your profile.";
+}
+
+async function handleGuestSubmit(eventId) {
+  const input = document.getElementById("guestDisplayName");
+  const errorEl = document.getElementById("guestNameError");
+  const statusEl = document.getElementById("guestJoinStatus");
+  const submitBtn = document.getElementById("guestSubmitBtn");
+
+  const name = input?.value?.trim();
+
+  if (errorEl) errorEl.style.display = "none";
+  if (statusEl) statusEl.textContent = "";
+
+  if (!name) {
+    if (errorEl) errorEl.style.display = "";
+    if (input) input.focus();
+    return;
+  }
+
+  if (submitBtn) {
+    submitBtn.disabled = true;
+    submitBtn.textContent = "Joining…";
+  }
+
+  try {
+    const ghost = await createGhostSession(eventId, name);
+    if (!ghost) throw new Error("create_ghost_participant returned null");
+    showGuestJoinedState(ghost);
+    logger.log("[Guest] Joined as guest", ghost);
+  } catch (err) {
+    logger.error("[Guest] Failed to create ghost session", err);
+    if (statusEl) statusEl.textContent = "Something went wrong. Please try again.";
+    if (submitBtn) {
+      submitBtn.disabled = false;
+      submitBtn.textContent = "Join as Guest";
+    }
+  }
+}
+
+function wireGuestJoinFlow(eventId) {
+  const joinAsGuestBtn = document.getElementById("joinAsGuestBtn");
+  const submitBtn = document.getElementById("guestSubmitBtn");
+  const cancelBtn = document.getElementById("guestCancelBtn");
+  const nameInput = document.getElementById("guestDisplayName");
+
+  if (joinAsGuestBtn) {
+    joinAsGuestBtn.addEventListener("click", showGuestForm);
+  }
+
+  if (submitBtn) {
+    submitBtn.addEventListener("click", () => handleGuestSubmit(eventId));
+  }
+
+  if (nameInput) {
+    nameInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        handleGuestSubmit(eventId);
+      }
+    });
+  }
+
+  if (cancelBtn) {
+    cancelBtn.addEventListener("click", () => {
+      const form = document.getElementById("guestForm");
+      const cta = document.getElementById("guestJoinCta");
+      const section = document.getElementById("guestJoinSection");
+      hide(form);
+      hide(section);
+      show(cta);
+    });
+  }
+  // guestClaimSignInBtn is wired inside showGuestJoinedState, not here,
+  // so it fires for both new-join and restored-session paths.
+}
+
+function initGuestJoinSection(eventId) {
+  const existing = loadGhostSession(eventId);
+  if (existing?.ghostId) {
+    showGuestJoinedState(existing);  // saves flat keys + wires claim btn
+    logger.log("[Guest] Restored existing ghost session on page load");
+    return;
+  }
+  showGuestJoinCta();
+  wireGuestJoinFlow(eventId);
+}
+
 async function initJoinPage() {
   const { eventId, eventName, profileId } = getQueryParams();
 
@@ -705,29 +1176,32 @@ async function initJoinPage() {
       return;
     }
 
-    let connectResult = null;
-    const ghost = await ensureGhostForEvent(event.id);
-    renderGhostState(ghost);
-    if (profileId) {
-      connectResult = await maybeConnectGhostToProfile(event.id, profileId);
-    }
-
-    let historyRows = await fetchGhostConnectionHistory(ghost, event.id);
+    // Resolve auth session before branching — determines which experience to render.
     const { data: sessionData } = await supabase.auth.getSession();
     const hasSession = !!sessionData?.session?.user;
-    let isClaimed = historyRows.some((row) => row?.claimed_profile_id);
 
-    if (hasSession && !isClaimed) {
-      const claimed = await maybeClaimGhostActivity(ghost, isClaimed);
-      if (claimed) {
-        historyRows = await fetchGhostConnectionHistory(ghost, event.id);
-        isClaimed = historyRows.some((row) => row?.claimed_profile_id);
+    if (profileId && hasSession) {
+      // ── Personal connect flow: authenticated visitor scanned someone's QR ─
+      logger.log("[Join] Authenticated profile detected; rendering personal connect");
+
+      let connectResult = null;
+      const ghost = await ensureGhostForEvent(event.id);
+      renderGhostState(ghost);
+      connectResult = await maybeConnectGhostToProfile(event.id, profileId);
+
+      let historyRows = await fetchGhostConnectionHistory(ghost, event.id);
+      let isClaimed = historyRows.some((row) => row?.claimed_profile_id);
+
+      if (!isClaimed) {
+        const claimed = await maybeClaimGhostActivity(ghost, isClaimed);
+        if (claimed) {
+          historyRows = await fetchGhostConnectionHistory(ghost, event.id);
+          isClaimed = historyRows.some((row) => row?.claimed_profile_id);
+        }
       }
-    }
 
-    wireClaimButtons(ghost, isClaimed);
+      wireClaimButtons(ghost, isClaimed);
 
-    if (profileId) {
       renderPersonalConnectUx(event, targetProfile);
       const uniqueNames = [...new Set((historyRows || []).map((row) => row?.to_profile_name).filter(Boolean))];
       const hasHistory = uniqueNames.length > 1;
@@ -742,7 +1216,11 @@ async function initJoinPage() {
         logger.log("[Join] Personal connect UX rendered after successful connection");
       }
     } else {
+      // ── Generic flow: no auth session (or no profile param) ────────────
+      logger.log("[Join] No authenticated profile; rendering guest join flow");
       renderGenericJoinUx(event, eventName);
+      initGuestJoinSection(event.id);
+      await maybeClaimPendingGhostSession();
     }
 
     showIntentStep();

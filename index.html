@@ -3,20 +3,20 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Nearify — Event Control Center</title>
-  <meta name="description" content="Create Nearify events, generate QR codes, and manage your event network." />
+  <title>Nearify — Events</title>
+  <meta name="description" content="Discover events, track participation, and coordinate your event ecosystem with Nearify." />
 
   <meta property="og:type"        content="website" />
   <meta property="og:url"         content="https://nearify.org/" />
-  <meta property="og:title"       content="Nearify — Event Control Center" />
-  <meta property="og:description" content="Create events, generate QR codes, and manage your Nearify event network." />
+  <meta property="og:title"       content="Nearify — Events" />
+  <meta property="og:description" content="Discover events, track participation, and coordinate your event ecosystem with Nearify." />
   <meta property="og:image"       content="https://nearify.org/assets/images/og-default.png" />
   <meta name="twitter:card"       content="summary_large_image" />
-  <meta name="twitter:title"      content="Nearify — Event Control Center" />
-  <meta name="twitter:description" content="Create events, generate QR codes, and manage your Nearify event network." />
+  <meta name="twitter:title"      content="Nearify — Events" />
+  <meta name="twitter:description" content="Discover events, track participation, and coordinate your event ecosystem with Nearify." />
   <meta name="twitter:image"      content="https://nearify.org/assets/images/og-default.png" />
 
-  <link rel="stylesheet" href="assets/css/styles.css?v=20260508" />
+  <link rel="stylesheet" href="assets/css/styles.css?v=20260510" />
 </head>
 <body class="cc-page">
 
@@ -48,11 +48,11 @@
     </div>
 
     <!-- ─── LOGGED-OUT LANDING ─────────────────────────────────────────── -->
-    <section id="landingView" class="cc-landing" aria-label="Create a Nearify event" style="display:none;">
+    <section id="landingView" class="cc-landing" aria-label="Nearify events for organizers and attendees" style="display:none;">
       <div class="cc-landing-inner">
-        <div class="cc-landing-kicker">For event organizers</div>
-        <h1>Run better events with Nearify</h1>
-        <p>Create an event, generate a QR code, and let attendees join your live network — no app install required on your end.</p>
+        <div class="cc-landing-kicker">For organizers and attendees</div>
+        <h1>Events where the right connections happen</h1>
+        <p>Whether you're attending or organizing, Nearify helps you show up with purpose and leave with real connections.</p>
         <div class="hero-actions" style="justify-content:center; margin-bottom: 48px;">
           <button id="landingSignInBtn" class="btn primary cc-google-btn">
             <svg class="cc-google-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
@@ -69,22 +69,22 @@
             <div class="cc-landing-feature-icon">
               <svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M10 2L3 11h6l-1 7 8-10h-6l1-8z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
             </div>
-            <div class="cc-landing-feature-label">Create in seconds</div>
-            <div class="cc-landing-feature-desc">Name your event, pick a date, and get a shareable QR code instantly.</div>
+            <div class="cc-landing-feature-label">Show up with a goal</div>
+            <div class="cc-landing-feature-desc">Tell Nearify what you're looking for before you arrive. See who's attending and what they're here for.</div>
           </div>
           <div class="cc-landing-feature">
             <div class="cc-landing-feature-icon">
               <svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><circle cx="10" cy="10" r="2.5" stroke="currentColor" stroke-width="1.5"/><path d="M5.5 14.5a6.5 6.5 0 0 1 0-9M14.5 5.5a6.5 6.5 0 0 1 0 9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M2.5 17.5a10.5 10.5 0 0 1 0-15M17.5 2.5a10.5 10.5 0 0 1 0 15" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
             </div>
-            <div class="cc-landing-feature-label">Live attendance</div>
-            <div class="cc-landing-feature-desc">Attendees can join and check in from the Nearify iOS app or by scanning your QR — you see who's in the room.</div>
+            <div class="cc-landing-feature-label">Understand your community</div>
+            <div class="cc-landing-feature-desc">Organizers see who's joining, track participation, and gain ecosystem insights that make events better over time.</div>
           </div>
           <div class="cc-landing-feature">
             <div class="cc-landing-feature-icon">
               <svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M8.5 11.5a3 3 0 0 0 4.24 0l3-3a3 3 0 0 0-4.24-4.24l-1.5 1.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M11.5 8.5a3 3 0 0 0-4.24 0l-3 3a3 3 0 0 0 4.24 4.24l1.5-1.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
             </div>
-            <div class="cc-landing-feature-label">Persistent connections</div>
-            <div class="cc-landing-feature-desc">Every connection made at your event is saved for follow-up after it ends.</div>
+            <div class="cc-landing-feature-label">Connections that last</div>
+            <div class="cc-landing-feature-desc">Every connection made at an event is saved. Follow up, reconnect, and build relationships that outlast the evening.</div>
           </div>
         </div>
       </div>
@@ -92,10 +92,17 @@
 
     <!-- ─── LOGGED-IN DASHBOARD ───────────────────────────────────────── -->
     <div id="dashboardView" style="display:none;">
+
+      <!-- Ecosystem hero — populated by dashboard.js after events load -->
+      <div id="ecosystemHero" class="cc-ecosystem-hero" style="display:none;" aria-label="Event ecosystem overview"></div>
+
       <div class="cc-dashboard">
 
         <div class="cc-dashboard-header">
-          <h1 class="cc-dashboard-title">Events</h1>
+          <div>
+            <h1 class="cc-dashboard-title">Your Events</h1>
+            <p class="cc-dashboard-subtitle">Events you're organizing · <a href="/events/index.html" class="cc-dashboard-subtitle-link">Browse all events</a></p>
+          </div>
           <button id="openCreateModalBtn" class="btn primary">+ Create Event</button>
         </div>
 
@@ -182,7 +189,7 @@
         <div id="qrModalQrCode"></div>
       </div>
 
-      <p class="cc-qr-subtext">Scan when you arrive to join the live network</p>
+      <p class="cc-qr-subtext">Scan to join this event and set your goals for the room</p>
 
       <div class="cc-qr-actions">
         <button id="qrModalCopyBtn" class="btn primary">Copy Link</button>
@@ -217,7 +224,7 @@
   <!-- QR code library (must load before dashboard.js) -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" integrity="sha384-3zSEDfvllQohrq0PHL1fOXJuC/jSOO34H46t6UQfobFOmxE5BpjjaIJY5F2/bMnU" crossorigin="anonymous"></script>
 
-  <script type="module" src="/assets/js/dashboard.js?v=20260508"></script>
+  <script type="module" src="/assets/js/dashboard.js?v=20260510"></script>
   <script type="module" src="/assets/js/navAuth.js?v=20260508"></script>
 
 </body>

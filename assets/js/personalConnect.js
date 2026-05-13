@@ -14,10 +14,8 @@ export function buildPersonalConnectUrl(eventId, profileId) {
 }
 
 export async function getMyProfileId() {
-  const { data: authData, error: authError } = await supabase.auth.getUser();
-  if (authError) throw authError;
-
-  const userId = authData?.user?.id;
+  const { data: sessionData } = await supabase.auth.getSession();
+  const userId = sessionData?.session?.user?.id;
   if (!userId) return null;
 
   const { data, error } = await supabase

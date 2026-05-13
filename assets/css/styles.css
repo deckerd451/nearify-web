@@ -2043,6 +2043,263 @@ code {
   grid-column: 2;
 }
 
+/* ── Guest entry flow ─────────────────────────────────────────────────────── */
+
+.guest-join-cta {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.guest-join-divider {
+  font-size: 13px;
+  color: #5a6a80;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.guest-join-card {
+  background: rgba(14, 22, 36, 0.82);
+  border: 1px solid rgba(143, 160, 184, 0.18);
+  border-radius: 14px;
+  padding: 24px;
+  margin-top: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.guest-join-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #e8edf5;
+  margin: 0;
+}
+
+.guest-join-sub {
+  font-size: 14px;
+  color: #8fa0b8;
+  margin: 0;
+  line-height: 1.5;
+}
+
+.guest-join-label {
+  display: block;
+  font-size: 13px;
+  font-weight: 500;
+  color: #8fa0b8;
+  margin-bottom: 8px;
+}
+
+.guest-join-input {
+  width: 100%;
+  padding: 10px 14px;
+  border-radius: 8px;
+  border: 1px solid rgba(143, 160, 184, 0.3);
+  background: rgba(8, 14, 24, 0.7);
+  color: #e8edf5;
+  font-size: 15px;
+  font-family: inherit;
+  outline: none;
+  box-sizing: border-box;
+  transition: border-color 0.15s;
+}
+
+.guest-join-input:focus {
+  border-color: rgba(0, 196, 255, 0.5);
+}
+
+.guest-join-input::placeholder {
+  color: #4a5a70;
+}
+
+.guest-join-actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.btn-inline-link {
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: 14px;
+  color: #8fa0b8;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  font-family: inherit;
+}
+
+.btn-inline-link:hover {
+  color: #e8edf5;
+}
+
+.guest-joined-card {
+  background: rgba(48, 209, 88, 0.06);
+  border: 1px solid rgba(48, 209, 88, 0.2);
+  border-radius: 14px;
+  padding: 20px 24px;
+  margin-top: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.guest-joined-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.guest-joined-check {
+  font-size: 18px;
+  color: #30d158;
+  flex-shrink: 0;
+}
+
+.guest-joined-label {
+  font-size: 16px;
+  font-weight: 600;
+  color: #e8edf5;
+}
+
+.guest-joined-name {
+  font-size: 14px;
+  color: #8fa0b8;
+  margin: 0;
+}
+
+.guest-joined-sub {
+  font-size: 14px;
+  color: #8fa0b8;
+  margin: 0;
+  line-height: 1.5;
+}
+
+.guest-joined-actions {
+  margin-top: 4px;
+}
+
+.guest-connect-section {
+  margin-top: 18px;
+  padding-top: 18px;
+  border-top: 1px solid rgba(143, 160, 184, 0.15);
+}
+
+.guest-connect-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #c5d5e8;
+  margin: 0 0 4px;
+}
+
+.guest-connect-subtitle {
+  font-size: 13px;
+  color: #8fa0b8;
+  margin: 0 0 12px;
+  line-height: 1.5;
+}
+
+/* Search wrap keeps suggestions in document flow (no z-index stacking) */
+.guest-search-wrap {
+  position: relative;
+}
+
+.guest-attendee-suggestions {
+  list-style: none;
+  padding: 4px 0;
+  margin: 4px 0 0;
+  background: rgba(10, 18, 32, 0.98);
+  border: 1px solid rgba(143, 160, 184, 0.25);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.guest-attendee-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  cursor: pointer;
+  transition: background 0.12s;
+}
+
+.guest-attendee-option:hover,
+.guest-attendee-option:focus {
+  background: rgba(143, 160, 184, 0.1);
+  outline: none;
+}
+
+.guest-attendee-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: rgba(0, 196, 255, 0.12);
+  color: #00c4ff;
+  font-size: 11px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  letter-spacing: 0.03em;
+}
+
+.guest-attendee-name {
+  font-size: 14px;
+  color: #e8edf5;
+  font-weight: 500;
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.guest-attendee-intent {
+  font-size: 12px;
+  color: #4a5a70;
+  flex-shrink: 0;
+  text-transform: capitalize;
+}
+
+.guest-attendee-empty {
+  padding: 10px 14px;
+  font-size: 13px;
+  color: #5a6a80;
+  list-style: none;
+}
+
+.guest-connect-history-label {
+  font-size: 11px;
+  font-weight: 500;
+  color: #5a6a80;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin: 14px 0 8px;
+}
+
+.guest-connection-history .ghost-connections-list li::before {
+  content: "✓";
+  font-size: 12px;
+  color: #30d158;
+}
+
+.guest-connect-history-note {
+  font-size: 12px;
+  color: #8fa0b8;
+  margin: 8px 0 0;
+  line-height: 1.5;
+}
+
+.guest-connect-claim-hint {
+  font-size: 13px;
+  color: #8fa0b8;
+}
+
 /* Join page hint text */
 .join-hint {
   color: #8fa0b8;
@@ -2929,7 +3186,7 @@ code {
 
 .cc-dashboard-header {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
   margin-bottom: 32px;
   gap: 16px;

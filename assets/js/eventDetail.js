@@ -10,6 +10,8 @@ import { trackPageView, wireAppCtaTracking } from "./analytics.js";
 import { patchAppStoreLinks } from "./config.js";
 import { escapeHtml } from "./utils.js";
 import { logger } from "./logger.js";
+import { canManageEvent } from "./events.js";
+import { loadOrganizerInsights } from "./organizerInsights.js";
 
 const INTENT_STORAGE_KEY = "intent_primary";
 const ATTENDEE_AUTH_KEY = "nearify_attendee_auth_return";
@@ -44,6 +46,14 @@ function formatDateTime(iso) {
 
 function getDeepLink(eventId) {
   return `beacon://event/${encodeURIComponent(eventId)}`;
+}
+
+function isMobile() {
+  return /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+}
+
+function getWebJoinUrl(eventId) {
+  return `/join/?event=${encodeURIComponent(eventId)}`;
 }
 
 function parseStoredJson(key) {
@@ -221,6 +231,13 @@ function attemptDeepLink(deepLink) {
 
 function beginJoinFlow(source = "join") {
   if (!currentEvent?.id) return;
+
+  if (!isMobile()) {
+    // Desktop: navigate to the web join page — no beacon:// attempt
+    window.location.href = getWebJoinUrl(currentEvent.id);
+    return;
+  }
+
   const deepLink = getDeepLink(currentEvent.id);
 
   try {
@@ -355,7 +372,11 @@ async function maybeContinueAfterAuth() {
   }
 
   localStorage.removeItem(ATTENDEE_AUTH_KEY);
-  beginJoinFlow("after_attendee_sign_in");
+
+  // Only attempt the app deep link on mobile — desktop stays on the event page
+  if (isMobile()) {
+    beginJoinFlow("after_attendee_sign_in");
+  }
 }
 
 async function loadIntelligence(event) {
@@ -894,6 +915,15 @@ async function populatePage(event) {
   if (heroCopy) heroCopy.style.display = "";
 }
 
+async function maybeShowOrganizerSection(event) {
+  const section = document.getElementById("organizerSection");
+  if (!section) return;
+  const canManage = await canManageEvent(event);
+  if (!canManage) return;
+  section.style.display = "";
+  await loadOrganizerInsights(event);
+}
+
 async function init() {
   try {
     currentEvent = await fetchEvent();
@@ -905,6 +935,7 @@ async function init() {
     currentUser = await fetchCurrentUser();
     await populatePage(currentEvent);
     await renderPersonalConnectSection(currentEvent.id);
+    await maybeShowOrganizerSection(currentEvent);
 
     patchAppStoreLinks();
     trackPageView({ eventId: currentEvent.id });

@@ -151,3 +151,16 @@ export async function fetchOrganizerEvents() {
   }
   return data || [];
 }
+
+/**
+ * Returns true if the currently authenticated user created this event.
+ * Compares their resolved profile.id against event.created_by.
+ * No extra DB queries — created_by is already on every fetched event row.
+ * @param {object} event - Event row (must include created_by)
+ * @returns {Promise<boolean>}
+ */
+export async function canManageEvent(event) {
+  if (!event?.created_by) return false;
+  const profileId = await getOrganizerProfileId();
+  return !!profileId && profileId === event.created_by;
+}
