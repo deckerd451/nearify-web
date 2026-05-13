@@ -3669,422 +3669,65 @@ body.cc-page .cc-event-actions .btn.secondary:hover {
   border-color: #666;
 }
 
+
 /* ============================================================
-   Organizer Insights
-   Visible only to the event creator (gated by canManageEvent).
-   Aggregate counts only — no individual data exposed.
+   MOMENTUM INDICATORS — Social proof / attendee counts
    ============================================================ */
 
-.organizer-section {
-  border-top: 1px solid rgba(255, 255, 255, 0.06);
-}
-
-.organizer-heading-row {
+/* Event detail page momentum */
+.event-momentum {
   display: flex;
   align-items: center;
-  justify-content: center;
   gap: 12px;
+  margin-bottom: 24px;
   flex-wrap: wrap;
 }
 
-.organizer-badge {
+.momentum-count {
   display: inline-flex;
   align-items: center;
-  padding: 3px 10px;
-  border-radius: var(--radius-full);
-  background: rgba(48, 209, 88, 0.12);
-  border: 1px solid rgba(48, 209, 88, 0.28);
-  color: var(--color-accent);
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
-/* Natural-language summary strip */
-.organizer-summary {
-  max-width: 760px;
-  margin: 0 auto 28px;
-  padding: 16px 22px;
-  background: rgba(48, 209, 88, 0.05);
-  border: 1px solid rgba(48, 209, 88, 0.14);
-  border-radius: var(--radius-md);
-  font-size: 15px;
-  line-height: 1.6;
-  color: rgba(255, 255, 255, 0.75);
-  font-style: italic;
-  text-align: center;
-}
-
-/* Card grid */
-.organizer-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 16px;
-  max-width: 860px;
-  margin: 0 auto 16px;
-}
-
-@media (max-width: 640px) {
-  .organizer-grid {
-    grid-template-columns: 1fr;
-  }
-}
-
-.organizer-card {
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid var(--color-border-subtle);
-  border-radius: var(--radius-md);
-  padding: 20px 22px;
-}
-
-.organizer-card-title {
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--color-text-muted);
-  margin-bottom: 14px;
-}
-
-/* Participation card */
-.organizer-stat {
-  font-size: 40px;
-  font-weight: 700;
-  color: var(--color-text-primary);
-  line-height: 1;
-  margin-bottom: 4px;
-}
-
-.organizer-stat-label {
-  font-size: 13px;
-  color: var(--color-text-secondary);
-  margin-bottom: 10px;
-}
-
-.organizer-stat-sub {
-  font-size: 13px;
-  color: var(--color-text-muted);
-  margin-bottom: 14px;
-}
-
-.organizer-pct {
-  color: var(--color-accent);
-}
-
-/* Shared bar component */
-.organizer-bar-track {
-  height: 5px;
-  background: rgba(255, 255, 255, 0.08);
-  border-radius: var(--radius-full);
-  overflow: hidden;
-}
-
-.organizer-bar-fill {
-  height: 100%;
-  background: var(--color-accent);
-  border-radius: var(--radius-full);
-  min-width: 4px;
-}
-
-/* Goal distribution rows */
-.organizer-goal-row {
-  margin-bottom: 14px;
-}
-
-.organizer-goal-row:last-child {
-  margin-bottom: 0;
-}
-
-.organizer-goal-meta {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  margin-bottom: 6px;
-}
-
-.organizer-goal-label {
-  font-size: 13px;
-  color: rgba(255, 255, 255, 0.85);
-}
-
-.organizer-goal-count {
-  font-size: 12px;
-  color: var(--color-text-muted);
-}
-
-/* Interest / skill tag cloud */
-.organizer-tag-cloud {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.organizer-tag {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  padding: 5px 11px;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.09);
-  border-radius: var(--radius-full);
-  font-size: 12px;
-  color: rgba(255, 255, 255, 0.75);
-}
-
-.organizer-tag-count {
-  font-size: 11px;
+  gap: 6px;
+  font-size: 14px;
   font-weight: 600;
-  color: var(--color-text-muted);
+  color: var(--color-accent);
+  letter-spacing: -0.01em;
 }
 
-/* Empty / loading states */
-.organizer-empty {
-  max-width: 860px;
-  margin: 0 auto;
-  text-align: center;
-  padding: 40px 20px;
-  font-size: 14px;
-  color: var(--color-text-muted);
-}
-
-.organizer-empty-note {
-  font-size: 13px;
-  color: var(--color-text-muted);
-  margin: 0;
-}
-
-.organizer-loading {
-  max-width: 860px;
-  margin: 0 auto;
-  text-align: center;
-  padding: 32px 20px;
-  font-size: 14px;
-  color: var(--color-text-muted);
-}
-
-/* ============================================================
-   Dashboard — Ecosystem Hero + Participation Hierarchy
-   Additive layer: ecosystem visibility before admin controls.
-   ============================================================ */
-
-/* Ecosystem hero wrapper — full-width, above the events list */
-.cc-ecosystem-hero {
-  max-width: 960px;
-  margin: 0 auto;
-  padding: 40px 24px 0;
-}
-
-.cc-ecosystem-kicker {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.09em;
-  text-transform: uppercase;
-  color: var(--color-text-muted);
-  margin-bottom: 14px;
-}
-
-.cc-ecosystem-live-dot {
+.momentum-count::before {
+  content: "";
   display: inline-block;
-  width: 7px;
-  height: 7px;
+  width: 6px;
+  height: 6px;
   border-radius: 50%;
   background: var(--color-accent);
+  opacity: 0.7;
   flex-shrink: 0;
-  animation: cc-pulse 1.6s ease-in-out infinite;
 }
 
-/* Featured event panel inside the hero */
-.cc-featured-event {
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.09);
-  border-radius: var(--radius-lg);
-  padding: 24px 28px;
-  margin-bottom: 10px;
-  transition: border-color 0.2s ease;
-}
-
-.cc-featured-event:hover {
-  border-color: rgba(48, 209, 88, 0.18);
-}
-
-.cc-featured-event--live {
-  border-color: rgba(34, 197, 94, 0.22);
-  background: rgba(34, 197, 94, 0.03);
-}
-
-.cc-featured-event-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 16px;
-  margin-bottom: 20px;
-}
-
-.cc-featured-event-info {
-  flex: 1;
-  min-width: 0;
-}
-
-.cc-featured-event-name {
-  font-size: 22px;
-  font-weight: 700;
-  letter-spacing: -0.02em;
-  color: var(--color-text-primary);
-  margin: 0 0 5px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.cc-featured-event-meta {
+.momentum-flavor {
   font-size: 13px;
   color: var(--color-text-muted);
-  margin: 0;
+  font-weight: 400;
 }
 
-/* Participation count + goal note */
-.cc-featured-participation {
+/* Event card momentum (listing page) */
+.event-card-momentum {
   display: flex;
-  align-items: baseline;
-  flex-wrap: wrap;
-  gap: 6px 10px;
-  margin-bottom: 14px;
-}
-
-.cc-featured-count {
-  font-size: 38px;
-  font-weight: 700;
-  color: var(--color-accent);
-  letter-spacing: -0.03em;
-  line-height: 1;
-}
-
-.cc-featured-count-label {
-  font-size: 14px;
-  color: var(--color-text-secondary);
-}
-
-.cc-featured-goal-note {
-  font-size: 13px;
-  color: var(--color-text-muted);
-}
-
-/* Goal pills in the hero */
-.cc-featured-goals-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-bottom: 22px;
-}
-
-.cc-goal-pill {
-  display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 5px 12px;
-  background: rgba(48, 209, 88, 0.07);
-  border: 1px solid rgba(48, 209, 88, 0.18);
-  border-radius: var(--radius-full);
-  font-size: 12px;
-  color: rgba(255, 255, 255, 0.8);
-}
-
-.cc-goal-pill-count {
-  font-size: 11px;
-  font-weight: 700;
-  color: var(--color-accent);
-}
-
-.cc-featured-actions {
-  display: flex;
   gap: 10px;
+  margin: 8px 0 12px;
   flex-wrap: wrap;
 }
 
-/* Aggregate line below the featured card */
-.cc-ecosystem-aggregate {
-  font-size: 12px;
-  color: var(--color-text-muted);
-  text-align: center;
-  margin: 0 0 4px;
-}
-
-/* ── Participation context in event cards ── */
-
-/* Small insight line between metrics and actions */
-.cc-participation-context {
-  font-size: 12px;
-  color: var(--color-text-muted);
-  margin-bottom: 16px;
-}
-
-/* ── Organizer controls — receded tier of admin actions ── */
-
-.cc-organizer-controls {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  width: 100%;
-  padding-top: 10px;
-  margin-top: 2px;
-  border-top: 1px solid rgba(255, 255, 255, 0.06);
-}
-
-/* Tighter, smaller ghost buttons in the organizer tier */
-.cc-organizer-controls .cc-action-btn {
-  padding: 6px 11px !important;
-  font-size: 12px !important;
-  opacity: 0.75;
-}
-
-.cc-organizer-controls .cc-action-btn:hover {
-  opacity: 1;
-}
-
-/* End Event in organizer controls: ghost with red tint */
-.cc-danger-action {
-  color: #f87171 !important;
-  border-color: rgba(248, 113, 113, 0.2) !important;
-}
-
-.cc-danger-action:hover {
-  background: rgba(248, 113, 113, 0.07) !important;
-  border-color: rgba(248, 113, 113, 0.4) !important;
-}
-
-@media (max-width: 600px) {
-  .cc-ecosystem-hero {
-    padding: 28px 16px 0;
-  }
-  .cc-featured-event {
-    padding: 18px;
-  }
-  .cc-featured-event-name {
-    font-size: 18px;
-  }
-  .cc-featured-count {
-    font-size: 30px;
-  }
-}
-
-/* ── Dashboard header subtitle ── */
-.cc-dashboard-subtitle {
+.event-card-momentum .momentum-count {
   font-size: 13px;
-  color: var(--color-text-muted);
-  margin-top: 3px;
 }
 
-.cc-dashboard-subtitle-link,
-.cc-empty-link {
-  color: var(--color-accent);
-  text-decoration: none;
+.event-card-momentum .momentum-count::before {
+  width: 5px;
+  height: 5px;
 }
 
-.cc-dashboard-subtitle-link:hover,
-.cc-empty-link:hover {
-  text-decoration: underline;
+.event-card-momentum .momentum-flavor {
+  font-size: 12px;
 }
