@@ -16,7 +16,11 @@
 
   /* Borders */
   --color-border-subtle: rgba(255, 255, 255, 0.1);
+  --color-border-accent: rgba(48, 209, 88, 0.12);
   --color-border-featured: rgba(48, 209, 88, 0.35);
+
+  /* Extended text */
+  --color-text-body: #c5cfdd;
 
   /* Radius */
   --radius-sm: 8px;
@@ -298,15 +302,6 @@ textarea::placeholder {
   font-size: 15px;
 }
 
-/* EVENTS */
-.event-card {
-  background: #1f2937;
-  padding: 30px;
-  border-radius: 12px;
-  margin-top: 30px;
-  display: inline-block;
-}
-
 /* CTA */
 .cta {
   text-align: center;
@@ -447,7 +442,7 @@ html {
 .timeline-card,
 .comparison-card {
   background: var(--color-surface);
-  border: 1px solid rgba(48, 209, 88,0.12);
+  border: 1px solid var(--color-border-accent);
   border-radius: 16px;
   box-shadow: 0 0 0 1px rgba(255,255,255,0.02) inset;
 }
@@ -483,7 +478,7 @@ html {
 
 .event-steps-list {
   padding-left: 18px;
-  color: #c5cfdd;
+  color: var(--color-text-body);
   line-height: 1.7;
 }
 
@@ -558,7 +553,7 @@ html {
 .feature-card p,
 .timeline-card p,
 .comparison-card li {
-  color: #c5cfdd;
+  color: var(--color-text-body);
   line-height: 1.7;
 }
 
@@ -671,7 +666,7 @@ html {
 
 .event-list-card {
   background: var(--color-surface);
-  border: 1px solid rgba(48, 209, 88,0.12);
+  border: 1px solid var(--color-border-accent);
   border-radius: 18px;
   padding: 32px;
   box-shadow: 0 0 0 1px rgba(255,255,255,0.02) inset;
@@ -742,7 +737,7 @@ html {
 }
 
 .event-list-card p {
-  color: #c5cfdd;
+  color: var(--color-text-body);
   line-height: 1.7;
 }
 
@@ -757,7 +752,7 @@ html {
 }
 
 .event-list-desc {
-  color: #c5cfdd;
+  color: var(--color-text-body);
   font-size: 15px;
   line-height: 1.65;
   margin-bottom: 6px;
@@ -802,7 +797,7 @@ html {
 
 .admin-card {
   background: var(--color-surface);
-  border: 1px solid rgba(48, 209, 88,0.12);
+  border: 1px solid var(--color-border-accent);
   border-radius: 18px;
   padding: 28px;
   box-shadow: 0 0 0 1px rgba(255,255,255,0.02) inset;
@@ -881,7 +876,7 @@ html {
 }
 
 .qr-preview-header p {
-  color: #c5cfdd;
+  color: var(--color-text-body);
   line-height: 1.7;
 }
 
@@ -999,7 +994,7 @@ code {
 .join-payload-card {
   margin-top: 28px;
   background: var(--color-surface);
-  border: 1px solid rgba(48, 209, 88,0.12);
+  border: 1px solid var(--color-border-accent);
   border-radius: 16px;
   padding: 18px 20px;
   max-width: 860px;
@@ -1560,7 +1555,7 @@ code {
   gap: 14px;
   align-items: flex-start;
   background: var(--color-surface);
-  border: 1px solid rgba(48, 209, 88,0.12);
+  border: 1px solid var(--color-border-accent);
   border-radius: 14px;
   padding: 18px;
 }
@@ -1900,7 +1895,7 @@ code {
 
 .admin-event-row {
   background: var(--color-surface);
-  border: 1px solid rgba(48, 209, 88,0.12);
+  border: 1px solid var(--color-border-accent);
   border-radius: 14px;
   padding: 18px 20px;
   display: grid;
@@ -1959,19 +1954,6 @@ code {
   background: rgba(248, 113, 113, 0.25);
 }
 
-/* Inline link-style button for cancel edit */
-.btn-inline-link {
-  background: none;
-  border: none;
-  color: var(--color-accent);
-  cursor: pointer;
-  font-size: inherit;
-  text-decoration: underline;
-  padding: 0;
-}
-
-.btn-inline-link:hover { opacity: 0.8; }
-
 /* Join page — event metadata strip */
 .join-event-meta {
   display: flex;
@@ -1987,7 +1969,7 @@ code {
   background: rgba(48, 209, 88,0.08);
   border: 1px solid rgba(48, 209, 88,0.2);
   border-radius: var(--radius-full);
-  color: #c5cfdd;
+  color: var(--color-text-body);
   font-size: 13px;
   padding: 6px 12px;
 }
@@ -2370,7 +2352,7 @@ code {
   padding: 12px 16px;
   margin-bottom: 20px;
   background: rgba(48, 209, 88,0.04);
-  border: 1px solid rgba(48, 209, 88,0.12);
+  border: 1px solid var(--color-border-accent);
   border-radius: 10px;
 }
 
@@ -2675,16 +2657,6 @@ code {
 .btn.secondary.loading::after {
   border-color: rgba(255, 255, 255, 0.5);
   border-top-color: transparent;
-}
-
-/* ============================================================
-   INTENT CHIP — ACTIVE STATE
-   ============================================================ */
-
-.intent-chip.active {
-  border-color: var(--color-accent);
-  background: rgba(48, 209, 88,0.12);
-  color: var(--color-accent);
 }
 
 /* ============================================================
