@@ -788,11 +788,11 @@ function buildMomentumLine(attendees) {
   });
 
   const intentLabelsShort = {
-    meet_people: "Networkers",
-    find_cofounder: "Builders",
-    hire: "Hiring",
-    explore_ideas: "Explorers",
-    demo_something: "Demos",
+    meet_people: "networking",
+    find_cofounder: "building",
+    hire: "hiring",
+    explore_ideas: "exploring",
+    demo_something: "demoing",
   };
 
   // Find top 2 intents (only if they represent meaningful portion)
@@ -802,9 +802,9 @@ function buildMomentumLine(attendees) {
 
   let flavor = "";
   if (sorted.length >= 2) {
-    flavor = `${intentLabelsShort[sorted[0][0]] || ""} + ${intentLabelsShort[sorted[1][0]] || ""} attending`;
+    flavor = `${intentLabelsShort[sorted[0][0]] || ""} · ${intentLabelsShort[sorted[1][0]] || ""}`;
   } else if (sorted.length === 1 && sorted[0][1] >= 3) {
-    flavor = `${intentLabelsShort[sorted[0][0]] || ""} attending`;
+    flavor = intentLabelsShort[sorted[0][0]] || "";
   }
 
   return { count, flavor };

@@ -3679,7 +3679,8 @@ body.cc-page .cc-event-actions .btn.secondary:hover {
   display: flex;
   align-items: center;
   gap: 12px;
-  margin-bottom: 24px;
+  margin-top: 4px;
+  margin-bottom: 28px;
   flex-wrap: wrap;
 }
 
@@ -3687,8 +3688,8 @@ body.cc-page .cc-event-actions .btn.secondary:hover {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  font-size: 14px;
-  font-weight: 600;
+  font-size: 13px;
+  font-weight: 500;
   color: var(--color-accent);
   letter-spacing: -0.01em;
 }
@@ -3696,11 +3697,11 @@ body.cc-page .cc-event-actions .btn.secondary:hover {
 .momentum-count::before {
   content: "";
   display: inline-block;
-  width: 6px;
-  height: 6px;
+  width: 5px;
+  height: 5px;
   border-radius: 50%;
   background: var(--color-accent);
-  opacity: 0.7;
+  opacity: 0.6;
   flex-shrink: 0;
 }
 
@@ -3708,24 +3709,25 @@ body.cc-page .cc-event-actions .btn.secondary:hover {
   font-size: 13px;
   color: var(--color-text-muted);
   font-weight: 400;
+  opacity: 0.8;
 }
 
 /* Event card momentum (listing page) */
 .event-card-momentum {
   display: flex;
   align-items: center;
-  gap: 10px;
-  margin: 8px 0 12px;
+  gap: 8px;
+  margin: 6px 0 10px;
   flex-wrap: wrap;
 }
 
 .event-card-momentum .momentum-count {
-  font-size: 13px;
+  font-size: 12px;
 }
 
 .event-card-momentum .momentum-count::before {
-  width: 5px;
-  height: 5px;
+  width: 4px;
+  height: 4px;
 }
 
 .event-card-momentum .momentum-flavor {
