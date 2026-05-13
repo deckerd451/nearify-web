@@ -231,16 +231,16 @@
     function buildFlavorText(intentMap, count) {
       if (!intentMap || count < 3) return "";
       const labels = {
-        meet_people: "Networkers",
-        find_cofounder: "Builders",
-        hire: "Hiring",
-        explore_ideas: "Explorers",
-        demo_something: "Demos",
+        meet_people: "networking",
+        find_cofounder: "building",
+        hire: "hiring",
+        explore_ideas: "exploring",
+        demo_something: "demoing",
       };
       const sorted = Object.entries(intentMap)
         .sort((a, b) => b[1] - a[1])
         .filter(([, c]) => c >= 2 && c / count >= 0.2);
-      if (sorted.length >= 2) return labels[sorted[0][0]] + " + " + labels[sorted[1][0]];
+      if (sorted.length >= 2) return labels[sorted[0][0]] + " \u00b7 " + labels[sorted[1][0]];
       if (sorted.length === 1 && sorted[0][1] >= 3) return labels[sorted[0][0]];
       return "";
     }
