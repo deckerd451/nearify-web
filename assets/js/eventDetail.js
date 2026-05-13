@@ -857,6 +857,15 @@ async function populatePage(event) {
   setMeta('meta[name="twitter:description"]', ogDescription);
   setMeta('meta[property="og:url"]', `https://nearify.org/events/event.html?slug=${encodeURIComponent(event.slug || event.id)}`);
 
+  // Dynamic OG image — points to edge function that generates per-event SVG
+  const ogImageParam = event.slug ? `slug=${encodeURIComponent(event.slug)}` : `id=${encodeURIComponent(event.id)}`;
+  const ogImageUrl = `https://unndeygygkgodmmdnlup.supabase.co/functions/v1/og-image?${ogImageParam}`;
+  setMeta('meta[property="og:image"]', ogImageUrl);
+  setMeta('meta[property="og:image:width"]', "1200");
+  setMeta('meta[property="og:image:height"]', "630");
+  // Twitter/X fallback to static PNG (SVG not supported on X)
+  setMeta('meta[name="twitter:image"]', "https://nearify.org/assets/images/og-default.png");
+
   const kickerEl = document.getElementById("eventKicker");
   const titleEl = document.getElementById("eventTitle");
   const subheadEl = document.getElementById("eventSubhead");
