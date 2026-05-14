@@ -71,8 +71,113 @@ function escapeXml(str: string): string {
     .replace(/'/g, "&apos;");
 }
 
+// ---------------------------------------------------------------------------
+// Title wrapping — deterministic line splitting for SVG <tspan>
+// ---------------------------------------------------------------------------
+
+interface TitleLayout {
+  lines: string[];
+  fontSize: number;
+  lineHeight: number;
+}
+
+/**
+ * Split a title into up to 2 lines based on estimated character width.
+ * Uses conservative character-per-line estimates for Inter at each font size.
+ * If the title still overflows after 2 lines, the second line is truncated with ellipsis.
+ */
+function layoutTitle(rawTitle: string): TitleLayout {
+  const title = rawTitle.trim();
+
+  // Characters-per-line estimates for Inter font at each size
+  // (1040px usable width / average character width at size)
+  // These are conservative to avoid overflow on wide characters (M, W, etc.)
+  const sizeConfig = [
+    { maxSingleLine: 26, fontSize: 56, lineHeight: 66, charsPerLine: 26 },
+    { maxSingleLine: 32, fontSize: 48, lineHeight: 58, charsPerLine: 32 },
+    { maxSingleLine: 40, fontSize: 42, lineHeight: 52, charsPerLine: 40 },
+    { maxSingleLine: 52, fontSize: 36, lineHeight: 44, charsPerLine: 52 },
+  ];
+
+  // Find the largest font size where the title fits on one line
+  for (const config of sizeConfig) {
+    if (title.length <= config.maxSingleLine) {
+      return { lines: [escapeXml(title)], fontSize: config.fontSize, lineHeight: config.lineHeight };
+    }
+  }
+
+  // Title needs wrapping — pick a font size and split into 2 lines
+  // Use 42px for medium titles, 36px for very long ones
+  const isVeryLong = title.length > 80;
+  const fontSize = isVeryLong ? 36 : 42;
+  const lineHeight = isVeryLong ? 44 : 52;
+  const charsPerLine = isVeryLong ? 52 : 40;
+
+  const lines = wrapText(title, charsPerLine, 2);
+  return { lines: lines.map(escapeXml), fontSize, lineHeight };
+}
+
+/**
+ * Word-wrap text into up to maxLines lines, each with at most charsPerLine characters.
+ * Splits on word boundaries. If the last line overflows, truncates with ellipsis.
+ */
+function wrapText(text: string, charsPerLine: number, maxLines: number): string[] {
+  const words = text.split(/\s+/);
+  const lines: string[] = [];
+  let currentLine = "";
+
+  for (const word of words) {
+    const candidate = currentLine ? `${currentLine} ${word}` : word;
+
+    if (candidate.length <= charsPerLine) {
+      currentLine = candidate;
+    } else {
+      // Current line is full
+      if (currentLine) {
+        lines.push(currentLine);
+        if (lines.length >= maxLines) break;
+        currentLine = word;
+      } else {
+        // Single word exceeds line width — force it and move on
+        lines.push(word.slice(0, charsPerLine));
+        if (lines.length >= maxLines) break;
+        currentLine = "";
+      }
+    }
+  }
+
+  // Push remaining text
+  if (currentLine && lines.length < maxLines) {
+    lines.push(currentLine);
+  } else if (currentLine && lines.length === maxLines) {
+    // There's overflow text — truncate the last line with ellipsis
+    const lastLine = lines[lines.length - 1];
+    const remaining = currentLine;
+    const combined = `${lastLine} ${remaining}`;
+    if (combined.length > charsPerLine) {
+      lines[lines.length - 1] = combined.slice(0, charsPerLine - 1) + "\u2026";
+    } else {
+      lines[lines.length - 1] = combined;
+    }
+  }
+
+  // If we broke out of the loop with words remaining, add ellipsis to last line
+  const allText = words.join(" ");
+  const renderedText = lines.join(" ");
+  if (renderedText.replace(/\u2026$/, "").length < allText.length && !lines[lines.length - 1]?.endsWith("\u2026")) {
+    const last = lines[lines.length - 1] || "";
+    if (last.length >= charsPerLine - 1) {
+      lines[lines.length - 1] = last.slice(0, charsPerLine - 1) + "\u2026";
+    } else {
+      lines[lines.length - 1] = last + "\u2026";
+    }
+  }
+
+  return lines;
+}
+
 function buildSvg(event: EventData, attendeeCount: number, momentum: string): string {
-  const title = escapeXml(truncate(event.name, 55));
+  const { lines: titleLines, fontSize: titleFontSize, lineHeight: titleLineHeight } = layoutTitle(event.name);
   const date = escapeXml(formatDate(event.starts_at));
   const location = event.location ? escapeXml(truncate(event.location, 36)) : "";
   const metaLine = [date, location].filter(Boolean).join("  \u00b7  ");
@@ -80,11 +185,16 @@ function buildSvg(event: EventData, attendeeCount: number, momentum: string): st
     ? escapeXml(`${attendeeCount} attending${momentum ? `  \u00b7  ${momentum}` : ""}`)
     : "";
 
-  // Adaptive title sizing based on character count
-  const titleFontSize = title.length > 40 ? 42 : title.length > 28 ? 50 : 58;
-  const titleY = 280;
-  const metaY = titleY + 60;
-  const momentumY = metaY + 48;
+  // Layout positioning — title starts at Y=260, subsequent elements flow below
+  const titleStartY = 260;
+  const titleBlockHeight = titleLineHeight * titleLines.length;
+  const metaY = titleStartY + titleBlockHeight + 24;
+  const momentumY = metaY + 40;
+
+  // Build title tspan elements
+  const titleSvg = titleLines.length === 1
+    ? `<text x="80" y="${titleStartY}" font-family="Inter, system-ui, -apple-system, sans-serif" font-size="${titleFontSize}" font-weight="700" fill="#ffffff" letter-spacing="-0.5">${titleLines[0]}</text>`
+    : `<text font-family="Inter, system-ui, -apple-system, sans-serif" font-size="${titleFontSize}" font-weight="700" fill="#ffffff" letter-spacing="-0.5">${titleLines.map((line, i) => `<tspan x="80" y="${titleStartY + i * titleLineHeight}">${line}</tspan>`).join("")}</text>`;
 
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${WIDTH}" height="${HEIGHT}" viewBox="0 0 ${WIDTH} ${HEIGHT}">
   <defs>
@@ -118,7 +228,7 @@ function buildSvg(event: EventData, attendeeCount: number, momentum: string): st
   <rect x="80" y="112" width="36" height="2.5" rx="1.25" fill="#30d158" opacity="0.5"/>
 
   <!-- Event title -->
-  <text x="80" y="${titleY}" font-family="Inter, system-ui, -apple-system, sans-serif" font-size="${titleFontSize}" font-weight="700" fill="#ffffff" letter-spacing="-0.5">${title}</text>
+  ${titleSvg}
 
   <!-- Date and location -->
   ${metaLine ? `<text x="80" y="${metaY}" font-family="Inter, system-ui, -apple-system, sans-serif" font-size="19" font-weight="400" fill="#8fa0b8">${metaLine}</text>` : ""}
