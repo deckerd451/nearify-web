@@ -933,6 +933,57 @@ async function maybeShowOrganizerSection(event) {
   await loadOrganizerInsights(event);
 }
 
+// ---------------------------------------------------------------------------
+// Post-creation success banner
+// ---------------------------------------------------------------------------
+
+function maybeShowCreatedBanner(event) {
+  const params = new URLSearchParams(window.location.search);
+  if (params.get("created") !== "1") return;
+
+  const banner = document.getElementById("eventCreatedBanner");
+  if (!banner) return;
+
+  banner.style.display = "";
+
+  // Clean the URL (remove ?created=1) without reload
+  const cleanUrl = new URL(window.location.href);
+  cleanUrl.searchParams.delete("created");
+  window.history.replaceState({}, "", cleanUrl.toString());
+
+  // Wire quick actions
+  const copyBtn = document.getElementById("createdCopyLink");
+  if (copyBtn) {
+    copyBtn.addEventListener("click", async () => {
+      const slug = event.slug || event.id;
+      const url = `https://nearify.org/events/event.html?slug=${encodeURIComponent(slug)}`;
+      try {
+        await navigator.clipboard.writeText(url);
+        copyBtn.textContent = "Copied";
+        setTimeout(() => { copyBtn.textContent = "Copy link"; }, 1500);
+      } catch {
+        copyBtn.textContent = "Failed";
+        setTimeout(() => { copyBtn.textContent = "Copy link"; }, 1500);
+      }
+    });
+  }
+
+  const qrBtn = document.getElementById("createdShowQr");
+  if (qrBtn) {
+    qrBtn.addEventListener("click", () => {
+      // Scroll to the poster/QR section
+      const poster = document.getElementById("eventSidePanel");
+      if (poster) poster.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  }
+
+  // Auto-dismiss after 8 seconds
+  setTimeout(() => {
+    banner.style.opacity = "0";
+    setTimeout(() => { banner.style.display = "none"; }, 300);
+  }, 8000);
+}
+
 async function init() {
   try {
     currentEvent = await fetchEvent();
@@ -945,6 +996,9 @@ async function init() {
     await populatePage(currentEvent);
     await renderPersonalConnectSection(currentEvent.id);
     await maybeShowOrganizerSection(currentEvent);
+
+    // Show success banner if arriving from event creation
+    maybeShowCreatedBanner(currentEvent);
 
     patchAppStoreLinks();
     trackPageView({ eventId: currentEvent.id });

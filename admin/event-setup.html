@@ -252,13 +252,9 @@
       </div>
     </section>
 
-    <section class="section event-section">
-      <div class="section-heading">
-        <h2>Manage your events</h2>
-        <p>View, edit, and manage all your events from the dashboard.</p>
-      </div>
-      <div style="text-align:center; padding: 16px 0;">
-        <a href="../index.html" class="btn primary">Go to Dashboard</a>
+    <section class="section event-section" style="padding-top:32px; padding-bottom:32px;">
+      <div style="text-align:center;">
+        <p style="color:#8fa0b8; font-size:14px;">Need to manage existing events? <a href="../index.html" style="color:var(--color-accent); text-decoration:none;">Open Dashboard</a></p>
       </div>
     </section>
     </div><!-- /adminContent -->
@@ -480,7 +476,21 @@
       }
 
       console.log("[Admin] Event saved:", data);
-      showStatus(isUpdate ? "Event updated." : "Event created.");
+
+      if (!isUpdate) {
+        // New event: redirect to the public event page with success indicator
+        const eventSlug = slug || null;
+        const redirectParam = eventSlug
+          ? `slug=${encodeURIComponent(eventSlug)}`
+          : `id=${encodeURIComponent(id)}`;
+        showStatus("Event created — redirecting…");
+        setTimeout(() => {
+          window.location.href = `../events/event.html?${redirectParam}&created=1`;
+        }, 600);
+        return;
+      }
+
+      showStatus("Event updated.");
 
       // Sync QR fields after save
       document.getElementById("eventName").dispatchEvent(new Event("input"));

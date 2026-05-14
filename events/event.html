@@ -55,6 +55,18 @@
 
       <!-- Real hero copy (hidden until event loads) -->
       <div id="eventHeroCopy" class="event-hero-copy" style="display:none;">
+
+        <!-- Success banner — shown after event creation redirect -->
+        <div id="eventCreatedBanner" class="event-created-banner" style="display:none;">
+          <span class="event-created-icon" aria-hidden="true">✓</span>
+          <span class="event-created-text">Your event is live</span>
+          <div class="event-created-actions">
+            <button type="button" class="event-created-action" id="createdCopyLink">Copy link</button>
+            <button type="button" class="event-created-action" id="createdShowQr">Show QR</button>
+            <a href="/index.html" class="event-created-action">Dashboard</a>
+          </div>
+        </div>
+
         <div id="eventKicker" class="event-kicker">Nearify Event</div>
         <h1 id="eventTitle"></h1>
         <p class="event-subhead" id="eventSubhead"></p>
