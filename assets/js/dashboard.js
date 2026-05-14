@@ -332,66 +332,140 @@ function renderEcosystemHero(events, counts, intentsByEvent) {
   const totalAttendees = [...counts.values()].reduce((s, n) => s + n, 0);
 
   const metaParts = [featured.location, featured.starts_at ? formatDate(featured.starts_at) : ""].filter(Boolean);
-  const metaStr   = metaParts.join(" · ");
+  const metaStr   = metaParts.join(" \u00b7 ");
 
   const isLive    = status === "live";
-  const kicker = isLive
-    ? `<span class="cc-ecosystem-live-dot"></span>Live now`
-    : status === "upcoming"
-      ? "Coming up"
-      : "Recent event";
-
-  const goalPillsHtml = topGoals.map(([intent, n]) => `
-    <span class="cc-goal-pill">
-      <span class="cc-goal-pill-label">${escapeHtml(INTENT_LABELS[intent] || intent)}</span>
-      <span class="cc-goal-pill-count">${n}</span>
-    </span>`).join("");
-
-  const aggregateHtml = events.length > 1 && totalAttendees > count
-    ? `<p class="cc-ecosystem-aggregate">${totalAttendees} total attendees across your ${events.length} events</p>`
-    : "";
+  const kickerText = isLive ? "Live now" : status === "upcoming" ? "Coming up" : "Recent event";
 
   const detailUrl = EVENT_DETAIL_URL(featured.id);
   const jUrl      = buildJoinUrl(featured);
 
-  hero.innerHTML = `
-    <div class="cc-ecosystem-kicker">${kicker}</div>
-    <div class="cc-featured-event${isLive ? " cc-featured-event--live" : ""}">
-      <div class="cc-featured-event-header">
-        <div class="cc-featured-event-info">
-          <h2 class="cc-featured-event-name">${escapeHtml(featured.name)}</h2>
-          ${metaStr ? `<p class="cc-featured-event-meta">${escapeHtml(metaStr)}</p>` : ""}
-        </div>
-        <span class="cc-event-status cc-event-status--${status}">
-          <span class="cc-status-dot"></span>${statusLabel(status)}
-        </span>
-      </div>
-      <div class="cc-featured-participation">
-        <span class="cc-featured-count">${count}</span>
-        <span class="cc-featured-count-label">people joined</span>
-        ${withGoals ? `<span class="cc-featured-goal-note">· ${withGoals} with goals set</span>` : ""}
-      </div>
-      ${topGoals.length ? `<div class="cc-featured-goals-row">${goalPillsHtml}</div>` : ""}
-      <div class="cc-featured-actions">
-        <a href="${escapeAttr(detailUrl)}" class="btn primary">View Event</a>
-        <button class="btn secondary cc-action-btn"
-          data-action="show-qr"
-          data-event-id="${escapeAttr(featured.id)}"
-          data-event-name="${escapeAttr(featured.name)}"
-          data-join-url="${escapeAttr(jUrl)}">Show QR</button>
-      </div>
-    </div>
-    ${aggregateHtml}
-  `;
+  // Build DOM
+  hero.innerHTML = "";
+
+  // Kicker
+  const kickerEl = document.createElement("div");
+  kickerEl.className = "cc-ecosystem-kicker";
+  if (isLive) {
+    const dot = document.createElement("span");
+    dot.className = "cc-ecosystem-live-dot";
+    kickerEl.appendChild(dot);
+  }
+  kickerEl.appendChild(document.createTextNode(kickerText));
+  hero.appendChild(kickerEl);
+
+  // Featured event container
+  const featuredEl = document.createElement("div");
+  featuredEl.className = "cc-featured-event" + (isLive ? " cc-featured-event--live" : "");
+
+  // Header row
+  const headerEl = document.createElement("div");
+  headerEl.className = "cc-featured-event-header";
+
+  const infoEl = document.createElement("div");
+  infoEl.className = "cc-featured-event-info";
+
+  const nameEl = document.createElement("h2");
+  nameEl.className = "cc-featured-event-name";
+  nameEl.textContent = featured.name;
+  infoEl.appendChild(nameEl);
+
+  if (metaStr) {
+    const metaEl = document.createElement("p");
+    metaEl.className = "cc-featured-event-meta";
+    metaEl.textContent = metaStr;
+    infoEl.appendChild(metaEl);
+  }
+
+  headerEl.appendChild(infoEl);
+
+  const statusEl = document.createElement("span");
+  statusEl.className = "cc-event-status cc-event-status--" + status;
+  const statusDot = document.createElement("span");
+  statusDot.className = "cc-status-dot";
+  statusEl.appendChild(statusDot);
+  statusEl.appendChild(document.createTextNode(statusLabel(status)));
+  headerEl.appendChild(statusEl);
+
+  featuredEl.appendChild(headerEl);
+
+  // Participation row
+  const partEl = document.createElement("div");
+  partEl.className = "cc-featured-participation";
+
+  const countEl = document.createElement("span");
+  countEl.className = "cc-featured-count";
+  countEl.textContent = String(count);
+  partEl.appendChild(countEl);
+
+  const countLabel = document.createElement("span");
+  countLabel.className = "cc-featured-count-label";
+  countLabel.textContent = "people joined";
+  partEl.appendChild(countLabel);
+
+  if (withGoals) {
+    const goalNote = document.createElement("span");
+    goalNote.className = "cc-featured-goal-note";
+    goalNote.textContent = "\u00b7 " + withGoals + " with goals set";
+    partEl.appendChild(goalNote);
+  }
+
+  featuredEl.appendChild(partEl);
+
+  // Goal pills
+  if (topGoals.length) {
+    const goalsRow = document.createElement("div");
+    goalsRow.className = "cc-featured-goals-row";
+    for (const [intent, n] of topGoals) {
+      const pill = document.createElement("span");
+      pill.className = "cc-goal-pill";
+      const pillLabel = document.createElement("span");
+      pillLabel.className = "cc-goal-pill-label";
+      pillLabel.textContent = INTENT_LABELS[intent] || intent;
+      const pillCount = document.createElement("span");
+      pillCount.className = "cc-goal-pill-count";
+      pillCount.textContent = String(n);
+      pill.appendChild(pillLabel);
+      pill.appendChild(pillCount);
+      goalsRow.appendChild(pill);
+    }
+    featuredEl.appendChild(goalsRow);
+  }
+
+  // Actions
+  const actionsEl = document.createElement("div");
+  actionsEl.className = "cc-featured-actions";
+
+  const viewLink = document.createElement("a");
+  viewLink.href = detailUrl;
+  viewLink.className = "btn primary";
+  viewLink.textContent = "View Event";
+  actionsEl.appendChild(viewLink);
+
+  const qrBtn = document.createElement("button");
+  qrBtn.className = "btn secondary cc-action-btn";
+  qrBtn.setAttribute("data-action", "show-qr");
+  qrBtn.setAttribute("data-event-id", featured.id);
+  qrBtn.setAttribute("data-event-name", featured.name);
+  qrBtn.setAttribute("data-join-url", jUrl);
+  qrBtn.textContent = "Show QR";
+  qrBtn.addEventListener("click", () => {
+    openQrModal(featured.id, featured.name, jUrl);
+  });
+  actionsEl.appendChild(qrBtn);
+
+  featuredEl.appendChild(actionsEl);
+  hero.appendChild(featuredEl);
+
+  // Aggregate line
+  if (events.length > 1 && totalAttendees > count) {
+    const aggEl = document.createElement("p");
+    aggEl.className = "cc-ecosystem-aggregate";
+    aggEl.textContent = totalAttendees + " total attendees across your " + events.length + " events";
+    hero.appendChild(aggEl);
+  }
 
   hero.style.display = "";
-
-  // Wire hero QR button (outside #eventCardList delegation scope)
-  hero.querySelector("[data-action='show-qr']")
-    ?.addEventListener("click", (e) => {
-      const btn = e.currentTarget;
-      openQrModal(btn.dataset.eventId, btn.dataset.eventName, btn.dataset.joinUrl);
-    });
 }
 
 // ─── Event ordering ───────────────────────────────────────────────────────────
