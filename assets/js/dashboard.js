@@ -310,9 +310,16 @@ function renderEcosystemHero(events, counts, intentsByEvent) {
 
   if (!events.length) { hero.style.display = "none"; return; }
 
-  // Pick featured event: live > next upcoming > most recently created ended
+  // Pick featured event: live > soonest upcoming > most relevant ended
   const byStatus = (s) => events.filter((e) => getEventStatus(e) === s);
-  const featured = byStatus("live")[0] || byStatus("upcoming")[0] || byStatus("ended")[0];
+  const liveEvents = byStatus("live");
+  const upcomingEvents = byStatus("upcoming").sort((a, b) => {
+    const aStart = a.starts_at ? new Date(a.starts_at).getTime() : Infinity;
+    const bStart = b.starts_at ? new Date(b.starts_at).getTime() : Infinity;
+    return aStart - bStart;
+  });
+  const endedEvents = byStatus("ended");
+  const featured = liveEvents[0] || upcomingEvents[0] || endedEvents[0];
   if (!featured) { hero.style.display = "none"; return; }
 
   const status     = getEventStatus(featured);
