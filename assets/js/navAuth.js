@@ -146,17 +146,35 @@ async function handleSignOut() {
 function injectSignedIn(profile, email) {
   document.querySelectorAll(".nav-user-wrapper").forEach((el) => el.remove());
   document.querySelectorAll(".nav-drawer-signout").forEach((el) => el.remove());
+  document.querySelectorAll(".nav-auth-link").forEach((el) => el.remove());
 
   const navLinks = document.querySelector(".nav-links");
-  if (navLinks) navLinks.appendChild(buildPill(profile, email));
+  if (navLinks) {
+    // Add Dashboard link before the user pill (only when signed in)
+    const dashLink = document.createElement("a");
+    dashLink.href = "/index.html";
+    dashLink.textContent = "Dashboard";
+    dashLink.className = "nav-auth-link";
+    navLinks.appendChild(dashLink);
+    navLinks.appendChild(buildPill(profile, email));
+  }
 
   const drawer = document.getElementById("navDrawer");
-  if (drawer) drawer.appendChild(buildDrawerSignOut());
+  if (drawer) {
+    // Add Dashboard link to mobile drawer
+    const drawerDash = document.createElement("a");
+    drawerDash.href = "/index.html";
+    drawerDash.textContent = "Dashboard";
+    drawerDash.className = "nav-auth-link";
+    drawer.appendChild(drawerDash);
+    drawer.appendChild(buildDrawerSignOut());
+  }
 }
 
 function removeSignedIn() {
   document.querySelectorAll(".nav-user-wrapper").forEach((el) => el.remove());
   document.querySelectorAll(".nav-drawer-signout").forEach((el) => el.remove());
+  document.querySelectorAll(".nav-auth-link").forEach((el) => el.remove());
 }
 
 // ---------------------------------------------------------------------------
