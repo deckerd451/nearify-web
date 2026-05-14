@@ -3822,3 +3822,13 @@ body.cc-page .cc-event-actions .btn.secondary:hover {
 .nav-auth-link:hover {
   color: #ffffff;
 }
+
+/* ============================================================
+   ECOSYSTEM HERO — "Coming up" featured event block
+   ============================================================ */
+
+.cc-ecosystem-hero {
+  margin-bottom: 40px;
+  padding-bottom: 32px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
