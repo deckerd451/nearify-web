@@ -32,9 +32,17 @@ jobs:
       # -----------------------------------------------------------------------
       - name: Check JS syntax
         run: |
-          find assets/js -name "*.js" | while read f; do
-            node --input-type=module < "$f" 2>&1 || { echo "SYNTAX ERROR in $f"; exit 1; }
+          ERRORS=""
+          for f in $(find assets/js -name "*.js"); do
+            if ! node --check "$f" 2>&1; then
+              echo "SYNTAX ERROR in $f"
+              ERRORS="$ERRORS $f"
+            fi
           done
+          if [ -n "$ERRORS" ]; then
+            echo "Syntax errors found in:$ERRORS"
+            exit 1
+          fi
 
       # -----------------------------------------------------------------------
       # 2. Enforce app URL centralisation — JS files must not hardcode the

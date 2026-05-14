@@ -387,11 +387,86 @@ function renderEcosystemHero(events, counts, intentsByEvent) {
     });
 }
 
+// ─── Event ordering ───────────────────────────────────────────────────────────
+
+/**
+ * Sort events for dashboard display:
+ *   1. Live events (currently happening) — most urgent first
+ *   2. Upcoming events — soonest start date first (chronological ascending)
+ *   3. Ended events — weighted by recency + participation (not purely chronological)
+ *
+ * Past event relevance score:
+ *   - 60% recency (days since event, decays over 90 days)
+ *   - 40% participation (attendee count, capped at 50 for normalization)
+ *
+ * This keeps recent high-attendance events visible longer than
+ * old low-attendance ones, while still being deterministic and simple.
+ */
+function sortEventsForDashboard(events, counts) {
+  const now = Date.now();
+
+  const live = [];
+  const upcoming = [];
+  const ended = [];
+
+  for (const ev of events) {
+    const status = getEventStatus(ev);
+    if (status === "live") live.push(ev);
+    else if (status === "upcoming") upcoming.push(ev);
+    else ended.push(ev);
+  }
+
+  // Live: sort by start time ascending (earliest-started live event first)
+  live.sort((a, b) => {
+    const aStart = a.starts_at ? new Date(a.starts_at).getTime() : 0;
+    const bStart = b.starts_at ? new Date(b.starts_at).getTime() : 0;
+    return aStart - bStart;
+  });
+
+  // Upcoming: soonest first (chronological ascending)
+  upcoming.sort((a, b) => {
+    const aStart = a.starts_at ? new Date(a.starts_at).getTime() : Infinity;
+    const bStart = b.starts_at ? new Date(b.starts_at).getTime() : Infinity;
+    return aStart - bStart;
+  });
+
+  // Ended: relevance-weighted recency
+  ended.sort((a, b) => {
+    const scoreA = computePastRelevance(a, counts.get(a.id) || 0, now);
+    const scoreB = computePastRelevance(b, counts.get(b.id) || 0, now);
+    return scoreB - scoreA; // higher score = more relevant = shown first
+  });
+
+  return [...live, ...upcoming, ...ended];
+}
+
+function computePastRelevance(event, attendeeCount, nowMs) {
+  // Recency: how recently did this event happen? (0-1, decays over 90 days)
+  const eventTime = event.starts_at
+    ? new Date(event.starts_at).getTime()
+    : event.created_at
+      ? new Date(event.created_at).getTime()
+      : 0;
+  const daysSince = Math.max(0, (nowMs - eventTime) / 86_400_000);
+  const recency = Math.max(0, 1 - daysSince / 90);
+
+  // Participation: normalized attendee count (0-1, capped at 50)
+  const participation = Math.min(1, attendeeCount / 50);
+
+  // Weighted score: 60% recency, 40% participation
+  return 0.6 * recency + 0.4 * participation;
+}
+
+// ─── Rendering ────────────────────────────────────────────────────────────────
+
 function renderDashboard(events, counts, intentsByEvent) {
   const list = document.getElementById("eventCardList");
   if (!list) return;
-  list.innerHTML = events.length
-    ? events.map((ev) => renderEventCard(ev, counts.get(ev.id) ?? 0, intentsByEvent.get(ev.id) || new Map())).join("")
+
+  const sorted = sortEventsForDashboard(events, counts);
+
+  list.innerHTML = sorted.length
+    ? sorted.map((ev) => renderEventCard(ev, counts.get(ev.id) ?? 0, intentsByEvent.get(ev.id) || new Map())).join("")
     : renderEmptyState();
 }
 
