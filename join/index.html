@@ -125,6 +125,16 @@
           <p id="meetupInstallHint" class="join-hint join-hint--install" style="display:none;">
             Install Nearify on iPhone via <a href="https://testflight.apple.com/join/ZayvEbAy" target="_blank" rel="noopener noreferrer">TestFlight</a>
           </p>
+
+          <!-- Deep link fallback — shown by JS when app is not installed (Meetup source) -->
+          <div id="deepLinkFallback" class="deep-link-fallback" style="display:none;" aria-live="polite">
+            <p class="deep-link-fallback-msg">
+              Need the app? <a id="deepLinkTestFlightBtn" href="https://testflight.apple.com/join/ZayvEbAy" target="_blank" rel="noopener noreferrer">Install Nearify with TestFlight.</a>
+            </p>
+            <button id="deepLinkRetryBtn" class="btn secondary" type="button">
+              I installed Nearify — open this event
+            </button>
+          </div>
         </div>
 
         <!-- Guest join CTA — shown for generic event URLs; hidden until JS confirms event is valid -->
