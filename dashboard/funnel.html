@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Meetup Funnel — Nearify Dashboard</title>
+  <link rel="stylesheet" href="../assets/css/styles.css" />
+  <style>
+    /* ── page chrome ───────────────────────────────────────────────────────── */
+    body { background: var(--color-bg, #0a0a0a); color: var(--color-text-primary, #f5f5f7); }
+
+    .fd-shell {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 0 20px 60px;
+    }
+
+    .fd-topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 24px 0 32px;
+      border-bottom: 1px solid var(--color-border, rgba(255,255,255,0.08));
+      margin-bottom: 32px;
+    }
+
+    .fd-topbar-title {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .fd-topbar-title h1 {
+      font-size: 22px;
+      font-weight: 700;
+      letter-spacing: -0.3px;
+      margin: 0;
+    }
+    .fd-topbar-title span {
+      font-size: 13px;
+      color: var(--color-text-muted, #888);
+    }
+
+    .fd-signout-btn {
+      font-size: 13px;
+      color: var(--color-text-muted, #888);
+      background: none;
+      border: 1px solid var(--color-border, rgba(255,255,255,0.1));
+      border-radius: 8px;
+      padding: 7px 14px;
+      cursor: pointer;
+      transition: color 0.15s, border-color 0.15s;
+    }
+    .fd-signout-btn:hover { color: var(--color-text-primary, #f5f5f7); border-color: rgba(255,255,255,0.22); }
+
+    /* ── auth gate ─────────────────────────────────────────────────────────── */
+    #fdAuthGate {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 60vh;
+      gap: 20px;
+      text-align: center;
+    }
+    #fdAuthGate h2 { font-size: 20px; font-weight: 600; margin: 0; }
+    #fdAuthGate p  { font-size: 14px; color: var(--color-text-muted, #888); margin: 0; }
+    #fdSignInBtn {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      background: var(--color-accent, #30d158);
+      color: #000;
+      font-size: 15px;
+      font-weight: 600;
+      border: none;
+      border-radius: 12px;
+      padding: 13px 24px;
+      cursor: pointer;
+      transition: opacity 0.15s;
+    }
+    #fdSignInBtn:hover { opacity: 0.88; }
+
+    /* ── main content ──────────────────────────────────────────────────────── */
+    #fdContent { display: none; }
+
+    /* ── date filter tabs ──────────────────────────────────────────────────── */
+    .fd-filter-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 28px;
+      flex-wrap: wrap;
+    }
+    .fd-filter-label { font-size: 12px; color: var(--color-text-muted, #888); margin-right: 4px; }
+    .fd-filter-btn {
+      font-size: 13px;
+      font-weight: 500;
+      padding: 6px 14px;
+      border-radius: 20px;
+      border: 1px solid var(--color-border, rgba(255,255,255,0.1));
+      background: transparent;
+      color: var(--color-text-secondary, #aaa);
+      cursor: pointer;
+      transition: background 0.15s, color 0.15s, border-color 0.15s;
+    }
+    .fd-filter-btn:hover { color: var(--color-text-primary, #f5f5f7); }
+    .fd-filter-btn.is-active {
+      background: var(--color-accent, #30d158);
+      border-color: var(--color-accent, #30d158);
+      color: #000;
+    }
+
+    /* ── stat cards ────────────────────────────────────────────────────────── */
+    .fd-stat-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(175px, 1fr));
+      gap: 14px;
+      margin-bottom: 32px;
+    }
+    .fd-stat-card {
+      background: var(--color-surface, #1c1c1e);
+      border: 1px solid var(--color-border, rgba(255,255,255,0.08));
+      border-radius: 14px;
+      padding: 18px 20px;
+    }
+    .fd-stat-label {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--color-text-muted, #888);
+      margin-bottom: 8px;
+    }
+    .fd-stat-value {
+      font-size: 32px;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+      line-height: 1;
+      color: var(--color-text-primary, #f5f5f7);
+    }
+    .fd-stat-sub {
+      font-size: 12px;
+      color: var(--color-text-muted, #888);
+      margin-top: 6px;
+    }
+    .fd-stat-card.is-accent .fd-stat-value { color: var(--color-accent, #30d158); }
+
+    /* ── funnel bar ────────────────────────────────────────────────────────── */
+    .fd-section { margin-bottom: 36px; }
+    .fd-section-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--color-text-secondary, #aaa);
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      margin-bottom: 16px;
+    }
+
+    .fd-funnel-list { display: flex; flex-direction: column; gap: 10px; }
+    .fd-funnel-row {
+      background: var(--color-surface, #1c1c1e);
+      border: 1px solid var(--color-border, rgba(255,255,255,0.08));
+      border-radius: 12px;
+      padding: 14px 16px;
+    }
+    .fd-funnel-row-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 10px;
+      gap: 12px;
+    }
+    .fd-funnel-stage-name {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--color-text-primary, #f5f5f7);
+    }
+    .fd-funnel-row-meta {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-shrink: 0;
+    }
+    .fd-funnel-count { font-size: 18px; font-weight: 700; color: var(--color-text-primary, #f5f5f7); }
+    .fd-funnel-pct   { font-size: 12px; color: var(--color-text-muted, #888); min-width: 48px; text-align: right; }
+    .fd-bar-track {
+      height: 6px;
+      border-radius: 3px;
+      background: rgba(255,255,255,0.06);
+      overflow: hidden;
+    }
+    .fd-bar-fill {
+      height: 100%;
+      border-radius: 3px;
+      background: var(--color-accent, #30d158);
+      transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    /* ── per-event table ───────────────────────────────────────────────────── */
+    .fd-table-wrap {
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+    .fd-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+    .fd-table thead th {
+      text-align: left;
+      padding: 0 12px 10px;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--color-text-muted, #888);
+      white-space: nowrap;
+    }
+    .fd-table thead th:first-child { padding-left: 0; }
+    .fd-table tbody tr {
+      border-top: 1px solid var(--color-border, rgba(255,255,255,0.06));
+    }
+    .fd-table tbody tr:hover { background: rgba(255,255,255,0.025); }
+    .fd-table tbody td {
+      padding: 12px;
+      color: var(--color-text-primary, #f5f5f7);
+      vertical-align: middle;
+    }
+    .fd-table tbody td:first-child { padding-left: 0; }
+    .fd-table-event-title {
+      font-weight: 500;
+      max-width: 220px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .fd-table-muted { color: var(--color-text-muted, #888); }
+    .fd-table-num   { font-variant-numeric: tabular-nums; text-align: right; }
+    .fd-table-pct   { font-size: 11px; color: var(--color-text-muted, #888); }
+    .fd-badge-stage {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 500;
+      background: rgba(48, 209, 88, 0.12);
+      color: var(--color-accent, #30d158);
+    }
+
+    /* ── activity sparkline ────────────────────────────────────────────────── */
+    .fd-sparkline-wrap {
+      background: var(--color-surface, #1c1c1e);
+      border: 1px solid var(--color-border, rgba(255,255,255,0.08));
+      border-radius: 14px;
+      padding: 20px;
+      overflow: hidden;
+    }
+    .fd-spark-legend {
+      display: flex;
+      gap: 14px;
+      flex-wrap: wrap;
+      margin-bottom: 16px;
+    }
+    .fd-spark-legend-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      color: var(--color-text-secondary, #aaa);
+    }
+    .fd-spark-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+    }
+    .fd-spark-canvas-wrap {
+      position: relative;
+      height: 80px;
+      overflow: hidden;
+    }
+    .fd-spark-bar-group {
+      display: flex;
+      align-items: flex-end;
+      height: 80px;
+      gap: 2px;
+    }
+    .fd-spark-col {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 1px;
+      height: 100%;
+    }
+    .fd-spark-seg {
+      width: 100%;
+      border-radius: 2px 2px 0 0;
+      min-height: 2px;
+      transition: height 0.4s ease;
+    }
+
+    /* ── empty / loading states ────────────────────────────────────────────── */
+    .fd-empty {
+      text-align: center;
+      padding: 40px 20px;
+      color: var(--color-text-muted, #888);
+      font-size: 14px;
+    }
+    .fd-loading {
+      text-align: center;
+      padding: 60px 20px;
+      color: var(--color-text-muted, #888);
+      font-size: 14px;
+    }
+    .fd-error {
+      background: rgba(255, 55, 95, 0.1);
+      border: 1px solid rgba(255, 55, 95, 0.25);
+      border-radius: 10px;
+      padding: 14px 18px;
+      font-size: 13px;
+      color: #ff375f;
+      margin-bottom: 24px;
+    }
+
+    /* ── responsive ────────────────────────────────────────────────────────── */
+    @media (max-width: 640px) {
+      .fd-stat-grid { grid-template-columns: repeat(2, 1fr); }
+      .fd-topbar { flex-direction: column; align-items: flex-start; gap: 12px; }
+      .fd-table thead th:nth-child(n+4),
+      .fd-table tbody td:nth-child(n+4) { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="fd-shell">
+
+    <!-- Auth gate -->
+    <div id="fdAuthGate">
+      <div>
+        <h2>Internal Dashboard</h2>
+        <p>Sign in to view Meetup funnel analytics.</p>
+      </div>
+      <button id="fdSignInBtn">Sign in with Google</button>
+    </div>
+
+    <!-- Dashboard content (hidden until authed) -->
+    <div id="fdContent">
+
+      <div class="fd-topbar">
+        <div class="fd-topbar-title">
+          <h1>Meetup Funnel</h1>
+          <span id="fdUserEmail"></span>
+        </div>
+        <button class="fd-signout-btn" id="fdSignOutBtn">Sign out</button>
+      </div>
+
+      <!-- Date filters -->
+      <div class="fd-filter-row">
+        <span class="fd-filter-label">Range</span>
+        <button class="fd-filter-btn" data-range="1">Today</button>
+        <button class="fd-filter-btn is-active" data-range="7">7 days</button>
+        <button class="fd-filter-btn" data-range="30">30 days</button>
+        <button class="fd-filter-btn" data-range="0">All time</button>
+      </div>
+
+      <!-- Error banner (hidden by default) -->
+      <div id="fdError" class="fd-error" style="display:none;"></div>
+
+      <!-- Loading -->
+      <div id="fdLoading" class="fd-loading">Loading…</div>
+
+      <!-- Stat cards -->
+      <div id="fdStatsSection" class="fd-stat-grid" style="display:none;"></div>
+
+      <!-- Overall funnel bars -->
+      <div id="fdFunnelSection" class="fd-section" style="display:none;">
+        <div class="fd-section-title">Overall Funnel</div>
+        <div id="fdFunnelList" class="fd-funnel-list"></div>
+      </div>
+
+      <!-- Per-event table -->
+      <div id="fdEventsSection" class="fd-section" style="display:none;">
+        <div class="fd-section-title">By Event</div>
+        <div class="fd-table-wrap">
+          <table class="fd-table">
+            <thead>
+              <tr>
+                <th>Event</th>
+                <th>Meetup ID</th>
+                <th class="fd-table-num">Views</th>
+                <th class="fd-table-num">CTA Clicks</th>
+                <th class="fd-table-num">Installs</th>
+                <th class="fd-table-num">Sessions</th>
+                <th class="fd-table-num">Opens</th>
+                <th class="fd-table-num">Conv %</th>
+              </tr>
+            </thead>
+            <tbody id="fdEventsBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Activity sparkline -->
+      <div id="fdActivitySection" class="fd-section" style="display:none;">
+        <div class="fd-section-title">Hourly Activity</div>
+        <div class="fd-sparkline-wrap">
+          <div class="fd-spark-legend" id="fdSparkLegend"></div>
+          <div class="fd-spark-canvas-wrap">
+            <div class="fd-spark-bar-group" id="fdSparkBars"></div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- #fdContent -->
+  </div><!-- .fd-shell -->
+
+  <script type="module" src="../assets/js/funnelDashboard.js"></script>
+</body>
+</html>
