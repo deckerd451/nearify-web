@@ -242,6 +242,12 @@
               <div class="join-step-detail">Check in from the Nearify iOS app, or scan the venue QR to enter the live network.</div>
             </li>
           </ol>
+          <!-- Populated by JS when attendee data is available (Meetup source) -->
+          <div id="panelAttendeeSignal" class="panel-attendee-signal" style="display:none;" aria-live="polite">
+            <span class="panel-attendee-dot" aria-hidden="true"></span>
+            <div class="panel-mini-stack" aria-hidden="true"></div>
+            <span id="panelAttendeeCount"></span>
+          </div>
         </div>
       </aside>
     </section>

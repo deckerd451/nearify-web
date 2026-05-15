@@ -551,23 +551,48 @@ function renderGenericJoinUx(event, fallbackName, source) {
     if (isMeetup) show(meetupInstallHint); else hide(meetupInstallHint);
   }
 
-  if (els.joinPanelTitle) els.joinPanelTitle.textContent = "3 steps to join";
+  const panelCard = document.getElementById("joinPanelCard");
+  if (panelCard) {
+    if (isMeetup) panelCard.classList.add("join-panel--live");
+    else panelCard.classList.remove("join-panel--live");
+  }
+
+  if (els.joinPanelTitle) {
+    els.joinPanelTitle.textContent = isMeetup ? "What happens when you join" : "3 steps to join";
+  }
   if (els.joinPanelList) {
     els.joinPanelList.className = "join-steps-list";
-    els.joinPanelList.innerHTML = `
-      <li>
-        <div class="join-step-label">Install Nearify</div>
-        <div class="join-step-detail">Get the app on TestFlight — takes about 2 minutes.</div>
-      </li>
-      <li>
-        <div class="join-step-label">Sign in &amp; create your profile</div>
-        <div class="join-step-detail">Use Google or GitHub. Your profile is how people find you.</div>
-      </li>
-      <li>
-        <div class="join-step-label">Check in when you arrive</div>
-        <div class="join-step-detail">Check in from the Nearify iOS app, or scan the venue QR to enter the live network.</div>
-      </li>
-    `;
+    if (isMeetup) {
+      els.joinPanelList.innerHTML = `
+        <li>
+          <div class="join-step-label">See who's actually here</div>
+          <div class="join-step-detail">Real attendee presence, not an RSVP count. Get the app to see who's in the live network.</div>
+        </li>
+        <li>
+          <div class="join-step-label">Let relevant people find you</div>
+          <div class="join-step-detail">Your profile signals your intent. Others with aligned goals can discover you before you even meet.</div>
+        </li>
+        <li>
+          <div class="join-step-label">Keep who you meet after it ends</div>
+          <div class="join-step-detail">Check in at the venue. The connections you make become part of your persistent network.</div>
+        </li>
+      `;
+    } else {
+      els.joinPanelList.innerHTML = `
+        <li>
+          <div class="join-step-label">Install Nearify</div>
+          <div class="join-step-detail">Get the app on TestFlight — takes about 2 minutes.</div>
+        </li>
+        <li>
+          <div class="join-step-label">Sign in &amp; create your profile</div>
+          <div class="join-step-detail">Use Google or GitHub. Your profile is how people find you.</div>
+        </li>
+        <li>
+          <div class="join-step-label">Check in when you arrive</div>
+          <div class="join-step-detail">Check in from the Nearify iOS app, or scan the venue QR to enter the live network.</div>
+        </li>
+      `;
+    }
   }
 
   if (els.joinBottomCtaTitle) els.joinBottomCtaTitle.textContent = isMeetup ? "Ready to enter the live network?" : "Ready to join?";
@@ -1198,6 +1223,26 @@ function renderLiveStatusIndicator() {
   show(el);
 }
 
+function updatePanelAttendeeSignal(count, attendees) {
+  const signal = document.getElementById("panelAttendeeSignal");
+  const countEl = document.getElementById("panelAttendeeCount");
+  if (!signal || !countEl || count <= 0) return;
+
+  const miniStack = signal.querySelector(".panel-mini-stack");
+  if (miniStack) {
+    miniStack.innerHTML = (attendees || []).slice(0, 3).map((a) => {
+      const initials = getAttendeeInitials(a.name);
+      const bg = getAvatarColor(a.name);
+      return `<span class="panel-mini-avatar" style="background:${bg};" title="${escapeHtml(a.name)}">${escapeHtml(initials)}</span>`;
+    }).join("");
+  }
+
+  countEl.textContent = count === 1
+    ? "1 person already in the network"
+    : `${count} people already in the network`;
+  show(signal);
+}
+
 function renderLiveAttendeePreview(attendees) {
   const container = document.getElementById("liveAttendeePreview");
   if (!container) return;
@@ -1226,6 +1271,7 @@ function renderLiveAttendeePreview(attendees) {
   }
 
   show(container);
+  updatePanelAttendeeSignal(displayed.length, displayed);
 }
 
 async function initJoinPage() {
