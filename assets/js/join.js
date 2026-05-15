@@ -42,6 +42,9 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
 let isMeetupSource    = false;
 let meetupSourceEventId = null;
 
+// Guards against wiring the deep-link fallback buttons more than once per page load.
+let deepLinkFallbackWired = false;
+
 function getQueryParams() {
   const params = new URLSearchParams(window.location.search);
   const eventId   = params.get("event");
@@ -511,6 +514,66 @@ function showIntentStep() {
   wireIntentChips();
 }
 
+// ── Deep link handoff ────────────────────────────────────────────────────────
+
+function showDeepLinkFallback(eventId) {
+  const fallback = document.getElementById("deepLinkFallback");
+  if (!fallback) return;
+  show(fallback);
+  // Scroll into view so the fallback is visible no matter which button triggered it.
+  setTimeout(() => fallback.scrollIntoView({ behavior: "smooth", block: "nearest" }), 50);
+
+  if (deepLinkFallbackWired) return;
+  deepLinkFallbackWired = true;
+
+  const tfLink = document.getElementById("deepLinkTestFlightBtn");
+  if (tfLink) {
+    tfLink.addEventListener("click", () => {
+      trackFunnelEvent("testflight_clicked", {
+        eventId,
+        source:        isMeetupSource ? "meetup" : null,
+        sourceEventId: isMeetupSource ? meetupSourceEventId : null,
+        button:        "deep_link_fallback",
+      });
+    });
+  }
+
+  const retryBtn = document.getElementById("deepLinkRetryBtn");
+  if (retryBtn) {
+    retryBtn.addEventListener("click", () => {
+      trackFunnelEvent("app_open_retry_clicked", {
+        eventId,
+        source:        isMeetupSource ? "meetup" : null,
+        sourceEventId: isMeetupSource ? meetupSourceEventId : null,
+      });
+      logger.log("[Join] Retry: re-attempting deep link for event", eventId);
+      window.location.href = `beacon://event/${eventId}`;
+    });
+  }
+}
+
+function attemptEventDeepLink(eventId, button) {
+  trackFunnelEvent("app_deep_link_attempted", {
+    eventId,
+    source:        isMeetupSource ? "meetup" : null,
+    sourceEventId: isMeetupSource ? meetupSourceEventId : null,
+    button,
+  });
+  logger.log("[Join] Attempting event deep link:", `beacon://event/${eventId}`);
+  window.location.href = `beacon://event/${eventId}`;
+  setTimeout(() => {
+    if (document.visibilityState === "visible") {
+      trackFunnelEvent("app_deep_link_fallback_shown", {
+        eventId,
+        source:        isMeetupSource ? "meetup" : null,
+        sourceEventId: isMeetupSource ? meetupSourceEventId : null,
+      });
+      logger.log("[Join] App did not open; showing fallback");
+      showDeepLinkFallback(eventId);
+    }
+  }, 1200);
+}
+
 function renderGenericJoinUx(event, fallbackName, source) {
   setJoinMode("generic");
 
@@ -608,22 +671,38 @@ function renderGenericJoinUx(event, fallbackName, source) {
   // ── CTA click tracking ──────────────────────────────────────────────────
   // Wire once per render; { once: true } prevents duplicate events on re-render.
   if (els.getAppBtn) {
-    els.getAppBtn.addEventListener("click", () => {
-      trackFunnelEvent(
-        isMeetup ? "enter_live_network_clicked" : "testflight_clicked",
-        { eventId: event.id, source: isMeetup ? "meetup" : null,
-          sourceEventId: isMeetup ? meetupSourceEventId : null, button: "hero_primary" }
-      );
+    els.getAppBtn.addEventListener("click", (e) => {
+      if (isMeetup) {
+        // For Meetup source: attempt to open the specific event in the iOS app
+        // instead of navigating directly to TestFlight.
+        e.preventDefault();
+        trackFunnelEvent("enter_live_network_clicked", {
+          eventId: event.id, source: "meetup",
+          sourceEventId: meetupSourceEventId, button: "hero_primary",
+        });
+        attemptEventDeepLink(event.id, "hero_primary");
+      } else {
+        trackFunnelEvent("testflight_clicked", {
+          eventId: event.id, source: null, sourceEventId: null, button: "hero_primary",
+        });
+      }
     }, { once: true });
   }
 
   if (els.joinBottomCtaButton) {
-    els.joinBottomCtaButton.addEventListener("click", () => {
-      trackFunnelEvent(
-        isMeetup ? "enter_live_network_clicked" : "testflight_clicked",
-        { eventId: event.id, source: isMeetup ? "meetup" : null,
-          sourceEventId: isMeetup ? meetupSourceEventId : null, button: "bottom_cta" }
-      );
+    els.joinBottomCtaButton.addEventListener("click", (e) => {
+      if (isMeetup) {
+        e.preventDefault();
+        trackFunnelEvent("enter_live_network_clicked", {
+          eventId: event.id, source: "meetup",
+          sourceEventId: meetupSourceEventId, button: "bottom_cta",
+        });
+        attemptEventDeepLink(event.id, "bottom_cta");
+      } else {
+        trackFunnelEvent("testflight_clicked", {
+          eventId: event.id, source: null, sourceEventId: null, button: "bottom_cta",
+        });
+      }
     }, { once: true });
   }
 
