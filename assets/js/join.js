@@ -38,15 +38,27 @@ const els = {
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
+// Set at init time; used by downstream renderers that don't receive params directly.
+let isMeetupSource = false;
+
 function getQueryParams() {
   const params = new URLSearchParams(window.location.search);
   const eventId   = params.get("event");
   const profileId = params.get("profile");
   return {
-    eventId:   eventId   && UUID_RE.test(eventId)   ? eventId   : null,
-    eventName: params.get("name"),
-    profileId: profileId && UUID_RE.test(profileId) ? profileId : null,
+    eventId:       eventId   && UUID_RE.test(eventId)   ? eventId   : null,
+    eventName:     params.get("name"),
+    profileId:     profileId && UUID_RE.test(profileId) ? profileId : null,
+    source:        params.get("source") || null,
+    sourceEventId: params.get("source_event_id") || null,
   };
+}
+
+function applyMeetupSourceBadge() {
+  const badge = document.getElementById("joinSourceBadge");
+  if (!badge) return;
+  badge.textContent = "From Meetup";
+  show(badge);
 }
 
 function formatDateTime(value) {
@@ -498,28 +510,37 @@ function showIntentStep() {
   wireIntentChips();
 }
 
-function renderGenericJoinUx(event, fallbackName) {
+function renderGenericJoinUx(event, fallbackName, source) {
   setJoinMode("generic");
 
+  const isMeetup = source === "meetup";
   const title = event?.name || fallbackName || "Join Event";
 
   hide(els.joinSuccessBadge);
   setText(els.joinKicker, "Join Event");
-  setText(els.joinTitle, title);
 
-  if (event?.description) {
-    setText(els.joinDescription, event.description);
-  } else {
+  if (isMeetup) {
+    setText(els.joinTitle, "You're joining the live network for this event.");
     setText(
       els.joinDescription,
-      "Nearify shows you who's actually at this event so you can discover and connect in real time."
+      "See who's going, get suggested people to meet, and keep useful connections after the event."
     );
+  } else {
+    setText(els.joinTitle, title);
+    if (event?.description) {
+      setText(els.joinDescription, event.description);
+    } else {
+      setText(
+        els.joinDescription,
+        "Nearify shows you who's actually at this event so you can discover and connect in real time."
+      );
+    }
   }
 
   renderEventMeta(event);
   renderPayload(event.id);
 
-  if (els.getAppBtn) els.getAppBtn.textContent = "Get Nearify (TestFlight)";
+  if (els.getAppBtn) els.getAppBtn.textContent = isMeetup ? "Join Live Network" : "Get Nearify (TestFlight)";
   if (els.alreadyInstalledHint) {
     els.alreadyInstalledHint.textContent =
       "Already installed? Open the app to browse, join, and check in (or scan the event QR code).";
@@ -544,12 +565,13 @@ function renderGenericJoinUx(event, fallbackName) {
     `;
   }
 
-  if (els.joinBottomCtaTitle) els.joinBottomCtaTitle.textContent = "Ready to join?";
+  if (els.joinBottomCtaTitle) els.joinBottomCtaTitle.textContent = isMeetup ? "Ready to join the live network?" : "Ready to join?";
   if (els.joinBottomCtaDescription) {
-    els.joinBottomCtaDescription.textContent =
-      "Install the app, then join and check in when you arrive (in app or via event QR).";
+    els.joinBottomCtaDescription.textContent = isMeetup
+      ? "Get Nearify to see who's going and start making connections before you even arrive."
+      : "Install the app, then join and check in when you arrive (in app or via event QR).";
   }
-  if (els.joinBottomCtaButton) els.joinBottomCtaButton.textContent = "Get Nearify on TestFlight";
+  if (els.joinBottomCtaButton) els.joinBottomCtaButton.textContent = isMeetup ? "Join Live Network" : "Get Nearify on TestFlight";
   if (els.joinBottomCtaHint) els.joinBottomCtaHint.textContent = "Already installed? Open the app to browse, join, and check in.";
 
   show(els.joinQrBox);
@@ -908,6 +930,11 @@ function showGuestJoinedState(ghost) {
   show(joined);
   if (nameEl) nameEl.textContent = ghost.displayName || "";
 
+  const joinedLabel = joined?.querySelector(".guest-joined-label");
+  if (joinedLabel && isMeetupSource) {
+    joinedLabel.textContent = "You're in the live Nearify network for this event.";
+  }
+
   wireGuestConnectSection();
   loadGuestConnectionHistory().then((connections) => {
     renderGuestConnectionHistory(connections);
@@ -1143,7 +1170,13 @@ function initGuestJoinSection(eventId) {
 }
 
 async function initJoinPage() {
-  const { eventId, eventName, profileId } = getQueryParams();
+  const { eventId, eventName, profileId, source, sourceEventId } = getQueryParams();
+
+  isMeetupSource = source === "meetup";
+  if (isMeetupSource) {
+    applyMeetupSourceBadge();
+    logger.log("[Join] Meetup source handoff detected", { sourceEventId });
+  }
 
   logger.log("[Join] raw URL:", window.location.href);
 
@@ -1218,7 +1251,7 @@ async function initJoinPage() {
     } else {
       // ── Generic flow: no auth session (or no profile param) ────────────
       logger.log("[Join] No authenticated profile; rendering guest join flow");
-      renderGenericJoinUx(event, eventName);
+      renderGenericJoinUx(event, eventName, source);
       initGuestJoinSection(event.id);
       await maybeClaimPendingGhostSession();
     }
