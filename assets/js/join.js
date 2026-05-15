@@ -1,7 +1,7 @@
 import { supabase, createScopedSupabaseClient } from "./supabaseClient.js";
 import { loadGhostSession, createGhostSession } from "./ghostSession.js";
 import { connectGhostToProfile } from "./ghostConnection.js";
-import { trackAppCtaClick } from "./analytics.js";
+import { trackAppCtaClick, trackFunnelEvent } from "./analytics.js";
 import { escapeHtml, copyText } from "./utils.js";
 import { logger } from "./logger.js";
 
@@ -39,7 +39,8 @@ const els = {
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 // Set at init time; used by downstream renderers that don't receive params directly.
-let isMeetupSource = false;
+let isMeetupSource    = false;
+let meetupSourceEventId = null;
 
 function getQueryParams() {
   const params = new URLSearchParams(window.location.search);
@@ -604,6 +605,40 @@ function renderGenericJoinUx(event, fallbackName, source) {
   if (els.joinBottomCtaButton) els.joinBottomCtaButton.textContent = isMeetup ? "Enter Live Network" : "Get Nearify on TestFlight";
   if (els.joinBottomCtaHint) els.joinBottomCtaHint.textContent = "Already installed? Open the app to browse, join, and check in.";
 
+  // ── CTA click tracking ──────────────────────────────────────────────────
+  // Wire once per render; { once: true } prevents duplicate events on re-render.
+  if (els.getAppBtn) {
+    els.getAppBtn.addEventListener("click", () => {
+      trackFunnelEvent(
+        isMeetup ? "enter_live_network_clicked" : "testflight_clicked",
+        { eventId: event.id, source: isMeetup ? "meetup" : null,
+          sourceEventId: isMeetup ? meetupSourceEventId : null, button: "hero_primary" }
+      );
+    }, { once: true });
+  }
+
+  if (els.joinBottomCtaButton) {
+    els.joinBottomCtaButton.addEventListener("click", () => {
+      trackFunnelEvent(
+        isMeetup ? "enter_live_network_clicked" : "testflight_clicked",
+        { eventId: event.id, source: isMeetup ? "meetup" : null,
+          sourceEventId: isMeetup ? meetupSourceEventId : null, button: "bottom_cta" }
+      );
+    }, { once: true });
+  }
+
+  if (isMeetup) {
+    const installHintLink = document.querySelector("#meetupInstallHint a");
+    if (installHintLink) {
+      installHintLink.addEventListener("click", () => {
+        trackFunnelEvent("testflight_clicked", {
+          eventId: event.id, source: "meetup",
+          sourceEventId: meetupSourceEventId, button: "install_hint",
+        });
+      }, { once: true });
+    }
+  }
+
   show(els.joinQrBox);
   logger.log("[Join] Rendering generic event join UX");
 }
@@ -695,6 +730,11 @@ async function renderAuthHandoff(eventId) {
     if (openBtn) {
       openBtn.addEventListener("click", () => {
         trackAppCtaClick("join_auth_handoff_open", eventId ? { eventId } : {});
+        trackFunnelEvent("app_deep_link_clicked", {
+          eventId:       eventId || null,
+          source:        isMeetupSource ? "meetup" : null,
+          sourceEventId: isMeetupSource ? meetupSourceEventId : null,
+        });
         window.location.href = deepLinkStr;
         setTimeout(() => {
           const fallback = document.getElementById("authHandoffFallback");
@@ -1139,6 +1179,11 @@ async function handleGuestSubmit(eventId) {
   try {
     const ghost = await createGhostSession(eventId, name);
     if (!ghost) throw new Error("create_ghost_participant returned null");
+    trackFunnelEvent("guest_session_created", {
+      eventId,
+      source:        isMeetupSource ? "meetup" : null,
+      sourceEventId: isMeetupSource ? meetupSourceEventId : null,
+    });
     showGuestJoinedState(ghost);
     logger.log("[Guest] Joined as guest", ghost);
   } catch (err) {
@@ -1426,7 +1471,8 @@ function showActivityMessage(text) {
 async function initJoinPage() {
   const { eventId, eventName, profileId, source, sourceEventId } = getQueryParams();
 
-  isMeetupSource = source === "meetup";
+  isMeetupSource    = source === "meetup";
+  meetupSourceEventId = isMeetupSource ? (sourceEventId || null) : null;
   if (isMeetupSource) {
     applyMeetupSourceBadge();
     logger.log("[Join] Meetup source handoff detected", { sourceEventId });
@@ -1506,6 +1552,16 @@ async function initJoinPage() {
       // ── Generic flow: no auth session (or no profile param) ────────────
       logger.log("[Join] No authenticated profile; rendering guest join flow");
       renderGenericJoinUx(event, eventName, source);
+
+      if (isMeetupSource) {
+        trackFunnelEvent("meetup_handoff_view", {
+          eventId:       event.id,
+          source:        "meetup",
+          sourceEventId: meetupSourceEventId,
+          referrer:      document.referrer || null,
+        });
+      }
+
       initGuestJoinSection(event.id);
       await maybeClaimPendingGhostSession();
 
