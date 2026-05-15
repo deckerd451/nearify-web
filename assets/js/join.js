@@ -1255,7 +1255,7 @@ function renderLiveAttendeePreview(attendees) {
     stack.innerHTML = displayed.map((a) => {
       const initials = getAttendeeInitials(a.name);
       const bg = getAvatarColor(a.name);
-      return `<span class="live-attendee-avatar" style="background:${bg};" title="${escapeHtml(a.name)}">${escapeHtml(initials)}</span>`;
+      return `<span class="live-attendee-avatar" data-pid="${escapeHtml(a.profileId)}" style="background:${bg};" title="${escapeHtml(a.name)}">${escapeHtml(initials)}</span>`;
     }).join("");
   }
 
@@ -1272,6 +1272,155 @@ function renderLiveAttendeePreview(attendees) {
 
   show(container);
   updatePanelAttendeeSignal(displayed.length, displayed);
+}
+
+// ── Live presence polling ────────────────────────────────────────────────────
+
+let livePollingEventId = null;
+let livePollingTimer   = null;
+let lastKnownAttendees = [];    // seeded from initial fetch
+let pollingInFlight    = false;
+
+// Activity message queue — one message visible at a time, never spam.
+let activityQueue    = [];
+let activityDraining = false;
+
+function startLivePolling(eventId) {
+  livePollingEventId = eventId;
+  schedulePoll();
+  // When the user returns to the tab, do an immediate catch-up poll.
+  document.addEventListener("visibilitychange", onVisibilityChange);
+}
+
+function schedulePoll() {
+  // Jitter between 30 and 45 seconds to avoid thundering-herd if many tabs open.
+  const delay = 30000 + Math.floor(Math.random() * 15000);
+  livePollingTimer = setTimeout(runPoll, delay);
+}
+
+async function runPoll() {
+  if (!pollingInFlight) {
+    pollingInFlight = true;
+    try { await pollLiveAttendees(livePollingEventId); }
+    finally { pollingInFlight = false; }
+  }
+  schedulePoll();
+}
+
+function onVisibilityChange() {
+  if (!document.hidden && livePollingEventId && !pollingInFlight) {
+    pollingInFlight = true;
+    pollLiveAttendees(livePollingEventId).finally(() => { pollingInFlight = false; });
+  }
+}
+
+async function pollLiveAttendees(eventId) {
+  const { attendees = [] } = await fetchGuestEventAttendees(eventId);
+  if (!attendees.length && lastKnownAttendees.length) return; // ignore transient empty on error
+
+  const prevIds = new Set(lastKnownAttendees.map(a => a.profileId));
+  const newOnes = attendees.filter(a => !prevIds.has(a.profileId));
+  if (!newOnes.length) return;
+
+  const wasEmpty = lastKnownAttendees.length === 0;
+  lastKnownAttendees = attendees;
+  guestEventAttendees = attendees;
+
+  patchLiveAttendeePreview(attendees, newOnes, wasEmpty);
+  enqueueActivity(newOnes, wasEmpty);
+  pulseStatusDot();
+  logger.log("[LivePoll] +", newOnes.length, "attendee(s); total:", attendees.length);
+}
+
+function patchLiveAttendeePreview(attendees, newOnes, wasEmpty) {
+  const container = document.getElementById("liveAttendeePreview");
+  if (!container) return;
+
+  const stack = container.querySelector(".live-attendee-stack");
+  const label = container.querySelector(".live-attendee-label");
+
+  if (stack) {
+    const existingIds = new Set(
+      [...stack.querySelectorAll("[data-pid]")].map(el => el.dataset.pid)
+    );
+    const slots  = Math.max(0, 6 - existingIds.size);
+    const toAdd  = newOnes.filter(a => !existingIds.has(a.profileId)).slice(0, slots);
+
+    for (const a of toAdd) {
+      const span = document.createElement("span");
+      span.className = "live-attendee-avatar is-entering";
+      span.style.background = getAvatarColor(a.name);
+      span.dataset.pid = a.profileId;
+      span.title = a.name;
+      span.textContent = getAttendeeInitials(a.name);
+      stack.appendChild(span);
+      span.addEventListener("animationend", () => span.classList.remove("is-entering"), { once: true });
+    }
+  }
+
+  if (label) {
+    const total = attendees.length;
+    label.textContent = total === 1
+      ? "1 person is joining this event."
+      : `${total} people are joining this event.`;
+  }
+
+  if (wasEmpty) {
+    container.classList.add("is-activating");
+    container.addEventListener("animationend", () => container.classList.remove("is-activating"), { once: true });
+  }
+
+  updatePanelAttendeeSignal(attendees.length, attendees.slice(0, 6));
+}
+
+function pulseStatusDot() {
+  const dot = document.querySelector(".live-status-dot");
+  if (!dot) return;
+  dot.classList.remove("is-bursting");
+  void dot.offsetWidth; // force reflow so re-adding class re-triggers animation
+  dot.classList.add("is-bursting");
+  dot.addEventListener("animationend", () => dot.classList.remove("is-bursting"), { once: true });
+}
+
+function enqueueActivity(newOnes, wasEmpty) {
+  let msg;
+  if (wasEmpty) {
+    msg = "The network for this event is now active.";
+  } else if (newOnes.length === 1) {
+    const firstName = newOnes[0].name.trim().split(/\s+/)[0];
+    msg = `${firstName} just joined the live network.`;
+  } else if (newOnes.length <= 4) {
+    msg = `${newOnes.length} more people just joined.`;
+  } else {
+    msg = "Several more people just joined.";
+  }
+  activityQueue.push(msg);
+  if (!activityDraining) drainActivityQueue();
+}
+
+function drainActivityQueue() {
+  if (!activityQueue.length) { activityDraining = false; return; }
+  activityDraining = true;
+  showActivityMessage(activityQueue.shift());
+}
+
+function showActivityMessage(text) {
+  const feed = document.getElementById("liveActivityFeed");
+  if (!feed) { drainActivityQueue(); return; }
+
+  feed.innerHTML = "";
+  const p = document.createElement("p");
+  p.className = "live-activity-msg";
+  p.textContent = text;
+  feed.appendChild(p);
+
+  setTimeout(() => {
+    p.classList.add("is-exiting");
+    setTimeout(() => {
+      if (feed.contains(p)) feed.innerHTML = "";
+      drainActivityQueue();
+    }, 600);
+  }, 3500);
 }
 
 async function initJoinPage() {
@@ -1362,11 +1511,12 @@ async function initJoinPage() {
 
       if (isMeetupSource) {
         renderLiveStatusIndicator();
-        // Load attendees in background to power the hero preview.
-        // The result also primes guestEventAttendees for the search below.
+        // Initial fetch: render preview, seed the diff baseline, start polling.
         fetchGuestEventAttendees(event.id).then(({ attendees }) => {
-          guestEventAttendees = attendees;
+          guestEventAttendees  = attendees;
+          lastKnownAttendees   = attendees.slice();
           renderLiveAttendeePreview(attendees);
+          startLivePolling(event.id);
         });
       }
     }

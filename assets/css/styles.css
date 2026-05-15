@@ -1013,6 +1013,65 @@ code {
   50%       { opacity: 0.4; transform: scale(0.82); }
 }
 
+/* Burst: briefly overtakes livePulse on new join, then restores */
+@keyframes liveBurst {
+  0%   { transform: scale(1);    box-shadow: 0 0 0 0px  rgba(48, 209, 88, 0);    }
+  35%  { transform: scale(1.85); box-shadow: 0 0 0 6px  rgba(48, 209, 88, 0.22); }
+  70%  { transform: scale(0.92); box-shadow: 0 0 0 3px  rgba(48, 209, 88, 0.08); }
+  100% { transform: scale(1);    box-shadow: 0 0 0 0px  rgba(48, 209, 88, 0);    }
+}
+
+.live-status-dot.is-bursting {
+  animation: liveBurst 0.75s ease-out forwards;
+}
+
+/* ── Activity feed ──────────────────────────────────────────────────────── */
+.live-activity-feed {
+  min-height: 20px; /* reserve space so the layout never jumps */
+  margin: 2px 0 8px;
+}
+
+.live-activity-msg {
+  margin: 0;
+  font-size: 12px;
+  color: var(--color-text-muted);
+  animation: msgEnter 0.4s ease-out both;
+}
+
+.live-activity-msg.is-exiting {
+  animation: msgExit 0.6s ease-in both;
+}
+
+@keyframes msgEnter {
+  from { opacity: 0; transform: translateY(-3px); }
+  to   { opacity: 1; transform: translateY(0);    }
+}
+
+@keyframes msgExit {
+  from { opacity: 1; }
+  to   { opacity: 0; }
+}
+
+/* ── Avatar enter (new attendee arrives while page is open) ─────────────── */
+@keyframes avatarEnter {
+  from { opacity: 0; transform: scale(0.45); }
+  to   { opacity: 1; transform: scale(1);    }
+}
+
+.live-attendee-avatar.is-entering {
+  animation: avatarEnter 0.38s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+/* ── Empty → populated transition ──────────────────────────────────────── */
+@keyframes previewActivate {
+  from { opacity: 0.25; transform: translateY(4px); }
+  to   { opacity: 1;    transform: translateY(0);   }
+}
+
+.live-attendee-preview.is-activating {
+  animation: previewActivate 0.55s ease-out both;
+}
+
 /* ── Live attendee preview ──────────────────────────────────────────────── */
 .live-attendee-preview {
   margin: 20px 0 6px;
