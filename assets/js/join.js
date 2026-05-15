@@ -523,7 +523,7 @@ function renderGenericJoinUx(event, fallbackName, source) {
     setText(els.joinTitle, "You're joining the live network for this event.");
     setText(
       els.joinDescription,
-      "See who's going, get suggested people to meet, and keep useful connections after the event."
+      "See who's going, find people worth talking to, and stay connected after the event ends — without chasing down contact info later."
     );
   } else {
     setText(els.joinTitle, title);
@@ -540,10 +540,15 @@ function renderGenericJoinUx(event, fallbackName, source) {
   renderEventMeta(event);
   renderPayload(event.id);
 
-  if (els.getAppBtn) els.getAppBtn.textContent = isMeetup ? "Join Live Network" : "Get Nearify (TestFlight)";
+  if (els.getAppBtn) els.getAppBtn.textContent = isMeetup ? "Enter Live Network" : "Get Nearify (TestFlight)";
   if (els.alreadyInstalledHint) {
-    els.alreadyInstalledHint.textContent =
-      "Already installed? Open the app to browse, join, and check in (or scan the event QR code).";
+    els.alreadyInstalledHint.textContent = isMeetup
+      ? "Already have the app? Open it to browse attendees and check in."
+      : "Already installed? Open the app to browse, join, and check in (or scan the event QR code).";
+  }
+  const meetupInstallHint = document.getElementById("meetupInstallHint");
+  if (meetupInstallHint) {
+    if (isMeetup) show(meetupInstallHint); else hide(meetupInstallHint);
   }
 
   if (els.joinPanelTitle) els.joinPanelTitle.textContent = "3 steps to join";
@@ -565,13 +570,13 @@ function renderGenericJoinUx(event, fallbackName, source) {
     `;
   }
 
-  if (els.joinBottomCtaTitle) els.joinBottomCtaTitle.textContent = isMeetup ? "Ready to join the live network?" : "Ready to join?";
+  if (els.joinBottomCtaTitle) els.joinBottomCtaTitle.textContent = isMeetup ? "Ready to enter the live network?" : "Ready to join?";
   if (els.joinBottomCtaDescription) {
     els.joinBottomCtaDescription.textContent = isMeetup
-      ? "Get Nearify to see who's going and start making connections before you even arrive."
+      ? "See who else is going, discover people worth talking to, and keep the connections that matter."
       : "Install the app, then join and check in when you arrive (in app or via event QR).";
   }
-  if (els.joinBottomCtaButton) els.joinBottomCtaButton.textContent = isMeetup ? "Join Live Network" : "Get Nearify on TestFlight";
+  if (els.joinBottomCtaButton) els.joinBottomCtaButton.textContent = isMeetup ? "Enter Live Network" : "Get Nearify on TestFlight";
   if (els.joinBottomCtaHint) els.joinBottomCtaHint.textContent = "Already installed? Open the app to browse, join, and check in.";
 
   show(els.joinQrBox);
@@ -1169,6 +1174,60 @@ function initGuestJoinSection(eventId) {
   wireGuestJoinFlow(eventId);
 }
 
+// ── Meetup source enhancements ──────────────────────────────────────────────
+
+const AVATAR_PALETTE = [
+  "rgba(48,  209, 88,  0.18)",
+  "rgba(10,  132, 255, 0.18)",
+  "rgba(255, 159, 10,  0.18)",
+  "rgba(191, 90,  242, 0.18)",
+  "rgba(100, 210, 255, 0.18)",
+  "rgba(255, 55,  95,  0.18)",
+];
+
+function getAvatarColor(name) {
+  if (!name) return AVATAR_PALETTE[0];
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) hash = (hash * 31 + name.charCodeAt(i)) | 0;
+  return AVATAR_PALETTE[Math.abs(hash) % AVATAR_PALETTE.length];
+}
+
+function renderLiveStatusIndicator() {
+  const el = document.getElementById("liveStatusIndicator");
+  if (!el) return;
+  show(el);
+}
+
+function renderLiveAttendeePreview(attendees) {
+  const container = document.getElementById("liveAttendeePreview");
+  if (!container) return;
+
+  const stack = container.querySelector(".live-attendee-stack");
+  const label = container.querySelector(".live-attendee-label");
+  const displayed = (attendees || []).slice(0, 6);
+
+  if (stack) {
+    stack.innerHTML = displayed.map((a) => {
+      const initials = getAttendeeInitials(a.name);
+      const bg = getAvatarColor(a.name);
+      return `<span class="live-attendee-avatar" style="background:${bg};" title="${escapeHtml(a.name)}">${escapeHtml(initials)}</span>`;
+    }).join("");
+  }
+
+  if (label) {
+    if (!displayed.length) {
+      label.textContent = "Be one of the first people joining this event.";
+    } else {
+      const count = displayed.length;
+      label.textContent = count === 1
+        ? "1 person is joining this event."
+        : `${count} people are joining this event.`;
+    }
+  }
+
+  show(container);
+}
+
 async function initJoinPage() {
   const { eventId, eventName, profileId, source, sourceEventId } = getQueryParams();
 
@@ -1254,6 +1313,16 @@ async function initJoinPage() {
       renderGenericJoinUx(event, eventName, source);
       initGuestJoinSection(event.id);
       await maybeClaimPendingGhostSession();
+
+      if (isMeetupSource) {
+        renderLiveStatusIndicator();
+        // Load attendees in background to power the hero preview.
+        // The result also primes guestEventAttendees for the search below.
+        fetchGuestEventAttendees(event.id).then(({ attendees }) => {
+          guestEventAttendees = attendees;
+          renderLiveAttendeePreview(attendees);
+        });
+      }
     }
 
     showIntentStep();
