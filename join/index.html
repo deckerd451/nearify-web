@@ -54,10 +54,22 @@
         <!-- Populated by JS once event metadata is fetched -->
         <div id="joinEventMeta" class="join-event-meta" style="display:none;"></div>
 
+        <!-- Live network status — shown for Meetup source handoffs -->
+        <div id="liveStatusIndicator" class="live-status-indicator" style="display:none;" aria-live="polite">
+          <span class="live-status-dot" aria-hidden="true"></span>
+          <span>Live network enabled</span>
+        </div>
+
         <p class="event-subhead" id="joinDescription">
           Nearify shows you who's actually at this event so you can discover and connect in real time — not just swap contact info later.
           Install the app, sign in, then join and check in when you arrive — in the Nearify iOS app or by scanning the event QR code.
         </p>
+
+        <!-- Live attendee preview — populated by JS for Meetup source handoffs -->
+        <div id="liveAttendeePreview" class="live-attendee-preview" style="display:none;" aria-label="People joining this event">
+          <div class="live-attendee-stack" aria-hidden="true"></div>
+          <p class="live-attendee-label"></p>
+        </div>
 
         <section id="ghostReturnCard" class="ghost-return-card" style="display:none;">
           <div id="ghostReturnKicker" class="ghost-return-kicker"><span aria-hidden="true">👻</span> Guest</div>
@@ -102,9 +114,13 @@
             Get Nearify on TestFlight
           </a>
 
-          <!-- Secondary: hint for returning users -->
+          <!-- Secondary: hint — updated by JS for Meetup source -->
           <p id="alreadyInstalledHint" class="join-hint">
             Already installed? Open the app to browse, join, and check in (or scan the event QR code).
+          </p>
+          <!-- Shown only for Meetup source: clarifies install path below primary CTA -->
+          <p id="meetupInstallHint" class="join-hint join-hint--install" style="display:none;">
+            Install Nearify on iPhone via <a href="https://testflight.apple.com/join/ZayvEbAy" target="_blank" rel="noopener noreferrer">TestFlight</a>
           </p>
         </div>
 
