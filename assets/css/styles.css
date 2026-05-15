@@ -1074,6 +1074,59 @@ code {
   color: var(--color-text-primary);
 }
 
+/* ── Live panel modifier (Meetup source) ────────────────────────────────── */
+.join-panel--live {
+  border-color: rgba(48, 209, 88, 0.22);
+  box-shadow: 0 0 36px rgba(48, 209, 88, 0.07), 0 0 0 1px rgba(255,255,255,0.02) inset;
+}
+
+/* ── Panel attendee signal ───────────────────────────────────────────────── */
+.panel-attendee-signal {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 22px;
+  padding-top: 18px;
+  border-top: 1px solid rgba(48, 209, 88, 0.12);
+  font-size: 12px;
+  color: var(--color-text-muted);
+  flex-wrap: wrap;
+}
+
+.panel-attendee-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--color-accent);
+  flex-shrink: 0;
+  animation: livePulse 2.4s ease-in-out infinite;
+}
+
+.panel-mini-stack {
+  display: flex;
+  align-items: center;
+}
+
+.panel-mini-avatar {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 1.5px solid var(--color-surface);
+  margin-right: -5px;
+  font-size: 7px;
+  font-weight: 700;
+  color: var(--color-text-primary);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  letter-spacing: 0;
+}
+
+.panel-mini-avatar:last-child {
+  margin-right: 0;
+}
+
 /* ── Mobile responsive ──────────────────────────────────────────────────── */
 @media (max-width: 600px) {
   .live-attendee-avatar {
@@ -1090,6 +1143,15 @@ code {
 
   .hero-actions {
     gap: 10px;
+  }
+
+  .panel-attendee-signal {
+    margin-top: 16px;
+    padding-top: 14px;
+  }
+
+  .event-panel {
+    padding: 20px;
   }
 }
 
