@@ -156,6 +156,13 @@ function injectSignedIn(profile, email) {
     dashLink.textContent = "Dashboard";
     dashLink.className = "nav-auth-link";
     navLinks.appendChild(dashLink);
+    // Add Admin link (only when signed in)
+    // TODO: Gate behind admin role check once a role system exists
+    const adminLink = document.createElement("a");
+    adminLink.href = "/admin/";
+    adminLink.textContent = "Admin";
+    adminLink.className = "nav-auth-link";
+    navLinks.appendChild(adminLink);
     navLinks.appendChild(buildPill(profile, email));
   }
 
@@ -167,6 +174,12 @@ function injectSignedIn(profile, email) {
     drawerDash.textContent = "Dashboard";
     drawerDash.className = "nav-auth-link";
     drawer.appendChild(drawerDash);
+    // Add Admin link to mobile drawer
+    const drawerAdmin = document.createElement("a");
+    drawerAdmin.href = "/admin/";
+    drawerAdmin.textContent = "Admin";
+    drawerAdmin.className = "nav-auth-link";
+    drawer.appendChild(drawerAdmin);
     drawer.appendChild(buildDrawerSignOut());
   }
 }
