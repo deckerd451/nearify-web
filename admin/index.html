@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin Hub | Nearify</title>
+  <meta name="description" content="Internal tools for Nearify event operations and analytics." />
+  <meta name="robots" content="noindex, nofollow" />
+  <link rel="stylesheet" href="../assets/css/styles.css?v=20260516" />
+
+  <style>
+    .admin-hub-container {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 60px 24px 80px;
+    }
+
+    .admin-hub-header {
+      margin-bottom: 40px;
+    }
+
+    .admin-hub-header h1 {
+      font-size: 28px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin-bottom: 8px;
+    }
+
+    .admin-hub-header p {
+      color: var(--color-text-secondary);
+      font-size: 15px;
+      line-height: 1.5;
+    }
+
+    /* Tool cards */
+    .admin-tools {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 12px;
+    }
+
+    .admin-tool-card {
+      display: flex;
+      align-items: flex-start;
+      gap: 16px;
+      padding: 20px;
+      background: var(--color-surface);
+      border: 1px solid var(--color-border-subtle);
+      border-radius: var(--radius-md);
+      text-decoration: none;
+      color: inherit;
+      transition: border-color 0.2s ease, transform 0.15s ease, box-shadow 0.2s ease;
+    }
+
+    .admin-tool-card:hover {
+      border-color: var(--color-border-featured);
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-glow);
+    }
+
+    .admin-tool-card.disabled {
+      opacity: 0.4;
+      pointer-events: none;
+    }
+
+    .admin-tool-icon {
+      flex-shrink: 0;
+      width: 40px;
+      height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: var(--radius-sm);
+      background: rgba(48, 209, 88, 0.08);
+      color: var(--color-accent);
+      font-size: 18px;
+    }
+
+    .admin-tool-body h2 {
+      font-size: 15px;
+      font-weight: 600;
+      margin-bottom: 4px;
+      color: var(--color-text-primary);
+    }
+
+    .admin-tool-body p {
+      font-size: 13px;
+      color: var(--color-text-muted);
+      line-height: 1.45;
+    }
+
+    .admin-tool-status {
+      display: inline-block;
+      margin-top: 8px;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--color-accent);
+    }
+
+    .admin-tool-card.disabled .admin-tool-status {
+      color: var(--color-text-muted);
+    }
+
+    /* Auth gate */
+    .admin-auth-gate {
+      text-align: center;
+      padding: 80px 24px;
+    }
+
+    .admin-auth-gate h2 {
+      font-size: 22px;
+      font-weight: 600;
+      margin-bottom: 10px;
+    }
+
+    .admin-auth-gate p {
+      color: var(--color-text-secondary);
+      font-size: 15px;
+      margin-bottom: 24px;
+    }
+
+    .admin-auth-gate .btn {
+      margin: 0 auto;
+    }
+
+    #adminAuthStatus {
+      margin-top: 12px;
+      font-size: 13px;
+      color: var(--color-text-muted);
+    }
+
+    @media (max-width: 600px) {
+      .admin-hub-container {
+        padding: 40px 16px 60px;
+      }
+      .admin-hub-header h1 {
+        font-size: 24px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <a href="#main-content" class="skip-link">Skip to main content</a>
+
+  <div class="nav-container">
+    <header class="nav">
+      <div class="logo"><a href="../index.html">Nearify</a></div>
+      <div class="nav-links">
+        <a href="../events/index.html">Events</a>
+        <a href="event-setup.html">Host an Event</a>
+      </div>
+      <button class="nav-hamburger" id="navHamburger" aria-label="Open menu" aria-expanded="false">
+        <span></span><span></span><span></span>
+      </button>
+    </header>
+    <nav class="nav-drawer" id="navDrawer" aria-label="Site navigation">
+      <a href="../events/index.html">Events</a>
+      <a href="event-setup.html" class="nav-drawer-highlight">Host an Event</a>
+    </nav>
+  </div>
+
+  <main id="main-content">
+
+    <!-- AUTH GATE — shown when not signed in -->
+    <section id="adminAuthGate" class="admin-auth-gate">
+      <h2>Sign in to access admin tools</h2>
+      <p>This area is for Nearify organizers and administrators.</p>
+      <button id="adminSignInBtn" class="btn primary">Sign in with Google</button>
+      <p id="adminAuthStatus"></p>
+    </section>
+
+    <!-- ADMIN CONTENT — shown when signed in -->
+    <div id="adminContent" style="display:none;">
+      <div class="admin-hub-container">
+        <div class="admin-hub-header">
+          <h1>Admin Hub</h1>
+          <p>Internal tools for event operations, analytics, and ecosystem management.</p>
+        </div>
+
+        <div class="admin-tools">
+          <a href="/admin/external-events.html" class="admin-tool-card">
+            <div class="admin-tool-icon">
+              <svg viewBox="0 0 20 20" fill="none" width="20" height="20"><path d="M10 2v4m0 8v4M2 10h4m8 0h4m-2.83-5.17l-2.83 2.83m-4.68 4.68L4.83 15.17m10.34 0l-2.83-2.83m-4.68-4.68L4.83 4.83" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+            </div>
+            <div class="admin-tool-body">
+              <h2>External Event Activation</h2>
+              <p>Match imported community events to Nearify experiences. Activate join flows for partner Meetups and ecosystem events.</p>
+              <span class="admin-tool-status">Active</span>
+            </div>
+          </a>
+
+          <a href="/dashboard/funnel.html" class="admin-tool-card">
+            <div class="admin-tool-icon">
+              <svg viewBox="0 0 20 20" fill="none" width="20" height="20"><path d="M3 3h14l-4 6v5l-2 2V9L3 3z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </div>
+            <div class="admin-tool-body">
+              <h2>Funnel Analytics</h2>
+              <p>Track join-flow conversion from event discovery through Nearify activation and community engagement.</p>
+              <span class="admin-tool-status">Active</span>
+            </div>
+          </a>
+
+          <a href="/admin/event-setup.html" class="admin-tool-card">
+            <div class="admin-tool-icon">
+              <svg viewBox="0 0 20 20" fill="none" width="20" height="20"><path d="M4 4h12v12H4z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M7 2v4m6-4v4M4 9h12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+            </div>
+            <div class="admin-tool-body">
+              <h2>Event Setup</h2>
+              <p>Create Nearify events, generate QR codes, configure join links, and manage event metadata.</p>
+              <span class="admin-tool-status">Active</span>
+            </div>
+          </a>
+
+          <div class="admin-tool-card disabled">
+            <div class="admin-tool-icon">
+              <svg viewBox="0 0 20 20" fill="none" width="20" height="20"><circle cx="10" cy="7" r="3" stroke="currentColor" stroke-width="1.5"/><path d="M4 17c0-3.3 2.7-6 6-6s6 2.7 6 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+            </div>
+            <div class="admin-tool-body">
+              <h2>Attendee Insights</h2>
+              <p>View participation patterns, connection graphs, and engagement metrics across events.</p>
+              <span class="admin-tool-status">Coming soon</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <footer class="footer">
+    <nav class="footer-links">
+      <a href="../index.html">Home</a>
+      <a href="../events/index.html">Events</a>
+      <a href="event-setup.html">Host an Event</a>
+      <a href="../privacy.html">Privacy</a>
+    </nav>
+    <p>&copy; 2026 Nearify</p>
+  </footer>
+
+  <!-- Auth gate + nav -->
+  <script type="module">
+    import { supabase } from "../assets/js/supabaseClient.js?v=20260508";
+
+    const authGate     = document.getElementById("adminAuthGate");
+    const adminContent = document.getElementById("adminContent");
+    const signInBtn    = document.getElementById("adminSignInBtn");
+    const authStatus   = document.getElementById("adminAuthStatus");
+
+    function showAuthGate() {
+      authGate.style.display = "";
+      adminContent.style.display = "none";
+    }
+
+    function showAdminContent(user) {
+      authGate.style.display = "none";
+      adminContent.style.display = "";
+      console.log("[Admin Hub] Authenticated:", user.email);
+    }
+
+    // TODO: Add stricter admin role check here once a role system exists.
+    // For now, any signed-in user can view the admin hub.
+    supabase.auth.onAuthStateChange((event, session) => {
+      if (event === "SIGNED_OUT" || (event === "INITIAL_SESSION" && !session?.user)) {
+        showAuthGate();
+      } else if ((event === "SIGNED_IN" || event === "INITIAL_SESSION") && session?.user) {
+        showAdminContent(session.user);
+      }
+    });
+
+    signInBtn.addEventListener("click", async () => {
+      authStatus.textContent = "Redirecting...";
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: { redirectTo: window.location.href }
+      });
+      if (error) authStatus.textContent = "Sign-in failed: " + error.message;
+    });
+  </script>
+  <script type="module" src="../assets/js/navAuth.js?v=20260508"></script>
+</body>
+</html>
