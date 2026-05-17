@@ -1,4 +1,5 @@
 import { supabase } from "./supabaseClient.js";
+import { isAdminUser } from "./adminAccess.js";
 
 // ---------------------------------------------------------------------------
 // Hamburger / nav-drawer toggle (wired here since this module loads on every page)
@@ -143,43 +144,44 @@ async function handleSignOut() {
 // Inject / remove
 // ---------------------------------------------------------------------------
 
-function injectSignedIn(profile, email) {
+function injectSignedIn(profile, email, user) {
   document.querySelectorAll(".nav-user-wrapper").forEach((el) => el.remove());
   document.querySelectorAll(".nav-drawer-signout").forEach((el) => el.remove());
   document.querySelectorAll(".nav-auth-link").forEach((el) => el.remove());
 
+  const admin = isAdminUser(user);
+
   const navLinks = document.querySelector(".nav-links");
   if (navLinks) {
-    // Add Dashboard link before the user pill (only when signed in)
     const dashLink = document.createElement("a");
     dashLink.href = "/index.html";
     dashLink.textContent = "Dashboard";
     dashLink.className = "nav-auth-link";
     navLinks.appendChild(dashLink);
-    // Add Admin link (only when signed in)
-    // TODO: Gate behind admin role check once a role system exists
-    const adminLink = document.createElement("a");
-    adminLink.href = "/admin/";
-    adminLink.textContent = "Admin";
-    adminLink.className = "nav-auth-link";
-    navLinks.appendChild(adminLink);
+    if (admin) {
+      const adminLink = document.createElement("a");
+      adminLink.href = "/admin/";
+      adminLink.textContent = "Admin";
+      adminLink.className = "nav-auth-link";
+      navLinks.appendChild(adminLink);
+    }
     navLinks.appendChild(buildPill(profile, email));
   }
 
   const drawer = document.getElementById("navDrawer");
   if (drawer) {
-    // Add Dashboard link to mobile drawer
     const drawerDash = document.createElement("a");
     drawerDash.href = "/index.html";
     drawerDash.textContent = "Dashboard";
     drawerDash.className = "nav-auth-link";
     drawer.appendChild(drawerDash);
-    // Add Admin link to mobile drawer
-    const drawerAdmin = document.createElement("a");
-    drawerAdmin.href = "/admin/";
-    drawerAdmin.textContent = "Admin";
-    drawerAdmin.className = "nav-auth-link";
-    drawer.appendChild(drawerAdmin);
+    if (admin) {
+      const drawerAdmin = document.createElement("a");
+      drawerAdmin.href = "/admin/";
+      drawerAdmin.textContent = "Admin";
+      drawerAdmin.className = "nav-auth-link";
+      drawer.appendChild(drawerAdmin);
+    }
     drawer.appendChild(buildDrawerSignOut());
   }
 }
@@ -199,9 +201,10 @@ function initNavAuth() {
 
   supabase.auth.onAuthStateChange((event, session) => {
     if (session?.user) {
-      fetchProfile(session.user.id)
-        .then((profile) => injectSignedIn(profile, session.user.email))
-        .catch(() => injectSignedIn(null, session.user.email));
+      const user = session.user;
+      fetchProfile(user.id)
+        .then((profile) => injectSignedIn(profile, user.email, user))
+        .catch(() => injectSignedIn(null, user.email, user));
     } else {
       removeSignedIn();
     }

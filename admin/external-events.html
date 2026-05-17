@@ -245,7 +245,18 @@
       </div>
     </section>
 
-    <!-- ADMIN CONTENT — hidden until authenticated -->
+    <!-- RESTRICTED — shown when signed in but not an admin -->
+    <section id="adminRestricted" class="event-hero admin-hero" style="display:none;">
+      <div class="event-hero-copy" style="text-align:center; max-width:560px; margin:0 auto;">
+        <div class="event-kicker">Admin</div>
+        <h1>Access restricted</h1>
+        <p class="event-subhead">
+          Your account does not have admin access. Contact the Nearify team if you believe this is an error.
+        </p>
+      </div>
+    </section>
+
+    <!-- ADMIN CONTENT — shown when signed in and allowlisted -->
     <div id="adminContent" style="display:none;">
 
       <!-- Hero -->

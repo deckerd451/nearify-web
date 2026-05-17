@@ -14,6 +14,7 @@ import { supabase } from "./supabaseClient.js";
 import { saveEvent, getOrganizerProfileId } from "./events.js";
 import { copyText } from "./utils.js";
 import { logger } from "./logger.js";
+import { requireAdminAccess } from "./adminAccess.js";
 
 const NEARIFY_BASE = "https://nearify.org";
 
@@ -459,31 +460,22 @@ async function loadAndRender() {
   setTimeout(() => showLoadStatus(""), 3500);
 }
 
-// ── Auth gate (mirrors event-setup.html pattern) ──────────────────────────────
-
-function showAuthGate() {
-  const gate    = document.getElementById("adminAuthGate");
-  const content = document.getElementById("adminContent");
-  if (gate)    gate.style.display    = "";
-  if (content) content.style.display = "none";
-}
-
-function showAdminContent() {
-  const gate    = document.getElementById("adminAuthGate");
-  const content = document.getElementById("adminContent");
-  if (gate)    gate.style.display    = "none";
-  if (content) content.style.display = "";
-  loadAndRender();
-}
+// ── Auth gate ─────────────────────────────────────────────────────────────────
 
 function initAuthGate() {
+  const gate       = document.getElementById("adminAuthGate");
+  const restricted = document.getElementById("adminRestricted");
+  const content    = document.getElementById("adminContent");
+
   supabase.auth.onAuthStateChange((event, session) => {
     logger.log("[ExtEvents] auth:", event, !!session?.user);
-    if (event === "SIGNED_OUT" || (event === "INITIAL_SESSION" && !session?.user)) {
-      showAuthGate();
-    } else if ((event === "SIGNED_IN" || event === "INITIAL_SESSION") && session?.user) {
-      showAdminContent();
-    }
+    const user = session?.user ?? null;
+    const result = requireAdminAccess(user, {
+      gateEl:       gate,
+      contentEl:    content,
+      restrictedEl: restricted,
+    });
+    if (result === "granted") loadAndRender();
   });
 
   const signInBtn  = document.getElementById("adminSignInBtn");
