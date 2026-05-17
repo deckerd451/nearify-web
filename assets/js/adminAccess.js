@@ -12,6 +12,7 @@
 // Explicit allowlist of admin email addresses (lowercase).
 const ADMIN_EMAILS = [
   "dmhamilton1@live.com",
+  "deckerdb26354@gmail.com",
 ];
 
 /**
