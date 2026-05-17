@@ -44,6 +44,7 @@ supabase.auth.onAuthStateChange((_event, session) => {
     restrictedEl: $restricted,
   });
   if (result === "granted") {
+    $content.style.display = "block"; // override #fdContent { display:none } CSS rule
     $userEmail.textContent = user.email ?? "";
     loadData();
   }
