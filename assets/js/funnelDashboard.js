@@ -1,4 +1,5 @@
 import { supabase } from "./supabaseClient.js";
+import { requireAdminAccess } from "./adminAccess.js";
 
 // ── Constants ──────────────────────────────────────────────────────────────────
 
@@ -33,12 +34,21 @@ const $activity  = document.getElementById("fdActivitySection");
 
 // ── Auth ───────────────────────────────────────────────────────────────────────
 
+const $restricted = document.getElementById("fdRestricted");
+
 supabase.auth.onAuthStateChange((_event, session) => {
-  if (session?.user) {
-    showDashboard(session.user);
-  } else {
-    showGate();
+  const user = session?.user ?? null;
+  const result = requireAdminAccess(user, {
+    gateEl:       $gate,
+    contentEl:    $content,
+    restrictedEl: $restricted,
+  });
+  if (result === "granted") {
+    $userEmail.textContent = user.email ?? "";
+    loadData();
   }
+  // Override gate display style to match the existing flex layout
+  if (!user) $gate.style.display = "flex";
 });
 
 $signIn.addEventListener("click", () => {
@@ -51,18 +61,6 @@ $signIn.addEventListener("click", () => {
 $signOut.addEventListener("click", () => {
   supabase.auth.signOut();
 });
-
-function showGate() {
-  $gate.style.display    = "flex";
-  $content.style.display = "none";
-}
-
-function showDashboard(user) {
-  $gate.style.display    = "none";
-  $content.style.display = "block";
-  $userEmail.textContent = user.email ?? "";
-  loadData();
-}
 
 // ── Date filter tabs ───────────────────────────────────────────────────────────
 
