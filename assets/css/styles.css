@@ -664,6 +664,41 @@ html {
   padding: 80px 40px 44px;
 }
 
+.events-page-header {
+  padding: 52px 40px 36px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.events-page-header h1 {
+  font-size: 36px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  margin-bottom: 10px;
+}
+
+.events-page-header .event-subhead {
+  font-size: 16px;
+  margin-bottom: 0;
+}
+
+.event-how-cta {
+  display: flex;
+  justify-content: center;
+  padding: 24px 40px 40px;
+  background: rgba(0, 0, 0, 0.18);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+@media (max-width: 640px) {
+  .events-page-header {
+    padding: 32px 20px 24px;
+  }
+  .events-page-header h1 {
+    font-size: 28px;
+  }
+}
+
 .events-list-grid {
   display: grid;
   gap: 20px;

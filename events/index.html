@@ -57,30 +57,34 @@
   </div>
 
   <main id="main-content" class="events-page">
-    <section class="events-hero">
-      <div class="events-hero-copy">
-        <div class="event-kicker">Nearify Events</div>
-        <h1>Real-world events, live connections</h1>
-        <p class="event-subhead">
-          Browse upcoming events powered by Nearify. Join before you arrive, check in on site, and discover who's in the room.
-        </p>
 
-        <div class="hero-actions">
-          <a
-            href="https://testflight.apple.com/join/ZayvEbAy"
-            class="btn primary"
-            target="_blank"
-            rel="noopener noreferrer"
-            data-track-cta="events_hero_install"
-          >
-            Get Nearify on TestFlight
-          </a>
-          <a href="#upcoming-events" class="btn secondary">See Events</a>
-        </div>
+    <!-- Compact page header -->
+    <div class="events-page-header">
+      <div class="event-kicker">Nearify Events</div>
+      <h1>Upcoming Events</h1>
+      <p class="event-subhead">Browse events powered by Nearify. Select one to learn more and get your join QR code before you arrive.</p>
+    </div>
+
+    <section id="upcoming-events" class="section event-section">
+      <div class="events-list-grid" id="eventsListGrid" role="status" aria-label="Loading events…" aria-busy="true">
+        <!-- Skeleton shown while events load -->
+        <div class="skeleton-card"><div class="skeleton-line title"></div><div class="skeleton-line meta"></div><div class="skeleton-line body"></div><div class="skeleton-line body2"></div><div class="skeleton-line button"></div></div>
+        <div class="skeleton-card"><div class="skeleton-line title"></div><div class="skeleton-line meta"></div><div class="skeleton-line body"></div><div class="skeleton-line body2"></div><div class="skeleton-line button"></div></div>
       </div>
     </section>
 
-    <!-- How to attend strip -->
+    <!-- Past events — hidden until there are past events to show -->
+    <section id="pastEventsSection" class="section event-section" style="display:none;">
+      <div class="section-heading">
+        <h2>Past events</h2>
+        <p>
+          These events have already taken place. If you attended with Nearify, your post-event intelligence report is available on the event page.
+        </p>
+      </div>
+      <div class="events-list-grid" id="pastEventsGrid"></div>
+    </section>
+
+    <!-- How to attend -->
     <div class="event-how-strip" aria-label="How to attend a Nearify event">
       <div class="event-how-step">
         <div class="event-how-num">1</div>
@@ -104,32 +108,17 @@
         </div>
       </div>
     </div>
-
-    <section id="upcoming-events" class="section event-section">
-      <div class="section-heading">
-        <h2>Upcoming events</h2>
-        <p>
-          Select an event to learn more, set your intent, and get your join QR code before you arrive.
-        </p>
-      </div>
-
-      <div class="events-list-grid" id="eventsListGrid" role="status" aria-label="Loading events…" aria-busy="true">
-        <!-- Skeleton shown while events load -->
-        <div class="skeleton-card"><div class="skeleton-line title"></div><div class="skeleton-line meta"></div><div class="skeleton-line body"></div><div class="skeleton-line body2"></div><div class="skeleton-line button"></div></div>
-        <div class="skeleton-card"><div class="skeleton-line title"></div><div class="skeleton-line meta"></div><div class="skeleton-line body"></div><div class="skeleton-line body2"></div><div class="skeleton-line button"></div></div>
-      </div>
-    </section>
-
-    <!-- Past events — hidden until there are past events to show -->
-    <section id="pastEventsSection" class="section event-section" style="display:none;">
-      <div class="section-heading">
-        <h2>Past events</h2>
-        <p>
-          These events have already taken place. If you attended with Nearify, your post-event intelligence report is available on the event page.
-        </p>
-      </div>
-      <div class="events-list-grid" id="pastEventsGrid"></div>
-    </section>
+    <div class="event-how-cta">
+      <a
+        href="https://testflight.apple.com/join/ZayvEbAy"
+        class="btn primary"
+        target="_blank"
+        rel="noopener noreferrer"
+        data-track-cta="events_how_install"
+      >
+        Get Nearify on TestFlight
+      </a>
+    </div>
 
     <section class="section dark event-section">
       <div class="section-heading">
@@ -159,22 +148,6 @@
           </p>
         </div>
       </div>
-    </section>
-
-    <section class="cta event-cta">
-      <h2>Install Nearify before you arrive</h2>
-      <p>
-        Get on TestFlight, create your profile, and be ready to join the network the moment you scan an event QR code.
-      </p>
-      <a
-        href="https://testflight.apple.com/join/ZayvEbAy"
-        class="btn primary"
-        target="_blank"
-        rel="noopener noreferrer"
-        data-track-cta="events_bottom_cta"
-      >
-        Get Nearify on TestFlight
-      </a>
     </section>
   </main>
 
