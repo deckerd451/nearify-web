@@ -171,7 +171,7 @@
     wireAppCtaTracking();
   </script>
   <script type="module">
-    import { fetchPublicEvents, getOrganizerProfileId } from "../assets/js/events.js?v=20260430";
+    import { fetchPublicEvents } from "../assets/js/events.js?v=20260430";
     import { supabase } from "../assets/js/supabaseClient.js";
     import { escapeHtml } from "../assets/js/utils.js?v=20260430";
 
@@ -217,7 +217,7 @@
       return "";
     }
 
-    function renderCard(ev, { featured = false, past = false, count = 0, intentMap = null, organizing = false } = {}) {
+    function renderCard(ev, { featured = false, past = false, count = 0, intentMap = null } = {}) {
       const dateTimeStr = ev.starts_at
         ? new Date(ev.starts_at).toLocaleString(undefined, {
             month: "short",
@@ -236,13 +236,11 @@
         : "event.html?id="   + encodeURIComponent(ev.id);
       const nameHtml = '<a href="' + detailUrl + '" class="event-list-name-link">' + escapeHtml(ev.name) + '</a>';
       const cardClass = "event-list-card" + (featured ? " featured" : "") + (past ? " event-card-past" : "");
-      const badge = organizing
-        ? '<div class="card-badge card-badge-organizing">Organizing</div>'
-        : featured
-          ? '<div class="card-badge">Featured</div>'
-          : past
-            ? '<div class="card-badge card-badge-past">Past</div>'
-            : "";
+      const badge = featured
+        ? '<div class="card-badge">Featured</div>'
+        : past
+          ? '<div class="card-badge card-badge-past">Past</div>'
+          : "";
 
       // Momentum line
       let momentumHtml = "";
@@ -278,18 +276,13 @@
       }
 
       const allIds = (events || []).map(ev => ev.id);
-      const [{ counts, intents }, myProfileId] = await Promise.all([
-        fetchAttendeeMeta(allIds),
-        getOrganizerProfileId().catch(() => null),
-      ]);
+      const { counts, intents } = await fetchAttendeeMeta(allIds);
 
       const now      = new Date();
       const upcoming = (events || []).filter(ev => !ev.starts_at || new Date(ev.starts_at) >= now);
       const past     = (events || [])
         .filter(ev => ev.starts_at && new Date(ev.starts_at) < now)
         .sort((a, b) => new Date(b.starts_at) - new Date(a.starts_at));
-
-      const isOrganizing = (ev) => !!myProfileId && ev.created_by === myProfileId;
 
       // Upcoming
       if (!upcoming.length) {
@@ -298,8 +291,7 @@
       } else {
         upcomingGrid.innerHTML = upcoming
           .map((ev, i) => renderCard(ev, {
-            featured: i === 0 && !isOrganizing(ev),
-            organizing: isOrganizing(ev),
+            featured: i === 0,
             count: counts.get(ev.id) || 0,
             intentMap: intents.get(ev.id) || null
           }))
@@ -309,8 +301,7 @@
       // Past
       if (past.length && pastSection && pastGrid) {
         pastGrid.innerHTML = past.map(ev => renderCard(ev, {
-          past: !isOrganizing(ev),
-          organizing: isOrganizing(ev),
+          past: true,
           count: counts.get(ev.id) || 0,
           intentMap: intents.get(ev.id) || null
         })).join("");
