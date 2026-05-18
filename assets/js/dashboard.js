@@ -174,8 +174,8 @@ async function endEvent(id) {
   return saveEvent({ id, is_active: false }, true);
 }
 
-async function createEvent(fields) {
-  return saveEvent({ id: generateUUID(), ...fields }, false);
+async function createEvent(fields, isOrganizer = true) {
+  return saveEvent({ id: generateUUID(), ...fields }, false, isOrganizer);
 }
 
 // ─── Rendering ────────────────────────────────────────────────────────────────
@@ -690,17 +690,18 @@ async function handleCreateSubmit(e) {
   if (slugErr) slugErr.style.display = "none";
   slugEl?.classList.remove("field-invalid");
 
-  const date     = document.getElementById("ceDate")?.value || null;
-  const time     = document.getElementById("ceTime")?.value || null;
-  const location = document.getElementById("ceLocation")?.value.trim() || null;
-  const desc     = document.getElementById("ceDescription")?.value.trim() || null;
-  const starts_at = date && time ? `${date}T${time}:00` : date || null;
+  const date        = document.getElementById("ceDate")?.value || null;
+  const time        = document.getElementById("ceTime")?.value || null;
+  const location    = document.getElementById("ceLocation")?.value.trim() || null;
+  const desc        = document.getElementById("ceDescription")?.value.trim() || null;
+  const isOrganizer = document.getElementById("ceIsOrganizer")?.checked ?? true;
+  const starts_at   = date && time ? `${date}T${time}:00` : date || null;
 
   const submitBtn = document.getElementById("createEventSubmitBtn");
   if (submitBtn) { submitBtn.disabled = true; submitBtn.classList.add("loading"); }
   setCreateStatus("Saving…");
 
-  const { error } = await createEvent({ name, slug, location, starts_at, description: desc });
+  const { error } = await createEvent({ name, slug, location, starts_at, description: desc }, isOrganizer);
 
   if (submitBtn) { submitBtn.disabled = false; submitBtn.classList.remove("loading"); }
 
