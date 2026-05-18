@@ -155,7 +155,7 @@ function injectSignedIn(profile, email, user) {
   if (navLinks) {
     const dashLink = document.createElement("a");
     dashLink.href = "/index.html";
-    dashLink.textContent = "Dashboard";
+    dashLink.textContent = "Your Events";
     dashLink.className = "nav-auth-link";
     navLinks.appendChild(dashLink);
     if (admin) {
@@ -172,7 +172,7 @@ function injectSignedIn(profile, email, user) {
   if (drawer) {
     const drawerDash = document.createElement("a");
     drawerDash.href = "/index.html";
-    drawerDash.textContent = "Dashboard";
+    drawerDash.textContent = "Your Events";
     drawerDash.className = "nav-auth-link";
     drawer.appendChild(drawerDash);
     if (admin) {
