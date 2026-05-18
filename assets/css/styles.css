@@ -742,6 +742,21 @@ html {
   color: #d1d7e0;
 }
 
+.card-badge-organizing {
+  display: inline-flex;
+  align-items: center;
+  padding: 8px 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 18px;
+  background: rgba(10, 132, 255, 0.12);
+  color: #0a84ff;
+  border: 1px solid rgba(10, 132, 255, 0.25);
+}
+
 .card-badge-past {
   display: inline-flex;
   align-items: center;
