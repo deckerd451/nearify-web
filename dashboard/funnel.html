@@ -24,6 +24,14 @@
       margin-bottom: 32px;
     }
 
+    .fd-home-link {
+      font-size: 12px;
+      color: var(--color-text-muted, #888);
+      text-decoration: none;
+      transition: color 0.15s;
+    }
+    .fd-home-link:hover { color: var(--color-text-primary, #f5f5f7); }
+
     .fd-topbar-title {
       display: flex;
       flex-direction: column;
@@ -451,6 +459,7 @@
 
       <div class="fd-topbar">
         <div class="fd-topbar-title">
+          <a href="https://nearify.org" class="fd-home-link">← nearify.org</a>
           <h1>Meetup Funnel</h1>
           <span id="fdUserEmail"></span>
         </div>
