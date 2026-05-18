@@ -31,6 +31,7 @@ const $stats     = document.getElementById("fdStatsSection");
 const $funnel    = document.getElementById("fdFunnelSection");
 const $events    = document.getElementById("fdEventsSection");
 const $activity  = document.getElementById("fdActivitySection");
+const $insight   = document.getElementById("fdInsight");
 
 // ── Auth ───────────────────────────────────────────────────────────────────────
 
@@ -103,6 +104,7 @@ async function loadData() {
   const totals = buildTotals(rows);
 
   renderStats(totals);
+  renderInsights(totals);
   renderFunnelBars(totals);
   renderEventsTable(pivot);
   renderSparkline(hourlyRows);
@@ -114,6 +116,7 @@ function setLoading(on) {
   $funnel.style.display   = on ? "none"   : "block";
   $events.style.display   = on ? "none"   : "block";
   $activity.style.display = on ? "none"   : "block";
+  if (on) $insight.style.display = "none";
 }
 
 function showError(msg) {
@@ -172,21 +175,108 @@ function renderStats(totals) {
   const viewToSession = views > 0 ? ((sessions / views) * 100).toFixed(1) + "%" : "—";
 
   const cards = [
-    { label: "Page Views",    value: fmt(views),    sub: "meetup_handoff_view",     accent: false },
-    { label: "CTA Clicks",    value: fmt(clicks),   sub: pct(clicks,  views),       accent: false },
-    { label: "Installs",      value: fmt(installs), sub: pct(installs, clicks),     accent: false },
-    { label: "Guest Sessions",value: fmt(sessions), sub: pct(sessions, installs),   accent: false },
-    { label: "App Opens",     value: fmt(opens),    sub: pct(opens,   sessions),    accent: true  },
-    { label: "View → Session",value: viewToSession, sub: "end-to-end conversion",   accent: true  },
+    {
+      label: "Page Views", value: fmt(views), sub: "meetup_handoff_view", accent: false,
+      info: "People who loaded the Nearify meetup handoff page from a shared link. This is the very top of the funnel — all subsequent stages are a subset of this number.",
+    },
+    {
+      label: "CTA Clicks", value: fmt(clicks), sub: pct(clicks, views), accent: false,
+      info: "Visitors who tapped the 'Enter Live Network' call-to-action button. This is the first active signal of intent — a user showing they want to join the event.",
+    },
+    {
+      label: "Installs", value: fmt(installs), sub: pct(installs, clicks), accent: false,
+      info: "Users who tapped the TestFlight install link after clicking the CTA. This is a high-commitment action requiring leaving the browser, making it the steepest drop-off point in most funnels.",
+    },
+    {
+      label: "Guest Sessions", value: fmt(sessions), sub: pct(sessions, installs), accent: false,
+      info: "Users who completed in-app onboarding and started an active guest session. This is the core conversion event — the user is now participating in the live network.",
+    },
+    {
+      label: "App Opens", value: fmt(opens), sub: pct(opens, sessions), accent: true,
+      info: "Users who returned to or deep-linked back into the app after their initial session. A proxy for repeat engagement and product stickiness beyond the first open.",
+    },
+    {
+      label: "View → Session", value: viewToSession, sub: "end-to-end conversion", accent: true,
+      info: "Overall funnel efficiency: the share of page viewers who became active guest session participants. This single number summarises the health of the entire acquisition flow.",
+    },
   ];
 
   $stats.innerHTML = cards.map(c => `
     <div class="fd-stat-card${c.accent ? " is-accent" : ""}">
-      <div class="fd-stat-label">${c.label}</div>
+      <div class="fd-stat-label">
+        ${c.label}
+        <span class="fd-info-icon">?<span class="fd-tooltip">${c.info}</span></span>
+      </div>
       <div class="fd-stat-value">${c.value}</div>
       <div class="fd-stat-sub">${c.sub}</div>
     </div>
   `).join("");
+}
+
+// ── Render: insight callout ────────────────────────────────────────────────────
+
+function renderInsights(totals) {
+  if (totals[STAGE_KEYS[0]] === 0) {
+    $insight.style.display = "none";
+    return;
+  }
+
+  // Find the step with the largest absolute drop-off
+  let worstStep = null;
+  let worstLost = 0;
+
+  for (let i = 1; i < STAGES.length; i++) {
+    const prev = totals[STAGE_KEYS[i - 1]] || 0;
+    const curr = totals[STAGE_KEYS[i]]     || 0;
+    if (prev === 0) continue;
+    const lost = prev - curr;
+    if (lost > worstLost) {
+      worstLost = lost;
+      worstStep = {
+        from:    STAGES[i - 1].label,
+        to:      STAGES[i].label,
+        lost,
+        lossPct: ((lost / prev) * 100).toFixed(0),
+        convPct: ((curr / prev) * 100).toFixed(0),
+      };
+    }
+  }
+
+  if (!worstStep) {
+    $insight.style.display = "none";
+    return;
+  }
+
+  // Find best-converting step for contrast
+  let bestStep = null;
+  let bestConv = 0;
+  for (let i = 1; i < STAGES.length; i++) {
+    const prev = totals[STAGE_KEYS[i - 1]] || 0;
+    const curr = totals[STAGE_KEYS[i]]     || 0;
+    if (prev === 0) continue;
+    const conv = curr / prev;
+    if (conv > bestConv) {
+      bestConv = conv;
+      bestStep = { from: STAGES[i - 1].label, to: STAGES[i].label, convPct: (conv * 100).toFixed(0) };
+    }
+  }
+
+  const viewToSession = totals[STAGE_KEYS[0]] > 0
+    ? ((totals[STAGE_KEYS[STAGE_KEYS.length - 1]] / totals[STAGE_KEYS[0]]) * 100).toFixed(1)
+    : null;
+
+  let html = `<div class="fd-insight-label">Funnel Insights</div>`;
+  html += `<strong>Biggest drop-off:</strong> ${worstStep.lossPct}% of users (${fmt(worstLost)}) who reached <strong>${worstStep.from}</strong> did not proceed to <strong>${worstStep.to}</strong>. `;
+  html += `Reducing friction at this step would have the greatest impact on overall conversion.`;
+  if (bestStep && bestStep.from !== worstStep.from) {
+    html += ` The strongest step is <strong>${bestStep.from} → ${bestStep.to}</strong> at ${bestStep.convPct}% conversion.`;
+  }
+  if (viewToSession !== null) {
+    html += ` Overall end-to-end rate is <strong>${viewToSession}%</strong>.`;
+  }
+
+  $insight.innerHTML = html;
+  $insight.style.display = "block";
 }
 
 // ── Render: funnel bars ────────────────────────────────────────────────────────
@@ -201,10 +291,17 @@ function renderFunnelBars(totals) {
   }
 
   $list.innerHTML = STAGES.map((stage, i) => {
-    const cnt  = totals[stage.key] || 0;
-    const prev = i > 0 ? (totals[STAGE_KEYS[i - 1]] || 0) : null;
+    const cnt      = totals[stage.key] || 0;
+    const prev     = i > 0 ? (totals[STAGE_KEYS[i - 1]] || 0) : null;
     const widthPct = top > 0 ? (cnt / top * 100).toFixed(1) : 0;
-    const stepPct  = prev !== null && prev > 0 ? ((cnt / prev) * 100).toFixed(0) + "%" : "";
+    const stepRatio = prev !== null && prev > 0 ? cnt / prev : null;
+    const stepPct   = stepRatio !== null ? (stepRatio * 100).toFixed(0) + "%" : "";
+
+    const dropped   = prev !== null ? prev - cnt : null;
+    const lostPct   = stepRatio !== null ? (100 - stepRatio * 100).toFixed(0) : null;
+    const dropLine  = dropped !== null && prev > 0 && dropped > 0
+      ? `<div class="fd-funnel-dropoff"><span class="fd-funnel-dropoff-count">−${fmt(dropped)}</span> dropped off at this step (${lostPct}% of previous stage)</div>`
+      : "";
 
     return `
       <div class="fd-funnel-row">
@@ -218,6 +315,7 @@ function renderFunnelBars(totals) {
         <div class="fd-bar-track">
           <div class="fd-bar-fill" style="width:${widthPct}%; background:${stage.color};"></div>
         </div>
+        ${dropLine}
       </div>
     `;
   }).join("");

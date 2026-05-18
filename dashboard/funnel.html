@@ -322,6 +322,103 @@
       margin-bottom: 24px;
     }
 
+    /* ── info tooltip ──────────────────────────────────────────────────────── */
+    .fd-stat-label {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .fd-info-icon {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.08);
+      color: var(--color-text-muted, #888);
+      font-size: 9px;
+      font-weight: 700;
+      cursor: default;
+      position: relative;
+      flex-shrink: 0;
+    }
+    .fd-info-icon:hover .fd-tooltip { opacity: 1; pointer-events: auto; transform: translateX(-50%) translateY(0); }
+    .fd-tooltip {
+      position: absolute;
+      bottom: calc(100% + 8px);
+      left: 50%;
+      transform: translateX(-50%) translateY(4px);
+      background: #2c2c2e;
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 8px;
+      padding: 9px 12px;
+      font-size: 11px;
+      line-height: 1.55;
+      color: var(--color-text-secondary, #aaa);
+      white-space: normal;
+      width: 200px;
+      text-align: left;
+      font-weight: 400;
+      text-transform: none;
+      letter-spacing: 0;
+      z-index: 20;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.15s, transform 0.15s;
+    }
+    .fd-tooltip::after {
+      content: "";
+      position: absolute;
+      top: 100%;
+      left: 50%;
+      transform: translateX(-50%);
+      border: 5px solid transparent;
+      border-top-color: rgba(255,255,255,0.12);
+    }
+
+    /* ── insight card ──────────────────────────────────────────────────────── */
+    .fd-insight-card {
+      background: rgba(48, 209, 88, 0.06);
+      border: 1px solid rgba(48, 209, 88, 0.2);
+      border-radius: 12px;
+      padding: 14px 18px;
+      margin-bottom: 28px;
+      font-size: 13px;
+      line-height: 1.55;
+      color: var(--color-text-secondary, #aaa);
+    }
+    .fd-insight-card strong { color: var(--color-text-primary, #f5f5f7); }
+    .fd-insight-label {
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--color-accent, #30d158);
+      margin-bottom: 4px;
+    }
+
+    /* ── section subtitle ──────────────────────────────────────────────────── */
+    .fd-section-subtitle {
+      font-size: 12px;
+      font-weight: 400;
+      color: var(--color-text-muted, #888);
+      text-transform: none;
+      letter-spacing: 0;
+      margin-top: 2px;
+      margin-bottom: 16px;
+    }
+    .fd-section-header { margin-bottom: 16px; }
+    .fd-section-header .fd-section-title { margin-bottom: 2px; }
+
+    /* ── funnel drop-off ───────────────────────────────────────────────────── */
+    .fd-funnel-dropoff {
+      font-size: 11px;
+      color: var(--color-text-muted, #666);
+      margin-top: 7px;
+    }
+    .fd-funnel-dropoff-count { color: #ff6b6b; font-weight: 500; }
+
     /* ── responsive ────────────────────────────────────────────────────────── */
     @media (max-width: 640px) {
       .fd-stat-grid { grid-template-columns: repeat(2, 1fr); }
@@ -372,6 +469,9 @@
       <!-- Error banner (hidden by default) -->
       <div id="fdError" class="fd-error" style="display:none;"></div>
 
+      <!-- Insight callout (populated by JS) -->
+      <div id="fdInsight" class="fd-insight-card" style="display:none;"></div>
+
       <!-- Loading -->
       <div id="fdLoading" class="fd-loading">Loading…</div>
 
@@ -380,25 +480,31 @@
 
       <!-- Overall funnel bars -->
       <div id="fdFunnelSection" class="fd-section" style="display:none;">
-        <div class="fd-section-title">Overall Funnel</div>
+        <div class="fd-section-header">
+          <div class="fd-section-title">Overall Funnel</div>
+          <div class="fd-section-subtitle">Aggregate counts across all events. Each bar shows how many users reached that stage. The percentage shown is conversion from the previous step.</div>
+        </div>
         <div id="fdFunnelList" class="fd-funnel-list"></div>
       </div>
 
       <!-- Per-event table -->
       <div id="fdEventsSection" class="fd-section" style="display:none;">
-        <div class="fd-section-title">By Event</div>
+        <div class="fd-section-header">
+          <div class="fd-section-title">By Event</div>
+          <div class="fd-section-subtitle">Funnel breakdown per meetup event. Conv % is the end-to-end rate from page view to active guest session.</div>
+        </div>
         <div class="fd-table-wrap">
           <table class="fd-table">
             <thead>
               <tr>
-                <th>Event</th>
-                <th>Meetup ID</th>
-                <th class="fd-table-num">Views</th>
-                <th class="fd-table-num">CTA Clicks</th>
-                <th class="fd-table-num">Installs</th>
-                <th class="fd-table-num">Sessions</th>
-                <th class="fd-table-num">Opens</th>
-                <th class="fd-table-num">Conv %</th>
+                <th title="Name of the meetup event from the handoff page">Event</th>
+                <th title="Internal source event ID used to link analytics back to the event record">Meetup ID</th>
+                <th class="fd-table-num" title="Users who loaded the meetup handoff page — top of funnel">Views</th>
+                <th class="fd-table-num" title="Users who tapped 'Enter Live Network' — signals active intent to join">CTA Clicks</th>
+                <th class="fd-table-num" title="Users who tapped the TestFlight install link — high-commitment action">Installs</th>
+                <th class="fd-table-num" title="Users who completed onboarding and started a guest session in the app — core conversion">Sessions</th>
+                <th class="fd-table-num" title="Users who returned or deep-linked into the app after their initial session">Opens</th>
+                <th class="fd-table-num" title="End-to-end conversion: guest sessions ÷ page views">Conv %</th>
               </tr>
             </thead>
             <tbody id="fdEventsBody"></tbody>
@@ -408,7 +514,10 @@
 
       <!-- Activity sparkline -->
       <div id="fdActivitySection" class="fd-section" style="display:none;">
-        <div class="fd-section-title">Hourly Activity</div>
+        <div class="fd-section-header">
+          <div class="fd-section-title">Hourly Activity</div>
+          <div class="fd-section-subtitle">Stacked bars showing event volume per hour across all funnel stages. Reveals when users are most active and whether traffic spikes correspond to actual conversions.</div>
+        </div>
         <div class="fd-sparkline-wrap">
           <div class="fd-spark-legend" id="fdSparkLegend"></div>
           <div class="fd-spark-canvas-wrap">
