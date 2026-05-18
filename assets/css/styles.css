@@ -3573,6 +3573,23 @@ code {
 }
 .cc-overflow-menu[hidden] { display: none; }
 
+.cc-checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--color-text-primary);
+  cursor: pointer;
+}
+.cc-checkbox-label input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--color-accent);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
 .cc-overflow-item {
   display: block;
   width: 100%;
