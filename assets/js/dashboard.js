@@ -690,12 +690,25 @@ async function handleCreateSubmit(e) {
   if (slugErr) slugErr.style.display = "none";
   slugEl?.classList.remove("field-invalid");
 
-  const date        = document.getElementById("ceDate")?.value || null;
-  const time        = document.getElementById("ceTime")?.value || null;
-  const location    = document.getElementById("ceLocation")?.value.trim() || null;
-  const desc        = document.getElementById("ceDescription")?.value.trim() || null;
-  const isOrganizer = document.getElementById("ceIsOrganizer")?.checked ?? true;
-  const starts_at   = date && time ? `${date}T${time}:00` : date || null;
+  const date     = document.getElementById("ceDate")?.value || null;
+  const time     = document.getElementById("ceTime")?.value || null;
+  const location = document.getElementById("ceLocation")?.value.trim() || null;
+  const desc     = document.getElementById("ceDescription")?.value.trim() || null;
+
+  // Convert local date+time to UTC ISO string (matches admin/event-setup.html behavior)
+  let starts_at = null;
+  if (date && time) {
+    starts_at = new Date(`${date}T${time}:00`).toISOString();
+  } else if (date) {
+    starts_at = date;
+  }
+
+  logger.log("[Dashboard] createEvent timestamp:", {
+    rawDate: date,
+    rawTime: time,
+    browserTimezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+    isoValue: starts_at,
+  });
 
   const submitBtn = document.getElementById("createEventSubmitBtn");
   if (submitBtn) { submitBtn.disabled = true; submitBtn.classList.add("loading"); }

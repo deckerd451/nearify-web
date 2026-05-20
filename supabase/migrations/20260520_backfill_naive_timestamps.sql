@@ -1,0 +1,73 @@
+-- ============================================================
+-- One-time backfill: fix events with naive UTC timestamps
+-- ============================================================
+--
+-- Problem:
+--   The dashboard create modal (dashboard.js) was passing starts_at as
+--   a naive datetime string like "2026-06-11T18:00:00" without timezone
+--   offset. PostgreSQL's timestamptz interprets strings without offset
+--   as UTC, so an organizer in US Eastern entering "6:00 PM" would get
+--   the event stored as 6:00 PM UTC (actually 2:00 PM local).
+--
+-- Fix applied:
+--   dashboard.js now uses new Date(`${date}T${time}:00`).toISOString()
+--   which correctly converts local time to UTC before sending.
+--
+-- This migration identifies and corrects affected rows.
+--
+-- Assumptions:
+--   - All organizers are in US Eastern (America/New_York)
+--   - Events created via dashboard modal have no ends_at (never set by that UI)
+--   - Events created via admin/event-setup.html already used .toISOString()
+--     and are correct
+--   - Only events with starts_at that look like they were stored as naive UTC
+--     need correction (shift by +4 or +5 hours depending on DST)
+--
+-- Strategy:
+--   Since we cannot distinguish which events were created via which UI path,
+--   and the admin page was always correct, we take a conservative approach:
+--   
+--   MANUAL REVIEW REQUIRED before running.
+--   
+--   The query below identifies candidate events. An operator should review
+--   and apply corrections selectively.
+--
+-- ============================================================
+
+-- DIAGNOSTIC: List events that may have naive UTC timestamps
+-- Run this SELECT first to review before applying any UPDATE.
+--
+-- SELECT
+--   id,
+--   name,
+--   starts_at,
+--   starts_at AT TIME ZONE 'America/New_York' AS starts_at_if_naive_eastern,
+--   created_at,
+--   created_by
+-- FROM events
+-- WHERE deleted_at IS NULL
+--   AND starts_at IS NOT NULL
+--   AND starts_at > now()  -- only future events (past events are less critical)
+-- ORDER BY starts_at;
+
+-- CORRECTION: Shift affected events by +4 hours (EDT) or +5 hours (EST)
+-- Uncomment and adjust the WHERE clause after manual review.
+--
+-- For events during Eastern Daylight Time (March–November):
+-- UPDATE events
+-- SET starts_at = starts_at + interval '4 hours'
+-- WHERE id IN (
+--   '<uuid-1>',
+--   '<uuid-2>'
+-- );
+--
+-- For events during Eastern Standard Time (November–March):
+-- UPDATE events
+-- SET starts_at = starts_at + interval '5 hours'
+-- WHERE id IN (
+--   '<uuid-3>'
+-- );
+
+-- No-op: this migration is documentation + diagnostic queries only.
+-- Actual corrections require manual operator review.
+SELECT 1;

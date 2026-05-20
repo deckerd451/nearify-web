@@ -464,6 +464,14 @@
         ? new Date(`${date}T${time}:00`).toISOString()
         : date || null;
 
+      console.log("[Admin] saveEvent timestamp:", {
+        rawDate: date,
+        rawTime: time,
+        browserTimezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+        isoValue: starts_at,
+        isUpdate,
+      });
+
       const { data, error } = await saveEvent(
         { id, name, slug: slug || null, location: location || null, starts_at, description: description || null },
         isUpdate
