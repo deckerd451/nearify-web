@@ -43,6 +43,7 @@
   <main id="main-content" class="join-page">
     <section class="event-hero join-hero">
       <div class="event-hero-copy">
+        <div id="joinSourceBadge" class="join-source-badge" style="display:none;"></div>
         <div class="event-kicker" id="joinKicker">Join Event</div>
         <h1 id="joinTitle">Get Nearify to join this event</h1>
         <div id="joinSuccessBadge" class="join-success-badge" style="display:none;">
@@ -53,10 +54,25 @@
         <!-- Populated by JS once event metadata is fetched -->
         <div id="joinEventMeta" class="join-event-meta" style="display:none;"></div>
 
+        <!-- Live network status — shown for Meetup source handoffs -->
+        <div id="liveStatusIndicator" class="live-status-indicator" style="display:none;" aria-live="polite">
+          <span class="live-status-dot" aria-hidden="true"></span>
+          <span>Live network enabled</span>
+        </div>
+
+        <!-- Ephemeral activity messages — populated by polling, Meetup source only -->
+        <div id="liveActivityFeed" class="live-activity-feed" aria-live="polite" aria-atomic="true"></div>
+
         <p class="event-subhead" id="joinDescription">
           Nearify shows you who's actually at this event so you can discover and connect in real time — not just swap contact info later.
           Install the app, sign in, then join and check in when you arrive — in the Nearify iOS app or by scanning the event QR code.
         </p>
+
+        <!-- Live attendee preview — populated by JS for Meetup source handoffs -->
+        <div id="liveAttendeePreview" class="live-attendee-preview" style="display:none;" aria-label="People joining this event">
+          <div class="live-attendee-stack" aria-hidden="true"></div>
+          <p class="live-attendee-label"></p>
+        </div>
 
         <section id="ghostReturnCard" class="ghost-return-card" style="display:none;">
           <div id="ghostReturnKicker" class="ghost-return-kicker"><span aria-hidden="true">👻</span> Guest</div>
@@ -101,10 +117,24 @@
             Get Nearify on TestFlight
           </a>
 
-          <!-- Secondary: hint for returning users -->
+          <!-- Secondary: hint — updated by JS for Meetup source -->
           <p id="alreadyInstalledHint" class="join-hint">
             Already installed? Open the app to browse, join, and check in (or scan the event QR code).
           </p>
+          <!-- Shown only for Meetup source: clarifies install path below primary CTA -->
+          <p id="meetupInstallHint" class="join-hint join-hint--install" style="display:none;">
+            Install Nearify on iPhone via <a href="https://testflight.apple.com/join/ZayvEbAy" target="_blank" rel="noopener noreferrer">TestFlight</a>
+          </p>
+
+          <!-- Deep link fallback — shown by JS when app is not installed (Meetup source) -->
+          <div id="deepLinkFallback" class="deep-link-fallback" style="display:none;" aria-live="polite">
+            <p class="deep-link-fallback-msg">
+              Need the app? <a id="deepLinkTestFlightBtn" href="https://testflight.apple.com/join/ZayvEbAy" target="_blank" rel="noopener noreferrer">Install Nearify with TestFlight.</a>
+            </p>
+            <button id="deepLinkRetryBtn" class="btn secondary" type="button">
+              I installed Nearify — open this event
+            </button>
+          </div>
         </div>
 
         <!-- Guest join CTA — shown for generic event URLs; hidden until JS confirms event is valid -->
@@ -225,6 +255,12 @@
               <div class="join-step-detail">Check in from the Nearify iOS app, or scan the venue QR to enter the live network.</div>
             </li>
           </ol>
+          <!-- Populated by JS when attendee data is available (Meetup source) -->
+          <div id="panelAttendeeSignal" class="panel-attendee-signal" style="display:none;" aria-live="polite">
+            <span class="panel-attendee-dot" aria-hidden="true"></span>
+            <div class="panel-mini-stack" aria-hidden="true"></div>
+            <span id="panelAttendeeCount"></span>
+          </div>
         </div>
       </aside>
     </section>

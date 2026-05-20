@@ -72,14 +72,15 @@ export async function fetchPublicEvents() {
 
 /**
  * Save (create or update) an event.
- * Automatically sets created_by to the organizer's profile.id on create.
- * On update (upsert with existing id), created_by is preserved.
+ * On create, sets created_by only when isOrganizer is true.
+ * On update, created_by is preserved.
  *
  * @param {object} eventFields - { id, name, slug, location, starts_at }
  * @param {boolean} isUpdate - true if editing an existing event
+ * @param {boolean} isOrganizer - if true, set created_by on create
  * @returns {Promise<{data, error}>}
  */
-export async function saveEvent(eventFields, isUpdate = false) {
+export async function saveEvent(eventFields, isUpdate = false, isOrganizer = true) {
   const profileId = await getOrganizerProfileId();
   if (!profileId) {
     const msg = "Could not resolve your organizer profile. Make sure you have a Nearify profile.";
@@ -88,7 +89,6 @@ export async function saveEvent(eventFields, isUpdate = false) {
   }
 
   if (isUpdate) {
-    // Update: only touch the fields the organizer changed, don't overwrite created_by
     const { id, ...fields } = eventFields;
     const { data, error } = await supabase
       .from("events")
@@ -100,8 +100,10 @@ export async function saveEvent(eventFields, isUpdate = false) {
     if (error) logger.error("[Events] updateEvent error:", error);
     return { data, error };
   } else {
-    // Create: set created_by to organizer's profile.id
-    const payload = { ...eventFields, created_by: profileId };
+    const payload = {
+      ...eventFields,
+      ...(isOrganizer ? { created_by: profileId } : { created_by: null }),
+    };
     const { data, error } = await supabase
       .from("events")
       .insert(payload)

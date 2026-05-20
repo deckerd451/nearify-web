@@ -107,7 +107,7 @@ async function handleSignInClick() {
   const { error } = await supabase.auth.signInWithOAuth({
     provider: "google",
     options: {
-      redirectTo: window.location.origin + "/index.html",
+      redirectTo: window.location.origin + "/events/index.html",
     },
   });
 
@@ -174,8 +174,8 @@ async function endEvent(id) {
   return saveEvent({ id, is_active: false }, true);
 }
 
-async function createEvent(fields) {
-  return saveEvent({ id: generateUUID(), ...fields }, false);
+async function createEvent(fields, isOrganizer = true) {
+  return saveEvent({ id: generateUUID(), ...fields }, false, isOrganizer);
 }
 
 // ─── Rendering ────────────────────────────────────────────────────────────────
@@ -232,16 +232,16 @@ function renderEventCard(ev, count, intentMap) {
   if (topGoalKey && INTENT_LABELS[topGoalKey]) participationParts.push(INTENT_LABELS[topGoalKey]);
   const participationCtx = participationParts.join(" · ");
 
-  // End Event: now a ghost+danger button, visually receded
-  const endBtn = status !== "ended" ? `
-    <button class="btn cc-btn-ghost cc-action-btn cc-danger-action"
+  const endItem = status !== "ended" ? `
+    <button class="cc-overflow-item cc-overflow-item--danger"
       data-action="end-event"
       data-event-id="${escapeAttr(ev.id)}"
       data-event-name="${escapeAttr(ev.name)}">End Event</button>` : "";
 
+  const metricClass = count === 0 ? " cc-metric-value--zero" : "";
+
   return `
     <article class="cc-event-card cc-event-card--${status}" data-event-id="${escapeAttr(ev.id)}">
-
       <div class="cc-event-core">
 
         <div class="cc-event-top">
@@ -249,14 +249,28 @@ function renderEventCard(ev, count, intentMap) {
             <h3 class="cc-event-name">${escapeHtml(ev.name)}</h3>
             ${metaStr ? `<p class="cc-event-meta">${escapeHtml(metaStr)}</p>` : ""}
           </div>
-          <span class="cc-event-status cc-event-status--${status}">
-            <span class="cc-status-dot"></span>${statusLabel(status)}
-          </span>
+          <div class="cc-event-top-right">
+            <span class="cc-event-status cc-event-status--${status}">
+              <span class="cc-status-dot"></span>${statusLabel(status)}
+            </span>
+            <div class="cc-overflow-wrap">
+              <button class="cc-overflow-trigger" data-action="toggle-overflow" aria-label="More options">···</button>
+              <div class="cc-overflow-menu" hidden>
+                <a class="cc-overflow-item" href="${escapeAttr(EDIT_URL(ev.id))}">Edit</a>
+                <button class="cc-overflow-item" data-action="copy-link" data-url="${escapeAttr(jUrl)}">Copy Link</button>
+                ${endItem}
+                <button class="cc-overflow-item cc-overflow-item--danger"
+                  data-action="archive"
+                  data-event-id="${escapeAttr(ev.id)}"
+                  data-event-name="${escapeAttr(ev.name)}">Archive</button>
+              </div>
+            </div>
+          </div>
         </div>
 
         <div class="cc-event-metrics">
           <div class="cc-metric">
-            <span class="cc-metric-value">${count ?? "—"}</span>
+            <span class="cc-metric-value${metricClass}">${count || "0"}</span>
             <span class="cc-metric-label">joined</span>
           </div>
         </div>
@@ -264,42 +278,16 @@ function renderEventCard(ev, count, intentMap) {
         ${participationCtx ? `<p class="cc-participation-context">${escapeHtml(participationCtx)}</p>` : ""}
 
         <div class="cc-event-actions">
-
-          <!-- Primary: participation-oriented -->
-          <a class="btn primary cc-action-btn"
-            href="${escapeAttr(detailUrl)}">View Event</a>
-
-          <!-- Secondary: organizer coordination -->
+          <a class="btn primary cc-action-btn" href="${escapeAttr(detailUrl)}">View Event</a>
           <button class="btn secondary cc-action-btn"
             data-action="show-qr"
             data-event-id="${escapeAttr(ev.id)}"
             data-event-name="${escapeAttr(ev.name)}"
             data-join-url="${escapeAttr(jUrl)}">Show QR</button>
-
-          <button class="btn secondary cc-action-btn"
-            data-action="copy-link"
-            data-url="${escapeAttr(jUrl)}">Copy Link</button>
-
-          <!-- Tertiary: admin controls — visually receded -->
-          <div class="cc-organizer-controls">
-            <a class="btn cc-btn-ghost cc-action-btn"
-              href="${escapeAttr(EDIT_URL(ev.id))}">Edit</a>
-            ${endBtn}
-            <button class="btn cc-btn-ghost cc-action-btn"
-              data-action="archive"
-              data-event-id="${escapeAttr(ev.id)}"
-              data-event-name="${escapeAttr(ev.name)}">Archive</button>
-          </div>
-
         </div>
 
       </div>
-
-      <!-- Live Mode panel — reveal via getLivePanelEl(eventId) when Live Mode is built -->
-      <div class="cc-live-panel" id="cc-live-${escapeAttr(ev.id)}" hidden>
-        <!-- host anchor status · live attendees · realtime intelligence · room activity -->
-      </div>
-
+      <div class="cc-live-panel" id="cc-live-${escapeAttr(ev.id)}" hidden></div>
     </article>
   `;
 }
@@ -308,21 +296,12 @@ function renderEcosystemHero(events, counts, intentsByEvent) {
   const hero = document.getElementById("ecosystemHero");
   if (!hero) return;
 
-  if (!events.length) { hero.style.display = "none"; return; }
+  // Only show the ecosystem hero when an event is actively live
+  const liveEvents = events.filter((e) => getEventStatus(e) === "live");
+  if (!liveEvents.length) { hero.style.display = "none"; return; }
 
-  // Pick featured event: live > soonest upcoming > most relevant ended
-  const byStatus = (s) => events.filter((e) => getEventStatus(e) === s);
-  const liveEvents = byStatus("live");
-  const upcomingEvents = byStatus("upcoming").sort((a, b) => {
-    const aStart = a.starts_at ? new Date(a.starts_at).getTime() : Infinity;
-    const bStart = b.starts_at ? new Date(b.starts_at).getTime() : Infinity;
-    return aStart - bStart;
-  });
-  const endedEvents = byStatus("ended");
-  const featured = liveEvents[0] || upcomingEvents[0] || endedEvents[0];
-  if (!featured) { hero.style.display = "none"; return; }
-
-  const status     = getEventStatus(featured);
+  const featured   = liveEvents[0];
+  const status     = "live";
   const count      = counts.get(featured.id) || 0;
   const intentMap  = intentsByEvent.get(featured.id) || new Map();
   const sortedGoals = [...intentMap.entries()].sort((a, b) => b[1] - a[1]);
@@ -334,8 +313,8 @@ function renderEcosystemHero(events, counts, intentsByEvent) {
   const metaParts = [featured.location, featured.starts_at ? formatDate(featured.starts_at) : ""].filter(Boolean);
   const metaStr   = metaParts.join(" \u00b7 ");
 
-  const isLive    = status === "live";
-  const kickerText = isLive ? "Live now" : status === "upcoming" ? "Coming up" : "Recent event";
+  const isLive     = true;
+  const kickerText = "Live now";
 
   const detailUrl = EVENT_DETAIL_URL(featured.id);
   const jUrl      = buildJoinUrl(featured);
@@ -544,11 +523,35 @@ function renderDashboard(events, counts, intentsByEvent) {
   const list = document.getElementById("eventCardList");
   if (!list) return;
 
+  if (!events.length) {
+    list.innerHTML = renderEmptyState();
+    return;
+  }
+
   const sorted = sortEventsForDashboard(events, counts);
 
-  list.innerHTML = sorted.length
-    ? sorted.map((ev) => renderEventCard(ev, counts.get(ev.id) ?? 0, intentsByEvent.get(ev.id) || new Map())).join("")
-    : renderEmptyState();
+  const groups = { live: [], upcoming: [], ended: [] };
+  for (const ev of sorted) groups[getEventStatus(ev)].push(ev);
+
+  const renderCards = (evs) =>
+    evs.map((ev) => renderEventCard(ev, counts.get(ev.id) ?? 0, intentsByEvent.get(ev.id) || new Map())).join("");
+
+  let html = "";
+
+  if (groups.live.length) {
+    html += `<div class="cc-event-group-heading cc-event-group-heading--live"><span class="cc-group-live-dot"></span>Live</div>`;
+    html += renderCards(groups.live);
+  }
+  if (groups.upcoming.length) {
+    html += `<div class="cc-event-group-heading">Upcoming</div>`;
+    html += renderCards(groups.upcoming);
+  }
+  if (groups.ended.length) {
+    html += `<div class="cc-event-group-heading cc-event-group-heading--past">Past</div>`;
+    html += renderCards(groups.ended);
+  }
+
+  list.innerHTML = html;
 }
 
 function renderDashboardError(err) {
@@ -711,7 +714,7 @@ async function handleCreateSubmit(e) {
   if (submitBtn) { submitBtn.disabled = true; submitBtn.classList.add("loading"); }
   setCreateStatus("Saving…");
 
-  const { error } = await createEvent({ name, slug, location, starts_at, description: desc });
+  const { error } = await createEvent({ name, slug, location, starts_at, description: desc }, isOrganizer);
 
   if (submitBtn) { submitBtn.disabled = false; submitBtn.classList.remove("loading"); }
 
@@ -799,6 +802,14 @@ async function loadDashboard() {
 
 // ─── Action handlers ──────────────────────────────────────────────────────────
 
+function toggleOverflowMenu(triggerBtn) {
+  const menu = triggerBtn.closest(".cc-overflow-wrap")?.querySelector(".cc-overflow-menu");
+  if (!menu) return;
+  const opening = menu.hidden;
+  document.querySelectorAll(".cc-overflow-menu").forEach((m) => { m.hidden = true; });
+  menu.hidden = !opening;
+}
+
 async function handleCopyLink(btn, url) {
   const ok   = await copyText(url);
   const orig = btn?.textContent;
@@ -873,23 +884,30 @@ function bindStaticHandlers() {
   // ESC
   document.addEventListener("keydown", (e) => {
     if (e.key !== "Escape") return;
-    if (!document.getElementById("qrModal")?.hidden)          closeQrModal();
+    if (!document.getElementById("qrModal")?.hidden)               closeQrModal();
     else if (!document.getElementById("createEventModal")?.hidden) closeCreateModal();
+    else document.querySelectorAll(".cc-overflow-menu").forEach((m) => { m.hidden = true; });
   });
 
-  // Event card delegation (show-qr, copy-link, end-event, archive)
+  // Event card delegation (show-qr, copy-link, end-event, archive, toggle-overflow)
   document.getElementById("eventCardList")
     ?.addEventListener("click", async (e) => {
       const btn = e.target.closest("[data-action]");
       if (!btn) return;
       const { action, eventId, eventName, joinUrl, url } = btn.dataset;
       switch (action) {
-        case "show-qr":   openQrModal(eventId, eventName, joinUrl); break;
-        case "copy-link": await handleCopyLink(btn, url); break;
-        case "end-event": await handleEndEvent(eventId, eventName); break;
-        case "archive":   await handleArchive(eventId, eventName); break;
+        case "show-qr":         openQrModal(eventId, eventName, joinUrl); break;
+        case "copy-link":       await handleCopyLink(btn, url); break;
+        case "end-event":       await handleEndEvent(eventId, eventName); break;
+        case "archive":         await handleArchive(eventId, eventName); break;
+        case "toggle-overflow": toggleOverflowMenu(btn); e.stopPropagation(); break;
       }
     });
+
+  // Close all overflow menus when clicking outside
+  document.addEventListener("click", () => {
+    document.querySelectorAll(".cc-overflow-menu").forEach((m) => { m.hidden = true; });
+  });
 }
 
 // ─── Live Mode extension point ────────────────────────────────────────────────

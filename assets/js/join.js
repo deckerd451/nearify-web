@@ -1,7 +1,7 @@
 import { supabase, createScopedSupabaseClient } from "./supabaseClient.js";
 import { loadGhostSession, createGhostSession } from "./ghostSession.js";
 import { connectGhostToProfile } from "./ghostConnection.js";
-import { trackAppCtaClick } from "./analytics.js";
+import { trackAppCtaClick, trackFunnelEvent } from "./analytics.js";
 import { escapeHtml, copyText } from "./utils.js";
 import { logger } from "./logger.js";
 
@@ -38,15 +38,31 @@ const els = {
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
+// Set at init time; used by downstream renderers that don't receive params directly.
+let isMeetupSource    = false;
+let meetupSourceEventId = null;
+
+// Guards against wiring the deep-link fallback buttons more than once per page load.
+let deepLinkFallbackWired = false;
+
 function getQueryParams() {
   const params = new URLSearchParams(window.location.search);
   const eventId   = params.get("event");
   const profileId = params.get("profile");
   return {
-    eventId:   eventId   && UUID_RE.test(eventId)   ? eventId   : null,
-    eventName: params.get("name"),
-    profileId: profileId && UUID_RE.test(profileId) ? profileId : null,
+    eventId:       eventId   && UUID_RE.test(eventId)   ? eventId   : null,
+    eventName:     params.get("name"),
+    profileId:     profileId && UUID_RE.test(profileId) ? profileId : null,
+    source:        params.get("source") || null,
+    sourceEventId: params.get("source_event_id") || null,
   };
+}
+
+function applyMeetupSourceBadge() {
+  const badge = document.getElementById("joinSourceBadge");
+  if (!badge) return;
+  badge.textContent = "From Meetup";
+  show(badge);
 }
 
 function formatDateTime(value) {
@@ -498,59 +514,209 @@ function showIntentStep() {
   wireIntentChips();
 }
 
-function renderGenericJoinUx(event, fallbackName) {
+// ── Deep link handoff ────────────────────────────────────────────────────────
+
+function showDeepLinkFallback(eventId) {
+  const fallback = document.getElementById("deepLinkFallback");
+  if (!fallback) return;
+  show(fallback);
+  // Scroll into view so the fallback is visible no matter which button triggered it.
+  setTimeout(() => fallback.scrollIntoView({ behavior: "smooth", block: "nearest" }), 50);
+
+  if (deepLinkFallbackWired) return;
+  deepLinkFallbackWired = true;
+
+  const tfLink = document.getElementById("deepLinkTestFlightBtn");
+  if (tfLink) {
+    tfLink.addEventListener("click", () => {
+      trackFunnelEvent("testflight_clicked", {
+        eventId,
+        source:        isMeetupSource ? "meetup" : null,
+        sourceEventId: isMeetupSource ? meetupSourceEventId : null,
+        button:        "deep_link_fallback",
+      });
+    });
+  }
+
+  const retryBtn = document.getElementById("deepLinkRetryBtn");
+  if (retryBtn) {
+    retryBtn.addEventListener("click", () => {
+      trackFunnelEvent("app_open_retry_clicked", {
+        eventId,
+        source:        isMeetupSource ? "meetup" : null,
+        sourceEventId: isMeetupSource ? meetupSourceEventId : null,
+      });
+      logger.log("[Join] Retry: re-attempting deep link for event", eventId);
+      window.location.href = `beacon://event/${eventId}`;
+    });
+  }
+}
+
+function attemptEventDeepLink(eventId, button) {
+  trackFunnelEvent("app_deep_link_attempted", {
+    eventId,
+    source:        isMeetupSource ? "meetup" : null,
+    sourceEventId: isMeetupSource ? meetupSourceEventId : null,
+    button,
+  });
+  logger.log("[Join] Attempting event deep link:", `beacon://event/${eventId}`);
+  window.location.href = `beacon://event/${eventId}`;
+  setTimeout(() => {
+    if (document.visibilityState === "visible") {
+      trackFunnelEvent("app_deep_link_fallback_shown", {
+        eventId,
+        source:        isMeetupSource ? "meetup" : null,
+        sourceEventId: isMeetupSource ? meetupSourceEventId : null,
+      });
+      logger.log("[Join] App did not open; showing fallback");
+      showDeepLinkFallback(eventId);
+    }
+  }, 1200);
+}
+
+function renderGenericJoinUx(event, fallbackName, source) {
   setJoinMode("generic");
 
+  const isMeetup = source === "meetup";
   const title = event?.name || fallbackName || "Join Event";
 
   hide(els.joinSuccessBadge);
   setText(els.joinKicker, "Join Event");
-  setText(els.joinTitle, title);
 
-  if (event?.description) {
-    setText(els.joinDescription, event.description);
-  } else {
+  if (isMeetup) {
+    setText(els.joinTitle, "You're joining the live network for this event.");
     setText(
       els.joinDescription,
-      "Nearify shows you who's actually at this event so you can discover and connect in real time."
+      "See who's going, find people worth talking to, and stay connected after the event ends — without chasing down contact info later."
     );
+  } else {
+    setText(els.joinTitle, title);
+    if (event?.description) {
+      setText(els.joinDescription, event.description);
+    } else {
+      setText(
+        els.joinDescription,
+        "Nearify shows you who's actually at this event so you can discover and connect in real time."
+      );
+    }
   }
 
   renderEventMeta(event);
   renderPayload(event.id);
 
-  if (els.getAppBtn) els.getAppBtn.textContent = "Get Nearify (TestFlight)";
+  if (els.getAppBtn) els.getAppBtn.textContent = isMeetup ? "Enter Live Network" : "Get Nearify (TestFlight)";
   if (els.alreadyInstalledHint) {
-    els.alreadyInstalledHint.textContent =
-      "Already installed? Open the app to browse, join, and check in (or scan the event QR code).";
+    els.alreadyInstalledHint.textContent = isMeetup
+      ? "Already have the app? Open it to browse attendees and check in."
+      : "Already installed? Open the app to browse, join, and check in (or scan the event QR code).";
+  }
+  const meetupInstallHint = document.getElementById("meetupInstallHint");
+  if (meetupInstallHint) {
+    if (isMeetup) show(meetupInstallHint); else hide(meetupInstallHint);
   }
 
-  if (els.joinPanelTitle) els.joinPanelTitle.textContent = "3 steps to join";
+  const panelCard = document.getElementById("joinPanelCard");
+  if (panelCard) {
+    if (isMeetup) panelCard.classList.add("join-panel--live");
+    else panelCard.classList.remove("join-panel--live");
+  }
+
+  if (els.joinPanelTitle) {
+    els.joinPanelTitle.textContent = isMeetup ? "What happens when you join" : "3 steps to join";
+  }
   if (els.joinPanelList) {
     els.joinPanelList.className = "join-steps-list";
-    els.joinPanelList.innerHTML = `
-      <li>
-        <div class="join-step-label">Install Nearify</div>
-        <div class="join-step-detail">Get the app on TestFlight — takes about 2 minutes.</div>
-      </li>
-      <li>
-        <div class="join-step-label">Sign in &amp; create your profile</div>
-        <div class="join-step-detail">Use Google or GitHub. Your profile is how people find you.</div>
-      </li>
-      <li>
-        <div class="join-step-label">Check in when you arrive</div>
-        <div class="join-step-detail">Check in from the Nearify iOS app, or scan the venue QR to enter the live network.</div>
-      </li>
-    `;
+    if (isMeetup) {
+      els.joinPanelList.innerHTML = `
+        <li>
+          <div class="join-step-label">See who's actually here</div>
+          <div class="join-step-detail">Real attendee presence, not an RSVP count. Get the app to see who's in the live network.</div>
+        </li>
+        <li>
+          <div class="join-step-label">Let relevant people find you</div>
+          <div class="join-step-detail">Your profile signals your intent. Others with aligned goals can discover you before you even meet.</div>
+        </li>
+        <li>
+          <div class="join-step-label">Keep who you meet after it ends</div>
+          <div class="join-step-detail">Check in at the venue. The connections you make become part of your persistent network.</div>
+        </li>
+      `;
+    } else {
+      els.joinPanelList.innerHTML = `
+        <li>
+          <div class="join-step-label">Install Nearify</div>
+          <div class="join-step-detail">Get the app on TestFlight — takes about 2 minutes.</div>
+        </li>
+        <li>
+          <div class="join-step-label">Sign in &amp; create your profile</div>
+          <div class="join-step-detail">Use Google or GitHub. Your profile is how people find you.</div>
+        </li>
+        <li>
+          <div class="join-step-label">Check in when you arrive</div>
+          <div class="join-step-detail">Check in from the Nearify iOS app, or scan the venue QR to enter the live network.</div>
+        </li>
+      `;
+    }
   }
 
-  if (els.joinBottomCtaTitle) els.joinBottomCtaTitle.textContent = "Ready to join?";
+  if (els.joinBottomCtaTitle) els.joinBottomCtaTitle.textContent = isMeetup ? "Ready to enter the live network?" : "Ready to join?";
   if (els.joinBottomCtaDescription) {
-    els.joinBottomCtaDescription.textContent =
-      "Install the app, then join and check in when you arrive (in app or via event QR).";
+    els.joinBottomCtaDescription.textContent = isMeetup
+      ? "See who else is going, discover people worth talking to, and keep the connections that matter."
+      : "Install the app, then join and check in when you arrive (in app or via event QR).";
   }
-  if (els.joinBottomCtaButton) els.joinBottomCtaButton.textContent = "Get Nearify on TestFlight";
+  if (els.joinBottomCtaButton) els.joinBottomCtaButton.textContent = isMeetup ? "Enter Live Network" : "Get Nearify on TestFlight";
   if (els.joinBottomCtaHint) els.joinBottomCtaHint.textContent = "Already installed? Open the app to browse, join, and check in.";
+
+  // ── CTA click tracking ──────────────────────────────────────────────────
+  // Wire once per render; { once: true } prevents duplicate events on re-render.
+  if (els.getAppBtn) {
+    els.getAppBtn.addEventListener("click", (e) => {
+      if (isMeetup) {
+        // For Meetup source: attempt to open the specific event in the iOS app
+        // instead of navigating directly to TestFlight.
+        e.preventDefault();
+        trackFunnelEvent("enter_live_network_clicked", {
+          eventId: event.id, source: "meetup",
+          sourceEventId: meetupSourceEventId, button: "hero_primary",
+        });
+        attemptEventDeepLink(event.id, "hero_primary");
+      } else {
+        trackFunnelEvent("testflight_clicked", {
+          eventId: event.id, source: null, sourceEventId: null, button: "hero_primary",
+        });
+      }
+    }, { once: true });
+  }
+
+  if (els.joinBottomCtaButton) {
+    els.joinBottomCtaButton.addEventListener("click", (e) => {
+      if (isMeetup) {
+        e.preventDefault();
+        trackFunnelEvent("enter_live_network_clicked", {
+          eventId: event.id, source: "meetup",
+          sourceEventId: meetupSourceEventId, button: "bottom_cta",
+        });
+        attemptEventDeepLink(event.id, "bottom_cta");
+      } else {
+        trackFunnelEvent("testflight_clicked", {
+          eventId: event.id, source: null, sourceEventId: null, button: "bottom_cta",
+        });
+      }
+    }, { once: true });
+  }
+
+  if (isMeetup) {
+    const installHintLink = document.querySelector("#meetupInstallHint a");
+    if (installHintLink) {
+      installHintLink.addEventListener("click", () => {
+        trackFunnelEvent("testflight_clicked", {
+          eventId: event.id, source: "meetup",
+          sourceEventId: meetupSourceEventId, button: "install_hint",
+        });
+      }, { once: true });
+    }
+  }
 
   show(els.joinQrBox);
   logger.log("[Join] Rendering generic event join UX");
@@ -643,6 +809,11 @@ async function renderAuthHandoff(eventId) {
     if (openBtn) {
       openBtn.addEventListener("click", () => {
         trackAppCtaClick("join_auth_handoff_open", eventId ? { eventId } : {});
+        trackFunnelEvent("app_deep_link_clicked", {
+          eventId:       eventId || null,
+          source:        isMeetupSource ? "meetup" : null,
+          sourceEventId: isMeetupSource ? meetupSourceEventId : null,
+        });
         window.location.href = deepLinkStr;
         setTimeout(() => {
           const fallback = document.getElementById("authHandoffFallback");
@@ -908,6 +1079,11 @@ function showGuestJoinedState(ghost) {
   show(joined);
   if (nameEl) nameEl.textContent = ghost.displayName || "";
 
+  const joinedLabel = joined?.querySelector(".guest-joined-label");
+  if (joinedLabel && isMeetupSource) {
+    joinedLabel.textContent = "You're in the live Nearify network for this event.";
+  }
+
   wireGuestConnectSection();
   loadGuestConnectionHistory().then((connections) => {
     renderGuestConnectionHistory(connections);
@@ -1082,6 +1258,11 @@ async function handleGuestSubmit(eventId) {
   try {
     const ghost = await createGhostSession(eventId, name);
     if (!ghost) throw new Error("create_ghost_participant returned null");
+    trackFunnelEvent("guest_session_created", {
+      eventId,
+      source:        isMeetupSource ? "meetup" : null,
+      sourceEventId: isMeetupSource ? meetupSourceEventId : null,
+    });
     showGuestJoinedState(ghost);
     logger.log("[Guest] Joined as guest", ghost);
   } catch (err) {
@@ -1142,8 +1323,239 @@ function initGuestJoinSection(eventId) {
   wireGuestJoinFlow(eventId);
 }
 
+// ── Meetup source enhancements ──────────────────────────────────────────────
+
+const AVATAR_PALETTE = [
+  "rgba(48,  209, 88,  0.18)",
+  "rgba(10,  132, 255, 0.18)",
+  "rgba(255, 159, 10,  0.18)",
+  "rgba(191, 90,  242, 0.18)",
+  "rgba(100, 210, 255, 0.18)",
+  "rgba(255, 55,  95,  0.18)",
+];
+
+function getAvatarColor(name) {
+  if (!name) return AVATAR_PALETTE[0];
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) hash = (hash * 31 + name.charCodeAt(i)) | 0;
+  return AVATAR_PALETTE[Math.abs(hash) % AVATAR_PALETTE.length];
+}
+
+function renderLiveStatusIndicator() {
+  const el = document.getElementById("liveStatusIndicator");
+  if (!el) return;
+  show(el);
+}
+
+function updatePanelAttendeeSignal(count, attendees) {
+  const signal = document.getElementById("panelAttendeeSignal");
+  const countEl = document.getElementById("panelAttendeeCount");
+  if (!signal || !countEl || count <= 0) return;
+
+  const miniStack = signal.querySelector(".panel-mini-stack");
+  if (miniStack) {
+    miniStack.innerHTML = (attendees || []).slice(0, 3).map((a) => {
+      const initials = getAttendeeInitials(a.name);
+      const bg = getAvatarColor(a.name);
+      return `<span class="panel-mini-avatar" style="background:${bg};" title="${escapeHtml(a.name)}">${escapeHtml(initials)}</span>`;
+    }).join("");
+  }
+
+  countEl.textContent = count === 1
+    ? "1 person already in the network"
+    : `${count} people already in the network`;
+  show(signal);
+}
+
+function renderLiveAttendeePreview(attendees) {
+  const container = document.getElementById("liveAttendeePreview");
+  if (!container) return;
+
+  const stack = container.querySelector(".live-attendee-stack");
+  const label = container.querySelector(".live-attendee-label");
+  const displayed = (attendees || []).slice(0, 6);
+
+  if (stack) {
+    stack.innerHTML = displayed.map((a) => {
+      const initials = getAttendeeInitials(a.name);
+      const bg = getAvatarColor(a.name);
+      return `<span class="live-attendee-avatar" data-pid="${escapeHtml(a.profileId)}" style="background:${bg};" title="${escapeHtml(a.name)}">${escapeHtml(initials)}</span>`;
+    }).join("");
+  }
+
+  if (label) {
+    if (!displayed.length) {
+      label.textContent = "Be one of the first people joining this event.";
+    } else {
+      const count = displayed.length;
+      label.textContent = count === 1
+        ? "1 person is joining this event."
+        : `${count} people are joining this event.`;
+    }
+  }
+
+  show(container);
+  updatePanelAttendeeSignal(displayed.length, displayed);
+}
+
+// ── Live presence polling ────────────────────────────────────────────────────
+
+let livePollingEventId = null;
+let livePollingTimer   = null;
+let lastKnownAttendees = [];    // seeded from initial fetch
+let pollingInFlight    = false;
+
+// Activity message queue — one message visible at a time, never spam.
+let activityQueue    = [];
+let activityDraining = false;
+
+function startLivePolling(eventId) {
+  livePollingEventId = eventId;
+  schedulePoll();
+  // When the user returns to the tab, do an immediate catch-up poll.
+  document.addEventListener("visibilitychange", onVisibilityChange);
+}
+
+function schedulePoll() {
+  // Jitter between 30 and 45 seconds to avoid thundering-herd if many tabs open.
+  const delay = 30000 + Math.floor(Math.random() * 15000);
+  livePollingTimer = setTimeout(runPoll, delay);
+}
+
+async function runPoll() {
+  if (!pollingInFlight) {
+    pollingInFlight = true;
+    try { await pollLiveAttendees(livePollingEventId); }
+    finally { pollingInFlight = false; }
+  }
+  schedulePoll();
+}
+
+function onVisibilityChange() {
+  if (!document.hidden && livePollingEventId && !pollingInFlight) {
+    pollingInFlight = true;
+    pollLiveAttendees(livePollingEventId).finally(() => { pollingInFlight = false; });
+  }
+}
+
+async function pollLiveAttendees(eventId) {
+  const { attendees = [] } = await fetchGuestEventAttendees(eventId);
+  if (!attendees.length && lastKnownAttendees.length) return; // ignore transient empty on error
+
+  const prevIds = new Set(lastKnownAttendees.map(a => a.profileId));
+  const newOnes = attendees.filter(a => !prevIds.has(a.profileId));
+  if (!newOnes.length) return;
+
+  const wasEmpty = lastKnownAttendees.length === 0;
+  lastKnownAttendees = attendees;
+  guestEventAttendees = attendees;
+
+  patchLiveAttendeePreview(attendees, newOnes, wasEmpty);
+  enqueueActivity(newOnes, wasEmpty);
+  pulseStatusDot();
+  logger.log("[LivePoll] +", newOnes.length, "attendee(s); total:", attendees.length);
+}
+
+function patchLiveAttendeePreview(attendees, newOnes, wasEmpty) {
+  const container = document.getElementById("liveAttendeePreview");
+  if (!container) return;
+
+  const stack = container.querySelector(".live-attendee-stack");
+  const label = container.querySelector(".live-attendee-label");
+
+  if (stack) {
+    const existingIds = new Set(
+      [...stack.querySelectorAll("[data-pid]")].map(el => el.dataset.pid)
+    );
+    const slots  = Math.max(0, 6 - existingIds.size);
+    const toAdd  = newOnes.filter(a => !existingIds.has(a.profileId)).slice(0, slots);
+
+    for (const a of toAdd) {
+      const span = document.createElement("span");
+      span.className = "live-attendee-avatar is-entering";
+      span.style.background = getAvatarColor(a.name);
+      span.dataset.pid = a.profileId;
+      span.title = a.name;
+      span.textContent = getAttendeeInitials(a.name);
+      stack.appendChild(span);
+      span.addEventListener("animationend", () => span.classList.remove("is-entering"), { once: true });
+    }
+  }
+
+  if (label) {
+    const total = attendees.length;
+    label.textContent = total === 1
+      ? "1 person is joining this event."
+      : `${total} people are joining this event.`;
+  }
+
+  if (wasEmpty) {
+    container.classList.add("is-activating");
+    container.addEventListener("animationend", () => container.classList.remove("is-activating"), { once: true });
+  }
+
+  updatePanelAttendeeSignal(attendees.length, attendees.slice(0, 6));
+}
+
+function pulseStatusDot() {
+  const dot = document.querySelector(".live-status-dot");
+  if (!dot) return;
+  dot.classList.remove("is-bursting");
+  void dot.offsetWidth; // force reflow so re-adding class re-triggers animation
+  dot.classList.add("is-bursting");
+  dot.addEventListener("animationend", () => dot.classList.remove("is-bursting"), { once: true });
+}
+
+function enqueueActivity(newOnes, wasEmpty) {
+  let msg;
+  if (wasEmpty) {
+    msg = "The network for this event is now active.";
+  } else if (newOnes.length === 1) {
+    const firstName = newOnes[0].name.trim().split(/\s+/)[0];
+    msg = `${firstName} just joined the live network.`;
+  } else if (newOnes.length <= 4) {
+    msg = `${newOnes.length} more people just joined.`;
+  } else {
+    msg = "Several more people just joined.";
+  }
+  activityQueue.push(msg);
+  if (!activityDraining) drainActivityQueue();
+}
+
+function drainActivityQueue() {
+  if (!activityQueue.length) { activityDraining = false; return; }
+  activityDraining = true;
+  showActivityMessage(activityQueue.shift());
+}
+
+function showActivityMessage(text) {
+  const feed = document.getElementById("liveActivityFeed");
+  if (!feed) { drainActivityQueue(); return; }
+
+  feed.innerHTML = "";
+  const p = document.createElement("p");
+  p.className = "live-activity-msg";
+  p.textContent = text;
+  feed.appendChild(p);
+
+  setTimeout(() => {
+    p.classList.add("is-exiting");
+    setTimeout(() => {
+      if (feed.contains(p)) feed.innerHTML = "";
+      drainActivityQueue();
+    }, 600);
+  }, 3500);
+}
+
 async function initJoinPage() {
-  const { eventId, eventName, profileId } = getQueryParams();
+  const { eventId, eventName, profileId, source, sourceEventId } = getQueryParams();
+
+  isMeetupSource    = source === "meetup";
+  meetupSourceEventId = isMeetupSource ? (sourceEventId || null) : null;
+  if (isMeetupSource) {
+    applyMeetupSourceBadge();
+    logger.log("[Join] Meetup source handoff detected", { sourceEventId });
+  }
 
   logger.log("[Join] raw URL:", window.location.href);
 
@@ -1218,9 +1630,30 @@ async function initJoinPage() {
     } else {
       // ── Generic flow: no auth session (or no profile param) ────────────
       logger.log("[Join] No authenticated profile; rendering guest join flow");
-      renderGenericJoinUx(event, eventName);
+      renderGenericJoinUx(event, eventName, source);
+
+      if (isMeetupSource) {
+        trackFunnelEvent("meetup_handoff_view", {
+          eventId:       event.id,
+          source:        "meetup",
+          sourceEventId: meetupSourceEventId,
+          referrer:      document.referrer || null,
+        });
+      }
+
       initGuestJoinSection(event.id);
       await maybeClaimPendingGhostSession();
+
+      if (isMeetupSource) {
+        renderLiveStatusIndicator();
+        // Initial fetch: render preview, seed the diff baseline, start polling.
+        fetchGuestEventAttendees(event.id).then(({ attendees }) => {
+          guestEventAttendees  = attendees;
+          lastKnownAttendees   = attendees.slice();
+          renderLiveAttendeePreview(attendees);
+          startLivePolling(event.id);
+        });
+      }
     }
 
     showIntentStep();
