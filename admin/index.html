@@ -105,7 +105,7 @@
       color: var(--color-text-muted);
     }
 
-    /* Auth gate */
+    /* Auth gate / restricted */
     .admin-auth-gate {
       text-align: center;
       padding: 80px 24px;
@@ -131,6 +131,23 @@
       margin-top: 12px;
       font-size: 13px;
       color: var(--color-text-muted);
+    }
+
+    .admin-restricted {
+      text-align: center;
+      padding: 80px 24px;
+    }
+
+    .admin-restricted h2 {
+      font-size: 22px;
+      font-weight: 600;
+      margin-bottom: 10px;
+    }
+
+    .admin-restricted p {
+      color: var(--color-text-secondary);
+      font-size: 15px;
+      margin-bottom: 24px;
     }
 
     @media (max-width: 600px) {
@@ -173,7 +190,13 @@
       <p id="adminAuthStatus"></p>
     </section>
 
-    <!-- ADMIN CONTENT — shown when signed in -->
+    <!-- RESTRICTED — shown when signed in but not an admin -->
+    <section id="adminRestricted" class="admin-restricted" style="display:none;">
+      <h2>Access restricted</h2>
+      <p>Your account does not have admin access. Contact the Nearify team if you believe this is an error.</p>
+    </section>
+
+    <!-- ADMIN CONTENT — shown when signed in and allowlisted -->
     <div id="adminContent" style="display:none;">
       <div class="admin-hub-container">
         <div class="admin-hub-header">
@@ -244,31 +267,21 @@
   <!-- Auth gate + nav -->
   <script type="module">
     import { supabase } from "../assets/js/supabaseClient.js?v=20260508";
+    import { requireAdminAccess } from "../assets/js/adminAccess.js";
 
-    const authGate     = document.getElementById("adminAuthGate");
-    const adminContent = document.getElementById("adminContent");
-    const signInBtn    = document.getElementById("adminSignInBtn");
-    const authStatus   = document.getElementById("adminAuthStatus");
+    const authGate       = document.getElementById("adminAuthGate");
+    const adminRestricted = document.getElementById("adminRestricted");
+    const adminContent   = document.getElementById("adminContent");
+    const signInBtn      = document.getElementById("adminSignInBtn");
+    const authStatus     = document.getElementById("adminAuthStatus");
 
-    function showAuthGate() {
-      authGate.style.display = "";
-      adminContent.style.display = "none";
-    }
-
-    function showAdminContent(user) {
-      authGate.style.display = "none";
-      adminContent.style.display = "";
-      console.log("[Admin Hub] Authenticated:", user.email);
-    }
-
-    // TODO: Add stricter admin role check here once a role system exists.
-    // For now, any signed-in user can view the admin hub.
     supabase.auth.onAuthStateChange((event, session) => {
-      if (event === "SIGNED_OUT" || (event === "INITIAL_SESSION" && !session?.user)) {
-        showAuthGate();
-      } else if ((event === "SIGNED_IN" || event === "INITIAL_SESSION") && session?.user) {
-        showAdminContent(session.user);
-      }
+      const user = session?.user ?? null;
+      requireAdminAccess(user, {
+        gateEl:       authGate,
+        contentEl:    adminContent,
+        restrictedEl: adminRestricted,
+      });
     });
 
     signInBtn.addEventListener("click", async () => {
