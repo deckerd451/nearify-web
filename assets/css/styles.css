@@ -369,6 +369,7 @@ textarea::placeholder {
 /* NETWORK VISUAL */
 .hero-visual {
   width: 400px;
+  max-width: 40%;
   height: 300px;
   flex-shrink: 0;
 }
@@ -441,6 +442,12 @@ html {
   gap: 14px;
   margin-bottom: 20px;
   max-width: 640px;
+}
+
+.event-meta-card .meta-value {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .event-meta-card,
@@ -594,7 +601,35 @@ html {
   margin-top: 24px;
 }
 
-@media (max-width: 1100px) {
+@media (max-width: 1100px) and (min-width: 721px) {
+  .event-hero {
+    grid-template-columns: 1.2fr 0.8fr;
+    gap: 28px;
+  }
+
+  .event-hero h1 {
+    font-size: 38px;
+  }
+
+  .event-meta-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .feature-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .timeline-grid,
+  .comparison-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .event-list-card h3 {
+    font-size: 26px;
+  }
+}
+
+@media (max-width: 720px) {
   .event-hero {
     grid-template-columns: 1fr;
   }
@@ -702,7 +737,7 @@ html {
 .events-list-grid {
   display: grid;
   gap: 20px;
-  max-width: 1200px;
+  max-width: 860px;
   margin: 0 auto;
 }
 
@@ -1021,6 +1056,10 @@ code {
   align-items: start;
 }
 
+/* Hide the steps sidebar on mobile — content is redundant with inline flow */
+@media (max-width: 720px) {
+  .join-page .event-hero > aside {
+    display: none;
 .join-source-badge {
   display: inline-flex;
   align-items: center;
@@ -3652,8 +3691,9 @@ code {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 16px;
+  gap: 12px;
   margin-bottom: 16px;
+  flex-wrap: wrap;
 }
 
 .cc-event-top-text {
@@ -3666,9 +3706,7 @@ code {
   font-weight: 700;
   letter-spacing: -0.01em;
   margin-bottom: 5px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  overflow-wrap: anywhere;
 }
 
 .cc-event-meta {
