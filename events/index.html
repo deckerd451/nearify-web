@@ -263,6 +263,7 @@
         desc +
         '<div class="event-card-actions">' +
           '<a href="' + detailUrl + '" class="btn primary">View Event</a>' +
+          '<button type="button" class="btn secondary cc-action-btn" data-share-url="https://nearify.org/events/' + detailUrl + '" data-share-title="' + escapeHtml(ev.name) + '">Share</button>' +
         '</div>' +
       '</article>';
     }
@@ -312,6 +313,38 @@
     }
 
     loadEvents();
+
+    // Wire share buttons (delegated click handler)
+    document.addEventListener("click", async (e) => {
+      const btn = e.target.closest("[data-share-url]");
+      if (!btn) return;
+      const url = btn.dataset.shareUrl;
+      const title = btn.dataset.shareTitle || "Nearify Event";
+      if (navigator.share) {
+        try {
+          await navigator.share({ title, url });
+          return;
+        } catch (err) {
+          if (err.name === "AbortError") return;
+        }
+      }
+      try {
+        await navigator.clipboard.writeText(url);
+      } catch {
+        const ta = document.createElement("textarea");
+        ta.value = url;
+        ta.style.position = "fixed";
+        ta.style.opacity = "0";
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand("copy");
+        ta.remove();
+      }
+      const orig = btn.textContent;
+      btn.textContent = "Copied!";
+      btn.disabled = true;
+      setTimeout(() => { btn.textContent = orig; btn.disabled = false; }, 2000);
+    });
   </script>
 </body>
 </html>

@@ -11,8 +11,61 @@
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://nearify.org/admin/event-setup.html</loc>
+    <loc>https://nearify.org/join/</loc>
     <changefreq>monthly</changefreq>
-    <priority>0.5</priority>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://nearify.org/privacy.html</loc>
+    <changefreq>yearly</changefreq>
+    <priority>0.3</priority>
+  </url>
+  <url>
+    <loc>https://nearify.org/events/event.html?slug=harborhack-2026</loc>
+    <lastmod>2026-10-23</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://nearify.org/events/event.html?slug=t</loc>
+    <lastmod>2026-06-11</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://nearify.org/events/event.html?slug=june-2026-networking-happy-hour-meetup-2026-06-05</loc>
+    <lastmod>2026-06-05</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://nearify.org/events/event.html?slug=last-wednesday-talks-on-tap-2026-05-27</loc>
+    <lastmod>2026-05-27</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://nearify.org/events/event.html?slug=charleston-techyeet-monthly-happy-hour-5pm-7pm-et-half-off-beer-till-6-2026-05-20</loc>
+    <lastmod>2026-05-20</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://nearify.org/events/event.html?slug=kiro-in-action-building-modern-apps-with-ai-2026-05-19</loc>
+    <lastmod>2026-05-19</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://nearify.org/events/event.html?slug=charlestonhacks-show-and-tell</loc>
+    <lastmod>2026-05-12</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://nearify.org/events/event.html?slug=Meet%20the%20best%20people%20in%20the%20world!</loc>
+    <lastmod>2026-04-21</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
   </url>
 </urlset>
