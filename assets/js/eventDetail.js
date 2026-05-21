@@ -12,6 +12,7 @@ import { escapeHtml } from "./utils.js";
 import { logger } from "./logger.js";
 import { canManageEvent } from "./events.js";
 import { loadOrganizerInsights } from "./organizerInsights.js";
+import { renderShareButton, buildEventShareUrl, buildEventShareText } from "./share.js";
 
 const INTENT_STORAGE_KEY = "intent_primary";
 const ATTENDEE_AUTH_KEY = "nearify_attendee_auth_return";
@@ -881,6 +882,16 @@ async function populatePage(event) {
 
   renderMetaGrid(event, isPast);
   setCurrentEventId(event.id);
+
+  // Share button — rendered into the momentum area for both past and upcoming
+  const momentumEl = document.getElementById("eventMomentum");
+  if (momentumEl) {
+    renderShareButton(momentumEl, {
+      title: event.name + " | Nearify",
+      text: buildEventShareText(event),
+      url: buildEventShareUrl(event),
+    }, { label: "Share", className: "btn secondary cc-action-btn", trackCta: "event_detail_share" });
+  }
 
   if (isPast) {
     const heroActions = document.getElementById("eventHeroActions");
