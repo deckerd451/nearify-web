@@ -9,7 +9,7 @@
  *   Call getLivePanelEl(eventId) to reveal it and get a reference for DOM injection.
  */
 
-import { supabase } from "./supabaseClient.js";
+import { supabase, getSessionCached } from "./supabaseClient.js";
 import { saveEvent, deleteEvent, getOrganizerProfileId } from "./events.js";
 import { trackAppCtaClick, trackPageView } from "./analytics.js";
 import { patchAppStoreLinks } from "./config.js";
@@ -97,7 +97,7 @@ function statusLabel(s) {
 // ─── Auth ─────────────────────────────────────────────────────────────────────
 
 async function handleSignInClick() {
-  const { data } = await supabase.auth.getSession();
+  const { data } = await getSessionCached();
 
   if (data?.session?.user) {
     await loadDashboard();

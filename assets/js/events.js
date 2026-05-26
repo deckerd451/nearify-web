@@ -7,7 +7,7 @@
  *
  * All ownership operations resolve the current user's profile_id first.
  */
-import { supabase } from "./supabaseClient.js";
+import { supabase, getSessionCached } from "./supabaseClient.js";
 import { logger } from "./logger.js";
 
 // ---- Profile resolution (cached per session) ----
@@ -22,7 +22,7 @@ let _cachedProfileId = null;
 export async function getOrganizerProfileId() {
   if (_cachedProfileId) return _cachedProfileId;
 
-  const { data: sessionData } = await supabase.auth.getSession();
+  const { data: sessionData } = await getSessionCached();
   const authUserId = sessionData?.session?.user?.id;
   if (!authUserId) return null;
 

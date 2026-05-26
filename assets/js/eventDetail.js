@@ -1,4 +1,4 @@
-import { supabase } from "./supabaseClient.js";
+import { supabase, getSessionCached } from "./supabaseClient.js";
 import { setCurrentEventId } from "./appState.js";
 import { fetchIntelligence, fetchEventMeta, renderIntelligenceInto } from "./intelligence.js";
 import {
@@ -88,7 +88,7 @@ async function fetchEvent() {
 }
 
 async function fetchCurrentUser() {
-  const { data } = await supabase.auth.getSession();
+  const { data } = await getSessionCached();
   return data?.session?.user ?? null;
 }
 

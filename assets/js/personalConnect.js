@@ -1,4 +1,4 @@
-import { supabase } from "./supabaseClient.js";
+import { supabase, getSessionCached } from "./supabaseClient.js";
 import { logger } from "./logger.js";
 
 function getBaseUrl() {
@@ -14,7 +14,7 @@ export function buildPersonalConnectUrl(eventId, profileId) {
 }
 
 export async function getMyProfileId() {
-  const { data: sessionData } = await supabase.auth.getSession();
+  const { data: sessionData } = await getSessionCached();
   const userId = sessionData?.session?.user?.id;
   if (!userId) return null;
 

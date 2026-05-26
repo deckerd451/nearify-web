@@ -1,4 +1,5 @@
-import { supabase, createScopedSupabaseClient } from "./supabaseClient.js";
+import { supabase, createScopedSupabaseClient, getSessionCached } from "./supabaseClient.js";
+import { cachedRead, dedupeRequest, logHiddenPollPause, withRetry } from "./supabaseLoad.js";
 import { loadGhostSession, createGhostSession } from "./ghostSession.js";
 import { connectGhostToProfile } from "./ghostConnection.js";
 import { trackAppCtaClick, trackFunnelEvent } from "./analytics.js";
@@ -100,12 +101,13 @@ function setJoinMode(mode) {
 
 async function fetchEvent(eventId) {
   logger.log("[Join] event param:", eventId);
-
-  const { data, error } = await supabase
-    .from("events")
-    .select("id, name, description, location, starts_at, ends_at, is_active, deleted_at")
-    .eq("id", eventId)
-    .single();
+  const { data, error } = await cachedRead(`event:${eventId}`, 120000, () =>
+    withRetry("join:fetchEvent", () => supabase
+      .from("events")
+      .select("id, name, description, location, starts_at, ends_at, is_active, deleted_at")
+      .eq("id", eventId)
+      .single())
+  );
 
   logger.log("[Join] Supabase event data:", data);
   logger.log("[Join] Supabase event error:", error);
@@ -130,9 +132,11 @@ async function fetchEvent(eventId) {
 async function fetchPublicProfileBrief(profileId) {
   if (!profileId) return null;
 
-  const { data, error } = await supabase
-    .rpc("get_public_profile_brief", { p_profile_id: profileId })
-    .maybeSingle();
+  const { data, error } = await cachedRead(`profileBrief:${profileId}`, 180000, () =>
+    withRetry("join:fetchPublicProfileBrief", () => supabase
+      .rpc("get_public_profile_brief", { p_profile_id: profileId })
+      .maybeSingle())
+  );
 
   if (error) {
     logger.warn("[Join] Public target profile lookup failed", { profileId, error });
@@ -289,7 +293,7 @@ async function maybeClaimGhostActivity(ghost, isClaimed) {
   if (!ghost?.ghostId || !ghost?.ghostToken) return;
   if (isClaimed) return;
 
-  const { data: sessionData } = await supabase.auth.getSession();
+  const { data: sessionData } = await getSessionCached();
   if (!sessionData?.session?.user) return;
 
   const profileId = await fetchCurrentProfileId();
@@ -380,7 +384,7 @@ function wireClaimButtons(ghost, isClaimed) {
   els.ghostClaimBtn.addEventListener("click", async () => {
     if (els.ghostClaimBtn.disabled) return;
 
-    const { data: sessionData } = await supabase.auth.getSession();
+    const { data: sessionData } = await getSessionCached();
     if (sessionData?.session?.user) {
       els.ghostClaimBtn.disabled = true;
       const originalLabel = els.ghostClaimBtn.textContent;
@@ -793,7 +797,7 @@ function renderInvalidState(message) {
 
 async function renderAuthHandoff(eventId) {
   try {
-    const { data: sessionData } = await supabase.auth.getSession();
+    const { data: sessionData } = await getSessionCached();
     const session = sessionData?.session;
     if (!session?.access_token) return;
 
@@ -875,10 +879,11 @@ let guestEventAttendees = [];
 async function fetchGuestEventAttendees(eventId) {
   console.log("[GuestAttendees] Loading attendees for event", eventId);
   if (!eventId) return { attendees: [] };
-
-  const { data, error } = await supabase.rpc("get_public_event_attendees", {
-    p_event_id: eventId,
-  });
+  const { data, error } = await dedupeRequest(`attendees:${eventId}`, () =>
+    withRetry("join:get_public_event_attendees", () => supabase.rpc("get_public_event_attendees", {
+      p_event_id: eventId,
+    }))
+  );
 
   console.log("[GuestAttendees] get_public_event_attendees result", data, error);
 
@@ -1167,7 +1172,7 @@ async function maybeClaimPendingGhostSession() {
     return;
   }
 
-  const { data: { session } } = await supabase.auth.getSession();
+  const { data: { session } } = await getSessionCached();
   const userId = session?.user?.id;
 
   console.log("[GuestClaim] Auth user id", userId);
@@ -1412,13 +1417,13 @@ let activityDraining = false;
 function startLivePolling(eventId) {
   livePollingEventId = eventId;
   schedulePoll();
-  // When the user returns to the tab, do an immediate catch-up poll.
   document.addEventListener("visibilitychange", onVisibilityChange);
+  window.addEventListener("pagehide", stopLivePolling, { once: true });
 }
 
 function schedulePoll() {
-  // Jitter between 30 and 45 seconds to avoid thundering-herd if many tabs open.
-  const delay = 30000 + Math.floor(Math.random() * 15000);
+  // Minimum 60s + jitter to reduce load.
+  const delay = 60000 + Math.floor(Math.random() * 15000);
   livePollingTimer = setTimeout(runPoll, delay);
 }
 
@@ -1438,7 +1443,18 @@ function onVisibilityChange() {
   }
 }
 
+function stopLivePolling() {
+  livePollingEventId = null;
+  if (livePollingTimer) clearTimeout(livePollingTimer);
+  livePollingTimer = null;
+  document.removeEventListener("visibilitychange", onVisibilityChange);
+}
+
 async function pollLiveAttendees(eventId) {
+  if (document.hidden) {
+    logHiddenPollPause();
+    return;
+  }
   const { attendees = [] } = await fetchGuestEventAttendees(eventId);
   if (!attendees.length && lastKnownAttendees.length) return; // ignore transient empty on error
 
@@ -1589,7 +1605,7 @@ async function initJoinPage() {
     }
 
     // Resolve auth session before branching — determines which experience to render.
-    const { data: sessionData } = await supabase.auth.getSession();
+    const { data: sessionData } = await getSessionCached();
     const hasSession = !!sessionData?.session?.user;
 
     if (profileId && hasSession) {
