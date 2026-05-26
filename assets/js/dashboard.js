@@ -568,6 +568,8 @@ function renderDashboardError(err) {
 // ─── Refresh ──────────────────────────────────────────────────────────────────
 
 async function refreshDashboard() {
+  if (refreshDashboard._inFlight) return refreshDashboard._inFlight;
+  refreshDashboard._inFlight = (async () => {
   const list = document.getElementById("eventCardList");
   if (list) list.innerHTML = renderSkeletonCards();
   const events   = await fetchMyEvents();
@@ -578,6 +580,8 @@ async function refreshDashboard() {
   ]);
   renderEcosystemHero(events, counts, intentsByEvent);
   renderDashboard(events, counts, intentsByEvent);
+  })().finally(() => { refreshDashboard._inFlight = null; });
+  return refreshDashboard._inFlight;
 }
 
 // ─── QR Modal ─────────────────────────────────────────────────────────────────
@@ -780,6 +784,8 @@ function initDashboard() {
 }
 
 async function loadDashboard() {
+  if (loadDashboard._inFlight) return loadDashboard._inFlight;
+  loadDashboard._inFlight = (async () => {
   showLoading();
 
   try {
@@ -798,6 +804,8 @@ async function loadDashboard() {
     logger.error("[Dashboard] failed to load dashboard:", err);
     renderDashboardError(err);
   }
+  })().finally(() => { loadDashboard._inFlight = null; });
+  return loadDashboard._inFlight;
 }
 
 // ─── Action handlers ──────────────────────────────────────────────────────────

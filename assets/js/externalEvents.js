@@ -421,6 +421,8 @@ function showLoadStatus(msg, isError = false) {
 }
 
 async function loadAndRender() {
+  if (loadAndRender._inFlight) return loadAndRender._inFlight;
+  loadAndRender._inFlight = (async () => {
   showLoadStatus("Loading external events…");
 
   const unmatchedList = document.getElementById("unmatchedList");
@@ -458,6 +460,8 @@ async function loadAndRender() {
   );
   // Auto-clear the status bar after a moment
   setTimeout(() => showLoadStatus(""), 3500);
+  })().finally(() => { loadAndRender._inFlight = null; });
+  return loadAndRender._inFlight;
 }
 
 // ── Auth gate ─────────────────────────────────────────────────────────────────
