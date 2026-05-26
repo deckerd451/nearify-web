@@ -15,7 +15,7 @@
  *   "unknown"            — unexpected server or network error
  */
 
-import { supabase } from "./supabaseClient.js";
+import { supabase, getSessionCached } from "./supabaseClient.js";
 import { logger } from "./logger.js";
 
 const ENVELOPE_VERSION = 1;
@@ -45,7 +45,7 @@ export async function getEventContext(eventId) {
     return { status: "error", version: ENVELOPE_VERSION, data: null, error_code: "missing_event_id" };
   }
 
-  const { data: session } = await supabase.auth.getSession();
+  const { data: session } = await getSessionCached();
   if (!session?.session) {
     return { status: "error", version: ENVELOPE_VERSION, data: null, error_code: "not_authenticated" };
   }

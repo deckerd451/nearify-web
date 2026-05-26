@@ -7,7 +7,7 @@
  *
  * All pages import from here instead of managing auth independently.
  */
-import { supabase } from "./supabaseClient.js";
+import { supabase, getSessionCached } from "./supabaseClient.js";
 import { logger } from "./logger.js";
 
 // localStorage so event context survives browser close (post-event intelligence)
@@ -15,7 +15,7 @@ const STORAGE_KEY = "nearify_current_event";
 
 /** @returns {Promise<import("@supabase/supabase-js").User | null>} */
 export async function getCurrentUser() {
-  const { data, error } = await supabase.auth.getSession();
+  const { data, error } = await getSessionCached();
   if (error) {
     logger.error("[AppState] getSession error:", error);
     return null;

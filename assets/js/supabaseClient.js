@@ -1,9 +1,17 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { dedupeRequest } from "./supabaseLoad.js";
+import { logger } from "./logger.js";
 
 export const supabaseUrl = "https://unndeygygkgodmmdnlup.supabase.co";
 export const supabaseKey = "sb_publishable_G0KAfCFTovYCWDeEEKWBfg_8UpPHWWZ";
 
-export const supabase = createClient(supabaseUrl, supabaseKey);
+const STORAGE_KEY = "nearify-auth";
+
+export const supabase = createClient(supabaseUrl, supabaseKey, {
+  auth: { storageKey: STORAGE_KEY },
+});
+
+const scopedClientCache = new Map();
 
 export function createScopedSupabaseClient(headers = {}) {
   const headerScope = Object.keys(headers)
@@ -11,14 +19,29 @@ export function createScopedSupabaseClient(headers = {}) {
     .map((key) => `${key}:${headers[key]}`)
     .join("|");
 
-  return createClient(supabaseUrl, supabaseKey, {
+  if (scopedClientCache.has(headerScope)) return scopedClientCache.get(headerScope);
+
+  const client = createClient(supabaseUrl, supabaseKey, {
     global: { headers },
     auth: {
       persistSession: false,
-      storageKey: `nearify-scoped-${headerScope || "default"}`,
+      autoRefreshToken: false,
+      detectSessionInUrl: false,
+      storageKey: STORAGE_KEY,
     },
   });
+  scopedClientCache.set(headerScope, client);
+  return client;
 }
 
-// Helpful for browser-console testing
+let sessionPromise = null;
+export function getSessionCached() {
+  if (!sessionPromise) {
+    sessionPromise = dedupeRequest("auth:getSession", () => supabase.auth.getSession())
+      .finally(() => { sessionPromise = null; });
+  }
+  return sessionPromise;
+}
+
+logger.log("[SupabaseLoad] client initialized", { storageKey: STORAGE_KEY });
 window.supabase = supabase;
