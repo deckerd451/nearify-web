@@ -875,39 +875,46 @@ function saveGhostFlatKeys(ghost) {
 
 // Module-level cache populated once per page load when the joined state renders
 let guestEventAttendees = [];
+const attendeeRequestByEventId = new Map();
 
 async function fetchGuestEventAttendees(eventId) {
   console.log("[GuestAttendees] Loading attendees for event", eventId);
   if (!eventId) return { attendees: [] };
-  const { data, error } = await dedupeRequest(`attendees:${eventId}`, () =>
+  if (attendeeRequestByEventId.has(eventId)) {
+    return attendeeRequestByEventId.get(eventId);
+  }
+  const request = dedupeRequest(`attendees:${eventId}`, () =>
     withRetry("join:get_public_event_attendees", () => supabase.rpc("get_public_event_attendees", {
       p_event_id: eventId,
     }))
-  );
+  )
+    .then(({ data, error }) => {
+      console.log("[GuestAttendees] get_public_event_attendees result", data, error);
 
-  console.log("[GuestAttendees] get_public_event_attendees result", data, error);
+      if (error) {
+        logger.warn("[GuestAttendees] RPC failed", error.message, error.code);
+        return { attendees: [], loadError: "Couldn't load attendees." };
+      }
 
-  if (error) {
-    logger.warn("[GuestAttendees] RPC failed", error.message, error.code);
-    return { attendees: [], loadError: "Couldn't load attendees." };
-  }
+      if (!data?.length) {
+        return { attendees: [], empty: "No attendees found for this event yet." };
+      }
 
-  if (!data?.length) {
-    return { attendees: [], empty: "No attendees found for this event yet." };
-  }
+      const normalized = data
+        .filter((r) => r.name)
+        .map((r) => ({
+          profileId: r.profile_id,
+          name:      r.name,
+          avatarUrl: r.avatar_url || null,
+          intent:    r.intent_primary || null,
+        }));
 
-  const normalized = data
-    .filter((r) => r.name)
-    .map((r) => ({
-      profileId: r.profile_id,
-      name:      r.name,
-      avatarUrl: r.avatar_url || null,
-      intent:    r.intent_primary || null,
-    }));
-
-  console.log("[GuestAttendees] normalized attendees", normalized);
-
-  return { attendees: normalized };
+      console.log("[GuestAttendees] normalized attendees", normalized);
+      return { attendees: normalized };
+    })
+    .finally(() => attendeeRequestByEventId.delete(eventId));
+  attendeeRequestByEventId.set(eventId, request);
+  return request;
 }
 
 function getAttendeeInitials(name) {
@@ -1415,10 +1422,14 @@ let activityQueue    = [];
 let activityDraining = false;
 
 function startLivePolling(eventId) {
+  if (livePollingEventId === eventId && livePollingTimer) return;
+  stopLivePolling();
   livePollingEventId = eventId;
+  logger.log("[SupabaseLoad] attendee poll started", { eventId });
   schedulePoll();
   document.addEventListener("visibilitychange", onVisibilityChange);
-  window.addEventListener("pagehide", stopLivePolling, { once: true });
+  window.addEventListener("pagehide", stopLivePolling);
+  window.addEventListener("beforeunload", stopLivePolling);
 }
 
 function schedulePoll() {
@@ -1428,6 +1439,11 @@ function schedulePoll() {
 }
 
 async function runPoll() {
+  if (document.hidden) {
+    logger.log("[SupabaseLoad] attendee poll skipped hidden tab", { eventId: livePollingEventId });
+    schedulePoll();
+    return;
+  }
   if (!pollingInFlight) {
     pollingInFlight = true;
     try { await pollLiveAttendees(livePollingEventId); }
@@ -1448,6 +1464,9 @@ function stopLivePolling() {
   if (livePollingTimer) clearTimeout(livePollingTimer);
   livePollingTimer = null;
   document.removeEventListener("visibilitychange", onVisibilityChange);
+  window.removeEventListener("pagehide", stopLivePolling);
+  window.removeEventListener("beforeunload", stopLivePolling);
+  logger.log("[SupabaseLoad] attendee poll stopped");
 }
 
 async function pollLiveAttendees(eventId) {

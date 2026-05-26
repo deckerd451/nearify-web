@@ -8,11 +8,32 @@
  * All ownership operations resolve the current user's profile_id first.
  */
 import { supabase, getSessionCached } from "./supabaseClient.js";
+import { dedupeRequest } from "./supabaseLoad.js";
 import { logger } from "./logger.js";
 
 // ---- Profile resolution (cached per session) ----
 
 let _cachedProfileId = null;
+const EVENT_CACHE_TTL_MS = 180000;
+const eventReadCache = new Map();
+
+function getEventCache(key) {
+  const hit = eventReadCache.get(key);
+  if (hit && hit.expiresAt > Date.now()) {
+    logger.log("[SupabaseLoad] event read cache hit", key);
+    return hit.value;
+  }
+  eventReadCache.delete(key);
+  return null;
+}
+
+function setEventCache(key, value) {
+  eventReadCache.set(key, { value, expiresAt: Date.now() + EVENT_CACHE_TTL_MS });
+}
+
+function invalidateEventReadCache() {
+  eventReadCache.clear();
+}
 
 /**
  * Resolve the current organizer's profile.id from their auth session.
@@ -54,18 +75,24 @@ export async function getOrganizerProfileId() {
  * @returns {Promise<Array>}
  */
 export async function fetchPublicEvents() {
-  const { data, error } = await supabase
+  const key = "public-events";
+  const hit = getEventCache(key);
+  if (hit) return hit;
+  logger.log("[SupabaseLoad] event read deduped", key);
+  const { data, error } = await dedupeRequest(`events:${key}`, () => supabase
     .from("events")
     .select("id, name, slug, location, starts_at, description, created_at")
     .is("deleted_at", null)
     .order("starts_at", { ascending: true, nullsFirst: false })
-    .limit(50);
+    .limit(50));
 
   if (error) {
     logger.error("[Events] fetchPublicEvents error:", error);
     return [];
   }
-  return data || [];
+  const events = data || [];
+  setEventCache(key, events);
+  return events;
 }
 
 // ---- Organizer (auth required) ----
@@ -98,6 +125,7 @@ export async function saveEvent(eventFields, isUpdate = false, isOrganizer = tru
       .select();
 
     if (error) logger.error("[Events] updateEvent error:", error);
+    if (!error) invalidateEventReadCache();
     return { data, error };
   } else {
     const payload = {
@@ -110,6 +138,7 @@ export async function saveEvent(eventFields, isUpdate = false, isOrganizer = tru
       .select();
 
     if (error) logger.error("[Events] createEvent error:", error);
+    if (!error) invalidateEventReadCache();
     return { data, error };
   }
 }
@@ -128,6 +157,7 @@ export async function deleteEvent(eventId) {
     .eq("id", eventId);
 
   if (error) logger.error("[Events] deleteEvent (soft) error:", error);
+  if (!error) invalidateEventReadCache();
   return { error };
 }
 
@@ -138,20 +168,26 @@ export async function deleteEvent(eventId) {
 export async function fetchOrganizerEvents() {
   const profileId = await getOrganizerProfileId();
   if (!profileId) return [];
+  const key = `organizer-events:${profileId}`;
+  const hit = getEventCache(key);
+  if (hit) return hit;
+  logger.log("[SupabaseLoad] event read deduped", key);
 
-  const { data, error } = await supabase
+  const { data, error } = await dedupeRequest(`events:${key}`, () => supabase
     .from("events")
     .select("id, name, slug, location, starts_at, ends_at, is_active, description, created_at, created_by")
     .eq("created_by", profileId)
     .is("deleted_at", null)
     .order("created_at", { ascending: false })
-    .limit(50);
+    .limit(50));
 
   if (error) {
     logger.error("[Events] fetchOrganizerEvents error:", error);
     return [];
   }
-  return data || [];
+  const events = data || [];
+  setEventCache(key, events);
+  return events;
 }
 
 /**
