@@ -15,12 +15,14 @@ import { trackAppCtaClick, trackPageView } from "./analytics.js";
 import { patchAppStoreLinks } from "./config.js";
 import { escapeHtml, escapeAttr, copyText } from "./utils.js";
 import { logger } from "./logger.js";
+import { pollingCoordinator } from "./pollingCoordinator.js";
 logger.log("[Dashboard] dashboard.js loaded");
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const EVENT_DETAIL_URL = (id) => `/events/event.html?id=${encodeURIComponent(id)}`;
 const EDIT_URL         = (id) => `/admin/event-setup.html?edit=${encodeURIComponent(id)}`;
+const DASHBOARD_EVENTS_POLL_KEY = "dashboard:events-refresh";
 
 const INTENT_LABELS = {
   meet_people:    "Meet people",
@@ -773,8 +775,10 @@ function initDashboard() {
     logger.log("[Dashboard] auth change:", event, !!session?.user);
 
     if (event === "SIGNED_OUT" || (event === "INITIAL_SESSION" && !session?.user)) {
+      pollingCoordinator.stop(DASHBOARD_EVENTS_POLL_KEY);
       showLanding();
     } else if (event === "SIGNED_IN" || (event === "INITIAL_SESSION" && session?.user)) {
+      startDashboardPolling();
       loadDashboard().catch((err) => {
         logger.error("[Dashboard] loadDashboard failed:", err);
         renderDashboardError(err);
@@ -806,6 +810,17 @@ async function loadDashboard() {
   }
   })().finally(() => { loadDashboard._inFlight = null; });
   return loadDashboard._inFlight;
+}
+
+function startDashboardPolling() {
+  pollingCoordinator.register({
+    key: DASHBOARD_EVENTS_POLL_KEY,
+    intervalMs: 30000,
+    immediate: false,
+    run: async () => {
+      await refreshDashboard();
+    },
+  });
 }
 
 // ─── Action handlers ──────────────────────────────────────────────────────────

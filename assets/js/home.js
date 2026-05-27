@@ -2,6 +2,7 @@ import { getCurrentUser, getCurrentEventId } from "./appState.js";
 import { fetchIntelligence, fetchEventMeta, renderIntelligenceInto } from "./intelligence.js";
 import { fetchPublicEvents } from "./events.js";
 import { logger } from "./logger.js";
+import { pollingCoordinator } from "./pollingCoordinator.js";
 
 // DOM refs
 const upcomingListEl = document.getElementById("homeUpcomingList");
@@ -9,6 +10,8 @@ const pastSection    = document.getElementById("homePastSection");
 const pastListEl     = document.getElementById("homePastList");
 const intelSection   = document.getElementById("homeIntelSection");
 const intelContainer = document.getElementById("homeIntelContainer");
+const HOME_EVENTS_POLL_KEY = "home:public-events";
+const HOME_INTEL_POLL_KEY_PREFIX = "home:intelligence:";
 
 function escapeHtml(str) {
   const d = document.createElement("div");
@@ -85,6 +88,14 @@ async function loadHomeIntelligence(eventId) {
 
 async function init() {
   await loadPublicEvents();
+  pollingCoordinator.register({
+    key: HOME_EVENTS_POLL_KEY,
+    intervalMs: 30000,
+    immediate: false,
+    run: async () => {
+      await loadPublicEvents();
+    },
+  });
 
   const user    = await getCurrentUser();
   const eventId = getCurrentEventId();
@@ -98,6 +109,14 @@ async function init() {
 
   if (eventId) {
     await loadHomeIntelligence(eventId);
+    pollingCoordinator.register({
+      key: `${HOME_INTEL_POLL_KEY_PREFIX}${eventId}`,
+      intervalMs: 30000,
+      immediate: false,
+      run: async () => {
+        await loadHomeIntelligence(eventId);
+      },
+    });
   }
 }
 
