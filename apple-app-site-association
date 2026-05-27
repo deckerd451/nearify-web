@@ -5,9 +5,7 @@
       {
         "appID": "TKW3U5SK59.com.douglashamilton.beacon2",
         "paths": [
-          "/join/*",
-          "/event/*",
-          "/auth/callback*"
+          "*"
         ]
       }
     ]
