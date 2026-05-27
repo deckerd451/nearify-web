@@ -5,6 +5,7 @@ import { connectGhostToProfile } from "./ghostConnection.js";
 import { trackAppCtaClick, trackFunnelEvent } from "./analytics.js";
 import { escapeHtml, copyText } from "./utils.js";
 import { logger } from "./logger.js";
+import { pollingCoordinator } from "./pollingCoordinator.js";
 
 const els = {
   joinKicker: document.getElementById("joinKicker"),
@@ -1413,82 +1414,43 @@ function renderLiveAttendeePreview(attendees) {
 // ── Live presence polling ────────────────────────────────────────────────────
 
 let livePollingEventId = null;
-let livePollingTimer   = null;
 let lastKnownAttendees = [];    // seeded from initial fetch
 let pollingInFlight    = false;
+const LIVE_ATTENDEE_POLL_KEY = "join:live-attendees";
 
 // Activity message queue — one message visible at a time, never spam.
 let activityQueue    = [];
 let activityDraining = false;
 
 function startLivePolling(eventId) {
-  if (livePollingEventId === eventId && livePollingTimer) return;
-  stopLivePolling();
-  livePollingEventId = eventId;
-  logger.log("[SupabaseLoad] attendee poll started", { eventId });
-  schedulePoll();
-  document.addEventListener("visibilitychange", onVisibilityChange);
-  window.addEventListener("pagehide", stopLivePolling);
-  window.addEventListener("beforeunload", stopLivePolling);
-}
-
-function schedulePoll() {
-  // Minimum 60s + jitter to reduce load.
-  const delay = 60000 + Math.floor(Math.random() * 15000);
-  livePollingTimer = setTimeout(runPoll, delay);
-}
-
-async function runPoll() {
-  if (document.hidden) {
-    logger.log("[SupabaseLoad] attendee poll skipped hidden tab", { eventId: livePollingEventId });
-    schedulePoll();
+  if (!eventId) return;
+  if (livePollingEventId === eventId) {
+    logger.log("[SupabaseLoad] attendee poll duplicate blocked", { eventId });
     return;
   }
-  if (!pollingInFlight) {
-    pollingInFlight = true;
-    try { await pollLiveAttendees(livePollingEventId); }
-    finally { pollingInFlight = false; }
-  }
-  schedulePoll();
-}
-
-function onVisibilityChange() {
-  if (!document.hidden && livePollingEventId && !pollingInFlight) {
-    pollingInFlight = true;
-    pollLiveAttendees(livePollingEventId).finally(() => { pollingInFlight = false; });
-  }
+  livePollingEventId = eventId;
+  pollingCoordinator.register({
+    key: LIVE_ATTENDEE_POLL_KEY,
+    intervalMs: 30000,
+    jitterMs: 5000,
+    immediate: false,
+    run: async () => {
+      if (!livePollingEventId || pollingInFlight) return;
+      pollingInFlight = true;
+      try {
+        await pollLiveAttendees(livePollingEventId);
+      } finally {
+        pollingInFlight = false;
+      }
+    },
+  });
+  logger.log("[SupabaseLoad] attendee poll started", { eventId });
 }
 
 function stopLivePolling() {
   livePollingEventId = null;
-  if (livePollingTimer) clearTimeout(livePollingTimer);
-  livePollingTimer = null;
-  document.removeEventListener("visibilitychange", onVisibilityChange);
-  window.removeEventListener("pagehide", stopLivePolling);
-  window.removeEventListener("beforeunload", stopLivePolling);
+  pollingCoordinator.stop(LIVE_ATTENDEE_POLL_KEY);
   logger.log("[SupabaseLoad] attendee poll stopped");
-}
-
-async function pollLiveAttendees(eventId) {
-  if (document.hidden) {
-    logHiddenPollPause();
-    return;
-  }
-  const { attendees = [] } = await fetchGuestEventAttendees(eventId);
-  if (!attendees.length && lastKnownAttendees.length) return; // ignore transient empty on error
-
-  const prevIds = new Set(lastKnownAttendees.map(a => a.profileId));
-  const newOnes = attendees.filter(a => !prevIds.has(a.profileId));
-  if (!newOnes.length) return;
-
-  const wasEmpty = lastKnownAttendees.length === 0;
-  lastKnownAttendees = attendees;
-  guestEventAttendees = attendees;
-
-  patchLiveAttendeePreview(attendees, newOnes, wasEmpty);
-  enqueueActivity(newOnes, wasEmpty);
-  pulseStatusDot();
-  logger.log("[LivePoll] +", newOnes.length, "attendee(s); total:", attendees.length);
 }
 
 function patchLiveAttendeePreview(attendees, newOnes, wasEmpty) {
