@@ -697,6 +697,14 @@ html {
     height: 220px;
   }
 }
+
+@media (max-width: 480px) {
+  .hero h1,
+  .event-hero h1 {
+    font-size: 28px;
+  }
+}
+
 .events-page {
   padding-bottom: 40px;
 }
@@ -4030,6 +4038,7 @@ body.cc-modal-open {
 .cc-qr-shell img,
 .cc-qr-shell canvas {
   display: block;
+  max-width: 100%;
 }
 
 .cc-qr-subtext {
