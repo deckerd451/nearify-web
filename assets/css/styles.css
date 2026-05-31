@@ -509,6 +509,12 @@ html {
   .event-section {
     padding: 40px 24px;
   }
+  .section-heading h2 {
+    font-size: 26px;
+  }
+  .section-heading p {
+    font-size: 15px;
+  }
 }
 
 .section-heading {
@@ -625,7 +631,7 @@ html {
   }
 
   .event-list-card h3 {
-    font-size: 26px;
+    font-size: 21px;
   }
 }
 
@@ -816,7 +822,7 @@ html {
 }
 
 .event-list-card h3 {
-  font-size: 30px;
+  font-size: 21px;
   margin-bottom: 12px;
 }
 
@@ -868,7 +874,7 @@ html {
   }
 
   .event-list-card h3 {
-    font-size: 24px;
+    font-size: 20px;
   }
 }
 .admin-page {
@@ -1334,7 +1340,7 @@ code {
 }
 
 .join-payload-card {
-  margin-top: 28px;
+  margin: 28px auto 0;
   background: var(--color-surface);
   border: 1px solid rgba(48, 209, 88,0.12);
   border-radius: 16px;
@@ -1537,6 +1543,7 @@ code {
   display: block;
   width: 200px !important;
   height: 200px !important;
+  max-width: 100%;
 }
 
 .join-qr-hint {
