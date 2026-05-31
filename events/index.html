@@ -64,7 +64,7 @@
     <div class="events-page-header">
       <div class="event-kicker">Nearify Events</div>
       <h1>Upcoming Events</h1>
-      <p class="event-subhead">Browse events powered by Nearify. Select one to learn more and get your join QR code before you arrive.</p>
+      <p class="event-subhead">Find an upcoming event, get your join link, and show up ready to connect.</p>
     </div>
 
     <section id="upcoming-events" class="section event-section">
@@ -122,35 +122,6 @@
       </a>
     </div>
 
-    <section class="section dark event-section">
-      <div class="section-heading">
-        <h2>What happens when you're there</h2>
-        <p>
-          Once you check in (in-app or by scanning the event QR), Nearify shows you the live attendee network — real people in the room right now, not a static list from a signup sheet.
-        </p>
-      </div>
-
-      <div class="feature-grid">
-        <div class="feature-card">
-          <h3>Live discovery</h3>
-          <p>
-            See who is actually at the event, not just a static attendee list somewhere else.
-          </p>
-        </div>
-        <div class="feature-card">
-          <h3>Intentional connection</h3>
-          <p>
-            Move from chance encounters to meaningful introductions guided by real presence.
-          </p>
-        </div>
-        <div class="feature-card">
-          <h3>Persistent value</h3>
-          <p>
-            The event does not end when you leave. Nearify is designed to preserve what happened there.
-          </p>
-        </div>
-      </div>
-    </section>
   </main>
 
   <footer class="footer">
@@ -293,7 +264,12 @@
       // Upcoming
       if (!upcoming.length) {
         upcomingGrid.innerHTML =
-          '<p style="text-align:center; color:#8fa0b8;">No upcoming events scheduled. Check back soon.</p>';
+          '<div style="text-align:center; padding:48px 24px;">' +
+          '<div style="font-size:32px; margin-bottom:16px;">📅</div>' +
+          '<p style="color:#c5cfdd; font-size:17px; font-weight:600; margin-bottom:8px;">No upcoming events yet</p>' +
+          '<p style="color:#8fa0b8; font-size:14px; margin-bottom:24px;">Check back soon — or host your own.</p>' +
+          '<a href="../admin/event-setup.html" class="btn primary" style="display:inline-flex;">Host an Event</a>' +
+          '</div>';
       } else {
         upcomingGrid.innerHTML = upcoming
           .map((ev, i) => renderCard(ev, {
