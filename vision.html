@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <title>Vision — Nearify</title>
+  <meta name="description" content="Nearify is evolving beyond event networking into a platform for personal intelligence, community intelligence, and relationship memory." />
+
+  <meta property="og:type"        content="website" />
+  <meta property="og:url"         content="https://nearify.org/vision.html" />
+  <meta property="og:title"       content="Vision — Nearify" />
+  <meta property="og:description" content="Nearify is evolving beyond event networking into a platform for personal intelligence, community intelligence, and relationship memory." />
+  <meta property="og:image"       content="https://nearify.org/assets/images/og-default.png" />
+  <meta name="twitter:card"       content="summary_large_image" />
+  <meta name="twitter:title"      content="Vision — Nearify" />
+  <meta name="twitter:description" content="Nearify is evolving beyond event networking into a platform for personal intelligence, community intelligence, and relationship memory." />
+  <meta name="twitter:image"      content="https://nearify.org/assets/images/og-default.png" />
+
+  <link rel="stylesheet" href="assets/css/styles.css?v=20260510" />
+  <style>
+    /* ── Vision page styles ───────────────────────────────────────────── */
+
+    .vision-hero {
+      padding: 120px 24px 96px;
+      max-width: 760px;
+      margin: 0 auto;
+      text-align: center;
+    }
+
+    .vision-kicker {
+      display: inline-block;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--color-accent);
+      margin-bottom: 24px;
+    }
+
+    .vision-hero h1 {
+      font-size: clamp(36px, 6vw, 60px);
+      font-weight: 700;
+      line-height: 1.12;
+      letter-spacing: -0.02em;
+      color: var(--color-text-primary);
+      margin-bottom: 24px;
+    }
+
+    .vision-hero p {
+      font-size: clamp(17px, 2.5vw, 20px);
+      line-height: 1.6;
+      color: var(--color-text-secondary);
+      max-width: 580px;
+      margin: 0 auto 40px;
+    }
+
+    /* ── Framework diagram ────────────────────────────────────────────── */
+
+    .vision-framework {
+      padding: 80px 24px;
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    .vision-framework-inner {
+      background: var(--color-surface);
+      border: 1px solid var(--color-border-subtle);
+      border-radius: var(--radius-lg);
+      padding: 56px 48px;
+      display: flex;
+      align-items: center;
+      gap: 64px;
+    }
+
+    .framework-brand {
+      flex-shrink: 0;
+    }
+
+    .framework-brand-name {
+      font-size: 22px;
+      font-weight: 700;
+      color: var(--color-text-primary);
+      letter-spacing: -0.01em;
+      margin-bottom: 20px;
+    }
+
+    .framework-tree {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .framework-tree-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 15px;
+      color: var(--color-text-secondary);
+    }
+
+    .framework-tree-item .tree-connector {
+      color: var(--color-text-muted);
+      font-family: monospace;
+      font-size: 14px;
+      user-select: none;
+    }
+
+    .framework-tree-item .tree-label {
+      font-weight: 600;
+      color: var(--color-text-primary);
+    }
+
+    .framework-tree-item .tree-sub {
+      color: var(--color-text-muted);
+      font-size: 13px;
+    }
+
+    .framework-tree-item.accent .tree-label {
+      color: var(--color-accent);
+    }
+
+    .framework-divider {
+      width: 1px;
+      height: 80px;
+      background: var(--color-border-subtle);
+      flex-shrink: 0;
+    }
+
+    .framework-desc {
+      font-size: 15px;
+      line-height: 1.7;
+      color: var(--color-text-secondary);
+    }
+
+    .framework-desc strong {
+      color: var(--color-text-primary);
+      font-weight: 600;
+    }
+
+    /* ── Pillar sections ──────────────────────────────────────────────── */
+
+    .vision-section {
+      padding: 80px 24px;
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    .vision-section + .vision-section {
+      border-top: 1px solid var(--color-border-subtle);
+    }
+
+    .vision-section-header {
+      display: flex;
+      align-items: baseline;
+      gap: 16px;
+      margin-bottom: 40px;
+    }
+
+    .vision-section-number {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--color-text-muted);
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+
+    .vision-section-title {
+      font-size: clamp(28px, 4vw, 40px);
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      color: var(--color-text-primary);
+      line-height: 1.15;
+    }
+
+    .vision-section-subtitle {
+      font-size: 14px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--color-accent);
+      margin-bottom: 8px;
+    }
+
+    .vision-section-body {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 48px;
+      align-items: start;
+    }
+
+    .vision-section-text p {
+      font-size: 16px;
+      line-height: 1.75;
+      color: var(--color-text-secondary);
+      margin-bottom: 16px;
+    }
+
+    .vision-section-text p:last-child {
+      margin-bottom: 0;
+    }
+
+    .vision-examples {
+      background: var(--color-surface);
+      border: 1px solid var(--color-border-subtle);
+      border-radius: var(--radius-md);
+      padding: 28px;
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+    }
+
+    .vision-examples-label {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--color-text-muted);
+      margin-bottom: 16px;
+    }
+
+    .vision-example-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 12px 0;
+      border-bottom: 1px solid var(--color-border-subtle);
+      font-size: 14px;
+      color: var(--color-text-secondary);
+      line-height: 1.5;
+    }
+
+    .vision-example-item:last-child {
+      border-bottom: none;
+      padding-bottom: 0;
+    }
+
+    .vision-example-item:first-of-type {
+      padding-top: 0;
+    }
+
+    .example-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--color-accent);
+      margin-top: 6px;
+      flex-shrink: 0;
+    }
+
+    /* ── Closing section ──────────────────────────────────────────────── */
+
+    .vision-closing {
+      padding: 80px 24px;
+      max-width: 900px;
+      margin: 0 auto;
+      border-top: 1px solid var(--color-border-subtle);
+    }
+
+    .vision-closing h2 {
+      font-size: clamp(24px, 3.5vw, 36px);
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      color: var(--color-text-primary);
+      margin-bottom: 28px;
+      line-height: 1.2;
+    }
+
+    .vision-closing p {
+      font-size: 16px;
+      line-height: 1.8;
+      color: var(--color-text-secondary);
+      max-width: 620px;
+      margin-bottom: 16px;
+    }
+
+    /* ── Final statement ──────────────────────────────────────────────── */
+
+    .vision-statement {
+      background: var(--color-section-dark);
+      border-top: 1px solid var(--color-border-subtle);
+      padding: 80px 24px 100px;
+      text-align: center;
+    }
+
+    .vision-statement blockquote {
+      max-width: 680px;
+      margin: 0 auto;
+      font-size: clamp(20px, 3vw, 28px);
+      font-weight: 500;
+      line-height: 1.5;
+      color: var(--color-text-primary);
+      letter-spacing: -0.01em;
+      font-style: normal;
+      border: none;
+    }
+
+    .vision-statement blockquote::before,
+    .vision-statement blockquote::after {
+      content: none;
+    }
+
+    /* ── Responsive ───────────────────────────────────────────────────── */
+
+    @media (max-width: 720px) {
+      .vision-hero {
+        padding: 88px 20px 64px;
+      }
+
+      .vision-framework-inner {
+        flex-direction: column;
+        gap: 32px;
+        padding: 36px 28px;
+      }
+
+      .framework-divider {
+        width: 100%;
+        height: 1px;
+      }
+
+      .vision-section-body {
+        grid-template-columns: 1fr;
+        gap: 28px;
+      }
+
+      .vision-section {
+        padding: 56px 20px;
+      }
+
+      .vision-framework {
+        padding: 48px 20px;
+      }
+
+      .vision-closing {
+        padding: 56px 20px;
+      }
+
+      .vision-statement {
+        padding: 64px 20px 80px;
+      }
+    }
+  </style>
+</head>
+<body class="cc-page">
+
+  <a href="#main-content" class="skip-link">Skip to main content</a>
+
+  <div class="nav-container">
+    <header class="nav">
+      <div class="logo"><a href="index.html">Nearify</a></div>
+      <div class="nav-links">
+        <a href="events/index.html">Events</a>
+        <a href="vision.html" aria-current="page">Vision</a>
+        <a href="admin/event-setup.html">Host an Event</a>
+        <!-- navAuth.js injects the signed-in user pill here -->
+      </div>
+      <button class="nav-hamburger" id="navHamburger" aria-label="Open menu" aria-expanded="false">
+        <span></span><span></span><span></span>
+      </button>
+    </header>
+    <nav class="nav-drawer" id="navDrawer" aria-label="Site navigation">
+      <a href="events/index.html">Events</a>
+      <a href="vision.html">Vision</a>
+      <a href="admin/event-setup.html" class="nav-drawer-highlight">Host an Event</a>
+    </nav>
+  </div>
+
+  <main id="main-content">
+
+    <!-- ── Hero ──────────────────────────────────────────────────────── -->
+    <section class="vision-hero" aria-labelledby="vision-headline">
+      <div class="vision-kicker">Nearify Vision</div>
+      <h1 id="vision-headline">
+        Meet the right people.<br>Build the right relationships.
+      </h1>
+      <p>
+        Nearify helps communities create meaningful professional connections through events,
+        shared experiences, and relationship intelligence.
+      </p>
+      <a href="events/index.html" class="btn primary">Join an Event</a>
+    </section>
+
+    <!-- ── Framework ─────────────────────────────────────────────────── -->
+    <section class="vision-framework" aria-label="Nearify framework">
+      <div class="vision-framework-inner">
+        <div class="framework-brand">
+          <div class="framework-brand-name">Nearify</div>
+          <div class="framework-tree">
+            <div class="framework-tree-item accent">
+              <span class="tree-connector">├──</span>
+              <span>
+                <span class="tree-label">Me</span>
+                <span class="tree-sub"> · Personal Intelligence</span>
+              </span>
+            </div>
+            <div class="framework-tree-item accent">
+              <span class="tree-connector">├──</span>
+              <span>
+                <span class="tree-label">Us</span>
+                <span class="tree-sub"> · Community Intelligence</span>
+              </span>
+            </div>
+            <div class="framework-tree-item accent">
+              <span class="tree-connector">└──</span>
+              <span>
+                <span class="tree-label">History</span>
+                <span class="tree-sub"> · Relationship Memory</span>
+              </span>
+            </div>
+          </div>
+        </div>
+        <div class="framework-divider" aria-hidden="true"></div>
+        <p class="framework-desc">
+          Nearify is built around a simple idea: <strong>events are where relationships begin</strong>,
+          not where they end. The platform is designed to help individuals, communities, and
+          organizations understand who they know, what they've built together, and where to go next.
+        </p>
+      </div>
+    </section>
+
+    <!-- ── Me ────────────────────────────────────────────────────────── -->
+    <section class="vision-section" aria-labelledby="section-me-title">
+      <div class="vision-section-header">
+        <span class="vision-section-number">01</span>
+        <div>
+          <div class="vision-section-subtitle">Personal Intelligence</div>
+          <h2 class="vision-section-title" id="section-me-title">Me</h2>
+        </div>
+      </div>
+      <div class="vision-section-body">
+        <div class="vision-section-text">
+          <p>
+            Nearify helps you understand who matters, why they matter, and what
+            opportunities are worth your attention.
+          </p>
+          <p>Before an event, Nearify helps you prepare.</p>
+          <p>During an event, Nearify helps you connect.</p>
+          <p>After an event, Nearify helps you remember and follow through.</p>
+        </div>
+        <div class="vision-examples" aria-label="Examples of personal intelligence questions">
+          <div class="vision-examples-label">Questions Nearify helps you answer</div>
+          <div class="vision-example-item">
+            <span class="example-dot" aria-hidden="true"></span>
+            <span>Who should I meet?</span>
+          </div>
+          <div class="vision-example-item">
+            <span class="example-dot" aria-hidden="true"></span>
+            <span>Why are they relevant to what I'm working on?</span>
+          </div>
+          <div class="vision-example-item">
+            <span class="example-dot" aria-hidden="true"></span>
+            <span>What should I talk about?</span>
+          </div>
+          <div class="vision-example-item">
+            <span class="example-dot" aria-hidden="true"></span>
+            <span>What should I do next?</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Us ────────────────────────────────────────────────────────── -->
+    <section class="vision-section" aria-labelledby="section-us-title">
+      <div class="vision-section-header">
+        <span class="vision-section-number">02</span>
+        <div>
+          <div class="vision-section-subtitle">Community Intelligence</div>
+          <h2 class="vision-section-title" id="section-us-title">Us</h2>
+        </div>
+      </div>
+      <div class="vision-section-body">
+        <div class="vision-section-text">
+          <p>
+            Communities generate knowledge, relationships, and opportunities every day.
+          </p>
+          <p>
+            Most of that value disappears after the event ends.
+          </p>
+          <p>
+            Nearify helps communities understand themselves and strengthen the connections
+            that make them valuable.
+          </p>
+        </div>
+        <div class="vision-examples" aria-label="Examples of community intelligence questions">
+          <div class="vision-examples-label">Questions communities can answer</div>
+          <div class="vision-example-item">
+            <span class="example-dot" aria-hidden="true"></span>
+            <span>What is this community working on?</span>
+          </div>
+          <div class="vision-example-item">
+            <span class="example-dot" aria-hidden="true"></span>
+            <span>Which interests are emerging?</span>
+          </div>
+          <div class="vision-example-item">
+            <span class="example-dot" aria-hidden="true"></span>
+            <span>Which introductions should happen?</span>
+          </div>
+          <div class="vision-example-item">
+            <span class="example-dot" aria-hidden="true"></span>
+            <span>What events create the most value?</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── History ───────────────────────────────────────────────────── -->
+    <section class="vision-section" aria-labelledby="section-history-title">
+      <div class="vision-section-header">
+        <span class="vision-section-number">03</span>
+        <div>
+          <div class="vision-section-subtitle">Relationship Memory</div>
+          <h2 class="vision-section-title" id="section-history-title">History</h2>
+        </div>
+      </div>
+      <div class="vision-section-body">
+        <div class="vision-section-text">
+          <p>Most networking platforms forget.</p>
+          <p>Nearify remembers.</p>
+          <p>
+            Relationships are built over time, not in a single conversation.
+            The context of how you met, what you discussed, and how that connection evolved
+            is what transforms a contact into a relationship.
+          </p>
+        </div>
+        <div class="vision-examples" aria-label="Examples of relationship memory questions">
+          <div class="vision-examples-label">Questions Nearify preserves the answers to</div>
+          <div class="vision-example-item">
+            <span class="example-dot" aria-hidden="true"></span>
+            <span>Where did we meet?</span>
+          </div>
+          <div class="vision-example-item">
+            <span class="example-dot" aria-hidden="true"></span>
+            <span>What did we discuss?</span>
+          </div>
+          <div class="vision-example-item">
+            <span class="example-dot" aria-hidden="true"></span>
+            <span>Who introduced us?</span>
+          </div>
+          <div class="vision-example-item">
+            <span class="example-dot" aria-hidden="true"></span>
+            <span>How has this relationship evolved?</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Why Events Matter ─────────────────────────────────────────── -->
+    <section class="vision-closing" aria-labelledby="closing-title">
+      <h2 id="closing-title">Why Events Matter</h2>
+      <p>
+        Events are where relationships begin.
+      </p>
+      <p>
+        They create moments when people with shared interests, goals, and experiences
+        come together. The conversations that happen at those moments—brief as they
+        sometimes are—can become the foundation for years of collaboration, trust, and
+        mutual benefit.
+      </p>
+      <p>
+        Nearify uses those moments to help people build relationships that continue
+        long after the event is over.
+      </p>
+    </section>
+
+    <!-- ── Vision Statement ──────────────────────────────────────────── -->
+    <div class="vision-statement" role="complementary" aria-label="Nearify mission statement">
+      <blockquote>
+        Nearify exists to help the right people find each other—and to preserve
+        the relationships that emerge when they do.
+      </blockquote>
+    </div>
+
+  </main>
+
+  <script type="module" src="assets/js/navAuth.js"></script>
+</body>
+</html>
