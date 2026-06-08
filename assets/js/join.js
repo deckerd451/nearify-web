@@ -903,12 +903,17 @@ async function fetchGuestEventAttendees(eventId) {
 
       const normalized = data
         .filter((r) => r.name)
-        .map((r) => ({
-          profileId: r.profile_id,
-          name:      r.name,
-          avatarUrl: r.avatar_url || null,
-          intent:    r.intent_primary || null,
-        }));
+        .map((r) => {
+          const attendee = {
+            profileId:          r.profile_id,
+            name:               r.name,
+            avatarUrl:          r.avatar_url || null,
+            intent:             r.intent_primary || null,
+            relationshipStatus: r.relationship_status ?? null,
+          };
+          logger.log("[RelationshipVisibility]", `relationshipStatus=${attendee.relationshipStatus}`, attendee.name);
+          return attendee;
+        });
 
       console.log("[GuestAttendees] normalized attendees", normalized);
       return { attendees: normalized };

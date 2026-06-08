@@ -597,11 +597,17 @@ export function renderIntelligenceInto(container, data, eventMeta = null, fallba
   }
 
   const buckets = {
+    re_engaged:  { title: "You Connected Again", items: [] },
     recommended: { title: "Strongest interactions", items: [] },
     follow_up:   { title: "People you met",         items: [] },
     missed:      { title: "Didn't connect",          items: [] },
   };
-  data.forEach((d) => { if (buckets[d.type]) buckets[d.type].items.push(d); });
+  data.forEach((d) => {
+    if (buckets[d.type]) {
+      buckets[d.type].items.push(d);
+      logger.log("[RelationshipVisibility]", `type=${d.type}`, d.target_name, `relationship_status=${d.relationship_status ?? "null"}`);
+    }
+  });
 
   let hasContent = false;
   for (const [, bucket] of Object.entries(buckets)) {
