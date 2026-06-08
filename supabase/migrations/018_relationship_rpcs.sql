@@ -224,12 +224,16 @@ BEGIN
   v_a_id := LEAST(v_current_id, p_other_profile_id);
   v_b_id := GREATEST(v_current_id, p_other_profile_id);
 
-  -- If a row already exists, set the caller's snooze flag
+  -- If a proposed row already exists, set the caller's snooze flag.
+  -- Confirmed relationships are not snoozeable: compute_interaction_intelligence()
+  -- only clears snooze flags on proposed rows, so a snooze on a confirmed row
+  -- would persist indefinitely.
   UPDATE relationships
   SET snoozed_by_a = CASE WHEN profile_a_id = v_current_id THEN true ELSE snoozed_by_a END,
       snoozed_by_b = CASE WHEN profile_b_id = v_current_id THEN true ELSE snoozed_by_b END
   WHERE profile_a_id = v_a_id
-    AND profile_b_id = v_b_id;
+    AND profile_b_id = v_b_id
+    AND status = 'proposed';
 
   IF FOUND THEN
     RETURN;
@@ -397,6 +401,11 @@ BEGIN
     v_encounter_count    := GREATEST(v_row.encounter_count, v_encounter_count);
     v_last_encounter_at  := GREATEST(v_row.last_encounter_at, v_last_encounter_at);
     v_status             := 'confirmed';
+  ELSIF v_row.proposed_by_id IS NULL THEN
+    -- Row created by snooze_relationship() — neither party has confirmed yet.
+    -- NULL proposed_by_id must be handled explicitly; the equality check below
+    -- would evaluate to NULL (falsy) and silently fall through to 'proposed_by_them'.
+    v_status := NULL;
   ELSIF v_row.proposed_by_id = v_current_id THEN
     v_status := 'proposed_by_me';
   ELSE

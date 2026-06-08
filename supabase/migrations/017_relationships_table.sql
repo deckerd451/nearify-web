@@ -81,12 +81,15 @@ CREATE POLICY "Users see own relationships"
     OR profile_b_id = current_profile_id()
   );
 
--- A user can only create a row in which they appear as one of the pair
--- and they are the proposing party.
+-- A user can only create a proposed row in which they appear as one of the
+-- pair and they are the proposing party. status = 'proposed' is required to
+-- prevent direct REST API inserts from bypassing the two-party confirmation
+-- requirement by supplying status = 'confirmed'.
 CREATE POLICY "Users propose own relationships"
   ON public.relationships FOR INSERT
   WITH CHECK (
-    proposed_by_id = current_profile_id()
+    status = 'proposed'
+    AND proposed_by_id = current_profile_id()
     AND (
       profile_a_id = current_profile_id()
       OR profile_b_id = current_profile_id()
