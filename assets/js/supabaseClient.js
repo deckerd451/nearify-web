@@ -27,7 +27,10 @@ export function createScopedSupabaseClient(headers = {}) {
       persistSession: false,
       autoRefreshToken: false,
       detectSessionInUrl: false,
-      storageKey: STORAGE_KEY,
+      // Use a distinct storage key so supabase-js does not warn about multiple
+      // GoTrueClient instances sharing the same key. The scoped client never
+      // persists a session (persistSession: false), so the key is cosmetic only.
+      storageKey: `${STORAGE_KEY}-scoped`,
     },
   });
   scopedClientCache.set(headerScope, client);

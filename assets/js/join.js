@@ -827,10 +827,15 @@ async function renderAuthHandoff(eventId) {
       });
     }
 
-    // QR code for desktop users transferring session to their phone
+    // QR code for desktop users transferring session to their phone.
+    // JWT tokens make the deep link string too long for QR capacity (~2953 bytes
+    // at version 40 binary mode). Skip QR silently when over the threshold to
+    // avoid the qrcode.js RS_BLOCK_TABLE out-of-bounds crash.
+    const QR_MAX_SAFE_LENGTH = 800;
     const qrBox = document.getElementById("authHandoffQrBox");
     const qrContainer = document.getElementById("authHandoffQr");
-    if (qrContainer && qrBox && deepLinkStr && typeof window.QRCode === "function") {
+    if (qrContainer && qrBox && deepLinkStr && typeof window.QRCode === "function"
+        && deepLinkStr.length <= QR_MAX_SAFE_LENGTH) {
       try {
         show(qrBox);
         new window.QRCode(qrContainer, { text: deepLinkStr, width: 180, height: 180 });
@@ -1427,6 +1432,25 @@ const LIVE_ATTENDEE_POLL_KEY = "join:live-attendees";
 let activityQueue    = [];
 let activityDraining = false;
 
+async function pollLiveAttendees(eventId) {
+  const { attendees } = await fetchGuestEventAttendees(eventId);
+  if (!attendees.length) return;
+
+  const existingIds = new Set(lastKnownAttendees.map((a) => a.profileId));
+  const newOnes     = attendees.filter((a) => !existingIds.has(a.profileId));
+  const wasEmpty    = lastKnownAttendees.length === 0;
+
+  if (newOnes.length > 0 || wasEmpty) {
+    patchLiveAttendeePreview(attendees, newOnes, wasEmpty);
+    if (newOnes.length > 0) {
+      pulseStatusDot();
+      enqueueActivity(newOnes, wasEmpty);
+    }
+  }
+
+  lastKnownAttendees = attendees.slice();
+}
+
 function startLivePolling(eventId) {
   if (!eventId) return;
   if (livePollingEventId === eventId) {
@@ -1549,6 +1573,62 @@ function showActivityMessage(text) {
   }, 3500);
 }
 
+function clearGhostSession() {
+  try {
+    localStorage.removeItem("nearify_ghost_id");
+    localStorage.removeItem("nearify_ghost_token");
+    localStorage.removeItem("nearify_ghost_event_id");
+    localStorage.removeItem("nearify_ghost_display_name");
+    localStorage.removeItem("nearify_pending_ghost_claim");
+  } catch (_) {}
+}
+
+// Called for authenticated users who may have a ghost session in localStorage
+// from a previous unauthenticated visit. Silently attempts to claim and then
+// always clears the ghost keys so the guest UI is never shown to auth users.
+async function maybeAutoClaimGhostForAuthenticatedUser(eventId) {
+  const ghostId    = localStorage.getItem("nearify_ghost_id");
+  const ghostToken = localStorage.getItem("nearify_ghost_token");
+  if (!ghostId || !ghostToken) return;
+
+  logger.log("[Ghost] Authenticated user has ghost session — attempting auto-claim");
+
+  const { data: { session } } = await getSessionCached();
+  if (!session?.user?.id) { clearGhostSession(); return; }
+
+  const { data: profileData } = await supabase
+    .from("profiles")
+    .select("id")
+    .eq("user_id", session.user.id)
+    .maybeSingle();
+
+  const profileId = profileData?.id;
+  if (!profileId) {
+    logger.warn("[Ghost] Auto-claim: no profile found for authenticated user");
+    clearGhostSession();
+    return;
+  }
+
+  const scoped = createScopedSupabaseClient({ "x-ghost-token": ghostToken });
+  await scoped.auth.setSession({
+    access_token:  session.access_token,
+    refresh_token: session.refresh_token,
+  });
+
+  const { error } = await scoped.rpc("claim_ghost_activity", {
+    p_ghost_id:   ghostId,
+    p_profile_id: profileId,
+  });
+
+  if (error) {
+    logger.warn("[Ghost] Auto-claim failed", error.message);
+  } else {
+    logger.log("[Ghost] Auto-claim succeeded");
+  }
+
+  clearGhostSession();
+}
+
 async function initJoinPage() {
   const { eventId, eventName, profileId, source, sourceEventId } = getQueryParams();
 
@@ -1629,9 +1709,42 @@ async function initJoinPage() {
       if (connectResult) {
         logger.log("[Join] Personal connect UX rendered after successful connection");
       }
+
+    } else if (hasSession) {
+      // ── Authenticated user on generic join page (no profileId param) ────
+      // Show event info and auth handoff. Never create or show a ghost session —
+      // ghost UI is for unauthenticated users only.
+      logger.log("[Join] Authenticated user; rendering event join without guest flow");
+      renderGenericJoinUx(event, eventName, source);
+
+      if (isMeetupSource) {
+        trackFunnelEvent("meetup_handoff_view", {
+          eventId:       event.id,
+          source:        "meetup",
+          sourceEventId: meetupSourceEventId,
+          referrer:      document.referrer || null,
+        });
+      }
+
+      // Claim any ghost session left over from a previous unauthenticated visit.
+      // maybeClaimPendingGhostSession handles the sign-in-redirect case (flag set);
+      // maybeAutoClaimGhostForAuthenticatedUser handles the direct-auth case (no flag).
+      await maybeClaimPendingGhostSession();
+      await maybeAutoClaimGhostForAuthenticatedUser(event.id);
+
+      if (isMeetupSource) {
+        renderLiveStatusIndicator();
+        fetchGuestEventAttendees(event.id).then(({ attendees }) => {
+          guestEventAttendees  = attendees;
+          lastKnownAttendees   = attendees.slice();
+          renderLiveAttendeePreview(attendees);
+          startLivePolling(event.id);
+        });
+      }
+
     } else {
-      // ── Generic flow: no auth session (or no profile param) ────────────
-      logger.log("[Join] No authenticated profile; rendering guest join flow");
+      // ── Unauthenticated → full guest flow ──────────────────────────────
+      logger.log("[Join] No authenticated session; rendering guest join flow");
       renderGenericJoinUx(event, eventName, source);
 
       if (isMeetupSource) {
