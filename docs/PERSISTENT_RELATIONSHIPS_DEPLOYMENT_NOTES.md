@@ -100,7 +100,8 @@ Expected: 3 rows.
 -- get_relationship_context works (read-only, safe with any valid profile uuid)
 SELECT get_relationship_context('[any valid profile uuid]'::uuid);
 ```
-Expected: JSONB with `relationship_status`, `encounter_count`, and event name fields. No error.
+Expected: JSONB with all required keys present. No error.  
+**Note:** Running from Supabase Studio SQL Editor executes as the `postgres` role, where `auth.uid()` returns NULL, so `current_profile_id()` returns NULL. The function returns the unauthenticated early-exit response: `relationship_status = null`, `encounter_count = 0`, all event name fields null. To test encounter history, run in an authenticated session context (e.g. via the Supabase JS client with a real user session).
 
 ---
 
