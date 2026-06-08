@@ -419,11 +419,11 @@ async function loadIntelligence(event) {
   if (!intelContainer) return;
 
   try {
-    const [{ data, fallbackDecision }, eventMeta] = await Promise.all([
+    const [{ data, fallbackDecision, isAuthenticated }, eventMeta] = await Promise.all([
       fetchIntelligence(event.id),
       fetchEventMeta(event.id),
     ]);
-    renderIntelligenceInto(intelContainer, data, eventMeta, fallbackDecision);
+    renderIntelligenceInto(intelContainer, data, eventMeta, fallbackDecision, { eventId: event.id, isAuthenticated });
   } catch (err) {
     logger.error("[EventDetail] intelligence load error:", err);
     intelContainer.innerHTML =

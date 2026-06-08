@@ -77,10 +77,97 @@ function isDebugModeEnabled() {
 }
 
 // ---------------------------------------------------------------------------
+// Relationship confirmation
+// ---------------------------------------------------------------------------
+
+// Card types eligible for the "Keep in touch" CTA. re_engaged is excluded —
+// confirmed pairs have their own static label and no button.
+const CONFIRM_ELIGIBLE_TYPES = new Set(["recommended", "follow_up", "missed"]);
+
+// Builds the relationship footer for a card.
+// Returns a DOM node (button or static label) or null when nothing should show.
+// context = { eventId: string|null, isAuthenticated: boolean }
+//
+// Note: get_my_intelligence does not return the intelligence row id, so
+// p_source_intel_id is always null here. The RPC treats it as optional provenance.
+function renderRelationshipFooter(item, { eventId, isAuthenticated }) {
+  if (!isAuthenticated || !item.target_profile_id || !eventId) return null;
+
+  const status = item.relationship_status;
+  const type   = item.type;
+
+  // re_engaged rows always surface a static label — they represent a confirmed
+  // pair co-attending a new event. No action needed.
+  if (type === "re_engaged" || status === "re_engaged") {
+    const el = document.createElement("p");
+    el.className = "intel-rel-status";
+    el.textContent = "You're both here again";
+    return el;
+  }
+
+  if (status === "confirmed") {
+    const el = document.createElement("p");
+    el.className = "intel-rel-status";
+    el.textContent = "Relationship remembered";
+    return el;
+  }
+
+  if (status === "proposed_by_me") {
+    const el = document.createElement("p");
+    el.className = "intel-rel-status";
+    el.textContent = "Saved — waiting for them";
+    return el;
+  }
+
+  // Only show a button for eligible types. Rows that are none of the above
+  // states but have an ineligible type (shouldn't happen in practice) are skipped.
+  if (!CONFIRM_ELIGIBLE_TYPES.has(type)) return null;
+
+  const originalText = status === "proposed_by_them" ? "Keep in touch too" : "Keep in touch";
+  const btn = document.createElement("button");
+  btn.type = "button";
+  btn.className = "intel-rel-btn";
+  btn.textContent = originalText;
+
+  btn.addEventListener("click", async () => {
+    if (btn.disabled) return;
+    btn.disabled = true;
+    btn.textContent = "Saving…";
+    logger.log("[RelationshipConfirmation]", `click target=${item.target_profile_id}`);
+
+    const { data: result, error } = await supabase.rpc("confirm_relationship", {
+      p_other_profile_id: item.target_profile_id,
+      p_source_event_id:  eventId,
+      p_source_intel_id:  null,
+    });
+
+    if (error) {
+      logger.log("[RelationshipConfirmation]", `error ${error.message}`);
+      btn.disabled = false;
+      btn.textContent = originalText;
+      return;
+    }
+
+    // RPC returns { status: 'proposed' | 'confirmed', ... }
+    // 'proposed' means first confirmer (proposed_by_me); 'confirmed' means both confirmed.
+    const newStatus = result?.status === "confirmed" ? "confirmed" : "proposed_by_me";
+    logger.log("[RelationshipConfirmation]", `success status=${newStatus}`);
+
+    const statusEl = document.createElement("p");
+    statusEl.className = "intel-rel-status";
+    statusEl.textContent = newStatus === "confirmed" ? "Relationship remembered" : "Saved — waiting for them";
+    btn.replaceWith(statusEl);
+  });
+
+  return btn;
+}
+
+// ---------------------------------------------------------------------------
 // Card rendering
 // ---------------------------------------------------------------------------
 
-export function renderIntelCard(item) {
+// context = { eventId, isAuthenticated } — optional; omitting disables relationship footer.
+export function renderIntelCard(item, context = {}) {
   const card = document.createElement("div");
   card.className = "intel-card";
 
@@ -140,6 +227,9 @@ export function renderIntelCard(item) {
     hint.textContent = "You were at the same event but didn't connect — worth a reach-out.";
     body.appendChild(hint);
   }
+
+  const relFooter = renderRelationshipFooter(item, context);
+  if (relFooter) body.appendChild(relFooter);
 
   card.appendChild(body);
   return card;
@@ -525,22 +615,22 @@ export async function fetchRawSignals(eventId) {
 
 export async function fetchIntelligence(eventId) {
   const user = await getCurrentUser();
-  if (!user) return { data: null, fallbackDecision: null };
+  if (!user) return { data: null, fallbackDecision: null, isAuthenticated: false };
 
   const { data, error } = await supabase.rpc("get_my_intelligence", { p_event_id: eventId });
 
   if (error) {
     logger.error("[Intelligence] load error:", error);
     const fallbackDecision = await fetchRawSignals(eventId);
-    return { data: null, fallbackDecision };
+    return { data: null, fallbackDecision, isAuthenticated: true };
   }
 
   if (!data || data.length === 0) {
     const fallbackDecision = await fetchRawSignals(eventId);
-    return { data, fallbackDecision };
+    return { data, fallbackDecision, isAuthenticated: true };
   }
 
-  return { data, fallbackDecision: null };
+  return { data, fallbackDecision: null, isAuthenticated: true };
 }
 
 export async function fetchEventMeta(eventId) {
@@ -561,7 +651,10 @@ export async function fetchEventMeta(eventId) {
 // Main render entry point
 // ---------------------------------------------------------------------------
 
-export function renderIntelligenceInto(container, data, eventMeta = null, fallbackDecision = null) {
+// options = { eventId: string|null, isAuthenticated: boolean }
+// Passing options enables relationship CTAs on cards. Omitting is safe (no CTA rendered).
+export function renderIntelligenceInto(container, data, eventMeta = null, fallbackDecision = null, options = {}) {
+  const cardContext = { eventId: options.eventId ?? null, isAuthenticated: !!options.isAuthenticated };
   container.innerHTML = "";
 
   const hasData           = !!(data && data.length > 0);
@@ -624,7 +717,7 @@ export function renderIntelligenceInto(container, data, eventMeta = null, fallba
 
     const cards = document.createElement("div");
     cards.className = "intel-cards";
-    bucket.items.forEach((item) => cards.appendChild(renderIntelCard(item)));
+    bucket.items.forEach((item) => cards.appendChild(renderIntelCard(item, cardContext)));
     section.appendChild(cards);
 
     container.appendChild(section);
