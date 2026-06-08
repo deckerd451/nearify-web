@@ -77,12 +77,12 @@ async function loadPublicEvents() {
 async function loadHomeIntelligence(eventId) {
   if (!intelSection || !intelContainer) return;
 
-  const [{ data, fallbackDecision }, eventMeta] = await Promise.all([
+  const [{ data, fallbackDecision, isAuthenticated }, eventMeta] = await Promise.all([
     fetchIntelligence(eventId),
     fetchEventMeta(eventId),
   ]);
 
-  renderIntelligenceInto(intelContainer, data, eventMeta, fallbackDecision);
+  renderIntelligenceInto(intelContainer, data, eventMeta, fallbackDecision, { eventId, isAuthenticated });
   intelSection.style.display = "";
 }
 
