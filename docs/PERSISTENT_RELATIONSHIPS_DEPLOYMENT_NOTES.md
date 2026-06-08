@@ -184,10 +184,13 @@ Expected: 0.
 Apply rollback SQL in **reverse order** if anything goes wrong.
 
 ### Rollback 020
+Verbatim body from `supabase/migrations/014_get_public_event_attendees.sql`.
+The original migration had no explicit GRANT/REVOKE — do not add them here.
+
 ```sql
 DROP FUNCTION IF EXISTS public.get_public_event_attendees(uuid);
 
-CREATE FUNCTION public.get_public_event_attendees(p_event_id uuid)
+CREATE OR REPLACE FUNCTION public.get_public_event_attendees(p_event_id uuid)
 RETURNS TABLE (
   profile_id     uuid,
   name           text,
@@ -212,9 +215,6 @@ AS $$
     AND ea.profile_id IS NOT NULL
   LIMIT 200;
 $$;
-
-REVOKE ALL ON FUNCTION public.get_public_event_attendees(uuid) FROM public;
-GRANT EXECUTE ON FUNCTION public.get_public_event_attendees(uuid) TO anon, authenticated;
 ```
 
 ### Rollback 019

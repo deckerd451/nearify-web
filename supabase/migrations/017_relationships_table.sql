@@ -93,15 +93,9 @@ CREATE POLICY "Users propose own relationships"
     )
   );
 
--- Either party in the pair may update the row (snooze flags, second
--- confirmation). compute_interaction_intelligence() updates health columns
--- as SECURITY DEFINER and bypasses this policy.
-CREATE POLICY "Users update own relationships"
-  ON public.relationships FOR UPDATE
-  USING (
-    profile_a_id = current_profile_id()
-    OR profile_b_id = current_profile_id()
-  );
+-- No UPDATE policy: all mutations go through SECURITY DEFINER RPCs
+-- (confirm_relationship, snooze_relationship, compute_interaction_intelligence).
+-- Direct REST API updates are intentionally blocked.
 
 -- No DELETE policy: relationship history is permanent.
 

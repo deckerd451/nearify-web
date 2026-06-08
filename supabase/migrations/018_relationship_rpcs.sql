@@ -69,12 +69,15 @@ BEGIN
       );
     END IF;
 
-    -- Proposed by the other party — current user is second confirmer
-    IF v_row.proposed_by_id IS DISTINCT FROM v_current_id THEN
+    -- Second confirmer: the other party proposed first (proposed_by_id is set
+    -- and is not the current user). proposed_by_id IS NULL means the row was
+    -- created by snooze_relationship() — that path is handled by the ELSIF
+    -- below, not here, to prevent unilateral confirmation.
+    IF v_row.proposed_by_id IS NOT NULL
+       AND v_row.proposed_by_id IS DISTINCT FROM v_current_id THEN
       UPDATE relationships
       SET status       = 'confirmed',
           confirmed_at = now(),
-          -- Clear any snooze the current user had set
           snoozed_by_a = CASE WHEN profile_a_id = v_current_id THEN false ELSE snoozed_by_a END,
           snoozed_by_b = CASE WHEN profile_b_id = v_current_id THEN false ELSE snoozed_by_b END
       WHERE id = v_row.id
@@ -86,21 +89,42 @@ BEGIN
         'first_encounter_at', v_row.first_encounter_at,
         'confirmed_at',       v_row.confirmed_at
       );
-    END IF;
+
+    -- First confirmer on a snooze-only row (proposed_by_id IS NULL).
+    -- Set the current user as proposer; keep status = 'proposed' until
+    -- the other party also confirms.
+    ELSIF v_row.proposed_by_id IS NULL THEN
+      UPDATE relationships
+      SET proposed_by_id = v_current_id,
+          source_event_id = p_source_event_id,
+          source_intelligence_id = COALESCE(p_source_intel_id, source_intelligence_id),
+          snoozed_by_a = CASE WHEN profile_a_id = v_current_id THEN false ELSE snoozed_by_a END,
+          snoozed_by_b = CASE WHEN profile_b_id = v_current_id THEN false ELSE snoozed_by_b END
+      WHERE id = v_row.id
+      RETURNING * INTO v_row;
+
+      RETURN jsonb_build_object(
+        'relationship_id',    v_row.id,
+        'status',             v_row.status,
+        'first_encounter_at', v_row.first_encounter_at,
+        'confirmed_at',       v_row.confirmed_at
+      );
 
     -- Proposed by the current user already — idempotent, clear any snooze
-    UPDATE relationships
-    SET snoozed_by_a = CASE WHEN profile_a_id = v_current_id THEN false ELSE snoozed_by_a END,
-        snoozed_by_b = CASE WHEN profile_b_id = v_current_id THEN false ELSE snoozed_by_b END
-    WHERE id = v_row.id
-    RETURNING * INTO v_row;
+    ELSE
+      UPDATE relationships
+      SET snoozed_by_a = CASE WHEN profile_a_id = v_current_id THEN false ELSE snoozed_by_a END,
+          snoozed_by_b = CASE WHEN profile_b_id = v_current_id THEN false ELSE snoozed_by_b END
+      WHERE id = v_row.id
+      RETURNING * INTO v_row;
 
-    RETURN jsonb_build_object(
-      'relationship_id',    v_row.id,
-      'status',             v_row.status,
-      'first_encounter_at', v_row.first_encounter_at,
-      'confirmed_at',       v_row.confirmed_at
-    );
+      RETURN jsonb_build_object(
+        'relationship_id',    v_row.id,
+        'status',             v_row.status,
+        'first_encounter_at', v_row.first_encounter_at,
+        'confirmed_at',       v_row.confirmed_at
+      );
+    END IF;
   END IF;
 
   -- No existing row — first confirmation. Compute first_encounter_at.
@@ -294,7 +318,23 @@ DECLARE
 BEGIN
   v_current_id := current_profile_id();  -- NULL if unauthenticated
 
-  -- Compute encounter history from event_attendees regardless of auth state
+  -- Unauthenticated callers get an empty response immediately.
+  -- The nil-UUID sentinel (00000000-...) is avoided here because that UUID
+  -- could theoretically match a real profile row in pathological data.
+  IF v_current_id IS NULL THEN
+    RETURN jsonb_build_object(
+      'relationship_status',        NULL,
+      'relationship_id',            NULL,
+      'first_encounter_at',         NULL,
+      'first_encounter_event_name', NULL,
+      'last_encounter_at',          NULL,
+      'last_encounter_event_name',  NULL,
+      'encounter_count',            0,
+      'shared_intent',              NULL
+    );
+  END IF;
+
+  -- Compute encounter history from event_attendees
   SELECT
     COUNT(DISTINCT ea1.event_id),
     MIN(e.starts_at),
@@ -306,7 +346,7 @@ BEGIN
   FROM event_attendees ea1
   JOIN event_attendees ea2 ON ea1.event_id = ea2.event_id
   JOIN events e ON e.id = ea1.event_id
-  WHERE ea1.profile_id = COALESCE(v_current_id, '00000000-0000-0000-0000-000000000000'::uuid)
+  WHERE ea1.profile_id = v_current_id
     AND ea2.profile_id = p_other_profile_id;
 
   -- Most frequent shared intent (use caller's intent across shared events)
@@ -314,7 +354,7 @@ BEGIN
   INTO v_shared_intent
   FROM event_attendees ea1
   JOIN event_attendees ea2 ON ea1.event_id = ea2.event_id
-  WHERE ea1.profile_id = COALESCE(v_current_id, '00000000-0000-0000-0000-000000000000'::uuid)
+  WHERE ea1.profile_id = v_current_id
     AND ea2.profile_id = p_other_profile_id
     AND ea1.intent_primary IS NOT NULL
   GROUP BY ea1.intent_primary
@@ -327,7 +367,7 @@ BEGIN
     FROM event_attendees ea1
     JOIN event_attendees ea2 ON ea1.event_id = ea2.event_id
     JOIN events e ON e.id = ea1.event_id
-    WHERE ea1.profile_id = COALESCE(v_current_id, '00000000-0000-0000-0000-000000000000'::uuid)
+    WHERE ea1.profile_id = v_current_id
       AND ea2.profile_id = p_other_profile_id
       AND e.starts_at = v_first_encounter_at
     LIMIT 1;
@@ -336,24 +376,10 @@ BEGIN
     FROM event_attendees ea1
     JOIN event_attendees ea2 ON ea1.event_id = ea2.event_id
     JOIN events e ON e.id = ea1.event_id
-    WHERE ea1.profile_id = COALESCE(v_current_id, '00000000-0000-0000-0000-000000000000'::uuid)
+    WHERE ea1.profile_id = v_current_id
       AND ea2.profile_id = p_other_profile_id
       AND e.starts_at = v_last_encounter_at
     LIMIT 1;
-  END IF;
-
-  -- If unauthenticated, return encounter history only
-  IF v_current_id IS NULL THEN
-    RETURN jsonb_build_object(
-      'relationship_status',        NULL,
-      'relationship_id',            NULL,
-      'first_encounter_at',         v_first_encounter_at,
-      'first_encounter_event_name', v_first_event_name,
-      'last_encounter_at',          v_last_encounter_at,
-      'last_encounter_event_name',  v_last_event_name,
-      'encounter_count',            v_encounter_count,
-      'shared_intent',              v_shared_intent
-    );
   END IF;
 
   v_a_id := LEAST(v_current_id, p_other_profile_id);

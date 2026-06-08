@@ -31,18 +31,26 @@ SECURITY DEFINER
 SET search_path = public
 AS $$
 DECLARE
-  v_profile         record;
-  v_target          record;
-  v_score           float;
-  v_reason          text;
-  v_type            text;
-  v_count           int     := 0;
-  v_dwell           int;
-  v_confirmed_qr    boolean;
-  v_intent_match    boolean;
-  v_shared_events   int;
-  v_is_confirmed    boolean;
+  v_profile                 record;
+  v_target                  record;
+  v_score                   float;
+  v_reason                  text;
+  v_type                    text;
+  v_count                   int     := 0;
+  v_dwell                   int;
+  v_confirmed_qr            boolean;
+  v_intent_match            boolean;
+  v_shared_events           int;
+  v_is_confirmed            boolean;
+  v_event_already_processed boolean;
 BEGIN
+  -- Capture whether re_engaged rows already exist BEFORE the DELETE so
+  -- encounter_count is not double-incremented on re-runs for the same event.
+  SELECT EXISTS (
+    SELECT 1 FROM interaction_intelligence
+    WHERE event_id = p_event_id AND type = 're_engaged'
+  ) INTO v_event_already_processed;
+
   -- Clear previous intelligence for this event
   DELETE FROM interaction_intelligence WHERE event_id = p_event_id;
 
@@ -75,9 +83,13 @@ BEGIN
 
       IF v_is_confirmed THEN
         -- Update health columns exactly once per pair per run.
-        -- Guard: only when processing the canonical (a→b) direction
-        -- so the nested loop does not double-increment.
-        IF v_profile.profile_id = LEAST(v_profile.profile_id, v_target.profile_id) THEN
+        -- Guard 1: only the canonical (a→b) direction to avoid double-increment
+        --          within a single run.
+        -- Guard 2: skip if re_engaged rows already existed before this run
+        --          (v_event_already_processed = true) to keep the function
+        --          idempotent when called more than once for the same event.
+        IF NOT v_event_already_processed
+           AND v_profile.profile_id = LEAST(v_profile.profile_id, v_target.profile_id) THEN
           UPDATE relationships
           SET last_encounter_at = now(),
               encounter_count   = encounter_count + 1
