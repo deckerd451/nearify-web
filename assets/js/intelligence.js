@@ -68,8 +68,77 @@ function normalizeReason(reason) {
     .replace(/worth following up/gi, "notable interaction")
     .replace(/\bfollow[\s-]?up\b/gi, "reconnect")
     .replace(/Brief interaction — notable interaction\./gi, "Brief interaction — a signal worth noting.");
+  if (!r) return "";
   if (!/[.!?]$/.test(r)) r += ".";
   return r.charAt(0).toUpperCase() + r.slice(1);
+}
+
+// ---------------------------------------------------------------------------
+// Signal enrichment helpers (Relationship Visibility Sprint)
+// ---------------------------------------------------------------------------
+
+const INTENT_DISPLAY_LABELS = {
+  meet_people:    "Meeting people",
+  find_cofounder: "Finding collaborators",
+  hire:           "Hiring",
+  explore_ideas:  "Exploring ideas",
+  demo:           "Demoing",
+};
+
+function renderQrBadge() {
+  const el = document.createElement("span");
+  el.className = "intel-qr-badge";
+  el.textContent = "QR Confirmed";
+  return el;
+}
+
+function renderIntentPill(myIntent, theirIntent) {
+  const myNorm    = normalizeIntent(myIntent);
+  const theirNorm = normalizeIntent(theirIntent);
+  if (!myNorm || !theirNorm) return null;
+  if (computeIntentAlignment(myNorm, theirNorm) < 0.6) return null;
+  const myLabel    = INTENT_DISPLAY_LABELS[myNorm];
+  const theirLabel = INTENT_DISPLAY_LABELS[theirNorm];
+  if (!myLabel || !theirLabel) return null;
+  const text = myNorm === theirNorm ? `Both: ${myLabel}` : `${myLabel} ↔ ${theirLabel}`;
+  const el = document.createElement("span");
+  el.className = "intel-intent-pill";
+  el.textContent = text;
+  return el;
+}
+
+function renderDwellHint(dwellSeconds) {
+  if (!dwellSeconds || dwellSeconds < 30) return null;
+  const mins = Math.round(dwellSeconds / 60);
+  const text = mins < 1 ? "Less than a minute together" : `~${mins} min together`;
+  const el = document.createElement("p");
+  el.className = "intel-dwell-hint";
+  el.textContent = text;
+  return el;
+}
+
+function renderEncounterLine(encounterCount, firstEventName) {
+  if (!encounterCount || encounterCount <= 0) return null;
+  let text = encounterCount === 1
+    ? (firstEventName ? `Met at ${firstEventName}` : "Met at a previous event")
+    : `${encounterCount} events together`;
+  if (encounterCount > 1 && firstEventName) text += ` · First: ${firstEventName}`;
+  const el = document.createElement("p");
+  el.className = "intel-encounter-line";
+  el.textContent = text;
+  return el;
+}
+
+function stripSignalPhrases(reason, { hasQr, hasIntentPill, hasEncounterLine }) {
+  if (!reason) return "";
+  let r = reason;
+  if (hasQr) {
+    r = r.replace(/Confirmed connection\.\s*/gi, "");
+    r = r.replace(/You have a confirmed relationship[^.]*\.\s*/gi, "");
+  }
+  if (hasIntentPill) r = r.replace(/Shared intent:[^.]*\.\s*/gi, "");
+  if (hasEncounterLine) r = r.replace(/You['']ve both attended \d+ previous events?\.\s*/gi, "");
+  return r.trim();
 }
 
 function isDebugModeEnabled() {
@@ -231,17 +300,32 @@ export function renderIntelCard(item, context = {}) {
   nameEl.textContent = item.target_name || "Attendee";
   body.appendChild(nameEl);
 
-  const directionText  = DIRECTION_LABELS[item.direction] ?? "Interaction";
-  const directionClass = item.direction === "incoming" ? "incoming" : "outgoing";
+  // Meta row: direction label + optional QR badge
+  const hasQr = !!(item.reason?.includes("Confirmed connection") || item.reason?.includes("confirmed relationship"));
+  const meta = document.createElement("div");
+  meta.className = "intel-card-meta";
   const dirLabel = document.createElement("span");
-  dirLabel.className = `intel-direction ${directionClass}`;
-  dirLabel.textContent = directionText;
-  body.appendChild(dirLabel);
+  dirLabel.className = `intel-direction ${item.direction === "incoming" ? "incoming" : "outgoing"}`;
+  dirLabel.textContent = DIRECTION_LABELS[item.direction] ?? "Interaction";
+  meta.appendChild(dirLabel);
+  if (hasQr) meta.appendChild(renderQrBadge());
+  body.appendChild(meta);
 
+  // Intent alignment pill
+  const intentPill = renderIntentPill(item.my_intent, item.their_intent);
+  if (intentPill) body.appendChild(intentPill);
+
+  // Reason text — strip phrases that have a dedicated visual
+  const hasEncounterLine = item.encounter_count > 0;
+  const cleanedReason = stripSignalPhrases(item.reason, { hasQr, hasIntentPill: !!intentPill, hasEncounterLine });
   const reasonEl = document.createElement("div");
   reasonEl.className = "intel-card-reason";
-  reasonEl.textContent = normalizeReason(item.reason);
+  reasonEl.textContent = normalizeReason(cleanedReason);
   body.appendChild(reasonEl);
+
+  // Dwell hint
+  const dwellHint = renderDwellHint(item.dwell_seconds);
+  if (dwellHint) body.appendChild(dwellHint);
 
   const strength = scoreToStrength(Math.round(item.score ?? 0));
   const strengthEl = document.createElement("div");
@@ -262,6 +346,10 @@ export function renderIntelCard(item, context = {}) {
     hint.textContent = "You were at the same event but didn't connect — worth a reach-out.";
     body.appendChild(hint);
   }
+
+  // Encounter history (shown for cards with a relationship history)
+  const encounterLine = renderEncounterLine(item.encounter_count, item.first_encounter_event_name);
+  if (encounterLine) body.appendChild(encounterLine);
 
   const relFooter = renderRelationshipFooter(item, context);
   if (relFooter) body.appendChild(relFooter);

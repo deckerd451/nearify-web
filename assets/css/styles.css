@@ -4880,3 +4880,53 @@ body.cc-page .cc-event-actions .btn.secondary:hover {
     font-size: 30px;
   }
 }
+
+/* ── Intelligence card enrichment (Relationship Visibility Sprint) ── */
+
+.intel-card-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.intel-card-meta .intel-direction {
+  margin-bottom: 0;
+}
+
+.intel-qr-badge {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #fff;
+  background: #0a84ff;
+  border-radius: 4px;
+  padding: 2px 6px;
+  flex-shrink: 0;
+}
+
+.intel-intent-pill {
+  display: inline-block;
+  font-size: 12px;
+  font-weight: 500;
+  color: #fff;
+  background: #30d158;
+  border-radius: 20px;
+  padding: 3px 10px;
+  margin-bottom: 6px;
+}
+
+.intel-dwell-hint {
+  font-size: 12px;
+  color: var(--color-text-muted, #8e8e93);
+  margin: 2px 0 4px;
+}
+
+.intel-encounter-line {
+  font-size: 12px;
+  color: var(--color-text-muted, #8e8e93);
+  font-style: italic;
+  margin: 4px 0 0;
+}
