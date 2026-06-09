@@ -539,6 +539,24 @@ function renderRecommendedAction(decision) {
   body.className = "intel-recommended-body";
   body.textContent = reason;
 
+  // Sprint enrichments: build elements to insert between body and button
+  const enrichments = [];
+  if (decision.components?.hasQrConfirmed) {
+    enrichments.push(renderQrBadge());
+  }
+  // Show intent pill only when peer alignment is meaningful (>= 0.6 average across peers)
+  if (intent && Number(decision.components?.intentAlignment ?? 0) >= 0.6) {
+    const label = INTENT_DISPLAY_LABELS[intent];
+    if (label) {
+      const pill = document.createElement("span");
+      pill.className = "intel-intent-pill";
+      pill.textContent = `Both: ${label}`;
+      enrichments.push(pill);
+    }
+  }
+  const dwellHint = renderDwellHint(decision.components?.totalDwellSeconds);
+  if (dwellHint) enrichments.push(dwellHint);
+
   const button = document.createElement("button");
   button.type = "button";
   button.className = "intel-connect-btn";
@@ -580,7 +598,7 @@ function renderRecommendedAction(decision) {
     fallback.querySelector("[data-intel-fallback='view']")?.setAttribute("hidden", "hidden");
   }
 
-  block.append(title, body, button, subtext, fallback);
+  block.append(title, body, ...enrichments, button, subtext, fallback);
   logger.log("[CTA] rendered suggest_connect", { confidence: decision.confidence, action: decision.action });
   return block;
 }
@@ -731,6 +749,9 @@ export async function fetchRawSignals(eventId) {
   const best       = scored[0] || { action: "do_nothing", score: 0 };
   const confidence = clamp01(c * (0.3 * P + 0.3 * X + 0.2 * O + 0.2 * N));
 
+  const totalDwellSeconds = interactionRows.reduce((sum, row) => sum + (Number(row.dwell_seconds) || 0), 0);
+  const hasQrConfirmed    = interactionRows.some((row) => row.interaction_type === "qr_confirmed");
+
   const result = {
     action:     best.action,
     score:      Number(best.score.toFixed(4)),
@@ -739,6 +760,8 @@ export async function fetchRawSignals(eventId) {
       ...signals, g0, g1, e, epsilon, c, r_g, alpha, beta, delta, r, v, m, intent,
       intentAlignment:      Number(intentAlignment.toFixed(4)),
       sharedInterestScore:  Number(sharedInterestScore.toFixed(4)),
+      totalDwellSeconds,
+      hasQrConfirmed,
       scored_actions: scored.map((s) => ({ action: s.action, score: Number(s.score.toFixed(4)) })),
     },
   };
