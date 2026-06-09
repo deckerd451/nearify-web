@@ -69,6 +69,17 @@
       <p class="event-subhead">Find an upcoming event, get your join link, and show up ready to connect.</p>
     </div>
 
+    <!-- Connections section — populated by connections.js for signed-in users -->
+    <section id="connectionsSection" class="connections-section" hidden>
+      <div class="connections-section-inner">
+        <div class="connections-header">
+          <h2 class="connections-title">Your connections</h2>
+          <p class="connections-subhead">Post-event intelligence from events you attended with Nearify.</p>
+        </div>
+        <div id="connectionsGrid" class="connections-grid"></div>
+      </div>
+    </section>
+
     <section id="upcoming-events" class="section event-section">
       <div class="events-list-grid" id="eventsListGrid" role="status" aria-label="Loading events…" aria-busy="true">
         <!-- Skeleton shown while events load -->
@@ -327,6 +338,74 @@
       btn.disabled = true;
       setTimeout(() => { btn.textContent = orig; btn.disabled = false; }, 2000);
     });
+  </script>
+  <script type="module">
+    import { getCurrentUser } from "../assets/js/appState.js?v=20260430";
+    import { supabase } from "../assets/js/supabaseClient.js";
+    import { escapeHtml } from "../assets/js/utils.js?v=20260430";
+
+    async function loadConnectionsSection() {
+      const user = await getCurrentUser();
+      if (!user) return;
+
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("id")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      if (!profile) return;
+
+      const { data: attendances } = await supabase
+        .from("event_attendees")
+        .select("event_id")
+        .eq("profile_id", profile.id)
+        .limit(10);
+
+      if (!attendances?.length) return;
+
+      const eventIds = [...new Set(attendances.map((a) => a.event_id))];
+      const { data: events } = await supabase
+        .from("events")
+        .select("id, name, slug, starts_at")
+        .in("id", eventIds)
+        .is("deleted_at", null)
+        .order("starts_at", { ascending: false })
+        .limit(5);
+
+      if (!events?.length) return;
+
+      const now = new Date();
+      const past = events.filter((ev) => ev.starts_at && new Date(ev.starts_at) < now);
+      const upcoming = events.filter((ev) => !ev.starts_at || new Date(ev.starts_at) >= now);
+
+      if (!past.length && !upcoming.length) return;
+
+      const grid = document.getElementById("connectionsGrid");
+      if (!grid) return;
+
+      const items = [...past, ...upcoming].slice(0, 4);
+      grid.innerHTML = items.map((ev) => {
+        const isPast = ev.starts_at && new Date(ev.starts_at) < now;
+        const dateStr = ev.starts_at
+          ? new Date(ev.starts_at).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })
+          : "";
+        const detailUrl = ev.slug
+          ? "event.html?slug=" + encodeURIComponent(ev.slug)
+          : "event.html?id=" + encodeURIComponent(ev.id);
+        return (
+          '<a href="' + detailUrl + '" class="connection-card' + (isPast ? "" : " connection-card--upcoming") + '">' +
+            '<div class="connection-card-name">' + escapeHtml(ev.name) + '</div>' +
+            (dateStr ? '<div class="connection-card-date">' + escapeHtml(dateStr) + '</div>' : '') +
+            '<div class="connection-card-cta">' + (isPast ? "View connections →" : "Registered →") + '</div>' +
+          '</a>'
+        );
+      }).join("");
+
+      const section = document.getElementById("connectionsSection");
+      if (section) section.hidden = false;
+    }
+
+    loadConnectionsSection();
   </script>
 </body>
 </html>
