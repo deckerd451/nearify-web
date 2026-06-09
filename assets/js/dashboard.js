@@ -794,6 +794,10 @@ async function loadDashboard() {
 
   try {
     const events   = await fetchMyEvents();
+    if (events.length === 0) {
+      window.location.replace("/events/index.html");
+      return;
+    }
     logger.log("[Dashboard] events loaded:", events.length);
     const eventIds = events.map((e) => e.id);
 
