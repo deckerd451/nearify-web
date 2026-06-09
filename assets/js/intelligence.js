@@ -605,6 +605,16 @@ function renderRecommendedAction(decision) {
 
 export function appendRecommendedAction(container, decision) {
   if (!container) return;
+  console.log("[EL DEBUG] fallback decision", {
+    action: decision?.action,
+    score: decision?.score,
+    reason: decision?.reason,
+    components: decision?.components,
+    intent: decision?.components?.intent,
+    intentAlignment: decision?.components?.intentAlignment,
+    totalDwellSeconds: decision?.components?.totalDwellSeconds,
+    hasQrConfirmed: decision?.components?.hasQrConfirmed
+  });
   const cta = renderRecommendedAction(decision);
   if (cta) container.appendChild(cta);
 }
