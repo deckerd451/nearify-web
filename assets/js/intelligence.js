@@ -830,6 +830,14 @@ export function renderIntelligenceInto(container, data, eventMeta = null, fallba
     container.appendChild(pending);
 
     if (presentationState !== PRESENTATION_STATES.NO_SIGNAL) {
+      // DEBUG: log fallback decision values before EARLY_SIGNAL render
+      logger.log("[EarlySignalDebug] decision.action =", decision?.action);
+      logger.log("[EarlySignalDebug] decision.score =", decision?.score);
+      logger.log("[EarlySignalDebug] components.intent =", decision?.components?.intent);
+      logger.log("[EarlySignalDebug] components.intentAlignment =", decision?.components?.intentAlignment);
+      logger.log("[EarlySignalDebug] components.totalDwellSeconds =", decision?.components?.totalDwellSeconds);
+      logger.log("[EarlySignalDebug] components.hasQrConfirmed =", decision?.components?.hasQrConfirmed);
+      logger.log("[EarlySignalDebug] full components =", JSON.stringify(decision?.components, null, 2));
       appendRecommendedAction(container, decision);
     } else {
       const btn = document.createElement("button");
