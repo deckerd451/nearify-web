@@ -96,12 +96,11 @@ function renderRelationshipFooter(item, { eventId, isAuthenticated }) {
   const status = item.relationship_status;
   const type   = item.type;
 
-  // re_engaged rows always surface a static label — they represent a confirmed
-  // pair co-attending a new event. No action needed.
+  // re_engaged rows always surface a static label — confirmed pair co-attending again.
   if (type === "re_engaged" || status === "re_engaged") {
     const el = document.createElement("p");
     el.className = "intel-rel-status";
-    el.textContent = "You're both here again";
+    el.textContent = "You're connected — here again together";
     return el;
   }
 
@@ -119,9 +118,12 @@ function renderRelationshipFooter(item, { eventId, isAuthenticated }) {
     return el;
   }
 
-  // Only show a button for eligible types. Rows that are none of the above
+  // Only show buttons for eligible types. Rows that are none of the above
   // states but have an ineligible type (shouldn't happen in practice) are skipped.
   if (!CONFIRM_ELIGIBLE_TYPES.has(type)) return null;
+
+  const footer = document.createElement("div");
+  footer.className = "intel-card-rel-footer";
 
   const originalText = status === "proposed_by_them" ? "Keep in touch too" : "Keep in touch";
   const btn = document.createElement("button");
@@ -129,9 +131,15 @@ function renderRelationshipFooter(item, { eventId, isAuthenticated }) {
   btn.className = "intel-rel-btn";
   btn.textContent = originalText;
 
+  const snoozeBtn = document.createElement("button");
+  snoozeBtn.type = "button";
+  snoozeBtn.className = "intel-rel-snooze-btn";
+  snoozeBtn.textContent = "Not now";
+
   btn.addEventListener("click", async () => {
     if (btn.disabled) return;
     btn.disabled = true;
+    snoozeBtn.disabled = true;
     btn.textContent = "Saving…";
     logger.log("[RelationshipConfirmation]", `click target=${item.target_profile_id}`);
 
@@ -144,22 +152,49 @@ function renderRelationshipFooter(item, { eventId, isAuthenticated }) {
     if (error) {
       logger.log("[RelationshipConfirmation]", `error ${error.message}`);
       btn.disabled = false;
+      snoozeBtn.disabled = false;
       btn.textContent = originalText;
       return;
     }
 
-    // RPC returns { status: 'proposed' | 'confirmed', ... }
-    // 'proposed' means first confirmer (proposed_by_me); 'confirmed' means both confirmed.
     const newStatus = result?.status === "confirmed" ? "confirmed" : "proposed_by_me";
     logger.log("[RelationshipConfirmation]", `success status=${newStatus}`);
 
     const statusEl = document.createElement("p");
     statusEl.className = "intel-rel-status";
     statusEl.textContent = newStatus === "confirmed" ? "Relationship remembered" : "Saved — waiting for them";
-    btn.replaceWith(statusEl);
+    footer.replaceWith(statusEl);
   });
 
-  return btn;
+  snoozeBtn.addEventListener("click", async () => {
+    if (snoozeBtn.disabled) return;
+    btn.disabled = true;
+    snoozeBtn.disabled = true;
+    snoozeBtn.textContent = "Dismissing…";
+    logger.log("[RelationshipSnooze]", `click target=${item.target_profile_id}`);
+
+    const { error } = await supabase.rpc("snooze_relationship", {
+      p_other_profile_id: item.target_profile_id,
+      p_source_event_id:  eventId,
+    });
+
+    if (error) {
+      logger.log("[RelationshipSnooze]", `error ${error.message}`);
+      btn.disabled = false;
+      snoozeBtn.disabled = false;
+      snoozeBtn.textContent = "Not now";
+      return;
+    }
+
+    logger.log("[RelationshipSnooze]", "snoozed");
+    const statusEl = document.createElement("p");
+    statusEl.className = "intel-rel-status";
+    statusEl.textContent = "Dismissed";
+    footer.replaceWith(statusEl);
+  });
+
+  footer.append(btn, snoozeBtn);
+  return footer;
 }
 
 // ---------------------------------------------------------------------------

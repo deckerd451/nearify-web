@@ -1010,10 +1010,18 @@ function renderAttendeeSuggestions(query) {
   listEl.innerHTML = matches.map((a, i) => {
     const initials   = getAttendeeInitials(a.name);
     const intentText = a.intent ? a.intent.replace(/_/g, " ") : "";
+    const relBadge   = a.relationshipStatus === "confirmed"
+      ? `<span class="guest-attendee-rel-badge">Connected</span>`
+      : a.relationshipStatus === "proposed_by_me"
+        ? `<span class="guest-attendee-rel-badge">Saved</span>`
+        : a.relationshipStatus === "proposed_by_them"
+          ? `<span class="guest-attendee-rel-badge">Wants to connect</span>`
+          : "";
     return `<li role="option" class="guest-attendee-option" data-idx="${i}" tabindex="0">` +
       `<span class="guest-attendee-avatar" aria-hidden="true">${escapeHtml(initials)}</span>` +
       `<span class="guest-attendee-name">${escapeHtml(a.name)}</span>` +
       (intentText ? `<span class="guest-attendee-intent">${escapeHtml(intentText)}</span>` : "") +
+      relBadge +
       `</li>`;
   }).join("");
 
