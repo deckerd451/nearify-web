@@ -605,16 +605,6 @@ function renderRecommendedAction(decision) {
 
 export function appendRecommendedAction(container, decision) {
   if (!container) return;
-  console.log("[EL DEBUG] fallback decision", {
-    action: decision?.action,
-    score: decision?.score,
-    reason: decision?.reason,
-    components: decision?.components,
-    intent: decision?.components?.intent,
-    intentAlignment: decision?.components?.intentAlignment,
-    totalDwellSeconds: decision?.components?.totalDwellSeconds,
-    hasQrConfirmed: decision?.components?.hasQrConfirmed
-  });
   const cta = renderRecommendedAction(decision);
   if (cta) container.appendChild(cta);
 }
@@ -840,14 +830,6 @@ export function renderIntelligenceInto(container, data, eventMeta = null, fallba
     container.appendChild(pending);
 
     if (presentationState !== PRESENTATION_STATES.NO_SIGNAL) {
-      // DEBUG: log fallback decision values before EARLY_SIGNAL render
-      logger.log("[EarlySignalDebug] decision.action =", decision?.action);
-      logger.log("[EarlySignalDebug] decision.score =", decision?.score);
-      logger.log("[EarlySignalDebug] components.intent =", decision?.components?.intent);
-      logger.log("[EarlySignalDebug] components.intentAlignment =", decision?.components?.intentAlignment);
-      logger.log("[EarlySignalDebug] components.totalDwellSeconds =", decision?.components?.totalDwellSeconds);
-      logger.log("[EarlySignalDebug] components.hasQrConfirmed =", decision?.components?.hasQrConfirmed);
-      logger.log("[EarlySignalDebug] full components =", JSON.stringify(decision?.components, null, 2));
       appendRecommendedAction(container, decision);
     } else {
       const btn = document.createElement("button");
