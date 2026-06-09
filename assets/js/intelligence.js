@@ -661,16 +661,27 @@ export async function fetchRawSignals(eventId) {
   const attendeeIds     = new Set(attendeeRows.map((a) => a.profile_id));
 
   const attendeeIdList = [...attendeeIds];
-  const { data: profiles, error: profilesError } = attendeeIdList.length
-    ? await supabase
-        .from("profiles")
-        .select("id, name, intent_primary, intent_secondary, interests, skills")
-        .in("id", attendeeIdList)
-    : { data: [], error: null };
+  const [
+    { data: profiles, error: profilesError },
+    { data: attendeeIntents, error: attendeeIntentsError },
+  ] = await Promise.all([
+    attendeeIdList.length
+      ? supabase.from("profiles").select("id, name, interests, skills").in("id", attendeeIdList)
+      : Promise.resolve({ data: [], error: null }),
+    attendeeIdList.length
+      ? supabase.from("event_attendees").select("profile_id, intent_primary, intent_secondary").eq("event_id", eventId).in("profile_id", attendeeIdList)
+      : Promise.resolve({ data: [], error: null }),
+  ]);
 
-  if (profilesError) logger.error("[EL] profiles error:", profilesError);
+  if (profilesError)       logger.error("[EL] profiles error:", profilesError);
+  if (attendeeIntentsError) logger.error("[EL] attendee intents error:", attendeeIntentsError);
 
-  const profileRows      = profiles || [];
+  // Merge intent fields from event_attendees onto profile objects
+  const intentByProfileId = new Map((attendeeIntents || []).map((a) => [a.profile_id, a]));
+  const profileRows = (profiles || []).map((p) => {
+    const ea = intentByProfileId.get(p.id);
+    return ea ? { ...p, intent_primary: ea.intent_primary, intent_secondary: ea.intent_secondary } : p;
+  });
   const relevantProfiles = profileRows;
   const me    = relevantProfiles.find((p) => p.id === profileId);
   const peers = relevantProfiles.filter((p) => p.id !== profileId);
