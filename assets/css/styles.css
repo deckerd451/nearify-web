@@ -3645,7 +3645,8 @@ code {
 }
 
 .cc-landing-inner {
-  max-width: 600px;
+  max-width: 960px;
+  width: 100%;
 }
 
 .cc-landing-kicker {
@@ -3736,6 +3737,134 @@ code {
 
   .cc-landing-inner h1 {
     font-size: 32px;
+  }
+}
+
+
+.cc-landing-hero {
+  margin: 0 auto 48px;
+  max-width: 720px;
+}
+
+.cc-landing-hero > p {
+  color: var(--color-text-secondary);
+  font-size: 18px;
+  line-height: 1.55;
+  margin: 0 auto 36px;
+  max-width: 540px;
+}
+
+.cc-landing-hero-actions,
+.cc-landing-final-actions {
+  justify-content: center;
+}
+
+.cc-landing-framework {
+  margin: 28px auto 0;
+  max-width: 760px;
+  text-align: center;
+}
+
+.cc-landing-section-kicker {
+  color: var(--color-text-muted);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  margin-bottom: 14px;
+  text-transform: uppercase;
+}
+
+.cc-landing-framework-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.cc-landing-framework-card {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-md);
+  padding: 16px 14px;
+}
+
+.cc-landing-framework-title {
+  color: var(--color-text-primary);
+  font-size: 17px;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+.cc-landing-framework-desc {
+  color: var(--color-text-muted);
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.cc-landing-link {
+  color: var(--color-text-muted);
+  display: inline-flex;
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: color 0.15s ease;
+}
+
+.cc-landing-link:hover,
+.cc-landing-link:focus-visible {
+  color: var(--color-text-primary);
+}
+
+.cc-landing-final {
+  border-top: 1px solid var(--color-border-subtle);
+  margin: 44px auto 0;
+  max-width: 720px;
+  padding-top: 36px;
+  text-align: center;
+}
+
+.cc-landing-final h2 {
+  color: var(--color-text-primary);
+  font-size: clamp(24px, 4vw, 34px);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  margin-bottom: 18px;
+}
+
+.cc-landing-final .cc-landing-link {
+  margin-top: 18px;
+}
+
+@media (max-width: 600px) {
+  .cc-landing {
+    align-items: flex-start;
+    padding: 48px 20px;
+  }
+
+  .cc-landing-hero {
+    margin-bottom: 36px;
+  }
+
+  .cc-landing-hero-actions,
+  .cc-landing-final-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .cc-landing-hero-actions .btn,
+  .cc-landing-final-actions .btn,
+  .cc-landing-hero-actions #landingSignInBtn {
+    justify-content: center;
+    width: 100%;
+  }
+
+  .cc-landing-framework-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .cc-landing-final {
+    margin-top: 36px;
+    padding-top: 30px;
   }
 }
 
