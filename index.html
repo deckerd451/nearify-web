@@ -5,17 +5,17 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <title>Nearify — Events</title>
-  <meta name="description" content="Discover events, track participation, and coordinate your event ecosystem with Nearify." />
+  <title>Nearify — Meet the Right People at Events</title>
+  <meta name="description" content="Nearify helps attendees and organizers turn events into lasting professional relationships with personal intelligence, community insight, and relationship memory." />
 
   <meta property="og:type"        content="website" />
   <meta property="og:url"         content="https://nearify.org/" />
-  <meta property="og:title"       content="Nearify — Events" />
-  <meta property="og:description" content="Discover events, track participation, and coordinate your event ecosystem with Nearify." />
+  <meta property="og:title"       content="Nearify — Meet the Right People at Events" />
+  <meta property="og:description" content="Nearify helps attendees and organizers turn events into lasting professional relationships with personal intelligence, community insight, and relationship memory." />
   <meta property="og:image"       content="https://nearify.org/assets/images/og-default.png" />
   <meta name="twitter:card"       content="summary_large_image" />
-  <meta name="twitter:title"      content="Nearify — Events" />
-  <meta name="twitter:description" content="Discover events, track participation, and coordinate your event ecosystem with Nearify." />
+  <meta name="twitter:title"      content="Nearify — Meet the Right People at Events" />
+  <meta name="twitter:description" content="Nearify helps attendees and organizers turn events into lasting professional relationships with personal intelligence, community insight, and relationship memory." />
   <meta name="twitter:image"      content="https://nearify.org/assets/images/og-default.png" />
 
   <link rel="stylesheet" href="assets/css/styles.css?v=20260510" />
@@ -54,46 +54,76 @@
     <!-- ─── LOGGED-OUT LANDING ─────────────────────────────────────────── -->
     <section id="landingView" class="cc-landing" aria-label="Nearify events for organizers and attendees" style="display:none;">
       <div class="cc-landing-inner">
-        <div class="cc-landing-kicker">For organizers and attendees</div>
-        <h1>Events where the right connections happen</h1>
-        <p>Whether you're attending or organizing, Nearify helps you show up with purpose and leave with real connections.</p>
-        <div class="hero-actions" style="justify-content:center; margin-bottom: 48px;">
-          <button id="landingSignInBtn" class="btn primary cc-google-btn">
-            <svg class="cc-google-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-              <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
-              <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
-              <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/>
-              <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
-            </svg>
-            Sign in with Google
-          </button>
+        <div class="cc-landing-hero">
+          <div class="cc-landing-kicker">For attendees and organizers</div>
+          <h1>Meet the right people. Build the right relationships.</h1>
+          <p>Nearify helps attendees and organizers turn events into lasting professional relationships.</p>
+          <div class="hero-actions cc-landing-hero-actions" aria-label="Homepage actions">
+            <a href="/events/index.html" class="btn primary">Find an Event</a>
+            <a href="/admin/event-setup.html" class="btn secondary">Host an Event</a>
+            <button id="landingSignInBtn" type="button" class="btn secondary cc-google-btn">
+              <svg class="cc-google-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+                <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+                <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/>
+                <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+              </svg>
+              Sign in
+            </button>
+          </div>
         </div>
-        <div class="cc-landing-features">
+
+        <div class="cc-landing-features" aria-label="How Nearify works">
           <div class="cc-landing-feature">
             <div class="cc-landing-feature-icon">
               <svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M10 2L3 11h6l-1 7 8-10h-6l1-8z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
             </div>
-            <div class="cc-landing-feature-label">Show up with a goal</div>
-            <div class="cc-landing-feature-desc">Tell Nearify what you're looking for before you arrive. See who's attending and what they're here for.</div>
+            <div class="cc-landing-feature-label">Before the event</div>
+            <div class="cc-landing-feature-desc">Set goals and understand who you should meet.</div>
           </div>
           <div class="cc-landing-feature">
             <div class="cc-landing-feature-icon">
               <svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><circle cx="10" cy="10" r="2.5" stroke="currentColor" stroke-width="1.5"/><path d="M5.5 14.5a6.5 6.5 0 0 1 0-9M14.5 5.5a6.5 6.5 0 0 1 0 9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M2.5 17.5a10.5 10.5 0 0 1 0-15M17.5 2.5a10.5 10.5 0 0 1 0 15" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
             </div>
-            <div class="cc-landing-feature-label">Understand your community</div>
-            <div class="cc-landing-feature-desc">Organizers see who's joining, track participation, and gain ecosystem insights that make events better over time.</div>
+            <div class="cc-landing-feature-label">During the event</div>
+            <div class="cc-landing-feature-desc">Find relevant people and connect with intent.</div>
           </div>
           <div class="cc-landing-feature">
             <div class="cc-landing-feature-icon">
               <svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M8.5 11.5a3 3 0 0 0 4.24 0l3-3a3 3 0 0 0-4.24-4.24l-1.5 1.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M11.5 8.5a3 3 0 0 0-4.24 0l-3 3a3 3 0 0 0 4.24 4.24l1.5-1.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
             </div>
-            <div class="cc-landing-feature-label">Connections that last</div>
-            <div class="cc-landing-feature-desc">Every connection made at an event is saved. Follow up, reconnect, and build relationships that outlast the evening.</div>
+            <div class="cc-landing-feature-label">After the event</div>
+            <div class="cc-landing-feature-desc">Remember who you met and follow through.</div>
           </div>
         </div>
-        <div style="text-align:center; margin-top:48px;">
-          <a href="vision.html" style="font-size:14px; color:var(--color-text-muted); text-decoration:none; transition:color 0.15s ease;" onmouseover="this.style.color='#ffffff'" onmouseout="this.style.color='var(--color-text-muted)'">Learn more about where Nearify is going &rarr;</a>
-        </div>
+
+        <section class="cc-landing-framework" aria-label="Nearify framework">
+          <div class="cc-landing-section-kicker">Nearify works across</div>
+          <div class="cc-landing-framework-grid">
+            <div class="cc-landing-framework-card">
+              <div class="cc-landing-framework-title">Me</div>
+              <div class="cc-landing-framework-desc">Personal Intelligence</div>
+            </div>
+            <div class="cc-landing-framework-card">
+              <div class="cc-landing-framework-title">Us</div>
+              <div class="cc-landing-framework-desc">Community Intelligence</div>
+            </div>
+            <div class="cc-landing-framework-card">
+              <div class="cc-landing-framework-title">History</div>
+              <div class="cc-landing-framework-desc">Relationship Memory</div>
+            </div>
+          </div>
+          <a href="/vision.html" class="cc-landing-link">Read the full vision &rarr;</a>
+        </section>
+
+        <section class="cc-landing-final" aria-label="Start with your next event">
+          <h2>Start with your next event.</h2>
+          <div class="hero-actions cc-landing-final-actions">
+            <a href="/events/index.html" class="btn primary">Find an Event</a>
+            <a href="/admin/event-setup.html" class="btn secondary">Host an Event</a>
+          </div>
+          <a href="/vision.html" class="cc-landing-link">Read the Vision</a>
+        </section>
       </div>
     </section>
 
