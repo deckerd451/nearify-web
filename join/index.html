@@ -108,6 +108,22 @@
           <p id="ghostClaimStatus" class="ghost-claim-status" aria-live="polite"></p>
         </section>
 
+        <!-- Claim success state — shown after ghost attendee completes OAuth claim -->
+        <section id="claimSuccessState" class="claim-success-card" style="display:none;" aria-live="polite">
+          <div class="claim-success-header">
+            <span class="claim-success-check" aria-hidden="true">✓</span>
+            <h2 class="claim-success-title">Connections Saved</h2>
+          </div>
+          <ul id="claimSuccessNames" class="claim-success-names" style="display:none;"></ul>
+          <p id="claimSuccessNoNames" class="claim-success-no-names" style="display:none;">Your event activity has been transferred to your profile.</p>
+          <p id="claimSuccessCount" class="claim-success-count"></p>
+          <p class="claim-success-profile-msg">Your Nearify profile is now active.</p>
+          <div class="claim-success-actions">
+            <a href="../profile.html" class="btn primary">View My Network</a>
+            <a href="https://testflight.apple.com/join/ZayvEbAy" class="btn secondary" target="_blank" rel="noopener noreferrer">Get Nearify App</a>
+          </div>
+        </section>
+
         <div class="hero-actions" id="joinActions">
           <!-- Primary: install pathway -->
           <a

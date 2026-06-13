@@ -856,7 +856,70 @@ async function renderAuthHandoff(eventId) {
   }
 }
 
-// ── Guest entry flow ────────────────────────────────────────────────────────
+// ── Claim success ─────────────────────────────────────────────────────────────
+
+function renderClaimSuccessUx(event, claimResult) {
+  setJoinMode("generic");
+
+  // Update hero text for the claim context.
+  setText(els.joinKicker, "");
+  setText(els.joinTitle, event?.name || "Event");
+  hide(els.joinDescription);
+
+  // Hide all generic join UX: app install hero, payload card, side panel, bottom CTA.
+  hide(document.getElementById("joinActions"));
+  hide(els.joinQrBox);
+  hide(els.joinPayloadCard);
+  hide(els.joinBottomCta);
+  hide(document.getElementById("joinSidePanel"));
+  hide(els.intentStep);
+
+  const section = document.getElementById("claimSuccessState");
+  if (!section) {
+    logger.warn("[GuestClaim] claimSuccessState element missing — falling back to generic UX");
+    renderGenericJoinUx(event, null, null);
+    return;
+  }
+
+  const count   = claimResult?.count ?? 0;
+  const names   = claimResult?.names ?? [];
+
+  const countEl   = document.getElementById("claimSuccessCount");
+  const namesList = document.getElementById("claimSuccessNames");
+  const noNamesEl = document.getElementById("claimSuccessNoNames");
+
+  if (countEl) {
+    countEl.textContent = count === 1
+      ? "We recovered 1 connection."
+      : count > 1
+        ? `We recovered ${count} connections.`
+        : "Your event activity has been transferred to your profile.";
+  }
+
+  if (namesList) {
+    const displayed = names.slice(0, 5);
+    const overflow  = names.length - displayed.length;
+    namesList.innerHTML = displayed
+      .map((n) => `<li class="claim-success-name">${escapeHtml(n)}</li>`)
+      .join("");
+    if (overflow > 0) {
+      namesList.innerHTML += `<li class="claim-success-name claim-success-name--more">+${overflow} more</li>`;
+    }
+    if (names.length > 0) show(namesList); else hide(namesList);
+  }
+
+  if (noNamesEl) {
+    if (names.length === 0) show(noNamesEl); else hide(noNamesEl);
+  }
+
+  show(section);
+  logger.log("[GuestClaim] Claim success UX rendered", { count, names });
+  trackFunnelEvent("ghost_claim_success_shown", {
+    eventId: event?.id || null,
+    count,
+    source:  isMeetupSource ? "meetup" : null,
+  });
+}
 
 function showGuestJoinCta() {
   const cta = document.getElementById("guestJoinCta");
@@ -1194,19 +1257,24 @@ function showGuestJoinedState(ghost) {
 }
 
 async function maybeClaimPendingGhostSession() {
-  if (localStorage.getItem("nearify_pending_ghost_claim") !== "true") return;
+  if (localStorage.getItem("nearify_pending_ghost_claim") !== "true") return null;
 
   logger.log("[GuestClaim] Pending claim detected after auth");
 
-  const ghostId = localStorage.getItem("nearify_ghost_id");
-  const ghostToken = localStorage.getItem("nearify_ghost_token");
-  const statusEl = document.getElementById("guestClaimStatus");
+  const ghostId      = localStorage.getItem("nearify_ghost_id");
+  const ghostToken   = localStorage.getItem("nearify_ghost_token");
+  const ghostEventId = localStorage.getItem("nearify_ghost_event_id");
+  const statusEl     = document.getElementById("guestClaimStatus");
 
   if (!ghostId || !ghostToken) {
     localStorage.removeItem("nearify_pending_ghost_claim");
     logger.warn("[GuestClaim] Pending claim found but ghost keys missing");
-    return;
+    return null;
   }
+
+  // Read scoped session (holds intentPrimary) before any keys are cleared.
+  const scopedSession = ghostEventId ? loadGhostSession(ghostEventId) : null;
+  const intentPrimary = scopedSession?.intentPrimary || null;
 
   const { data: { session } } = await getSessionCached();
   const userId = session?.user?.id;
@@ -1215,7 +1283,7 @@ async function maybeClaimPendingGhostSession() {
 
   if (!userId) {
     logger.warn("[GuestClaim] Pending claim found but no authenticated user");
-    return;
+    return null;
   }
 
   const { data: profileData, error: profileError } = await supabase
@@ -1227,11 +1295,15 @@ async function maybeClaimPendingGhostSession() {
   if (profileError || !profileData?.id) {
     logger.warn("[GuestClaim] Could not resolve profile id", profileError);
     if (statusEl) statusEl.textContent = "We couldn't find your Nearify profile after sign-in. Your guest session is still saved.";
-    return;
+    return null;
   }
 
   const profileId = profileData.id;
   console.log("[GuestClaim] Resolved profile id", profileId);
+
+  // Fetch connection history BEFORE clearing keys — used for the success screen.
+  const history      = await fetchGhostConnectionHistory({ ghostId, ghostToken }, ghostEventId);
+  const claimedNames = [...new Set(history.map((r) => r?.to_profile_name).filter(Boolean))];
 
   // The scoped client starts with no auth session (persistSession: false).
   // Inject the current user's JWT so auth.uid() resolves correctly inside
@@ -1243,7 +1315,7 @@ async function maybeClaimPendingGhostSession() {
     refresh_token: session.refresh_token,
   });
 
-  const { error } = await scoped.rpc("claim_ghost_activity", {
+  const { data: claimData, error } = await scoped.rpc("claim_ghost_activity", {
     p_ghost_id: ghostId,
     p_profile_id: profileId,
   });
@@ -1258,20 +1330,31 @@ async function maybeClaimPendingGhostSession() {
       raw: JSON.stringify(error || {}, null, 2),
     });
     if (statusEl) statusEl.textContent = `We couldn't save your session: ${error?.message || "Unknown error"}. Your interactions are still saved on this device.`;
-    return;
+    return null;
   }
 
-  logger.log("[GuestClaim] Claim successful");
+  logger.log("[GuestClaim] Claim successful", claimData);
 
+  // Clear flat keys then scoped key.
   localStorage.removeItem("nearify_pending_ghost_claim");
   localStorage.removeItem("nearify_ghost_id");
   localStorage.removeItem("nearify_ghost_token");
   localStorage.removeItem("nearify_ghost_event_id");
   localStorage.removeItem("nearify_ghost_display_name");
+  if (ghostEventId) {
+    try { localStorage.removeItem(`nearify_ghost:${ghostEventId}`); } catch (_) {}
+  }
 
   const claimBtn = document.getElementById("guestClaimSignInBtn");
   if (claimBtn) claimBtn.style.display = "none";
   if (statusEl) statusEl.textContent = "Your event history is now saved to your profile.";
+
+  return {
+    success:       true,
+    count:         claimData?.interactions_claimed ?? claimedNames.length,
+    names:         claimedNames,
+    intentPrimary,
+  };
 }
 
 async function handleGuestSubmit(eventId) {
@@ -1827,7 +1910,8 @@ async function initJoinPage() {
 
     // Resolve auth session before branching — determines which experience to render.
     const { data: sessionData } = await getSessionCached();
-    const hasSession = !!sessionData?.session?.user;
+    const hasSession    = !!sessionData?.session?.user;
+    const isPendingClaim = localStorage.getItem("nearify_pending_ghost_claim") === "true";
 
     if (profileId && hasSession) {
       // ── Personal connect flow: authenticated visitor scanned someone's QR ─
@@ -1864,6 +1948,19 @@ async function initJoinPage() {
       if (connectResult) {
         logger.log("[Join] Personal connect UX rendered after successful connection");
       }
+
+    } else if (hasSession && isPendingClaim) {
+      // ── Post-claim return: user just authenticated to save ghost activity ─
+      logger.log("[Join] Post-claim return detected; running claim and showing success UX");
+      const claimResult = await maybeClaimPendingGhostSession();
+      if (claimResult?.success) {
+        renderClaimSuccessUx(event, claimResult);
+        return; // skip intent step, auth handoff, and all generic UX
+      }
+      // Claim failed — fall through to generic auth UX.
+      logger.warn("[Join] Claim attempt failed; falling back to generic auth UX");
+      renderGenericJoinUx(event, eventName, source);
+      await maybeAutoClaimGhostForAuthenticatedUser(event.id);
 
     } else if (hasSession) {
       // ── Authenticated user on generic join page (no profileId param) ────
