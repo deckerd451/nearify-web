@@ -912,6 +912,16 @@ function renderClaimSuccessUx(event, claimResult) {
     if (names.length === 0) show(noNamesEl); else hide(noNamesEl);
   }
 
+  const viewNetworkBtn = document.getElementById("claimViewNetworkBtn");
+  if (viewNetworkBtn) {
+    if (claimResult?.profileId) {
+      const profileUrl = `../profile.html?id=${claimResult.profileId}${event?.id ? `&event=${event.id}` : ""}`;
+      viewNetworkBtn.href = profileUrl;
+    } else {
+      viewNetworkBtn.hidden = true;
+    }
+  }
+
   show(section);
   logger.log("[GuestClaim] Claim success UX rendered", { count, names });
   trackFunnelEvent("ghost_claim_success_shown", {
@@ -1354,6 +1364,7 @@ async function maybeClaimPendingGhostSession() {
     count:         claimData?.interactions_claimed ?? claimedNames.length,
     names:         claimedNames,
     intentPrimary,
+    profileId,
   };
 }
 
