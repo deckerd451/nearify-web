@@ -1,6 +1,7 @@
 import { supabase, createScopedSupabaseClient, getSessionCached } from "./supabaseClient.js";
 import { cachedRead, dedupeRequest, logHiddenPollPause, withRetry } from "./supabaseLoad.js";
-import { loadGhostSession, createGhostSession } from "./ghostSession.js";
+import { loadGhostSession, saveGhostSession, createGhostSession } from "./ghostSession.js";
+import { computeIntentAlignment } from "./intelligence-algo.js";
 import { connectGhostToProfile } from "./ghostConnection.js";
 import { trackAppCtaClick, trackFunnelEvent } from "./analytics.js";
 import { escapeHtml, copyText } from "./utils.js";
@@ -46,6 +47,9 @@ let meetupSourceEventId = null;
 
 // Guards against wiring the deep-link fallback buttons more than once per page load.
 let deepLinkFallbackWired = false;
+
+// Ghost intent set during the inline intent step; restored from localStorage on return visits.
+let ghostIntentPrimary = null;
 
 function getQueryParams() {
   const params = new URLSearchParams(window.location.search);
@@ -1129,6 +1133,12 @@ function showGuestJoinedState(ghost) {
     fetchGuestEventAttendees(connectEventId).then(({ attendees, loadError, empty }) => {
       guestEventAttendees = attendees;
       logger.log("[GuestConnect] Loaded", attendees.length, "attendees");
+
+      if (ghostIntentPrimary && attendees.length > 0) {
+        const recs = computeGhostRecommendations(attendees, ghostIntentPrimary);
+        renderGhostRecommendations(recs, connectEventId);
+      }
+
       const statusEl = document.getElementById("guestConnectStatus");
       if (statusEl) {
         if (loadError) {
@@ -1294,7 +1304,7 @@ async function handleGuestSubmit(eventId) {
       source:        isMeetupSource ? "meetup" : null,
       sourceEventId: isMeetupSource ? meetupSourceEventId : null,
     });
-    showGuestJoinedState(ghost);
+    showGhostIntentStep(ghost, eventId);
     logger.log("[Guest] Joined as guest", ghost);
   } catch (err) {
     logger.error("[Guest] Failed to create ghost session", err);
@@ -1304,6 +1314,142 @@ async function handleGuestSubmit(eventId) {
       submitBtn.textContent = "Join as Guest";
     }
   }
+}
+
+// ── Ghost intent step ────────────────────────────────────────────────────────
+
+function showGhostIntentStep(ghost, eventId) {
+  const form = document.getElementById("guestForm");
+  const intentStep = document.getElementById("ghostIntentStep");
+  hide(form);
+  show(intentStep);
+
+  intentStep.querySelectorAll(".ghost-intent-chip").forEach((chip) => {
+    chip.addEventListener("click", () => handleGhostIntentSelect(chip.dataset.intent, ghost, eventId), { once: true });
+  });
+}
+
+function handleGhostIntentSelect(intent, ghost, eventId) {
+  ghostIntentPrimary = intent;
+
+  const existing = loadGhostSession(eventId);
+  if (existing) {
+    saveGhostSession(eventId, { ...existing, intentPrimary: intent });
+  }
+
+  trackFunnelEvent("ghost_intent_selected", {
+    eventId,
+    intent,
+    source: isMeetupSource ? "meetup" : null,
+  });
+
+  hide(document.getElementById("ghostIntentStep"));
+  showGuestJoinedState(ghost);
+}
+
+// ── Ghost recommendations ─────────────────────────────────────────────────────
+
+function computeGhostRecommendations(attendees, intent) {
+  return attendees
+    .map((a) => ({ ...a, alignScore: computeIntentAlignment(intent, a.intent) }))
+    .filter((a) => a.alignScore > 0)
+    .sort((a, b) => b.alignScore - a.alignScore)
+    .slice(0, 3);
+}
+
+const INTENT_LABELS = {
+  meet_people:    "open to conversations",
+  find_cofounder: "looking for a cofounder",
+  hire:           "hiring",
+  explore_ideas:  "exploring ideas",
+  demo:           "demoing something",
+};
+
+function recReasonText(rec) {
+  if (rec.alignScore === 1) {
+    const label = INTENT_LABELS[rec.intent] || rec.intent.replace(/_/g, " ");
+    return `Also ${label}`;
+  }
+  if (rec.alignScore >= 0.6) return "Their goal complements yours";
+  return "Attending this event";
+}
+
+async function handleRecConnect(btn, rec, eventId) {
+  btn.disabled = true;
+  btn.textContent = "Connecting…";
+
+  trackFunnelEvent("ghost_recommendation_connect", {
+    eventId,
+    targetProfileId: rec.profileId,
+    source: isMeetupSource ? "meetup" : null,
+  });
+
+  const ghostToken  = localStorage.getItem("nearify_ghost_token");
+  const ghostEventId = localStorage.getItem("nearify_ghost_event_id") || eventId;
+
+  const { error } = await supabase.rpc("record_ghost_connection", {
+    p_event_id:          ghostEventId,
+    p_ghost_token:       ghostToken,
+    p_target_profile_id: rec.profileId,
+  });
+
+  if (error) {
+    logger.warn("[GhostRecs] record_ghost_connection failed", error);
+    btn.disabled = false;
+    btn.textContent = (error.message || "").toLowerCase().includes("already") ? "Already saved" : "Connect";
+  } else {
+    btn.textContent = "Connected ✓";
+    btn.classList.add("ghost-rec-connected");
+    const statusEl = document.getElementById("guestConnectStatus");
+    if (statusEl) {
+      statusEl.innerHTML =
+        `<strong>You met ${escapeHtml(rec.name)} at this event.</strong>` +
+        `<br><span class="guest-connect-claim-hint">You can save this interaction to your Nearify profile later.</span>`;
+    }
+    const connections = await loadGuestConnectionHistory();
+    renderGuestConnectionHistory(connections);
+    updateClaimButtonCount(connections.length);
+  }
+}
+
+function renderGhostRecommendations(recs, eventId) {
+  const container = document.getElementById("ghostRecommendations");
+  const cards     = document.getElementById("ghostRecsCards");
+  if (!container || !cards) return;
+
+  if (!recs.length) {
+    hide(container);
+    return;
+  }
+
+  cards.innerHTML = recs.map((rec) => {
+    const initials = getAttendeeInitials(rec.name);
+    const bg       = getAvatarColor(rec.name);
+    return `
+      <div class="ghost-rec-card">
+        <div class="ghost-rec-left">
+          <span class="ghost-rec-avatar" style="background:${bg};" aria-hidden="true">${escapeHtml(initials)}</span>
+          <div class="ghost-rec-info">
+            <span class="ghost-rec-name">${escapeHtml(rec.name)}</span>
+            <span class="ghost-rec-reason">${escapeHtml(recReasonText(rec))}</span>
+          </div>
+        </div>
+        <button class="ghost-rec-connect-btn btn secondary" data-profile-id="${escapeHtml(rec.profileId)}" type="button">Connect</button>
+      </div>
+    `;
+  }).join("");
+
+  cards.querySelectorAll(".ghost-rec-connect-btn").forEach((btn, i) => {
+    btn.addEventListener("click", () => handleRecConnect(btn, recs[i], eventId));
+  });
+
+  show(container);
+
+  trackFunnelEvent("ghost_recommendation_shown", {
+    eventId,
+    count:  recs.length,
+    source: isMeetupSource ? "meetup" : null,
+  });
 }
 
 function wireGuestJoinFlow(eventId) {
@@ -1346,6 +1492,7 @@ function wireGuestJoinFlow(eventId) {
 function initGuestJoinSection(eventId) {
   const existing = loadGhostSession(eventId);
   if (existing?.ghostId) {
+    ghostIntentPrimary = existing.intentPrimary || null;
     showGuestJoinedState(existing);  // saves flat keys + wires claim btn
     logger.log("[Guest] Restored existing ghost session on page load");
     return;
