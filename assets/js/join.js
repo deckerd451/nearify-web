@@ -1200,6 +1200,7 @@ function showGuestJoinedState(ghost) {
   }
 
   wireGuestConnectSection();
+  wireGhostIntentChips(ghost.eventId || localStorage.getItem("nearify_ghost_event_id") || new URLSearchParams(window.location.search).get("event"));
   loadGuestConnectionHistory().then((connections) => {
     renderGuestConnectionHistory(connections);
     updateClaimButtonCount(connections.length);
@@ -1214,9 +1215,18 @@ function showGuestJoinedState(ghost) {
       guestEventAttendees = attendees;
       logger.log("[GuestConnect] Loaded", attendees.length, "attendees");
 
-      if (ghostIntentPrimary && attendees.length > 0) {
+      if (attendees.length > 0) {
         const recs = computeGhostRecommendations(attendees, ghostIntentPrimary);
         renderGhostRecommendations(recs, connectEventId);
+        // Show intent refinement chips below recommendations
+        show(document.getElementById("ghostIntentStep"));
+        // Mark the active chip for the current intent
+        const intentStep = document.getElementById("ghostIntentStep");
+        if (intentStep && ghostIntentPrimary) {
+          intentStep.querySelectorAll(".ghost-intent-chip").forEach((c) => {
+            c.classList.toggle("ghost-intent-chip--active", c.dataset.intent === ghostIntentPrimary);
+          });
+        }
       }
 
       const statusEl = document.getElementById("guestConnectStatus");
@@ -1405,7 +1415,10 @@ async function handleGuestSubmit(eventId) {
       source:        isMeetupSource ? "meetup" : null,
       sourceEventId: isMeetupSource ? meetupSourceEventId : null,
     });
-    showGhostIntentStep(ghost, eventId);
+    // Default intent — user can refine below recommendations without being gated
+    ghostIntentPrimary = "meet_people";
+    saveGhostSession(eventId, { ghostId: ghost.ghostId, ghostToken: ghost.ghostToken, eventId, displayName: name, intentPrimary: "meet_people" });
+    showGuestJoinedState(ghost);
     logger.log("[Guest] Joined as guest", ghost);
   } catch (err) {
     logger.error("[Guest] Failed to create ghost session", err);
@@ -1417,35 +1430,37 @@ async function handleGuestSubmit(eventId) {
   }
 }
 
-// ── Ghost intent step ────────────────────────────────────────────────────────
+// ── Ghost intent refinement ───────────────────────────────────────────────────
 
-function showGhostIntentStep(ghost, eventId) {
-  const form = document.getElementById("guestForm");
+function wireGhostIntentChips(eventId) {
   const intentStep = document.getElementById("ghostIntentStep");
-  hide(form);
-  show(intentStep);
+  if (!intentStep) return;
 
   intentStep.querySelectorAll(".ghost-intent-chip").forEach((chip) => {
-    chip.addEventListener("click", () => handleGhostIntentSelect(chip.dataset.intent, ghost, eventId), { once: true });
+    chip.addEventListener("click", () => {
+      const intent = chip.dataset.intent;
+      ghostIntentPrimary = intent;
+
+      const existing = loadGhostSession(eventId);
+      if (existing) saveGhostSession(eventId, { ...existing, intentPrimary: intent });
+
+      trackFunnelEvent("ghost_intent_selected", {
+        eventId,
+        intent,
+        source: isMeetupSource ? "meetup" : null,
+      });
+
+      // Update active chip visual state
+      intentStep.querySelectorAll(".ghost-intent-chip").forEach((c) => c.classList.remove("ghost-intent-chip--active"));
+      chip.classList.add("ghost-intent-chip--active");
+
+      // Re-rank recommendations in place without navigating
+      if (guestEventAttendees.length > 0) {
+        const recs = computeGhostRecommendations(guestEventAttendees, intent);
+        renderGhostRecommendations(recs, eventId);
+      }
+    });
   });
-}
-
-function handleGhostIntentSelect(intent, ghost, eventId) {
-  ghostIntentPrimary = intent;
-
-  const existing = loadGhostSession(eventId);
-  if (existing) {
-    saveGhostSession(eventId, { ...existing, intentPrimary: intent });
-  }
-
-  trackFunnelEvent("ghost_intent_selected", {
-    eventId,
-    intent,
-    source: isMeetupSource ? "meetup" : null,
-  });
-
-  hide(document.getElementById("ghostIntentStep"));
-  showGuestJoinedState(ghost);
 }
 
 // ── Ghost recommendations ─────────────────────────────────────────────────────
@@ -1593,8 +1608,9 @@ function wireGuestJoinFlow(eventId) {
 function initGuestJoinSection(eventId) {
   const existing = loadGhostSession(eventId);
   if (existing?.ghostId) {
-    ghostIntentPrimary = existing.intentPrimary || null;
+    ghostIntentPrimary = existing.intentPrimary || "meet_people";
     showGuestJoinedState(existing);  // saves flat keys + wires claim btn
+    wireGhostIntentChips(eventId);
     logger.log("[Guest] Restored existing ghost session on page load");
     return;
   }

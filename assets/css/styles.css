@@ -1551,11 +1551,49 @@ code {
   gap: 14px;
 }
 
+/* Inline refinement version — sits below recommendations */
+.ghost-intent-refine {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(143, 160, 184, 0.12);
+}
+
+.ghost-intent-refine-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #8fa0b8;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin: 0 0 8px;
+}
+
 .ghost-intent-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: 10px;
   margin: 4px 0 0;
+}
+
+/* Active chip state for inline refinement */
+.ghost-intent-chip--active {
+  border-color: var(--color-accent, #30d158) !important;
+  color: var(--color-accent, #30d158) !important;
+  background: rgba(48, 209, 88, 0.08) !important;
+}
+
+/* Compact chip style when used as inline refinement */
+.ghost-intent-refine .ghost-intent-grid {
+  gap: 6px;
+  margin: 0;
+}
+
+.ghost-intent-refine .intent-chip {
+  padding: 8px 10px;
+  font-size: 12px;
+}
+
+.ghost-intent-refine .intent-chip-label {
+  font-size: 12px;
 }
 
 /* Ghost recommendations */
