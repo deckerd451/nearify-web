@@ -631,7 +631,7 @@ function renderGenericJoinUx(event, fallbackName, source) {
   }
 
   if (els.joinPanelTitle) {
-    els.joinPanelTitle.textContent = isMeetup ? "What happens when you join" : "3 steps to join";
+    els.joinPanelTitle.textContent = isMeetup ? "What happens when you join" : "How it works";
   }
   if (els.joinPanelList) {
     els.joinPanelList.className = "join-steps-list";
@@ -653,16 +653,16 @@ function renderGenericJoinUx(event, fallbackName, source) {
     } else {
       els.joinPanelList.innerHTML = `
         <li>
-          <div class="join-step-label">Install Nearify</div>
-          <div class="join-step-detail">Get the app on TestFlight — takes about 2 minutes.</div>
+          <div class="join-step-label">Join</div>
+          <div class="join-step-detail">Enter your name — no account needed.</div>
         </li>
         <li>
-          <div class="join-step-label">Sign in &amp; create your profile</div>
-          <div class="join-step-detail">Use Google or GitHub. Your profile is how people find you.</div>
+          <div class="join-step-label">Meet People</div>
+          <div class="join-step-detail">See who's here and find people worth talking to.</div>
         </li>
         <li>
-          <div class="join-step-label">Check in when you arrive</div>
-          <div class="join-step-detail">Check in from the Nearify iOS app, or scan the venue QR to enter the live network.</div>
+          <div class="join-step-label">Claim Connections</div>
+          <div class="join-step-detail">Sign in after to keep the people you met.</div>
         </li>
       `;
     }
@@ -938,6 +938,9 @@ function renderClaimSuccessUx(event, claimResult) {
 function showGuestJoinCta() {
   const cta = document.getElementById("guestJoinCta");
   show(cta);
+  hide(els.joinPayloadCard);
+  hide(els.joinBottomCta);
+  hide(document.getElementById("joinActions"));
 }
 
 function showGuestForm() {
