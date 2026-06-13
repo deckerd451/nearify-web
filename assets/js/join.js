@@ -889,10 +889,11 @@ function renderClaimSuccessUx(event, claimResult) {
   const noNamesEl = document.getElementById("claimSuccessNoNames");
 
   if (countEl) {
+    const eventLabel = event?.name || "this event";
     countEl.textContent = count === 1
-      ? "We recovered 1 connection."
+      ? `You connected with 1 person at ${eventLabel}.`
       : count > 1
-        ? `We recovered ${count} connections.`
+        ? `You connected with ${count} people at ${eventLabel}.`
         : "Your event activity has been transferred to your profile.";
   }
 
@@ -1057,9 +1058,9 @@ function updateClaimButtonCount(count) {
   const btn = document.getElementById("guestClaimSignInBtn");
   if (!btn) return;
   if (count > 0) {
-    btn.textContent = count === 1 ? "Claim your 1 interaction" : `Claim your ${count} interactions`;
+    btn.textContent = count === 1 ? "Claim My 1 Connection" : `Claim My ${count} Connections`;
   } else {
-    btn.textContent = "Sign in to save your interactions";
+    btn.textContent = "Claim My Connections";
   }
 }
 
