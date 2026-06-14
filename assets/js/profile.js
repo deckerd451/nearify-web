@@ -2,6 +2,7 @@ import { supabase } from "./supabaseClient.js";
 import { APP_STORE_URL, patchAppStoreLinks } from "./config.js";
 import { trackPageView, trackAppCtaClick } from "./analytics.js";
 import { getCurrentUser } from "./appState.js";
+import { INTENT_LABELS, buildRelationshipNarrative } from "./profileNarrative.js";
 
 function getInitials(name) {
   if (!name) return "?";
@@ -19,52 +20,6 @@ function showState(id) {
     const el = document.getElementById(s);
     if (el) el.hidden = s !== id;
   });
-}
-
-const INTENT_LABELS = {
-  meet_people:    "meeting people",
-  find_cofounder: "finding collaborators",
-  hire:           "hiring",
-  explore_ideas:  "exploring ideas",
-  demo:           "demoing",
-};
-
-function buildRelationshipNarrative(ctx) {
-  const count      = ctx.encounter_count ?? 0;
-  const intent     = ctx.shared_intent;
-  const firstName  = ctx.first_encounter_event_name;
-  const firstAt    = ctx.first_encounter_at ? new Date(ctx.first_encounter_at) : null;
-  const sentences  = [];
-
-  if (count === 1 && firstName) {
-    sentences.push(`You originally met at ${firstName}.`);
-  } else if (count === 1 && firstAt) {
-    sentences.push(`You've crossed paths once.`);
-  } else if (count > 1) {
-    const now = new Date();
-    const diffMs  = firstAt ? now - firstAt : null;
-    const diffDays = diffMs ? Math.floor(diffMs / 86400000) : null;
-
-    if (diffDays !== null && diffDays > 365) {
-      const years = Math.floor(diffDays / 365);
-      sentences.push(`You've crossed paths ${count} times over the last ${years === 1 ? "year" : `${years} years`}.`);
-    } else if (diffDays !== null && diffDays > 30) {
-      const months = Math.floor(diffDays / 30);
-      sentences.push(`You've crossed paths ${count} times over the last ${months === 1 ? "month" : `${months} months`}.`);
-    } else {
-      sentences.push(`You've attended ${count} events together.`);
-    }
-
-    if (firstName) {
-      sentences.push(`You originally met at ${firstName}.`);
-    }
-  }
-
-  if (intent && INTENT_LABELS[intent]) {
-    sentences.push(`You were both interested in ${INTENT_LABELS[intent]}.`);
-  }
-
-  return sentences;
 }
 
 function renderRelationshipContext(ctx) {
