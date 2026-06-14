@@ -39,12 +39,25 @@ const DIRECTION_LABELS = {
 };
 
 const STRENGTH_LEVELS = [
-  { min: 75, dots: 3, label: "Strong match" },
-  { min: 45, dots: 2, label: "Good signal" },
-  { min: 0,  dots: 1, label: "Mild signal" },
+  { min: 75, dots: 3, label: "Strong connection" },
+  { min: 45, dots: 2, label: "Worth remembering" },
+  { min: 0,  dots: 1, label: "Early connection" },
 ];
 
 const STATIC_PROFILE_ROUTE = "/profile.html";
+
+const ACTION_DISPLAY_LABELS = {
+  suggest_connect:   "Worth connecting with",
+  suggest_follow_up: "Worth reconnecting with",
+  suggest_find:      "Someone to look for",
+  suggest_rejoin:    "Worth returning to",
+  suggest_explore:   "Worth exploring",
+  do_nothing:        "Nothing urgent",
+};
+
+function getActionDisplayLabel(action) {
+  return ACTION_DISPLAY_LABELS[action] || "Relationship suggestion";
+}
 
 function scoreToStrength(score) {
   return STRENGTH_LEVELS.find((l) => score >= l.min) ?? STRENGTH_LEVELS[2];
@@ -88,7 +101,7 @@ const INTENT_DISPLAY_LABELS = {
 function renderQrBadge() {
   const el = document.createElement("span");
   el.className = "intel-qr-badge";
-  el.textContent = "QR Confirmed";
+  el.textContent = "Connected in person";
   return el;
 }
 
@@ -372,7 +385,7 @@ function buildEventHeader(eventMeta, state) {
   const statusClass = state === PRESENTATION_STATES.POST_EVENT_SUMMARY ? "intel-status-ready" : "intel-status-pending";
   const statusText  = state === PRESENTATION_STATES.POST_EVENT_SUMMARY
     ? "Ready"
-    : state === PRESENTATION_STATES.EARLY_SIGNAL ? "Early signal" : "No signal yet";
+    : state === PRESENTATION_STATES.EARLY_SIGNAL ? "Taking shape" : "Nothing yet";
 
   header.innerHTML =
     `<div class="intel-event-badge">` +
@@ -533,7 +546,7 @@ function renderRecommendedAction(decision) {
 
   const title = document.createElement("h3");
   title.className = "intel-recommended-title";
-  title.textContent = "Recommended connection";
+  title.textContent = "Worth connecting with";
 
   const body = document.createElement("p");
   body.className = "intel-recommended-body";
@@ -560,14 +573,14 @@ function renderRecommendedAction(decision) {
   const button = document.createElement("button");
   button.type = "button";
   button.className = "intel-connect-btn";
-  button.textContent = useStrongLanguage ? "Open Nearify to connect" : "Open Nearify to follow up";
+  button.textContent = useStrongLanguage ? "Open Nearify to connect" : "Reconnect in Nearify";
   button.addEventListener("click", () => handleSuggestConnect(block, { hasAttemptedDeepLinkForThisClick: false }));
 
   const subtext = document.createElement("p");
   subtext.className = "intel-connect-subtext";
   subtext.textContent = isLowConfidence
-    ? "This is an early match. Use the Nearify app to connect at the event."
-    : "Use the Nearify app to connect in person at the event.";
+    ? "This is an early connection. Use Nearify to remember and follow through."
+    : "Use Nearify to keep this relationship moving.";
 
   const fallback = document.createElement("div");
   fallback.className = "intel-connect-fallback";
@@ -613,7 +626,7 @@ function renderDecisionDebug(decision) {
   const wrap = document.createElement("details");
   wrap.className = "intel-decision-debug";
   wrap.innerHTML = `
-    <summary>Next-best action: ${escapeHtml(decision.action)}</summary>
+    <summary>Relationship suggestion: ${escapeHtml(getActionDisplayLabel(decision.action))}</summary>
     <pre>${escapeHtml(JSON.stringify(decision, null, 2))}</pre>
   `;
   return wrap;

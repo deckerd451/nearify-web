@@ -5313,3 +5313,70 @@ body.cc-page .cc-event-actions .btn.secondary:hover {
   font-style: italic;
   margin: 4px 0 0;
 }
+
+/* Relationship-memory entry point on authenticated homepage */
+.cc-network-widget {
+  margin: 0 0 22px;
+  padding: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 18px;
+  background: linear-gradient(135deg, rgba(48, 209, 88, 0.10), rgba(100, 210, 255, 0.08));
+}
+
+.cc-network-widget-top {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+.cc-network-kicker {
+  color: var(--color-accent);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+
+.cc-network-title {
+  margin: 0;
+  font-size: 24px;
+  color: #fff;
+}
+
+.cc-network-count {
+  margin: 4px 0 0;
+  color: #aab4c5;
+}
+
+.cc-network-recent {
+  margin: 16px 0 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.cc-network-person {
+  display: inline-flex;
+  align-items: center;
+  padding: 7px 10px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  color: #e5edf7;
+  font-size: 14px;
+}
+
+@media (max-width: 640px) {
+  .cc-network-widget-top {
+    display: block;
+  }
+
+  .cc-network-widget .btn {
+    margin-top: 14px;
+    width: 100%;
+    justify-content: center;
+  }
+}

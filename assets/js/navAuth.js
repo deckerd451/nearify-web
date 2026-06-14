@@ -153,6 +153,12 @@ function injectSignedIn(profile, email, user) {
 
   const navLinks = document.querySelector(".nav-links");
   if (navLinks) {
+    const networkLink = document.createElement("a");
+    networkLink.href = "/connections/";
+    networkLink.textContent = "My Connections";
+    networkLink.className = "nav-auth-link";
+    navLinks.appendChild(networkLink);
+
     const dashLink = document.createElement("a");
     dashLink.href = "/index.html";
     dashLink.textContent = "Your Events";
@@ -170,6 +176,12 @@ function injectSignedIn(profile, email, user) {
 
   const drawer = document.getElementById("navDrawer");
   if (drawer) {
+    const drawerNetwork = document.createElement("a");
+    drawerNetwork.href = "/connections/";
+    drawerNetwork.textContent = "My Connections";
+    drawerNetwork.className = "nav-auth-link";
+    drawer.appendChild(drawerNetwork);
+
     const drawerDash = document.createElement("a");
     drawerDash.href = "/index.html";
     drawerDash.textContent = "Your Events";
