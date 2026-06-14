@@ -5400,6 +5400,40 @@ body.cc-page .cc-event-actions .btn.secondary:hover {
   font-size: 14px;
 }
 
+.cc-see-again-widget {
+  background: linear-gradient(135deg, rgba(100, 210, 255, 0.10), rgba(191, 90, 242, 0.08));
+}
+
+.cc-see-again-list {
+  margin: 16px 0 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 10px;
+}
+
+.cc-see-again-item {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  align-items: center;
+  padding: 12px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.07);
+}
+
+.cc-see-again-heading {
+  margin: 0;
+  color: #e5edf7;
+  font-weight: 700;
+}
+
+.cc-see-again-meta {
+  margin: 4px 0 0;
+  color: #aab4c5;
+  font-size: 13px;
+}
+
 @media (max-width: 640px) {
   .cc-network-widget-top {
     display: block;
@@ -5409,5 +5443,9 @@ body.cc-page .cc-event-actions .btn.secondary:hover {
     margin-top: 14px;
     width: 100%;
     justify-content: center;
+  }
+
+  .cc-see-again-item {
+    display: block;
   }
 }
