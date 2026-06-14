@@ -296,7 +296,7 @@ function renderEmptyState() {
   `;
 }
 
-function renderEventCard(ev, count, intentMap) {
+function renderEventCard(ev, count, intentMap, relationshipReason = "") {
   const status    = getEventStatus(ev);
   const jUrl      = buildJoinUrl(ev);
   const detailUrl = EVENT_DETAIL_URL(ev.id);
@@ -359,7 +359,9 @@ function renderEventCard(ev, count, intentMap) {
           </div>
         </div>
 
-        ${participationCtx ? `<p class="cc-participation-context">${escapeHtml(participationCtx)}</p>` : ""}
+        ${relationshipReason
+          ? `<p class="cc-participation-context">${escapeHtml(relationshipReason)}</p>`
+          : participationCtx ? `<p class="cc-participation-context">${escapeHtml(participationCtx)}</p>` : ""}
 
         <div class="cc-event-actions">
           <a class="btn primary cc-action-btn" href="${escapeAttr(detailUrl)}">View Event</a>
@@ -603,7 +605,7 @@ function computePastRelevance(event, attendeeCount, nowMs) {
 
 // ─── Rendering ────────────────────────────────────────────────────────────────
 
-function renderDashboard(events, counts, intentsByEvent) {
+function renderDashboard(events, counts, intentsByEvent, relationshipReasons = new Map()) {
   const list = document.getElementById("eventCardList");
   if (!list) return;
 
@@ -618,7 +620,12 @@ function renderDashboard(events, counts, intentsByEvent) {
   for (const ev of sorted) groups[getEventStatus(ev)].push(ev);
 
   const renderCards = (evs) =>
-    evs.map((ev) => renderEventCard(ev, counts.get(ev.id) ?? 0, intentsByEvent.get(ev.id) || new Map())).join("");
+    evs.map((ev) => renderEventCard(
+      ev,
+      counts.get(ev.id) ?? 0,
+      intentsByEvent.get(ev.id) || new Map(),
+      relationshipReasons.get(ev.id) || ""
+    )).join("");
 
   let html = "";
 
@@ -707,6 +714,27 @@ function renderNetworkMemoryWidget(connections, events) {
   widget.hidden = false;
 }
 
+
+function buildRelationshipReasonMap(opportunities) {
+  const matchesByEvent = new Map();
+  for (const { event, connection } of opportunities || []) {
+    if (!event?.id || !connection?.profile_id) continue;
+    if (!matchesByEvent.has(event.id)) matchesByEvent.set(event.id, new Map());
+    matchesByEvent.get(event.id).set(connection.profile_id, connection);
+  }
+
+  const reasons = new Map();
+  for (const [eventId, matches] of matchesByEvent.entries()) {
+    const connections = [...matches.values()];
+    if (connections.length === 1) {
+      reasons.set(eventId, `${connections[0].name || "Someone you know"} is attending.`);
+    } else if (connections.length > 1) {
+      reasons.set(eventId, `${connections.length} people you know are attending.`);
+    }
+  }
+  return reasons;
+}
+
 function renderSeeAgainWidget(opportunities) {
   const widget = document.getElementById("seeAgainWidget");
   if (!widget) return;
@@ -787,7 +815,7 @@ async function refreshDashboard() {
   renderEcosystemHero(events, counts, intentsByEvent);
   renderNetworkMemoryWidget(connections, events);
   renderSeeAgainWidget(seeAgainOpportunities);
-  renderDashboard(events, counts, intentsByEvent);
+  renderDashboard(events, counts, intentsByEvent, buildRelationshipReasonMap(seeAgainOpportunities));
   })().finally(() => { refreshDashboard._inFlight = null; });
   return refreshDashboard._inFlight;
 }
@@ -1015,7 +1043,7 @@ async function loadDashboard() {
     renderEcosystemHero(events, counts, intentsByEvent);
     renderNetworkMemoryWidget(connections, events);
     renderSeeAgainWidget(seeAgainOpportunities);
-    renderDashboard(events, counts, intentsByEvent);
+    renderDashboard(events, counts, intentsByEvent, buildRelationshipReasonMap(seeAgainOpportunities));
   } catch (err) {
     logger.error("[Dashboard] failed to load dashboard:", err);
     renderDashboardError(err);
