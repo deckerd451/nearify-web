@@ -23,6 +23,7 @@ logger.log("[Dashboard] dashboard.js loaded");
 const EVENT_DETAIL_URL = (id) => `/events/event.html?id=${encodeURIComponent(id)}`;
 const EDIT_URL         = (id) => `/admin/event-setup.html?edit=${encodeURIComponent(id)}`;
 const DASHBOARD_EVENTS_POLL_KEY = "dashboard:events-refresh";
+const SEE_AGAIN_LIMIT = 5;
 
 const INTENT_LABELS = {
   meet_people:    "Meet people",
@@ -48,6 +49,18 @@ function formatTime(ts) {
       hour: "numeric", minute: "2-digit",
     });
   } catch { return ""; }
+}
+
+function formatDateTime(ts) {
+  if (!ts) return "";
+  const date = formatDate(ts);
+  const time = formatTime(ts);
+  return [date, time].filter(Boolean).join(" · ");
+}
+
+function getEventDetailUrl(event) {
+  if (event?.slug) return `/events/event.html?slug=${encodeURIComponent(event.slug)}`;
+  return EVENT_DETAIL_URL(event.id);
 }
 
 function buildJoinUrl(event) {
@@ -141,6 +154,66 @@ async function fetchMyConnections() {
     return [];
   }
   return Array.isArray(data) ? data : [];
+}
+
+async function fetchUpcomingEventsForConnections(connections) {
+  if (!connections.length) return [];
+
+  const connectionIds = connections.map((conn) => conn.profile_id).filter(Boolean);
+  if (!connectionIds.length) return [];
+
+  const nowIso = new Date().toISOString();
+  const { data: events, error: eventsError } = await supabase
+    .from("events")
+    .select("id, name, slug, starts_at")
+    .is("deleted_at", null)
+    .or(`starts_at.is.null,starts_at.gte.${nowIso}`)
+    .order("starts_at", { ascending: true, nullsFirst: false })
+    .limit(50);
+
+  if (eventsError) {
+    logger.warn("[Dashboard] see again events:", eventsError);
+    return [];
+  }
+
+  const eventIds = (events || []).map((event) => event.id).filter(Boolean);
+  if (!eventIds.length) return [];
+
+  const { data: attendees, error: attendeesError } = await supabase
+    .from("event_attendees")
+    .select("event_id, profile_id")
+    .in("event_id", eventIds)
+    .in("profile_id", connectionIds);
+
+  if (attendeesError) {
+    logger.warn("[Dashboard] see again attendees:", attendeesError);
+    return [];
+  }
+
+  const eventsById = new Map((events || []).map((event) => [event.id, event]));
+  const connectionsById = new Map(connections.map((conn) => [conn.profile_id, conn]));
+
+  return (attendees || [])
+    .map((attendee) => {
+      const event = eventsById.get(attendee.event_id);
+      const connection = connectionsById.get(attendee.profile_id);
+      if (!event || !connection) return null;
+      return { event, connection };
+    })
+    .filter(Boolean)
+    .sort((a, b) => {
+      const aStart = a.event.starts_at ? new Date(a.event.starts_at).getTime() : Number.MAX_SAFE_INTEGER;
+      const bStart = b.event.starts_at ? new Date(b.event.starts_at).getTime() : Number.MAX_SAFE_INTEGER;
+      if (aStart !== bStart) return aStart - bStart;
+
+      const encounterDelta = (Number(b.connection.encounter_count) || 0) - (Number(a.connection.encounter_count) || 0);
+      if (encounterDelta !== 0) return encounterDelta;
+
+      const bLast = b.connection.last_encounter_at ? new Date(b.connection.last_encounter_at).getTime() : 0;
+      const aLast = a.connection.last_encounter_at ? new Date(a.connection.last_encounter_at).getTime() : 0;
+      return bLast - aLast;
+    })
+    .slice(0, SEE_AGAIN_LIMIT);
 }
 
 async function fetchAttendeeCounts(eventIds) {
@@ -634,6 +707,66 @@ function renderNetworkMemoryWidget(connections, events) {
   widget.hidden = false;
 }
 
+function renderSeeAgainWidget(opportunities) {
+  const widget = document.getElementById("seeAgainWidget");
+  if (!widget) return;
+
+  if (!opportunities.length) {
+    widget.hidden = true;
+    widget.replaceChildren();
+    return;
+  }
+
+  const top = document.createElement("div");
+  top.className = "cc-network-widget-top";
+
+  const textWrap = document.createElement("div");
+  const kicker = document.createElement("div");
+  kicker.className = "cc-network-kicker";
+  kicker.textContent = "Upcoming with your network";
+  const title = document.createElement("h2");
+  title.className = "cc-network-title";
+  title.textContent = "See them again soon";
+  const count = document.createElement("p");
+  count.className = "cc-network-count";
+  count.textContent = "People you know are going to these events.";
+  textWrap.append(kicker, title, count);
+  top.append(textWrap);
+
+  const list = document.createElement("ul");
+  list.className = "cc-see-again-list";
+
+  opportunities.forEach(({ connection, event }) => {
+    const item = document.createElement("li");
+    item.className = "cc-see-again-item";
+
+    const details = document.createElement("div");
+    const heading = document.createElement("p");
+    heading.className = "cc-see-again-heading";
+    heading.textContent = `${connection.name || "Someone you met"} — ${event.name || "Upcoming event"}`;
+    details.appendChild(heading);
+
+    const dateText = formatDateTime(event.starts_at);
+    if (dateText) {
+      const meta = document.createElement("p");
+      meta.className = "cc-see-again-meta";
+      meta.textContent = dateText;
+      details.appendChild(meta);
+    }
+
+    const link = document.createElement("a");
+    link.className = "btn secondary";
+    link.href = getEventDetailUrl(event);
+    link.textContent = "View Event";
+
+    item.append(details, link);
+    list.appendChild(item);
+  });
+
+  widget.replaceChildren(top, list);
+  widget.hidden = false;
+}
+
 // ─── Refresh ──────────────────────────────────────────────────────────────────
 
 async function refreshDashboard() {
@@ -645,6 +778,7 @@ async function refreshDashboard() {
     fetchMyEvents(),
     fetchMyConnections(),
   ]);
+  const seeAgainOpportunities = await fetchUpcomingEventsForConnections(connections);
   const eventIds = events.map((e) => e.id);
   const [counts, intentsByEvent] = await Promise.all([
     eventIds.length ? fetchAttendeeCounts(eventIds) : Promise.resolve(new Map()),
@@ -652,6 +786,7 @@ async function refreshDashboard() {
   ]);
   renderEcosystemHero(events, counts, intentsByEvent);
   renderNetworkMemoryWidget(connections, events);
+  renderSeeAgainWidget(seeAgainOpportunities);
   renderDashboard(events, counts, intentsByEvent);
   })().finally(() => { refreshDashboard._inFlight = null; });
   return refreshDashboard._inFlight;
@@ -868,6 +1003,7 @@ async function loadDashboard() {
       fetchMyEvents(),
       fetchMyConnections(),
     ]);
+    const seeAgainOpportunities = await fetchUpcomingEventsForConnections(connections);
     logger.log("[Dashboard] events loaded:", events.length);
     const eventIds = events.map((e) => e.id);
 
@@ -878,6 +1014,7 @@ async function loadDashboard() {
 
     renderEcosystemHero(events, counts, intentsByEvent);
     renderNetworkMemoryWidget(connections, events);
+    renderSeeAgainWidget(seeAgainOpportunities);
     renderDashboard(events, counts, intentsByEvent);
   } catch (err) {
     logger.error("[Dashboard] failed to load dashboard:", err);
