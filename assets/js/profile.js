@@ -169,14 +169,17 @@ async function init() {
 
     if (fromConnections) {
       // Swap app-install CTAs for a back link when arriving from the connections list.
-      const backBtn   = document.getElementById("profileBackBtn");
-      const openBtn   = document.getElementById("profileOpenAppBtn");
+      // Use style.display rather than .hidden because .btn { display: inline-block }
+      // has higher specificity than the UA [hidden] attribute rule.
+      const backBtn    = document.getElementById("profileBackBtn");
+      const openBtn    = document.getElementById("profileOpenAppBtn");
       const getAppLink = document.getElementById("profileGetAppLink");
-      const fallback  = document.getElementById("profileGetAppFallback");
-      if (backBtn)    backBtn.hidden = false;
-      if (openBtn)    openBtn.hidden = true;
-      if (getAppLink) getAppLink.hidden = true;
-      if (fallback)   fallback.hidden = true;
+      const fallback   = document.getElementById("profileGetAppFallback");
+      if (backBtn)    backBtn.style.display    = "";          // show (was hidden attr)
+      if (openBtn)    openBtn.style.display    = "none";
+      if (getAppLink) getAppLink.style.display = "none";
+      if (fallback)   fallback.style.display   = "none";
+      if (backBtn)    backBtn.removeAttribute("hidden");
     }
   }
 }
