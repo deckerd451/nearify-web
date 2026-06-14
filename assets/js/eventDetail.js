@@ -13,25 +13,12 @@ import { logger } from "./logger.js";
 import { canManageEvent } from "./events.js";
 import { loadOrganizerInsights } from "./organizerInsights.js";
 import { renderShareButton, buildEventShareUrl, buildEventShareText } from "./share.js";
+import { VALID_INTENTS, INTENT_LABELS } from "./constants/intents.js";
 
 const INTENT_STORAGE_KEY = "intent_primary";
 const ATTENDEE_AUTH_KEY = "nearify_attendee_auth_return";
 const ATTENDEE_JOIN_KEY = "nearify_attendee_join_pending";
-const INTENT_OPTIONS = [
-  "meet_people",
-  "find_cofounder",
-  "hire",
-  "explore_ideas",
-  "demo_something",
-];
-
-const INTENT_LABELS = {
-  meet_people:    "Meet people",
-  find_cofounder: "Find a cofounder",
-  hire:           "Hire",
-  explore_ideas:  "Explore ideas",
-  demo_something: "Demo something",
-};
+const INTENT_OPTIONS = VALID_INTENTS;
 
 let currentEvent = null;
 let currentUser = null;
