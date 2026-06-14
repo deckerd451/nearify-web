@@ -5,6 +5,9 @@
  * Every function here is deterministic and unit-testable.
  */
 
+import { VALID_INTENTS, INTENT_LABELS, isKnownIntent } from "./constants/intents.js";
+export { VALID_INTENTS, INTENT_LABELS, isKnownIntent };
+
 const EPSILON = 0.0001;
 
 export const DECISION_ACTIONS = [
@@ -207,16 +210,25 @@ export function normalizeIntent(intent) {
 }
 
 export function computeIntentAlignment(myIntent, otherIntent) {
+  if (myIntent && !isKnownIntent(myIntent)) {
+    console.warn(`[EL] Unknown intent value: "${myIntent}"`);
+  }
+  if (otherIntent && !isKnownIntent(otherIntent)) {
+    console.warn(`[EL] Unknown intent value: "${otherIntent}"`);
+  }
   const mine  = normalizeIntent(myIntent);
   const other = normalizeIntent(otherIntent);
   if (!mine || !other) return 0;
   if (mine === other) return 1;
+  // demo_something is listed explicitly as an alias for demo so that
+  // callers passing the raw value without normalization still score correctly.
   const matrix = {
     meet_people:    ["explore_ideas", "demo"],
     find_cofounder: ["demo", "explore_ideas"],
     hire:           ["demo"],
     explore_ideas:  ["meet_people", "find_cofounder"],
     demo:           ["find_cofounder", "hire"],
+    demo_something: ["find_cofounder", "hire"],
   };
   return matrix[mine]?.includes(other) ? 0.6 : 0.2;
 }

@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi, afterEach } from "vitest";
 import {
   clamp01,
   sumBy,
@@ -19,6 +19,8 @@ import {
   getStateCopy,
   PRESENTATION_STATES,
   DECISION_ACTIONS,
+  VALID_INTENTS,
+  isKnownIntent,
 } from "../assets/js/intelligence-algo.js";
 
 // ---------------------------------------------------------------------------
@@ -521,5 +523,104 @@ describe("getStateCopy", () => {
     const fallback = getStateCopy("unknown_state");
     const noSignal = getStateCopy(PRESENTATION_STATES.NO_SIGNAL);
     expect(fallback.title).toBe(noSignal.title);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// VALID_INTENTS / isKnownIntent — canonical intent guardrails
+// ---------------------------------------------------------------------------
+
+describe("VALID_INTENTS", () => {
+  it("includes all values emitted by authenticated event.html intent chips", () => {
+    // Matches data-intent values in events/event.html
+    const eventHtmlChips = ["meet_people", "find_cofounder", "hire", "explore_ideas", "demo_something"];
+    for (const v of eventHtmlChips) {
+      expect(VALID_INTENTS).toContain(v);
+    }
+  });
+
+  it("includes all values emitted by join.html guest intent chips", () => {
+    // Matches data-intent values in join/index.html
+    const joinHtmlChips = ["meet_people", "find_cofounder", "hire", "explore_ideas", "demo"];
+    for (const v of joinHtmlChips) {
+      expect(VALID_INTENTS).toContain(v);
+    }
+  });
+
+  it("contains no duplicates", () => {
+    expect(new Set(VALID_INTENTS).size).toBe(VALID_INTENTS.length);
+  });
+});
+
+describe("isKnownIntent", () => {
+  it("returns true for all VALID_INTENTS entries", () => {
+    for (const v of VALID_INTENTS) {
+      expect(isKnownIntent(v)).toBe(true);
+    }
+  });
+
+  it("returns false for arbitrary unknown strings", () => {
+    expect(isKnownIntent("network")).toBe(false);
+    expect(isKnownIntent("buy")).toBe(false);
+    expect(isKnownIntent("")).toBe(false);
+  });
+
+  it("returns false for null and undefined", () => {
+    expect(isKnownIntent(null)).toBe(false);
+    expect(isKnownIntent(undefined)).toBe(false);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// computeIntentAlignment — demo_something explicit coverage + unknown handling
+// ---------------------------------------------------------------------------
+
+describe("computeIntentAlignment — demo_something guardrails", () => {
+  it("demo_something ↔ hire scores 0.6", () => {
+    expect(computeIntentAlignment("demo_something", "hire")).toBe(0.6);
+    expect(computeIntentAlignment("hire", "demo_something")).toBe(0.6);
+  });
+
+  it("demo_something ↔ find_cofounder scores 0.6", () => {
+    expect(computeIntentAlignment("demo_something", "find_cofounder")).toBe(0.6);
+    expect(computeIntentAlignment("find_cofounder", "demo_something")).toBe(0.6);
+  });
+
+  it("demo_something ↔ demo_something scores 1.0 (identical)", () => {
+    expect(computeIntentAlignment("demo_something", "demo_something")).toBe(1);
+  });
+
+  it("demo_something ↔ demo scores 1.0 (normalized to same value)", () => {
+    expect(computeIntentAlignment("demo_something", "demo")).toBe(1);
+    expect(computeIntentAlignment("demo", "demo_something")).toBe(1);
+  });
+});
+
+describe("computeIntentAlignment — unknown intent handling", () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it("returns 0.2 for an unknown intent rather than crashing", () => {
+    expect(computeIntentAlignment("network", "hire")).toBe(0.2);
+    expect(computeIntentAlignment("hire", "buy")).toBe(0.2);
+  });
+
+  it("emits a console.warn for unknown intent values", () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    computeIntentAlignment("unknown_value", "hire");
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining("unknown_value"));
+  });
+
+  it("does not warn for known intent values", () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    computeIntentAlignment("hire", "demo_something");
+    expect(warn).not.toHaveBeenCalled();
+  });
+
+  it("returns 0 when either intent is null or empty (missing data)", () => {
+    expect(computeIntentAlignment(null, "hire")).toBe(0);
+    expect(computeIntentAlignment("hire", null)).toBe(0);
+    expect(computeIntentAlignment("", "hire")).toBe(0);
   });
 });
