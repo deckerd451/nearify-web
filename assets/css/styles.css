@@ -3842,6 +3842,14 @@ code {
   line-height: 1.5;
 }
 
+.profile-rel-narrative {
+  font-size: 13px;
+  color: var(--color-text-muted);
+  line-height: 1.6;
+  margin: -12px 0 20px;
+  text-align: left;
+}
+
 .profile-actions {
   display: flex;
   flex-direction: column;
