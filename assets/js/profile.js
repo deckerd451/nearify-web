@@ -44,6 +44,7 @@ function renderRelationshipContext(ctx) {
     confirmed:         "You're connected",
     proposed_by_me:    "You saved them — waiting for them to confirm",
     proposed_by_them:  "They want to stay in touch",
+    ghost_claimed:     "You connected at this event",
   };
   const statusText = statusLabels[status] ?? null;
 
@@ -126,8 +127,9 @@ async function init() {
   const params    = new URLSearchParams(window.location.search);
   const rawProfileId = params.get("id");
   const rawEventId   = params.get("event");
-  const profileId = rawProfileId && UUID_RE.test(rawProfileId) ? rawProfileId : null;
-  const eventId   = rawEventId   && UUID_RE.test(rawEventId)   ? rawEventId   : null;
+  const profileId  = rawProfileId && UUID_RE.test(rawProfileId) ? rawProfileId : null;
+  const eventId    = rawEventId   && UUID_RE.test(rawEventId)   ? rawEventId   : null;
+  const fromConnections = params.get("from") === "connections";
 
   trackPageView({ profileId: profileId ?? undefined, eventId: eventId ?? undefined });
 
@@ -164,6 +166,18 @@ async function init() {
       p_other_profile_id: profileId,
     });
     if (!ctxErr && ctx) renderRelationshipContext(ctx);
+
+    if (fromConnections) {
+      // Swap app-install CTAs for a back link when arriving from the connections list.
+      const backBtn   = document.getElementById("profileBackBtn");
+      const openBtn   = document.getElementById("profileOpenAppBtn");
+      const getAppLink = document.getElementById("profileGetAppLink");
+      const fallback  = document.getElementById("profileGetAppFallback");
+      if (backBtn)    backBtn.hidden = false;
+      if (openBtn)    openBtn.hidden = true;
+      if (getAppLink) getAppLink.hidden = true;
+      if (fallback)   fallback.hidden = true;
+    }
   }
 }
 
