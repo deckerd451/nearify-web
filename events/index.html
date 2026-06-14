@@ -389,9 +389,11 @@
         const dateStr = ev.starts_at
           ? new Date(ev.starts_at).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })
           : "";
-        const detailUrl = ev.slug
-          ? "event.html?slug=" + encodeURIComponent(ev.slug)
-          : "event.html?id=" + encodeURIComponent(ev.id);
+        const detailUrl = isPast
+          ? "../connections/"
+          : (ev.slug
+            ? "event.html?slug=" + encodeURIComponent(ev.slug)
+            : "event.html?id=" + encodeURIComponent(ev.id));
         return (
           '<a href="' + detailUrl + '" class="connection-card' + (isPast ? "" : " connection-card--upcoming") + '">' +
             '<div class="connection-card-name">' + escapeHtml(ev.name) + '</div>' +

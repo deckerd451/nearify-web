@@ -173,9 +173,9 @@ export function hasMeaningfulFallbackDecision(decision) {
 
 export function buildPostEventSummary(decision, hasData) {
   const { P, X } = getDecisionSignals(decision);
-  if (P > 0.5 && X > 0.25) return "Possible signal based on shared presence and recent interaction.";
+  if (P > 0.5 && X > 0.25) return "You attended the same event and spent meaningful time together.";
   if (P > 0.5) return "You crossed paths at the same event, which may be worth exploring.";
-  if (X > 0.25) return "Possible signal from recent interaction activity.";
+  if (X > 0.25) return "You had a recent moment together that may be worth remembering.";
   return hasData
     ? "Your post-event intelligence report is ready with interaction highlights."
     : "Your post-event intelligence report is taking shape from early event signals.";
@@ -185,16 +185,16 @@ export function buildSignalInsights(decision) {
   const { P, X, N } = getDecisionSignals(decision);
   return [
     {
-      label: "Shared presence",
-      value: P > 0.5 ? "Confirmed at this event" : "Limited co-presence signal",
+      label: "Same event",
+      value: P > 0.5 ? "You attended the same event." : "You may have crossed paths there.",
     },
     {
-      label: "Interaction strength",
-      value: X > 0.5 ? "Strong interaction signal" : X > 0.2 ? "Moderate interaction signal" : "Light interaction signal",
+      label: "Time together",
+      value: X > 0.5 ? "You spent meaningful time together." : X > 0.2 ? "You had a notable moment together." : "You had a brief moment together.",
     },
     {
       label: "Timing",
-      value: N > 0.5 ? "Interaction was recent" : "Interaction was less recent",
+      value: N > 0.5 ? "This happened recently" : "This happened a little while ago",
     },
   ].slice(0, 3);
 }
@@ -293,7 +293,7 @@ export function getStateCopy(state) {
       body:       "Review people you met and follow up while the context is fresh.",
       cta:        "Open Nearify to connect live",
       processing: "Open Nearify at the event to see live recommendations.",
-      footer:     "Saved connections appear in People for follow-up.",
+      footer:     "Saved connections appear in My Connections when you are ready to reconnect.",
     };
   }
   return {

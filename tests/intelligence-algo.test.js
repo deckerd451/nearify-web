@@ -416,7 +416,7 @@ describe("buildPostEventSummary", () => {
   it("returns strong-signal copy when P and X are high", () => {
     const decision = { signals: { P: 0.8, X: 0.5, O: 0.5, N: 0.5 } };
     const text = buildPostEventSummary(decision, true);
-    expect(text).toMatch(/shared presence|interaction/i);
+    expect(text).toMatch(/same event|meaningful time/i);
   });
 
   it("returns presence-only copy when only P is high", () => {
@@ -428,7 +428,7 @@ describe("buildPostEventSummary", () => {
   it("returns interaction-only copy when only X is high", () => {
     const decision = { signals: { P: 0.1, X: 0.5, O: 0, N: 0 } };
     const text = buildPostEventSummary(decision, false);
-    expect(text).toMatch(/interaction/i);
+    expect(text).toMatch(/recent moment|remembering/i);
   });
 
   it("returns generic copy when signals are low", () => {
@@ -457,13 +457,13 @@ describe("buildSignalInsights", () => {
     }
   });
 
-  it("reflects strong presence in the shared presence insight", () => {
+  it("reflects same-event language in the presence insight", () => {
     const strong = { signals: { P: 0.9, X: 0.1, N: 0.5 } };
     const weak   = { signals: { P: 0.1, X: 0.1, N: 0.5 } };
     const [strongInsight] = buildSignalInsights(strong);
     const [weakInsight]   = buildSignalInsights(weak);
-    expect(strongInsight.value).toMatch(/confirmed/i);
-    expect(weakInsight.value).toMatch(/limited/i);
+    expect(strongInsight.value).toMatch(/same event/i);
+    expect(weakInsight.value).toMatch(/crossed paths/i);
   });
 });
 

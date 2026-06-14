@@ -134,6 +134,15 @@ async function fetchMyEvents() {
   return data || [];
 }
 
+async function fetchMyConnections() {
+  const { data, error } = await supabase.rpc("get_my_connections", { p_status: "confirmed" });
+  if (error) {
+    logger.warn("[Dashboard] fetchMyConnections:", error);
+    return [];
+  }
+  return Array.isArray(data) ? data : [];
+}
+
 async function fetchAttendeeCounts(eventIds) {
   if (!eventIds.length) return new Map();
 
@@ -567,6 +576,64 @@ function renderDashboardError(err) {
   `;
 }
 
+
+function renderNetworkMemoryWidget(connections, events) {
+  const widget = document.getElementById("networkMemoryWidget");
+  if (!widget) return;
+
+  const shouldShow = connections.length > 0 || events.length === 0 || !events.some((event) => ["live", "upcoming"].includes(getEventStatus(event)));
+  if (!shouldShow) {
+    widget.hidden = true;
+    widget.replaceChildren();
+    return;
+  }
+
+  const countLabel = `${connections.length} ${connections.length === 1 ? "Connection" : "Connections"}`;
+  const top = document.createElement("div");
+  top.className = "cc-network-widget-top";
+
+  const textWrap = document.createElement("div");
+  const kicker = document.createElement("div");
+  kicker.className = "cc-network-kicker";
+  kicker.textContent = "Relationship memory";
+  const title = document.createElement("h2");
+  title.className = "cc-network-title";
+  title.textContent = "My Network";
+  const count = document.createElement("p");
+  count.className = "cc-network-count";
+  count.textContent = countLabel;
+  textWrap.append(kicker, title, count);
+
+  const link = document.createElement("a");
+  link.className = "btn secondary";
+  link.href = "/connections/";
+  link.textContent = "View All Connections";
+  top.append(textWrap, link);
+
+  const recent = connections.slice(0, 3);
+  const recentLabel = document.createElement("p");
+  recentLabel.className = "cc-network-count";
+  recentLabel.textContent = recent.length
+    ? "Recently connected:"
+    : "People you meet at Nearify events will appear here.";
+
+  const children = [top, recentLabel];
+  if (recent.length) {
+    const list = document.createElement("ul");
+    list.className = "cc-network-recent";
+    recent.forEach((conn) => {
+      const item = document.createElement("li");
+      item.className = "cc-network-person";
+      item.textContent = conn.name || "Someone you met";
+      list.appendChild(item);
+    });
+    children.push(list);
+  }
+
+  widget.replaceChildren(...children);
+  widget.hidden = false;
+}
+
 // ─── Refresh ──────────────────────────────────────────────────────────────────
 
 async function refreshDashboard() {
@@ -574,13 +641,17 @@ async function refreshDashboard() {
   refreshDashboard._inFlight = (async () => {
   const list = document.getElementById("eventCardList");
   if (list) list.innerHTML = renderSkeletonCards();
-  const events   = await fetchMyEvents();
+  const [events, connections] = await Promise.all([
+    fetchMyEvents(),
+    fetchMyConnections(),
+  ]);
   const eventIds = events.map((e) => e.id);
   const [counts, intentsByEvent] = await Promise.all([
     eventIds.length ? fetchAttendeeCounts(eventIds) : Promise.resolve(new Map()),
     eventIds.length ? fetchIntentDistribution(eventIds) : Promise.resolve(new Map()),
   ]);
   renderEcosystemHero(events, counts, intentsByEvent);
+  renderNetworkMemoryWidget(connections, events);
   renderDashboard(events, counts, intentsByEvent);
   })().finally(() => { refreshDashboard._inFlight = null; });
   return refreshDashboard._inFlight;
@@ -793,11 +864,10 @@ async function loadDashboard() {
   showLoading();
 
   try {
-    const events   = await fetchMyEvents();
-    if (events.length === 0) {
-      window.location.replace("/events/index.html");
-      return;
-    }
+    const [events, connections] = await Promise.all([
+      fetchMyEvents(),
+      fetchMyConnections(),
+    ]);
     logger.log("[Dashboard] events loaded:", events.length);
     const eventIds = events.map((e) => e.id);
 
@@ -807,6 +877,7 @@ async function loadDashboard() {
     ]);
 
     renderEcosystemHero(events, counts, intentsByEvent);
+    renderNetworkMemoryWidget(connections, events);
     renderDashboard(events, counts, intentsByEvent);
   } catch (err) {
     logger.error("[Dashboard] failed to load dashboard:", err);
