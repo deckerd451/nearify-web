@@ -914,15 +914,11 @@ function renderClaimSuccessUx(event, claimResult) {
   }
 
   const viewNetworkBtn = document.getElementById("claimViewNetworkBtn");
-  logger.log("[GuestClaim] viewNetworkBtn found:", !!viewNetworkBtn, "profileId:", claimResult?.profileId);
   if (viewNetworkBtn) {
-    if (claimResult?.profileId) {
-      const profileUrl = `../profile.html?id=${claimResult.profileId}${event?.id ? `&event=${event.id}` : ""}`;
-      viewNetworkBtn.href = profileUrl;
-      logger.log("[GuestClaim] claimViewNetworkBtn.href set to:", profileUrl);
-    } else {
-      viewNetworkBtn.hidden = true;
-      logger.warn("[GuestClaim] profileId missing; hiding View My Network button");
+    // Button always routes to the connections page; no profile-specific URL needed.
+    viewNetworkBtn.href = "../connections/";
+    if (!claimResult?.profileId) {
+      logger.warn("[GuestClaim] profileId missing; connections page will still work via session");
     }
   }
 

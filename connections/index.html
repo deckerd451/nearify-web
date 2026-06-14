@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <title>My Connections | Nearify</title>
+  <meta name="description" content="People you've met through Nearify events." />
+  <meta name="robots" content="noindex" />
+
+  <link rel="stylesheet" href="../assets/css/styles.css?v=20260430" />
+
+  <style>
+    .connections-page-header {
+      max-width: 860px;
+      margin: 40px auto 32px;
+      padding: 0 24px;
+    }
+
+    .connections-page-kicker {
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--color-accent, #30d158);
+      margin-bottom: 8px;
+    }
+
+    .connections-page-header h1 {
+      font-size: 28px;
+      font-weight: 700;
+      color: var(--color-text, #dfe6ef);
+      margin: 0 0 8px;
+    }
+
+    .connections-page-subhead {
+      font-size: 15px;
+      color: var(--color-text-muted, #8fa0b8);
+      margin: 0;
+    }
+
+    /* Connection list */
+    .connections-list {
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 0 24px 60px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .connection-row {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      background: var(--color-surface, #1a2235);
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 12px;
+      padding: 16px 18px;
+      text-decoration: none;
+      color: inherit;
+      transition: border-color 0.15s;
+    }
+
+    .connection-row:hover {
+      border-color: rgba(48, 209, 88, 0.3);
+    }
+
+    .connection-row-body {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .connection-row-name {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--color-text, #dfe6ef);
+      margin-bottom: 4px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .connection-row-meta {
+      font-size: 13px;
+      color: var(--color-text-muted, #8fa0b8);
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px 12px;
+    }
+
+    .connection-row-event {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 260px;
+    }
+
+    .connection-row-arrow {
+      font-size: 18px;
+      color: #8fa0b8;
+      flex-shrink: 0;
+    }
+
+    /* Auth-required state */
+    #connectionsAuthState {
+      max-width: 500px;
+      margin: 60px auto;
+      padding: 0 24px;
+      text-align: center;
+    }
+
+    #connectionsAuthState p {
+      color: var(--color-text-muted, #8fa0b8);
+      font-size: 15px;
+      margin-bottom: 24px;
+    }
+
+    /* Empty state */
+    #connectionsEmptyState {
+      max-width: 500px;
+      margin: 60px auto;
+      padding: 0 24px;
+      text-align: center;
+    }
+
+    #connectionsEmptyState p {
+      color: var(--color-text-muted, #8fa0b8);
+      font-size: 15px;
+      margin-bottom: 24px;
+    }
+
+    /* Loading skeleton */
+    .connections-skeleton {
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 0 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .connections-skeleton-row {
+      height: 76px;
+      border-radius: 12px;
+      background: linear-gradient(90deg, rgba(255,255,255,0.04) 25%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0.04) 75%);
+      background-size: 400% 100%;
+      animation: shimmer 1.4s ease infinite;
+    }
+
+    @keyframes shimmer {
+      0% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+
+    @media (max-width: 640px) {
+      .connections-page-header { margin-top: 24px; }
+      .connections-page-header h1 { font-size: 22px; }
+      .connection-row-event { max-width: 180px; }
+    }
+  </style>
+</head>
+<body>
+  <a href="#main-content" class="skip-link">Skip to main content</a>
+  <div class="nav-container">
+  <header class="nav">
+    <div class="logo"><a href="../index.html">Nearify</a></div>
+    <div class="nav-links">
+      <a href="../events/index.html">Events</a>
+      <a href="../vision.html">Vision</a>
+      <a href="../admin/event-setup.html">Host an Event</a>
+    </div>
+    <button class="nav-hamburger" id="navHamburger" aria-label="Open menu" aria-expanded="false">
+      <span></span><span></span><span></span>
+    </button>
+  </header>
+  <nav class="nav-drawer" id="navDrawer" aria-label="Site navigation">
+    <a href="../events/index.html">Events</a>
+    <a href="../vision.html">Vision</a>
+    <a href="../admin/event-setup.html" class="nav-drawer-highlight">Host an Event</a>
+  </nav>
+  </div>
+
+  <main id="main-content">
+
+    <div class="connections-page-header">
+      <div class="connections-page-kicker">Your Network</div>
+      <h1>My Connections</h1>
+      <p class="connections-page-subhead">People you've met through Nearify events.</p>
+    </div>
+
+    <!-- Loading state -->
+    <div id="connectionsLoadingState" class="connections-skeleton" aria-label="Loading connections…" aria-busy="true">
+      <div class="connections-skeleton-row"></div>
+      <div class="connections-skeleton-row"></div>
+      <div class="connections-skeleton-row"></div>
+    </div>
+
+    <!-- Not signed in -->
+    <div id="connectionsAuthState" style="display:none;">
+      <p>Sign in to see the people you've connected with at Nearify events.</p>
+      <a href="../join/index.html" class="btn primary">Sign In</a>
+    </div>
+
+    <!-- Empty state -->
+    <div id="connectionsEmptyState" style="display:none;">
+      <p>No connections yet. Attend an event and connect with people to start building your network.</p>
+      <a href="../events/index.html" class="btn primary">Browse Events</a>
+    </div>
+
+    <!-- Connections list -->
+    <ul id="connectionsList" class="connections-list" role="list" style="display:none; list-style:none; margin:0; padding-left:0;"></ul>
+
+  </main>
+
+  <footer class="footer">
+    <nav class="footer-links">
+      <a href="../index.html">Home</a>
+      <a href="../events/index.html">Events</a>
+      <a href="../vision.html">Vision</a>
+      <a href="../admin/event-setup.html">Host an Event</a>
+      <a href="https://nearify.org/privacy.html">Privacy</a>
+      <a href="https://nearify.org/terms.html">Terms</a>
+      <a href="https://nearify.org/support.html">Support</a>
+      <a href="mailto:hello@nearify.org">Contact</a>
+    </nav>
+    <p>© 2026 Nearify</p>
+  </footer>
+
+  <script type="module" src="../assets/js/navAuth.js?v=20260430"></script>
+  <script type="module" src="../assets/js/connections.js?v=20260601"></script>
+</body>
+</html>
