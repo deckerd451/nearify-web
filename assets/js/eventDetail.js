@@ -469,6 +469,98 @@ async function fetchEventAttendees(eventId) {
   }).filter(Boolean);
 }
 
+function formatEncounterCount(count) {
+  const n = Number(count) || 0;
+  return n === 1 ? "Met 1 time" : `Met ${n} times`;
+}
+
+async function fetchMyConnections() {
+  if (!currentUser) return [];
+
+  const { data, error } = await supabase.rpc("get_my_connections", { p_status: "confirmed" });
+  if (error) {
+    logger.warn("[PeopleYouKnow] get_my_connections failed", error);
+    return [];
+  }
+
+  return Array.isArray(data) ? data : [];
+}
+
+function findKnownAttendees(attendees, connections, myProfileId) {
+  if (!currentUser || !attendees?.length || !connections?.length) return [];
+
+  const attendeeIds = new Set(
+    attendees
+      .map((a) => a.profileId)
+      .filter((id) => id && id !== myProfileId)
+  );
+
+  return connections
+    .filter((connection) => connection?.profile_id && attendeeIds.has(connection.profile_id))
+    .sort((a, b) => {
+      const encounterDelta = (Number(b.encounter_count) || 0) - (Number(a.encounter_count) || 0);
+      if (encounterDelta !== 0) return encounterDelta;
+
+      const bLast = b.last_encounter_at ? new Date(b.last_encounter_at).getTime() : 0;
+      const aLast = a.last_encounter_at ? new Date(a.last_encounter_at).getTime() : 0;
+      return bLast - aLast;
+    });
+}
+
+function renderPeopleYouKnowHere(knownAttendees) {
+  const section = document.getElementById("peopleYouKnowSection");
+  const list = document.getElementById("peopleYouKnowList");
+  if (!section || !list) return;
+
+  if (!knownAttendees.length) {
+    section.style.display = "none";
+    list.innerHTML = "";
+    return;
+  }
+
+  list.innerHTML = "";
+  knownAttendees.slice(0, 6).forEach((person) => {
+    const card = document.createElement("div");
+    card.className = "attendee-card people-you-know-card";
+
+    const avatarEl = document.createElement("div");
+    avatarEl.className = "attendee-avatar";
+
+    if (person.avatar_url) {
+      const img = document.createElement("img");
+      img.className = "attendee-avatar-img";
+      img.src = person.avatar_url;
+      img.alt = getInitials(person.name);
+      img.loading = "lazy";
+      avatarEl.appendChild(img);
+    } else {
+      const placeholder = document.createElement("div");
+      placeholder.className = "attendee-avatar-placeholder";
+      placeholder.textContent = getInitials(person.name);
+      avatarEl.appendChild(placeholder);
+    }
+
+    const infoEl = document.createElement("div");
+    infoEl.className = "attendee-info";
+
+    const nameEl = document.createElement("div");
+    nameEl.className = "attendee-name";
+    nameEl.textContent = person.name || "Connection";
+
+    const countEl = document.createElement("div");
+    countEl.className = "attendee-goal";
+    countEl.textContent = formatEncounterCount(person.encounter_count);
+
+    infoEl.appendChild(nameEl);
+    infoEl.appendChild(countEl);
+    card.appendChild(avatarEl);
+    card.appendChild(infoEl);
+    list.appendChild(card);
+  });
+
+  section.style.display = "";
+}
+
 function buildAttendeeCard(attendee, showDetails) {
   const initials    = getInitials(attendee.name);
   const intentLabel = attendee.intent ? (INTENT_LABELS[attendee.intent] || attendee.intent) : null;
@@ -562,14 +654,21 @@ async function loadAttendeeDiscovery(eventId, isPast = false) {
   // Render momentum indicator regardless of attendee count
   renderMomentumIndicator(attendees, isPast);
 
-  if (!attendees.length) return;
-
   let myProfileId = null;
   if (currentUser?.id) {
     const { data: p } = await supabase
       .from("profiles").select("id").eq("user_id", currentUser.id).maybeSingle();
     myProfileId = p?.id ?? null;
   }
+
+  if (!isPast && currentUser && attendees.length) {
+    const connections = await fetchMyConnections();
+    renderPeopleYouKnowHere(findKnownAttendees(attendees, connections, myProfileId));
+  } else {
+    renderPeopleYouKnowHere([]);
+  }
+
+  if (!attendees.length) return;
 
   const isAttendee  = myProfileId ? attendees.some((a) => a.profileId === myProfileId) : false;
   const isFullAccess = !!currentUser && isAttendee;
