@@ -163,6 +163,7 @@
   <script type="module">
     import { fetchPublicEvents } from "../assets/js/events.js?v=20260430";
     import { supabase } from "../assets/js/supabaseClient.js";
+    import { getCurrentUser } from "../assets/js/appState.js?v=20260430";
     import { escapeHtml } from "../assets/js/utils.js?v=20260430";
 
     const upcomingGrid   = document.getElementById("eventsListGrid");
@@ -170,12 +171,12 @@
     const pastGrid       = document.getElementById("pastEventsGrid");
 
     async function fetchAttendeeMeta(eventIds) {
-      if (!eventIds.length) return { counts: new Map(), intents: new Map() };
+      if (!eventIds.length) return { counts: new Map(), intents: new Map(), relationshipReasons: new Map() };
       const { data, error } = await supabase
         .from("event_attendees")
-        .select("event_id, intent_primary")
+        .select("event_id, profile_id, intent_primary")
         .in("event_id", eventIds);
-      if (error || !data) return { counts: new Map(), intents: new Map() };
+      if (error || !data) return { counts: new Map(), intents: new Map(), relationshipReasons: new Map() };
 
       const counts = new Map();
       const intents = new Map();
@@ -187,7 +188,43 @@
           m[row.intent_primary] = (m[row.intent_primary] || 0) + 1;
         }
       }
-      return { counts, intents };
+
+      const relationshipReasons = await buildRelationshipReasonMap(data);
+      return { counts, intents, relationshipReasons };
+    }
+
+    async function buildRelationshipReasonMap(attendeeRows) {
+      const user = await getCurrentUser();
+      if (!user || !attendeeRows?.length) return new Map();
+
+      const { data, error } = await supabase.rpc("get_my_connections", { p_status: "confirmed" });
+      if (error || !Array.isArray(data) || !data.length) return new Map();
+
+      const connectionsById = new Map(
+        data
+          .filter((conn) => conn?.profile_id)
+          .map((conn) => [conn.profile_id, conn])
+      );
+      if (!connectionsById.size) return new Map();
+
+      const matchesByEvent = new Map();
+      for (const row of attendeeRows) {
+        const connection = connectionsById.get(row.profile_id);
+        if (!connection) continue;
+        if (!matchesByEvent.has(row.event_id)) matchesByEvent.set(row.event_id, []);
+        matchesByEvent.get(row.event_id).push(connection);
+      }
+
+      const reasons = new Map();
+      for (const [eventId, matches] of matchesByEvent.entries()) {
+        const unique = [...new Map(matches.map((conn) => [conn.profile_id, conn])).values()];
+        if (unique.length === 1) {
+          reasons.set(eventId, `${unique[0].name || "Someone you know"} is attending.`);
+        } else if (unique.length > 1) {
+          reasons.set(eventId, `${unique.length} people you know are attending.`);
+        }
+      }
+      return reasons;
     }
 
     function buildFlavorText(intentMap, count) {
@@ -207,7 +244,7 @@
       return "";
     }
 
-    function renderCard(ev, { featured = false, past = false, count = 0, intentMap = null } = {}) {
+    function renderCard(ev, { featured = false, past = false, count = 0, intentMap = null, relationshipReason = "" } = {}) {
       const dateTimeStr = ev.starts_at
         ? new Date(ev.starts_at).toLocaleString(undefined, {
             month: "short",
@@ -232,9 +269,13 @@
           ? '<div class="card-badge card-badge-past">Past</div>'
           : "";
 
-      // Momentum line
+      // Attendance motivation line: prefer relationship reasons, then fall back to momentum.
       let momentumHtml = "";
-      if (count > 0) {
+      if (relationshipReason) {
+        momentumHtml = '<div class="event-card-momentum">' +
+          '<span class="momentum-count">' + escapeHtml(relationshipReason) + '</span>' +
+          '</div>';
+      } else if (count > 0) {
         const countLabel = past ? count + " attended" : count + " attending";
         const flavor = !past ? buildFlavorText(intentMap, count) : "";
         momentumHtml = '<div class="event-card-momentum">' +
@@ -267,7 +308,7 @@
       }
 
       const allIds = (events || []).map(ev => ev.id);
-      const { counts, intents } = await fetchAttendeeMeta(allIds);
+      const { counts, intents, relationshipReasons } = await fetchAttendeeMeta(allIds);
 
       const now      = new Date();
       const upcoming = (events || []).filter(ev => !ev.starts_at || new Date(ev.starts_at) >= now);
@@ -289,7 +330,8 @@
           .map((ev, i) => renderCard(ev, {
             featured: i === 0,
             count: counts.get(ev.id) || 0,
-            intentMap: intents.get(ev.id) || null
+            intentMap: intents.get(ev.id) || null,
+            relationshipReason: relationshipReasons.get(ev.id) || ""
           }))
           .join("");
       }
