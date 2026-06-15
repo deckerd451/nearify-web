@@ -10,12 +10,12 @@
  */
 
 import { supabase, getSessionCached } from "./supabaseClient.js";
-import { saveEvent, deleteEvent, getOrganizerProfileId } from "./events.js";
+import { saveEvent, deleteEvent, getOrganizerProfileId, fetchPublicEvents } from "./events.js";
 import { trackAppCtaClick, trackPageView } from "./analytics.js";
 import { patchAppStoreLinks } from "./config.js";
 import { escapeHtml, escapeAttr, copyText } from "./utils.js";
 import { logger } from "./logger.js";
-import { buildKnownAttendeeReason } from "./attendanceReasons.js";
+import { buildEventDecisionReasons, buildKnownAttendeeReason } from "./attendanceReasons.js";
 import { pollingCoordinator } from "./pollingCoordinator.js";
 logger.log("[Dashboard] dashboard.js loaded");
 
@@ -25,6 +25,7 @@ const EVENT_DETAIL_URL = (id) => `/events/event.html?id=${encodeURIComponent(id)
 const EDIT_URL         = (id) => `/admin/event-setup.html?edit=${encodeURIComponent(id)}`;
 const DASHBOARD_EVENTS_POLL_KEY = "dashboard:events-refresh";
 const SEE_AGAIN_LIMIT = 5;
+const RECOMMENDED_LIMIT = 4;
 
 const INTENT_LABELS = {
   meet_people:    "Meet people",
@@ -157,6 +158,10 @@ async function fetchMyConnections() {
   return Array.isArray(data) ? data : [];
 }
 
+async function fetchCurrentProfileId() {
+  return getOrganizerProfileId();
+}
+
 async function fetchUpcomingEventsForConnections(connections) {
   if (!connections.length) return [];
 
@@ -232,6 +237,74 @@ async function fetchAttendeeCounts(eventIds) {
     counts.set(row.event_id, (counts.get(row.event_id) || 0) + 1);
   }
   return counts;
+}
+
+async function fetchAttendeesForEvents(eventIds) {
+  if (!eventIds.length) return new Map();
+
+  const { data, error } = await supabase
+    .from("event_attendees")
+    .select("event_id, profile_id, intent_primary, intent_secondary")
+    .in("event_id", eventIds);
+
+  if (error) {
+    logger.warn("[Dashboard] recommendation attendees:", error);
+    return new Map();
+  }
+
+  const attendeesByEvent = new Map();
+  for (const row of (data || [])) {
+    if (!attendeesByEvent.has(row.event_id)) attendeesByEvent.set(row.event_id, []);
+    attendeesByEvent.get(row.event_id).push(row);
+  }
+  return attendeesByEvent;
+}
+
+async function buildRecommendedEvents(connections, currentProfileId) {
+  const publicEvents = await fetchPublicEvents();
+  const now = new Date();
+  const upcoming = (publicEvents || [])
+    .filter((event) => !event.starts_at || new Date(event.starts_at) >= now)
+    .sort((a, b) => {
+      const aStart = a.starts_at ? new Date(a.starts_at).getTime() : Number.MAX_SAFE_INTEGER;
+      const bStart = b.starts_at ? new Date(b.starts_at).getTime() : Number.MAX_SAFE_INTEGER;
+      return aStart - bStart;
+    });
+  const eventIds = upcoming.map((event) => event.id).filter(Boolean);
+  const attendeesByEvent = await fetchAttendeesForEvents(eventIds);
+  const connectionsById = new Map(
+    (connections || [])
+      .filter((connection) => connection?.profile_id)
+      .map((connection) => [connection.profile_id, connection])
+  );
+
+  return upcoming
+    .map((event) => {
+      const eventAttendees = attendeesByEvent.get(event.id) || [];
+      const knownAttendees = eventAttendees
+        .map((attendee) => connectionsById.get(attendee.profile_id))
+        .filter(Boolean);
+      const reasons = buildEventDecisionReasons({
+        connections: knownAttendees,
+        eventAttendees,
+        currentProfileId,
+      });
+      const topReason = reasons[0] || null;
+      return {
+        event,
+        reason: topReason,
+        rank: topReason?.rank || 0,
+      };
+    })
+    .filter((recommendation) => recommendation.reason)
+    .sort((a, b) => {
+      if (b.rank !== a.rank) return b.rank - a.rank;
+      const aStart = a.event.starts_at ? new Date(a.event.starts_at).getTime() : Number.MAX_SAFE_INTEGER;
+      const bStart = b.event.starts_at ? new Date(b.event.starts_at).getTime() : Number.MAX_SAFE_INTEGER;
+      if (aStart !== bStart) return aStart - bStart;
+      return String(a.event.name || "").localeCompare(String(b.event.name || ""));
+    })
+    .slice(0, RECOMMENDED_LIMIT);
 }
 
 async function fetchIntentDistribution(eventIds) {
@@ -792,6 +865,71 @@ function renderSeeAgainWidget(opportunities) {
   widget.hidden = false;
 }
 
+function renderRecommendedForYouWidget(recommendations) {
+  const widget = document.getElementById("recommendedForYouWidget");
+  if (!widget) return;
+
+  if (!recommendations.length) {
+    widget.hidden = true;
+    widget.replaceChildren();
+    return;
+  }
+
+  const top = document.createElement("div");
+  top.className = "cc-network-widget-top";
+
+  const textWrap = document.createElement("div");
+  const kicker = document.createElement("div");
+  kicker.className = "cc-network-kicker";
+  kicker.textContent = "EventReason ranked";
+  const title = document.createElement("h2");
+  title.className = "cc-network-title";
+  title.textContent = "Recommended For You";
+  const subtitle = document.createElement("p");
+  subtitle.className = "cc-network-count";
+  subtitle.textContent = "Upcoming events surfaced by people you know, shared goals, and event momentum.";
+  textWrap.append(kicker, title, subtitle);
+  top.append(textWrap);
+
+  const list = document.createElement("ul");
+  list.className = "cc-recommended-list";
+
+  recommendations.forEach(({ event, reason }) => {
+    const item = document.createElement("li");
+    item.className = "cc-recommended-item";
+
+    const details = document.createElement("div");
+    const heading = document.createElement("p");
+    heading.className = "cc-recommended-heading";
+    heading.textContent = event.name || "Upcoming event";
+    details.appendChild(heading);
+
+    const reasonText = document.createElement("p");
+    reasonText.className = "cc-recommended-reason";
+    reasonText.textContent = reason.title;
+    details.appendChild(reasonText);
+
+    const dateText = formatDateTime(event.starts_at);
+    if (dateText) {
+      const meta = document.createElement("p");
+      meta.className = "cc-recommended-meta";
+      meta.textContent = dateText;
+      details.appendChild(meta);
+    }
+
+    const link = document.createElement("a");
+    link.className = "btn primary";
+    link.href = getEventDetailUrl(event);
+    link.textContent = "View Event";
+
+    item.append(details, link);
+    list.appendChild(item);
+  });
+
+  widget.replaceChildren(top, list);
+  widget.hidden = false;
+}
+
 // ─── Refresh ──────────────────────────────────────────────────────────────────
 
 async function refreshDashboard() {
@@ -803,7 +941,11 @@ async function refreshDashboard() {
     fetchMyEvents(),
     fetchMyConnections(),
   ]);
-  const seeAgainOpportunities = await fetchUpcomingEventsForConnections(connections);
+  const [currentProfileId, seeAgainOpportunities] = await Promise.all([
+    fetchCurrentProfileId(),
+    fetchUpcomingEventsForConnections(connections),
+  ]);
+  const recommendations = await buildRecommendedEvents(connections, currentProfileId);
   const eventIds = events.map((e) => e.id);
   const [counts, intentsByEvent] = await Promise.all([
     eventIds.length ? fetchAttendeeCounts(eventIds) : Promise.resolve(new Map()),
@@ -811,6 +953,7 @@ async function refreshDashboard() {
   ]);
   renderEcosystemHero(events, counts, intentsByEvent);
   renderNetworkMemoryWidget(connections, events);
+  renderRecommendedForYouWidget(recommendations);
   renderSeeAgainWidget(seeAgainOpportunities);
   renderDashboard(events, counts, intentsByEvent, buildRelationshipReasonMap(seeAgainOpportunities));
   })().finally(() => { refreshDashboard._inFlight = null; });
@@ -1028,7 +1171,11 @@ async function loadDashboard() {
       fetchMyEvents(),
       fetchMyConnections(),
     ]);
-    const seeAgainOpportunities = await fetchUpcomingEventsForConnections(connections);
+    const [currentProfileId, seeAgainOpportunities] = await Promise.all([
+      fetchCurrentProfileId(),
+      fetchUpcomingEventsForConnections(connections),
+    ]);
+    const recommendations = await buildRecommendedEvents(connections, currentProfileId);
     logger.log("[Dashboard] events loaded:", events.length);
     const eventIds = events.map((e) => e.id);
 
@@ -1039,6 +1186,7 @@ async function loadDashboard() {
 
     renderEcosystemHero(events, counts, intentsByEvent);
     renderNetworkMemoryWidget(connections, events);
+    renderRecommendedForYouWidget(recommendations);
     renderSeeAgainWidget(seeAgainOpportunities);
     renderDashboard(events, counts, intentsByEvent, buildRelationshipReasonMap(seeAgainOpportunities));
   } catch (err) {
