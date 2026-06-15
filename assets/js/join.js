@@ -265,7 +265,7 @@ function getReconnectUrl() {
 }
 
 async function startGhostClaimAuth() {
-  setGhostClaimStatus("Sign in to save your connections.");
+  setGhostClaimStatus("Sign in to save who you met.");
   const { error } = await supabase.auth.signInWithOAuth({
     provider: "google",
     options: { redirectTo: getReconnectUrl() },
@@ -320,7 +320,7 @@ async function maybeClaimGhostActivity(ghost, isClaimed) {
   }
 
   logger.log("[Ghost] Claim successful", data);
-  setGhostClaimStatus("This connection is now part of your network.");
+  setGhostClaimStatus("This person is saved to your Nearify profile.");
   return true;
 }
 
@@ -436,7 +436,7 @@ function renderGhostJourneyCard({ state, personName, historyRows }) {
     show(els.ghostReturnKicker);
     setText(els.ghostReturnKicker, "👻 Guest");
     setText(els.ghostReturnTitle, `You're connected with ${personName}`);
-    setText(els.ghostReturnLead, "This connection is saved temporarily. Create your profile to keep it and continue building your network.");
+    setText(els.ghostReturnLead, "This person is saved temporarily. Create your profile to keep them and remember why they matter.");
     if (els.ghostClaimBtn) {
       setText(els.ghostClaimBtn, "Save this connection");
       show(els.ghostClaimBtn);
@@ -449,7 +449,7 @@ function renderGhostJourneyCard({ state, personName, historyRows }) {
     show(els.ghostReturnKicker);
     setText(els.ghostReturnKicker, "👻 Guest");
     setText(els.ghostReturnTitle, "Welcome back");
-    setText(els.ghostReturnLead, "These connections are saved temporarily.");
+    setText(els.ghostReturnLead, "These people are saved temporarily.");
     show(els.ghostReturnConnections);
     if (els.ghostClaimBtn) {
       setText(els.ghostClaimBtn, "Save your connections");
@@ -462,7 +462,7 @@ function renderGhostJourneyCard({ state, personName, historyRows }) {
   if (state === "claimed" || state === "claiming") {
     hide(els.ghostReturnKicker);
     setText(els.ghostReturnTitle, `You're connected with ${personName}`);
-    setText(els.ghostReturnLead, "This connection is now part of your Nearify profile.");
+    setText(els.ghostReturnLead, "This person is now saved to your Nearify profile.");
     setGhostClaimStatus("✓ Saved to your network");
     show(els.ghostReturnCard);
     return;
@@ -647,7 +647,7 @@ function renderGenericJoinUx(event, fallbackName, source) {
         </li>
         <li>
           <div class="join-step-label">Keep who you meet after it ends</div>
-          <div class="join-step-detail">Check in at the venue. The connections you make become part of your persistent network.</div>
+          <div class="join-step-detail">Check in at the venue. The people you meet are saved so you can follow up later.</div>
         </li>
       `;
     } else {
@@ -671,7 +671,7 @@ function renderGenericJoinUx(event, fallbackName, source) {
   if (els.joinBottomCtaTitle) els.joinBottomCtaTitle.textContent = isMeetup ? "Ready to enter the live network?" : "Ready to join?";
   if (els.joinBottomCtaDescription) {
     els.joinBottomCtaDescription.textContent = isMeetup
-      ? "See who else is going, discover people worth talking to, and keep the connections that matter."
+      ? "See who else is going, know who is worth talking to, and save the people who matter."
       : "Install the app, then join and check in when you arrive (in app or via event QR).";
   }
   if (els.joinBottomCtaButton) els.joinBottomCtaButton.textContent = isMeetup ? "Enter Live Network" : "Get Nearify on TestFlight";
@@ -739,7 +739,7 @@ function renderPersonalConnectUx(event, targetProfile) {
   show(els.joinSuccessBadge);
   setText(els.joinKicker, "");
   setText(els.joinTitle, `You're connected with ${personName}`);
-  setText(els.joinDescription, "This connection has been saved for this event.");
+  setText(els.joinDescription, "This person has been saved for this event.");
 
   renderEventMeta(event);
 

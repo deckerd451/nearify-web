@@ -763,7 +763,7 @@ function renderNetworkMemoryWidget(connections, events) {
   const textWrap = document.createElement("div");
   const kicker = document.createElement("div");
   kicker.className = "cc-network-kicker";
-  kicker.textContent = "Relationship memory";
+  kicker.textContent = "People you saved";
   const title = document.createElement("h2");
   title.className = "cc-network-title";
   title.textContent = "My Network";
@@ -775,7 +775,7 @@ function renderNetworkMemoryWidget(connections, events) {
   const link = document.createElement("a");
   link.className = "btn secondary";
   link.href = "/connections/";
-  link.textContent = "View All Connections";
+  link.textContent = "View My Connections";
   top.append(textWrap, link);
 
   const recent = connections.slice(0, 3);
@@ -783,7 +783,7 @@ function renderNetworkMemoryWidget(connections, events) {
   recentLabel.className = "cc-network-count";
   recentLabel.textContent = recent.length
     ? "Recently connected:"
-    : "People you meet at Nearify events will appear here.";
+    : "People you save at Nearify events will appear here with context for follow-up.";
 
   const children = [top, recentLabel];
   if (recent.length) {
@@ -1250,7 +1250,7 @@ async function handleCopyLink(btn, url) {
 }
 
 async function handleEndEvent(eventId, eventName) {
-  if (!confirm(`End "${eventName}"?\n\nThis marks the event as finished. Attendees can still view their post-event report.`)) return;
+  if (!confirm(`End "${eventName}"?\n\nThis marks the event as finished. Attendees can still view who they met and what to follow up on.`)) return;
   const { error } = await endEvent(eventId);
   if (error) { logger.error("[Dashboard] endEvent error:", error); alert("Could not end this event. Please try again."); return; }
   await refreshDashboard();

@@ -579,8 +579,8 @@ function renderRecommendedAction(decision) {
   const subtext = document.createElement("p");
   subtext.className = "intel-connect-subtext";
   subtext.textContent = isLowConfidence
-    ? "This is an early connection. Use Nearify to remember and follow through."
-    : "Use Nearify to keep this relationship moving.";
+    ? "This is an early signal. Use Nearify to save the person and follow through."
+    : "Use Nearify to remember why they matter and follow up.";
 
   const fallback = document.createElement("div");
   fallback.className = "intel-connect-fallback";

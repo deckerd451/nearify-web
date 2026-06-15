@@ -177,8 +177,8 @@ export function buildPostEventSummary(decision, hasData) {
   if (P > 0.5) return "You crossed paths at the same event, which may be worth exploring.";
   if (X > 0.25) return "You had a recent moment together that may be worth remembering.";
   return hasData
-    ? "Your post-event intelligence report is ready with interaction highlights."
-    : "Your post-event intelligence report is taking shape from early event signals.";
+    ? "Your event recap is ready with people and moments worth remembering."
+    : "Your event recap is taking shape from early signals about who you met.";
 }
 
 export function buildSignalInsights(decision) {
@@ -293,7 +293,7 @@ export function getStateCopy(state) {
       body:       "Review people you met and follow up while the context is fresh.",
       cta:        "Open Nearify to connect live",
       processing: "Open Nearify at the event to see live recommendations.",
-      footer:     "Saved connections appear in My Connections when you are ready to reconnect.",
+      footer:     "Saved people appear in My Connections when you are ready to follow up.",
     };
   }
   return {
