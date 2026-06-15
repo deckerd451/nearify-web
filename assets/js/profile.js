@@ -34,10 +34,10 @@ function renderRelationshipContext(ctx) {
   if (!status && count === 0) { el.hidden = true; return; }
 
   const statusLabels = {
-    confirmed:         "You're connected",
-    proposed_by_me:    "You saved them — waiting for them to confirm",
-    proposed_by_them:  "They want to stay in touch",
-    ghost_claimed:     "You connected at this event",
+    confirmed:         "Saved in My Connections",
+    proposed_by_me:    "You saved them — waiting for them to save you back",
+    proposed_by_them:  "They saved you and want to stay in touch",
+    ghost_claimed:     "You saved each other at this event",
   };
   const statusText = statusLabels[status] ?? null;
 
@@ -95,7 +95,7 @@ function renderProfile(profile, eventId, eventName) {
   if (nameEl) nameEl.textContent = name;
 
   const contextEl = document.getElementById("profileContext");
-  if (contextEl) contextEl.textContent = eventName ? `Attending ${eventName}` : "Nearify member";
+  if (contextEl) contextEl.textContent = eventName ? `Attending ${eventName}` : "Nearify member — save people you meet and remember why they matter";
 
   const openAppBtn = document.getElementById("profileOpenAppBtn");
   const getAppLink = document.getElementById("profileGetAppLink");

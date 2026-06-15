@@ -10,7 +10,7 @@
 import { supabase, getSessionCached } from "./supabaseClient.js";
 import { logger } from "./logger.js";
 
-// localStorage so event context survives browser close (post-event intelligence)
+// localStorage so event context survives browser close (event recap)
 const STORAGE_KEY = "nearify_current_event";
 
 /** @returns {Promise<import("@supabase/supabase-js").User | null>} */

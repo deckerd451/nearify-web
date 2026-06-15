@@ -380,7 +380,7 @@ async function loadIntelligence(event) {
   if (!currentUser) {
     if (signInDesc) {
       signInDesc.textContent =
-        `Sign in to see who you connected with at ${event.name} and review your post-event report.`;
+        `Sign in to see who you met at ${event.name} and remember why each connection may matter.`;
     }
     if (signInGate) signInGate.style.display = "";
 

@@ -8,17 +8,17 @@
   <title>Join Event | Nearify</title>
   <meta
     name="description"
-    content="Get the Nearify app to join this event and discover attendees in real time."
+    content="Join this event with Nearify to know who to meet and save who you met."
   />
 
   <meta property="og:type"        content="website" />
   <meta property="og:url"         content="https://nearify.org/join/" />
   <meta property="og:title"       content="Join Event | Nearify" />
-  <meta property="og:description" content="Get Nearify to join this event and discover who's around you in real time." />
+  <meta property="og:description" content="Get Nearify to join this event, know who to meet, and save who you met." />
   <meta property="og:image"       content="https://nearify.org/assets/images/og-default.png" />
   <meta name="twitter:card"       content="summary_large_image" />
   <meta name="twitter:title"      content="Join Event | Nearify" />
-  <meta name="twitter:description" content="Get Nearify to join this event and discover who's around you in real time." />
+  <meta name="twitter:description" content="Get Nearify to join this event, know who to meet, and save who you met." />
   <meta name="twitter:image"      content="https://nearify.org/assets/images/og-default.png" />
 
   <link rel="stylesheet" href="../assets/css/styles.css?v=20260517" />
@@ -52,7 +52,7 @@
         <h1 id="joinTitle">Get Nearify to join this event</h1>
         <div id="joinSuccessBadge" class="join-success-badge" style="display:none;">
           <span class="join-success-icon" aria-hidden="true">✓</span>
-          <span>Saved to your event network</span>
+          <span>Saved so you can remember later</span>
         </div>
 
         <!-- Populated by JS once event metadata is fetched -->
@@ -68,7 +68,7 @@
         <div id="liveActivityFeed" class="live-activity-feed" aria-live="polite" aria-atomic="true"></div>
 
         <p class="event-subhead" id="joinDescription">
-          No account needed. Enter your name and we'll show you who to meet.
+          No account needed. Enter your name to see who to meet and save who you met.
         </p>
 
         <!-- Live attendee preview — populated by JS for Meetup source handoffs -->
@@ -80,13 +80,13 @@
         <section id="ghostReturnCard" class="ghost-return-card" style="display:none;">
           <div id="ghostReturnKicker" class="ghost-return-kicker"><span aria-hidden="true">👻</span> Guest</div>
           <h2 id="ghostReturnTitle" class="ghost-return-title">Your guest activity is still here</h2>
-          <p id="ghostReturnLead" class="ghost-return-lead">Saved to your event network.</p>
+          <p id="ghostReturnLead" class="ghost-return-lead">Saved so you can remember later.</p>
           <div id="ghostReturnConnections" class="ghost-return-connections" style="display:none;">
             <p class="ghost-return-list-title">You've connected with:</p>
             <ul id="ghostConnectionsList" class="ghost-connections-list"></ul>
           </div>
           <div id="ghostEmailCapture" class="ghost-email-capture" style="display:none;">
-            <p class="ghost-email-prompt">Enter your email to get a recap of your connections after the event.</p>
+            <p class="ghost-email-prompt">Enter your email to get a recap of who you met after the event.</p>
             <div class="ghost-email-row">
               <input
                 id="ghostEmailInput"
@@ -114,9 +114,9 @@
             <h2 class="claim-success-title">Connections Saved</h2>
           </div>
           <ul id="claimSuccessNames" class="claim-success-names" style="display:none;"></ul>
-          <p id="claimSuccessNoNames" class="claim-success-no-names" style="display:none;">Your event activity has been transferred to your profile.</p>
+          <p id="claimSuccessNoNames" class="claim-success-no-names" style="display:none;">The people you met have been transferred to your profile.</p>
           <p id="claimSuccessCount" class="claim-success-count"></p>
-          <p class="claim-success-profile-msg">Your connections are now part of your Nearify profile.</p>
+          <p class="claim-success-profile-msg">The people you met are now saved to your Nearify profile.</p>
           <div class="claim-success-actions">
             <a id="claimViewNetworkBtn" href="../connections/" class="btn primary">View My Connections</a>
             <a href="https://testflight.apple.com/join/ZayvEbAy" class="btn secondary" target="_blank" rel="noopener noreferrer">Get Nearify App</a>
@@ -160,7 +160,7 @@
         <div id="guestJoinCta" class="guest-join-cta" style="display:none;">
           <div class="guest-join-divider" aria-hidden="true">or</div>
           <button id="joinAsGuestBtn" class="btn secondary" type="button">Join as Guest</button>
-          <p class="join-hint">No app required. Sign in after the event to save your interactions.</p>
+          <p class="join-hint">No app required. Sign in after the event to save who you met.</p>
         </div>
 
         <!-- Guest join section — either form or success state, populated by JS -->
@@ -169,7 +169,7 @@
           <!-- Name form -->
           <div id="guestForm" class="guest-join-card" style="display:none;">
             <h2 class="guest-join-title">Join as Guest</h2>
-            <p class="guest-join-sub">No account needed — sign in after the event to save your interactions to your profile.</p>
+            <p class="guest-join-sub">No account needed — sign in after the event to save who you met to your profile.</p>
             <div class="form-row" style="margin-bottom:0;">
               <label for="guestDisplayName" class="guest-join-label">Your display name</label>
               <input
@@ -406,7 +406,7 @@
         <div class="intel-cards" id="intelStrongCards"></div>
       </div>
       <div id="intelEmpty" class="intel-empty" style="display:none;">
-        <p class="intel-empty-title">Your post-event report isn't ready yet.</p>
+        <p class="intel-empty-title">Your event recap isn't ready yet.</p>
         <p class="intel-empty-body">Results are prepared within a few hours of the event ending.
         Make sure you used Nearify during the event — the more interactions, the richer your report.</p>
       </div>
