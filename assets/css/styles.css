@@ -5650,3 +5650,68 @@ body.cc-page .cc-event-actions .btn.secondary:hover {
   font-weight: 800;
   line-height: 1.45;
 }
+
+/* Event detail hierarchy: prioritize decision-making before utility/actions. */
+.event-page .event-hero {
+  grid-template-columns: minmax(0, 1fr);
+  max-width: 980px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.event-page .event-hero-copy {
+  max-width: 860px;
+}
+
+.event-page .event-subhead,
+.event-page .event-meta-grid,
+.event-page .why-attend {
+  max-width: 760px;
+}
+
+.event-everything-else {
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.event-everything-else-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(280px, 0.85fr);
+  gap: 24px;
+  max-width: 1100px;
+  margin: 0 auto;
+  align-items: start;
+}
+
+.event-everything-else-grid > .event-section,
+.event-everything-else-grid > .event-side-panel {
+  padding: 0;
+}
+
+.event-everything-else-grid .section-heading {
+  text-align: left;
+  margin: 0 0 20px;
+}
+
+.event-everything-else-grid .section-heading h2 {
+  font-size: 28px;
+}
+
+.event-everything-else-grid .intent-grid {
+  grid-template-columns: 1fr;
+  margin: 20px 0 0;
+}
+
+.event-everything-else-grid .event-panel {
+  position: static;
+}
+
+.event-everything-else-grid #personalConnectSection {
+  grid-column: 1 / -1;
+  max-width: 680px;
+}
+
+@media (max-width: 820px) {
+  .event-everything-else-grid {
+    grid-template-columns: 1fr;
+  }
+}

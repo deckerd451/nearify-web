@@ -710,9 +710,12 @@ async function loadAttendeeDiscovery(eventId, isPast = false) {
     myProfileId = p?.id ?? null;
   }
 
-  if (!isPast && currentUser && attendees.length) {
-    const connections = await fetchMyConnections();
-    const knownAttendees = findKnownAttendees(attendees, connections, myProfileId);
+  if (!isPast && attendees.length) {
+    const connections = currentUser ? await fetchMyConnections() : [];
+    const knownAttendees = currentUser
+      ? findKnownAttendees(attendees, connections, myProfileId)
+      : [];
+
     renderWhyAttend(buildEventDecisionReasons({
       connections: knownAttendees,
       eventAttendees: attendees,
