@@ -3905,6 +3905,56 @@ code {
   text-align: left;
 }
 
+.profile-name-relationship {
+  font-size: 28px;
+  line-height: 1.15;
+}
+
+.profile-rel-context-history {
+  padding: 18px;
+  border-color: rgba(48, 209, 88, 0.28);
+  background: linear-gradient(180deg, rgba(48, 209, 88, 0.08), rgba(14, 26, 46, 0.62));
+}
+
+.profile-rel-context-heading {
+  margin: 0 0 14px;
+  font-size: 13px;
+  line-height: 1.2;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.profile-rel-history-list {
+  margin: 0;
+  display: grid;
+  gap: 10px;
+}
+
+.profile-rel-history-item {
+  display: grid;
+  grid-template-columns: minmax(104px, 0.42fr) 1fr;
+  gap: 12px;
+  align-items: start;
+}
+
+.profile-rel-history-item dt {
+  margin: 0;
+  font-size: 11px;
+  line-height: 1.35;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.profile-rel-history-item dd {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--color-text);
+  font-weight: 600;
+}
+
 .profile-actions {
   display: flex;
   flex-direction: column;

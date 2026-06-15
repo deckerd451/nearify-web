@@ -22,7 +22,7 @@ function showState(id) {
   });
 }
 
-function renderRelationshipContext(ctx) {
+function renderRelationshipContext(ctx, options = {}) {
   const el = document.getElementById("profileRelContext");
   if (!el) return;
 
@@ -30,8 +30,11 @@ function renderRelationshipContext(ctx) {
   const count  = ctx.encounter_count ?? 0;
   const first  = ctx.first_encounter_event_name;
   const last   = ctx.last_encounter_event_name;
+  const relationshipMode = options.relationshipMode === true;
+  el.innerHTML = "";
+  el.classList.toggle("profile-rel-context-history", relationshipMode);
 
-  if (!status && count === 0) { el.hidden = true; return; }
+  if (!status && count === 0 && !ctx.shared_intent) { el.hidden = true; return; }
 
   const statusLabels = {
     confirmed:         "Saved in My Connections",
@@ -55,18 +58,50 @@ function renderRelationshipContext(ctx) {
 
   if (!statusText && !details.length) { el.hidden = true; return; }
 
-  if (statusText) {
-    const statusEl = document.createElement("p");
-    statusEl.className = "profile-rel-context-status";
-    statusEl.textContent = statusText;
-    el.appendChild(statusEl);
+  if (relationshipMode) {
+    const heading = document.createElement("h2");
+    heading.className = "profile-rel-context-heading";
+    heading.textContent = "Relationship history";
+    el.appendChild(heading);
+
+    const list = document.createElement("dl");
+    list.className = "profile-rel-history-list";
+
+    const addHistoryItem = (label, value) => {
+      if (!value) return;
+      const item = document.createElement("div");
+      item.className = "profile-rel-history-item";
+
+      const term = document.createElement("dt");
+      term.textContent = label;
+      const description = document.createElement("dd");
+      description.textContent = value;
+
+      item.append(term, description);
+      list.appendChild(item);
+    };
+
+    addHistoryItem("Connection", statusText);
+    addHistoryItem("First meeting", first || (count > 0 ? "Recorded in your Nearify history" : null));
+    addHistoryItem("Last encounter", last || (count > 0 ? first : null));
+    addHistoryItem("Events together", count > 0 ? `${count} ${count === 1 ? "event" : "events"}` : null);
+    addHistoryItem("Shared intent", ctx.shared_intent && INTENT_LABELS[ctx.shared_intent] ? INTENT_LABELS[ctx.shared_intent] : null);
+
+    if (list.children.length) el.appendChild(list);
+  } else {
+    if (statusText) {
+      const statusEl = document.createElement("p");
+      statusEl.className = "profile-rel-context-status";
+      statusEl.textContent = statusText;
+      el.appendChild(statusEl);
+    }
+    details.forEach((d) => {
+      const p = document.createElement("p");
+      p.className = "profile-rel-context-detail";
+      p.textContent = d;
+      el.appendChild(p);
+    });
   }
-  details.forEach((d) => {
-    const p = document.createElement("p");
-    p.className = "profile-rel-context-detail";
-    p.textContent = d;
-    el.appendChild(p);
-  });
 
   const narrativeEl = document.getElementById("profileRelNarrative");
   if (narrativeEl) {
@@ -80,7 +115,7 @@ function renderRelationshipContext(ctx) {
   el.hidden = false;
 }
 
-function renderProfile(profile, eventId, eventName) {
+function renderProfile(profile, eventId, eventName, options = {}) {
   const name     = profile.name || "Attendee";
   const initials = getInitials(name);
 
@@ -91,11 +126,20 @@ function renderProfile(profile, eventId, eventName) {
       : `<div class="profile-avatar-placeholder">${escapeHtml(initials)}</div>`;
   }
 
+  const relationshipMode = options.relationshipMode === true;
+
   const nameEl = document.getElementById("profileName");
-  if (nameEl) nameEl.textContent = name;
+  if (nameEl) {
+    nameEl.textContent = relationshipMode ? `How You Know ${name}` : name;
+    nameEl.classList.toggle("profile-name-relationship", relationshipMode);
+  }
 
   const contextEl = document.getElementById("profileContext");
-  if (contextEl) contextEl.textContent = eventName ? `Attending ${eventName}` : "Nearify member — save people you meet and remember why they matter";
+  if (contextEl) {
+    contextEl.textContent = relationshipMode
+      ? "A relationship-history page built from the moments you already shared on Nearify."
+      : eventName ? `Attending ${eventName}` : "Nearify member — save people you meet and remember why they matter";
+  }
 
   const openAppBtn = document.getElementById("profileOpenAppBtn");
   const getAppLink = document.getElementById("profileGetAppLink");
@@ -159,7 +203,7 @@ async function init() {
     eventName = event?.name ?? null;
   }
 
-  renderProfile(rows[0], eventId, eventName);
+  renderProfile(rows[0], eventId, eventName, { relationshipMode: fromConnections });
 
   // Load relationship context for authenticated viewers (non-blocking)
   const user = await getCurrentUser();
@@ -167,7 +211,7 @@ async function init() {
     const { data: ctx, error: ctxErr } = await supabase.rpc("get_relationship_context", {
       p_other_profile_id: profileId,
     });
-    if (!ctxErr && ctx) renderRelationshipContext(ctx);
+    if (!ctxErr && ctx) renderRelationshipContext(ctx, { relationshipMode: fromConnections });
 
     if (fromConnections) {
       // Swap app-install CTAs for a back link when arriving from the connections list.
