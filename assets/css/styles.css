@@ -5554,6 +5554,16 @@ body.cc-page .cc-event-actions .btn.secondary:hover {
   line-height: 1.45;
 }
 
+.why-attend-list li > span:last-child {
+  display: grid;
+  gap: 2px;
+}
+
+.why-attend-list small {
+  color: var(--color-muted);
+  font-size: 13px;
+}
+
 .why-attend-check {
   color: var(--color-accent);
   font-weight: 800;
