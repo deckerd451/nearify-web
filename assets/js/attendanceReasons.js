@@ -146,6 +146,44 @@ function buildMomentumReason(attendees = []) {
   };
 }
 
+export function computeLiveUrgencyBoost(event = {}, now = new Date()) {
+  const nowMs = now instanceof Date ? now.getTime() : new Date(now).getTime();
+  if (!Number.isFinite(nowMs)) return 0;
+
+  const startMs = parseDateMs(event.starts_at);
+  const endMs = parseDateMs(event.ends_at);
+
+  if (event.is_active !== false && startMs && startMs <= nowMs && (!endMs || nowMs <= endMs)) {
+    return 100;
+  }
+
+  if (!startMs || startMs < nowMs) return 0;
+
+  const hoursUntilStart = (startMs - nowMs) / 3_600_000;
+  if (hoursUntilStart <= 24) return 70;
+  if (hoursUntilStart <= 72) return 40;
+  if (hoursUntilStart <= 168) return 20;
+  return 0;
+}
+
+export function computeEventDecisionScore(reasons = [], event = {}, options = {}) {
+  const scores = (reasons || [])
+    .map((reason) => Number(reason?.score ?? reason?.rank) || 0)
+    .filter((score) => score > 0)
+    .sort((a, b) => b - a);
+
+  const maxReasonScore = scores[0] || 0;
+  const topThree = scores.slice(0, 3);
+  const avgTopThreeReasonScore = topThree.length
+    ? topThree.reduce((sum, score) => sum + score, 0) / topThree.length
+    : 0;
+  const liveUrgencyBoost = Number(options.liveUrgencyBoost) || computeLiveUrgencyBoost(event, options.now || new Date());
+
+  return (maxReasonScore * 0.65)
+    + (avgTopThreeReasonScore * 0.25)
+    + (liveUrgencyBoost * 0.10);
+}
+
 export function buildEventDecisionReasons({ connections = [], eventAttendees = [], currentProfileId = null } = {}) {
   const reasons = [];
   const knownReason = buildKnownAttendeeReason(connections, { eventAttendees, currentProfileId });
