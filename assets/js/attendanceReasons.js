@@ -1,5 +1,8 @@
 const DOMINANCE_SCORE_THRESHOLD = 70;
 const DOMINANCE_GAP_THRESHOLD = 15;
+const MISSED_CONNECTION_MIN_AGE_DAYS = 90;
+const MISSED_CONNECTION_MAX_STRONGER_REASON_RANK = 150;
+
 
 function parseDateMs(value) {
   if (!value) return 0;
@@ -110,6 +113,55 @@ function pluralizePeople(count) {
   return count === 1 ? "person" : "people";
 }
 
+function getDaysSince(lastEncounterAt, now = new Date()) {
+  const lastMs = parseDateMs(lastEncounterAt);
+  const nowMs = now instanceof Date ? now.getTime() : new Date(now).getTime();
+  if (!lastMs || !Number.isFinite(nowMs) || lastMs > nowMs) return null;
+  return Math.floor((nowMs - lastMs) / 86_400_000);
+}
+
+function formatElapsedEncounterTime(daysSince) {
+  if (!Number.isFinite(daysSince)) return "a while";
+  if (daysSince < 60) return `${Math.max(1, Math.round(daysSince / 7))} weeks`;
+  if (daysSince < 365) return `${Math.max(2, Math.round(daysSince / 30))} months`;
+  const years = Math.max(1, Math.round(daysSince / 365));
+  return years === 1 ? "1 year" : `${years} years`;
+}
+
+function isMissedConnectionCandidate(connection = {}, now = new Date()) {
+  const encounterCount = Number(connection.encounter_count) || 0;
+  const daysSince = getDaysSince(connection.last_encounter_at, now);
+  return Boolean(connection.profile_id || connection.name)
+    && encounterCount > 0
+    && daysSince !== null
+    && daysSince > MISSED_CONNECTION_MIN_AGE_DAYS;
+}
+
+export function buildMissedConnectionReason(connections = [], context = {}) {
+  const now = context.now || new Date();
+  const candidates = rankKnownAttendees(connections, context)
+    .filter((connection) => isMissedConnectionCandidate(connection, now))
+    .map((connection) => {
+      const daysSince = getDaysSince(connection.last_encounter_at, now);
+      const encounterCount = Number(connection.encounter_count) || 0;
+      const ageScore = Math.min(30, Math.floor((daysSince - MISSED_CONNECTION_MIN_AGE_DAYS) / 15));
+      const encounterScore = Math.min(30, encounterCount * 4);
+      return {
+        type: "person",
+        title: `Reconnect with ${connection.name || "someone you know"}`,
+        description: `You have not crossed paths in ${formatElapsedEncounterTime(daysSince)}.`,
+        rank: Math.min(MISSED_CONNECTION_MAX_STRONGER_REASON_RANK, 85 + encounterScore + ageScore),
+        reasonKind: "missed_connection",
+        personId: connection.profile_id,
+        personName: connection.name,
+        encounterCount,
+        lastEncounterAt: connection.last_encounter_at,
+      };
+    });
+
+  return candidates[0] || null;
+}
+
 function buildIntentOverlapReason(attendees = [], currentProfileId = null) {
   if (!currentProfileId || !attendees?.length) return null;
 
@@ -184,21 +236,29 @@ export function computeEventDecisionScore(reasons = [], event = {}, options = {}
     + (liveUrgencyBoost * 0.10);
 }
 
-export function buildEventDecisionReasons({ connections = [], eventAttendees = [], currentProfileId = null } = {}) {
+export function buildEventDecisionReasons({ connections = [], eventAttendees = [], currentProfileId = null, now = new Date() } = {}) {
   const reasons = [];
-  const knownReason = buildKnownAttendeeReason(connections, { eventAttendees, currentProfileId });
+  const context = { eventAttendees, currentProfileId, now };
+  const missedConnectionReason = buildMissedConnectionReason(connections, context);
+  const knownReason = buildKnownAttendeeReason(connections, context);
+
+  if (missedConnectionReason) reasons.push(missedConnectionReason);
 
   if (knownReason) {
-    const ranked = rankKnownAttendees(connections, { eventAttendees, currentProfileId });
+    const ranked = rankKnownAttendees(connections, context);
     const top = ranked[0];
-    reasons.push({
-      type: knownReason.startsWith("Reconnect with ") ? "person" : "people",
-      title: stripTerminalPunctuation(knownReason),
-      rank: 100 + (top?.relationshipStrength?.score || 0),
-      personId: top?.profile_id,
-      personName: top?.name,
-      count: ranked.length,
-    });
+    const missedConnectionIsOnlyKnownAttendee = missedConnectionReason && ranked.length === 1;
+
+    if (!missedConnectionIsOnlyKnownAttendee) {
+      reasons.push({
+        type: knownReason.startsWith("Reconnect with ") ? "person" : "people",
+        title: stripTerminalPunctuation(knownReason),
+        rank: 100 + (top?.relationshipStrength?.score || 0),
+        personId: top?.profile_id,
+        personName: top?.name,
+        count: ranked.length,
+      });
+    }
   }
 
   const intentReason = buildIntentOverlapReason(eventAttendees, currentProfileId);

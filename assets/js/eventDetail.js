@@ -516,9 +516,11 @@ function renderWhyAttend(reasons = []) {
   if (!section || !list) return;
 
   const meaningful = reasons
-    .map((reason) => reason?.title || reason?.reason || "")
-    .map((title) => String(title).trim())
-    .filter(Boolean)
+    .map((reason) => ({
+      title: String(reason?.title || reason?.reason || "").trim(),
+      description: String(reason?.description || "").trim(),
+    }))
+    .filter((reason) => reason.title)
     .slice(0, 3);
 
   if (!meaningful.length) {
@@ -528,14 +530,24 @@ function renderWhyAttend(reasons = []) {
   }
 
   list.innerHTML = "";
-  meaningful.forEach((title) => {
+  meaningful.forEach((reason) => {
     const item = document.createElement("li");
     const icon = document.createElement("span");
     const text = document.createElement("span");
     icon.className = "why-attend-check";
     icon.setAttribute("aria-hidden", "true");
     icon.textContent = "✓";
-    text.textContent = title;
+
+    const title = document.createElement("span");
+    title.textContent = reason.title;
+    text.appendChild(title);
+
+    if (reason.description) {
+      const description = document.createElement("small");
+      description.textContent = reason.description;
+      text.appendChild(description);
+    }
+
     item.appendChild(icon);
     item.appendChild(text);
     list.appendChild(item);

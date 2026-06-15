@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildEventDecisionReasons, buildKnownAttendeeReason, computeEventDecisionScore, computeLiveUrgencyBoost, scoreRelationshipStrength } from "../assets/js/attendanceReasons.js";
+import { buildEventDecisionReasons, buildKnownAttendeeReason, buildMissedConnectionReason, computeEventDecisionScore, computeLiveUrgencyBoost, scoreRelationshipStrength } from "../assets/js/attendanceReasons.js";
 
 const now = new Date("2026-06-15T00:00:00Z");
 
@@ -26,6 +26,64 @@ describe("attendance relationship reasons", () => {
     ], { now });
 
     expect(reason).toBe("2 people you know are attending.");
+  });
+
+
+  it("builds a missed connection reason for known attendees not seen recently", () => {
+    const reason = buildMissedConnectionReason([
+      { name: "Doug Hamilton", profile_id: "doug", encounter_count: 3, last_encounter_at: "2026-02-15T00:00:00Z", status: "confirmed" },
+    ], { now });
+
+    expect(reason).toMatchObject({
+      type: "person",
+      title: "Reconnect with Doug Hamilton",
+      description: "You have not crossed paths in 4 months.",
+      reasonKind: "missed_connection",
+      personId: "doug",
+      encounterCount: 3,
+    });
+  });
+
+  it("does not build missed connection reasons for recent or unknown encounters", () => {
+    expect(buildMissedConnectionReason([
+      { name: "Doug Hamilton", profile_id: "doug", encounter_count: 3, last_encounter_at: "2026-05-15T00:00:00Z" },
+    ], { now })).toBeNull();
+
+    expect(buildMissedConnectionReason([
+      { name: "Mia Chen", profile_id: "mia", encounter_count: 0, last_encounter_at: "2026-01-15T00:00:00Z" },
+    ], { now })).toBeNull();
+  });
+
+
+  it("surfaces missed connection as the attendance reason for a single stale known attendee", () => {
+    const reasons = buildEventDecisionReasons({
+      now,
+      connections: [
+        { name: "Doug Hamilton", profile_id: "doug", encounter_count: 3, last_encounter_at: "2026-02-15T00:00:00Z", status: "confirmed" },
+      ],
+      eventAttendees: [],
+    });
+
+    expect(reasons.map((reason) => reason.title)).toEqual(["Reconnect with Doug Hamilton"]);
+    expect(reasons[0].description).toBe("You have not crossed paths in 4 months.");
+  });
+
+  it("ranks missed connection reasons without displacing stronger relationship reasons", () => {
+    const reasons = buildEventDecisionReasons({
+      now,
+      currentProfileId: "me",
+      connections: [
+        { name: "Doug Hamilton", profile_id: "doug", encounter_count: 3, last_encounter_at: "2026-02-15T00:00:00Z", status: "confirmed" },
+        { name: "Sarah Lee", profile_id: "sarah", encounter_count: 12, last_encounter_at: "2026-06-01T00:00:00Z", status: "confirmed" },
+      ],
+      eventAttendees: [],
+    });
+
+    expect(reasons.map((reason) => reason.title)).toEqual([
+      "Reconnect with Sarah Lee",
+      "Reconnect with Doug Hamilton",
+    ]);
+    expect(reasons[1].description).toBe("You have not crossed paths in 4 months.");
   });
 
   it("adds shared current-event intent when attendee rows are already available", () => {

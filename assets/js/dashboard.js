@@ -922,6 +922,13 @@ function renderRecommendedForYouWidget(recommendations) {
     reasonText.textContent = reason.title;
     details.appendChild(reasonText);
 
+    if (reason.description) {
+      const reasonDescription = document.createElement("p");
+      reasonDescription.className = "cc-recommended-meta";
+      reasonDescription.textContent = reason.description;
+      details.appendChild(reasonDescription);
+    }
+
     const dateText = formatDateTime(event.starts_at);
     if (dateText) {
       const meta = document.createElement("p");
