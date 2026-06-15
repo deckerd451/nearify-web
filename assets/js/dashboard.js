@@ -15,7 +15,7 @@ import { trackAppCtaClick, trackPageView } from "./analytics.js";
 import { patchAppStoreLinks } from "./config.js";
 import { escapeHtml, escapeAttr, copyText } from "./utils.js";
 import { logger } from "./logger.js";
-import { buildEventDecisionReasons, buildKnownAttendeeReason } from "./attendanceReasons.js";
+import { buildEventDecisionReasons, buildKnownAttendeeReason, computeEventDecisionScore } from "./attendanceReasons.js";
 import { pollingCoordinator } from "./pollingCoordinator.js";
 logger.log("[Dashboard] dashboard.js loaded");
 
@@ -162,16 +162,17 @@ async function fetchCurrentProfileId() {
   return getOrganizerProfileId();
 }
 
-async function fetchUpcomingEventsForConnections(connections) {
+async function fetchUpcomingEventsForConnections(connections, currentProfileId = null) {
   if (!connections.length) return [];
 
   const connectionIds = connections.map((conn) => conn.profile_id).filter(Boolean);
   if (!connectionIds.length) return [];
 
-  const nowIso = new Date().toISOString();
+  const now = new Date();
+  const nowIso = now.toISOString();
   const { data: events, error: eventsError } = await supabase
     .from("events")
-    .select("id, name, slug, starts_at")
+    .select("id, name, slug, starts_at, ends_at, is_active")
     .is("deleted_at", null)
     .or(`starts_at.is.null,starts_at.gte.${nowIso}`)
     .order("starts_at", { ascending: true, nullsFirst: false })
@@ -187,7 +188,7 @@ async function fetchUpcomingEventsForConnections(connections) {
 
   const { data: attendees, error: attendeesError } = await supabase
     .from("event_attendees")
-    .select("event_id, profile_id")
+    .select("event_id, profile_id, intent_primary, intent_secondary")
     .in("event_id", eventIds)
     .in("profile_id", connectionIds);
 
@@ -198,26 +199,37 @@ async function fetchUpcomingEventsForConnections(connections) {
 
   const eventsById = new Map((events || []).map((event) => [event.id, event]));
   const connectionsById = new Map(connections.map((conn) => [conn.profile_id, conn]));
+  const attendeesByEvent = new Map();
+  for (const attendee of attendees || []) {
+    if (!attendeesByEvent.has(attendee.event_id)) attendeesByEvent.set(attendee.event_id, []);
+    attendeesByEvent.get(attendee.event_id).push(attendee);
+  }
 
-  return (attendees || [])
-    .map((attendee) => {
-      const event = eventsById.get(attendee.event_id);
-      const connection = connectionsById.get(attendee.profile_id);
-      if (!event || !connection) return null;
-      return { event, connection };
+  return [...attendeesByEvent.entries()]
+    .map(([eventId, eventAttendees]) => {
+      const event = eventsById.get(eventId);
+      if (!event) return null;
+      const knownAttendees = eventAttendees
+        .map((attendee) => connectionsById.get(attendee.profile_id))
+        .filter(Boolean);
+      if (!knownAttendees.length) return null;
+      const reasons = buildEventDecisionReasons({ connections: knownAttendees, eventAttendees, currentProfileId });
+      const topConnection = knownAttendees.find((connection) => connection.profile_id === reasons[0]?.personId) || knownAttendees[0];
+      return {
+        event,
+        connection: topConnection,
+        connections: knownAttendees,
+        reason: reasons[0] || null,
+        eventScore: computeEventDecisionScore(reasons, event, { now }),
+      };
     })
     .filter(Boolean)
     .sort((a, b) => {
+      if (b.eventScore !== a.eventScore) return b.eventScore - a.eventScore;
       const aStart = a.event.starts_at ? new Date(a.event.starts_at).getTime() : Number.MAX_SAFE_INTEGER;
       const bStart = b.event.starts_at ? new Date(b.event.starts_at).getTime() : Number.MAX_SAFE_INTEGER;
       if (aStart !== bStart) return aStart - bStart;
-
-      const encounterDelta = (Number(b.connection.encounter_count) || 0) - (Number(a.connection.encounter_count) || 0);
-      if (encounterDelta !== 0) return encounterDelta;
-
-      const bLast = b.connection.last_encounter_at ? new Date(b.connection.last_encounter_at).getTime() : 0;
-      const aLast = a.connection.last_encounter_at ? new Date(a.connection.last_encounter_at).getTime() : 0;
-      return bLast - aLast;
+      return String(a.event.name || "").localeCompare(String(b.event.name || ""));
     })
     .slice(0, SEE_AGAIN_LIMIT);
 }
@@ -293,12 +305,13 @@ async function buildRecommendedEvents(connections, currentProfileId) {
       return {
         event,
         reason: topReason,
-        rank: topReason?.rank || 0,
+        reasons,
+        eventScore: computeEventDecisionScore(reasons, event, { now }),
       };
     })
     .filter((recommendation) => recommendation.reason)
     .sort((a, b) => {
-      if (b.rank !== a.rank) return b.rank - a.rank;
+      if (b.eventScore !== a.eventScore) return b.eventScore - a.eventScore;
       const aStart = a.event.starts_at ? new Date(a.event.starts_at).getTime() : Number.MAX_SAFE_INTEGER;
       const bStart = b.event.starts_at ? new Date(b.event.starts_at).getTime() : Number.MAX_SAFE_INTEGER;
       if (aStart !== bStart) return aStart - bStart;
@@ -941,11 +954,11 @@ async function refreshDashboard() {
     fetchMyEvents(),
     fetchMyConnections(),
   ]);
-  const [currentProfileId, seeAgainOpportunities] = await Promise.all([
-    fetchCurrentProfileId(),
-    fetchUpcomingEventsForConnections(connections),
+  const currentProfileId = await fetchCurrentProfileId();
+  const [seeAgainOpportunities, recommendations] = await Promise.all([
+    fetchUpcomingEventsForConnections(connections, currentProfileId),
+    buildRecommendedEvents(connections, currentProfileId),
   ]);
-  const recommendations = await buildRecommendedEvents(connections, currentProfileId);
   const eventIds = events.map((e) => e.id);
   const [counts, intentsByEvent] = await Promise.all([
     eventIds.length ? fetchAttendeeCounts(eventIds) : Promise.resolve(new Map()),
@@ -1171,11 +1184,11 @@ async function loadDashboard() {
       fetchMyEvents(),
       fetchMyConnections(),
     ]);
-    const [currentProfileId, seeAgainOpportunities] = await Promise.all([
-      fetchCurrentProfileId(),
-      fetchUpcomingEventsForConnections(connections),
+    const currentProfileId = await fetchCurrentProfileId();
+    const [seeAgainOpportunities, recommendations] = await Promise.all([
+      fetchUpcomingEventsForConnections(connections, currentProfileId),
+      buildRecommendedEvents(connections, currentProfileId),
     ]);
-    const recommendations = await buildRecommendedEvents(connections, currentProfileId);
     logger.log("[Dashboard] events loaded:", events.length);
     const eventIds = events.map((e) => e.id);
 

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildEventDecisionReasons, buildKnownAttendeeReason, scoreRelationshipStrength } from "../assets/js/attendanceReasons.js";
+import { buildEventDecisionReasons, buildKnownAttendeeReason, computeEventDecisionScore, computeLiveUrgencyBoost, scoreRelationshipStrength } from "../assets/js/attendanceReasons.js";
 
 const now = new Date("2026-06-15T00:00:00Z");
 
@@ -68,4 +68,24 @@ describe("attendance relationship reasons", () => {
     ]);
     expect(reasons.every((reason) => reason.title.includes("100") === false)).toBe(true);
   });
+  it("computes event decision score from top reasons and urgency", () => {
+    const score = computeEventDecisionScore([
+      { title: "Reconnect", rank: 180 },
+      { title: "Shared goal", rank: 36 },
+      { title: "Momentum", rank: 14 },
+    ], { starts_at: "2026-06-15T12:00:00Z" }, { now, liveUrgencyBoost: 70 });
+
+    expect(score).toBeCloseTo((180 * 0.65) + (((180 + 36 + 14) / 3) * 0.25) + (70 * 0.10));
+  });
+
+  it("gives live events the strongest urgency boost", () => {
+    expect(computeLiveUrgencyBoost({
+      starts_at: "2026-06-14T23:00:00Z",
+      ends_at: "2026-06-15T01:00:00Z",
+      is_active: true,
+    }, now)).toBe(100);
+
+    expect(computeLiveUrgencyBoost({ starts_at: "2026-06-17T00:00:00Z" }, now)).toBe(40);
+  });
+
 });
