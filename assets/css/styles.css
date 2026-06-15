@@ -5427,6 +5427,50 @@ body.cc-page .cc-event-actions .btn.secondary:hover {
   background: linear-gradient(135deg, rgba(100, 210, 255, 0.10), rgba(191, 90, 242, 0.08));
 }
 
+.cc-recommended-widget {
+  background: linear-gradient(135deg, rgba(48, 209, 88, 0.12), rgba(255, 214, 10, 0.08));
+}
+
+.cc-recommended-list {
+  margin: 16px 0 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+}
+
+.cc-recommended-item {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 16px;
+  min-height: 190px;
+  padding: 16px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.cc-recommended-heading {
+  margin: 0;
+  color: #fff;
+  font-size: 18px;
+  font-weight: 800;
+}
+
+.cc-recommended-reason {
+  margin: 8px 0 0;
+  color: #e5edf7;
+  font-weight: 700;
+}
+
+.cc-recommended-meta {
+  margin: 8px 0 0;
+  color: #aab4c5;
+  font-size: 13px;
+}
+
 .cc-see-again-list {
   margin: 16px 0 0;
   padding: 0;
