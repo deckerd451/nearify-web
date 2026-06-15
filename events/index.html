@@ -165,6 +165,7 @@
     import { supabase } from "../assets/js/supabaseClient.js";
     import { getCurrentUser } from "../assets/js/appState.js?v=20260430";
     import { escapeHtml } from "../assets/js/utils.js?v=20260430";
+    import { buildKnownAttendeeReason } from "../assets/js/attendanceReasons.js";
 
     const upcomingGrid   = document.getElementById("eventsListGrid");
     const pastSection    = document.getElementById("pastEventsSection");
@@ -174,7 +175,7 @@
       if (!eventIds.length) return { counts: new Map(), intents: new Map(), relationshipReasons: new Map() };
       const { data, error } = await supabase
         .from("event_attendees")
-        .select("event_id, profile_id, intent_primary")
+        .select("event_id, profile_id, intent_primary, intent_secondary")
         .in("event_id", eventIds);
       if (error || !data) return { counts: new Map(), intents: new Map(), relationshipReasons: new Map() };
 
@@ -189,11 +190,23 @@
         }
       }
 
-      const relationshipReasons = await buildRelationshipReasonMap(data);
+      const currentProfileId = await fetchCurrentProfileId();
+      const relationshipReasons = await buildRelationshipReasonMap(data, currentProfileId);
       return { counts, intents, relationshipReasons };
     }
 
-    async function buildRelationshipReasonMap(attendeeRows) {
+    async function fetchCurrentProfileId() {
+      const user = await getCurrentUser();
+      if (!user) return null;
+      const { data } = await supabase
+        .from("profiles")
+        .select("id")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      return data?.id || null;
+    }
+
+    async function buildRelationshipReasonMap(attendeeRows, currentProfileId = null) {
       const user = await getCurrentUser();
       if (!user || !attendeeRows?.length) return new Map();
 
@@ -209,20 +222,21 @@
 
       const matchesByEvent = new Map();
       for (const row of attendeeRows) {
+        if (!matchesByEvent.has(row.event_id)) matchesByEvent.set(row.event_id, { connections: new Map(), attendees: [] });
+        const eventMatches = matchesByEvent.get(row.event_id);
+        eventMatches.attendees.push(row);
+
         const connection = connectionsById.get(row.profile_id);
-        if (!connection) continue;
-        if (!matchesByEvent.has(row.event_id)) matchesByEvent.set(row.event_id, []);
-        matchesByEvent.get(row.event_id).push(connection);
+        if (connection) eventMatches.connections.set(connection.profile_id, connection);
       }
 
       const reasons = new Map();
       for (const [eventId, matches] of matchesByEvent.entries()) {
-        const unique = [...new Map(matches.map((conn) => [conn.profile_id, conn])).values()];
-        if (unique.length === 1) {
-          reasons.set(eventId, `${unique[0].name || "Someone you know"} is attending.`);
-        } else if (unique.length > 1) {
-          reasons.set(eventId, `${unique.length} people you know are attending.`);
-        }
+        const reason = buildKnownAttendeeReason([...matches.connections.values()], {
+          eventAttendees: matches.attendees,
+          currentProfileId,
+        });
+        if (reason) reasons.set(eventId, reason);
       }
       return reasons;
     }
