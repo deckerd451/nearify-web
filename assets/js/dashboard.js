@@ -15,6 +15,7 @@ import { trackAppCtaClick, trackPageView } from "./analytics.js";
 import { patchAppStoreLinks } from "./config.js";
 import { escapeHtml, escapeAttr, copyText } from "./utils.js";
 import { logger } from "./logger.js";
+import { buildKnownAttendeeReason } from "./attendanceReasons.js";
 import { pollingCoordinator } from "./pollingCoordinator.js";
 logger.log("[Dashboard] dashboard.js loaded");
 
@@ -725,12 +726,8 @@ function buildRelationshipReasonMap(opportunities) {
 
   const reasons = new Map();
   for (const [eventId, matches] of matchesByEvent.entries()) {
-    const connections = [...matches.values()];
-    if (connections.length === 1) {
-      reasons.set(eventId, `${connections[0].name || "Someone you know"} is attending.`);
-    } else if (connections.length > 1) {
-      reasons.set(eventId, `${connections.length} people you know are attending.`);
-    }
+    const reason = buildKnownAttendeeReason([...matches.values()]);
+    if (reason) reasons.set(eventId, reason);
   }
   return reasons;
 }
