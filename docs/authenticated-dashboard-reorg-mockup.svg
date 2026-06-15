@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="760" viewBox="0 0 960 760" role="img" aria-labelledby="title desc">
+  <title id="title">Authenticated dashboard hierarchy mockup</title>
+  <desc id="desc">Recommended For You is the primary section, followed by See Them Again Soon, My Network, and Organizer tools.</desc>
+  <rect width="960" height="760" fill="#0b1020"/>
+  <rect x="120" y="48" width="720" height="664" rx="28" fill="#111827" stroke="#263043"/>
+  <text x="152" y="98" fill="#ffffff" font-family="Inter, Arial, sans-serif" font-size="30" font-weight="700">Recommended For You</text>
+  <text x="152" y="126" fill="#9ca3af" font-family="Inter, Arial, sans-serif" font-size="15">Personalized event picks powered by EventReason</text>
+  <rect x="688" y="72" width="120" height="38" rx="19" fill="#30d158"/>
+  <text x="707" y="96" fill="#06130b" font-family="Inter, Arial, sans-serif" font-size="14" font-weight="700">+ Create Event</text>
+
+  <rect x="152" y="162" width="656" height="212" rx="20" fill="#17331f" stroke="#2d8a47"/>
+  <text x="176" y="198" fill="#30d158" font-family="Inter, Arial, sans-serif" font-size="12" font-weight="700" letter-spacing="1.5">EVENTREASON RANKED</text>
+  <text x="176" y="232" fill="#ffffff" font-family="Inter, Arial, sans-serif" font-size="24" font-weight="700">Recommended For You</text>
+  <text x="176" y="258" fill="#c7d2fe" font-family="Inter, Arial, sans-serif" font-size="14">Events surfaced by people you know, shared goals, and momentum.</text>
+  <g font-family="Inter, Arial, sans-serif">
+    <rect x="176" y="286" width="190" height="64" rx="14" fill="#ffffff" opacity="0.08"/>
+    <text x="192" y="312" fill="#fff" font-size="15" font-weight="700">Founder Mixer</text>
+    <text x="192" y="334" fill="#d1d5db" font-size="12">3 people you know</text>
+    <rect x="386" y="286" width="190" height="64" rx="14" fill="#ffffff" opacity="0.08"/>
+    <text x="402" y="312" fill="#fff" font-size="15" font-weight="700">AI Demo Night</text>
+    <text x="402" y="334" fill="#d1d5db" font-size="12">Strong intent match</text>
+    <rect x="596" y="286" width="188" height="64" rx="14" fill="#ffffff" opacity="0.08"/>
+    <text x="612" y="312" fill="#fff" font-size="15" font-weight="700">Design Sprint</text>
+    <text x="612" y="334" fill="#d1d5db" font-size="12">High event momentum</text>
+  </g>
+
+  <rect x="152" y="400" width="656" height="92" rx="18" fill="#14263a" stroke="#27577a"/>
+  <text x="176" y="434" fill="#64d2ff" font-family="Inter, Arial, sans-serif" font-size="12" font-weight="700" letter-spacing="1.5">UPCOMING WITH YOUR NETWORK</text>
+  <text x="176" y="466" fill="#ffffff" font-family="Inter, Arial, sans-serif" font-size="22" font-weight="700">See them again soon</text>
+  <text x="430" y="466" fill="#aab4c5" font-family="Inter, Arial, sans-serif" font-size="14">People you know are going to these events.</text>
+
+  <rect x="152" y="516" width="656" height="92" rx="18" fill="#132a24" stroke="#275f4d"/>
+  <text x="176" y="550" fill="#30d158" font-family="Inter, Arial, sans-serif" font-size="12" font-weight="700" letter-spacing="1.5">RELATIONSHIP MEMORY</text>
+  <text x="176" y="582" fill="#ffffff" font-family="Inter, Arial, sans-serif" font-size="22" font-weight="700">My Network</text>
+  <text x="330" y="582" fill="#aab4c5" font-family="Inter, Arial, sans-serif" font-size="14">Connections support recommendation reasons.</text>
+
+  <line x1="152" y1="636" x2="808" y2="636" stroke="#ffffff" opacity="0.10"/>
+  <text x="152" y="666" fill="#30d158" font-family="Inter, Arial, sans-serif" font-size="12" font-weight="700" letter-spacing="1.5">ORGANIZER TOOLS</text>
+  <text x="152" y="696" fill="#ffffff" font-family="Inter, Arial, sans-serif" font-size="22" font-weight="700">Your Events</text>
+  <rect x="330" y="668" width="120" height="32" rx="10" fill="#ffffff" opacity="0.08"/>
+  <rect x="466" y="668" width="120" height="32" rx="10" fill="#ffffff" opacity="0.08"/>
+</svg>

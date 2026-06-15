@@ -137,18 +137,28 @@
 
         <div class="cc-dashboard-header">
           <div>
-            <h1 class="cc-dashboard-title">Your Events</h1>
-            <p class="cc-dashboard-subtitle">Events you're organizing · <a href="/events/index.html" class="cc-dashboard-subtitle-link">Browse all events</a></p>
+            <h1 class="cc-dashboard-title">Recommended For You</h1>
+            <p class="cc-dashboard-subtitle">Personalized event picks powered by EventReason · <a href="/events/index.html" class="cc-dashboard-subtitle-link">Browse all events</a></p>
           </div>
           <button id="openCreateModalBtn" class="btn primary">+ Create Event</button>
         </div>
 
-        <section id="networkMemoryWidget" class="cc-network-widget" aria-label="My Network" hidden></section>
-        <section id="recommendedForYouWidget" class="cc-network-widget cc-recommended-widget" aria-label="Recommended For You" hidden></section>
+        <section id="recommendedForYouWidget" class="cc-network-widget cc-recommended-widget cc-dashboard-primary" aria-label="Recommended For You" hidden></section>
         <section id="seeAgainWidget" class="cc-network-widget cc-see-again-widget" aria-label="See them again soon" hidden></section>
+        <section id="networkMemoryWidget" class="cc-network-widget cc-network-memory-widget" aria-label="My Network" hidden></section>
 
-        <!-- Event cards rendered by dashboard.js -->
-        <div id="eventCardList" class="cc-event-list" aria-live="polite" aria-label="Your events"></div>
+        <section class="cc-organizer-tools" aria-labelledby="organizerToolsTitle">
+          <div class="cc-organizer-tools-header">
+            <div>
+              <p class="cc-network-kicker">Organizer tools</p>
+              <h2 id="organizerToolsTitle" class="cc-organizer-tools-title">Your Events</h2>
+              <p class="cc-network-count">Manage events you are organizing after reviewing recommendations.</p>
+            </div>
+          </div>
+
+          <!-- Event cards rendered by dashboard.js -->
+          <div id="eventCardList" class="cc-event-list" aria-live="polite" aria-label="Your events"></div>
+        </section>
 
       </div>
     </div>

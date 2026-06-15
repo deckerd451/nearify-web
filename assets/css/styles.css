@@ -4205,6 +4205,27 @@ code {
   letter-spacing: -0.02em;
 }
 
+.cc-organizer-tools {
+  margin-top: 28px;
+  padding-top: 24px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.cc-organizer-tools-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: flex-start;
+  margin-bottom: 18px;
+}
+
+.cc-organizer-tools-title {
+  margin: 0;
+  color: #fff;
+  font-size: 22px;
+  letter-spacing: -0.01em;
+}
+
 /* ── Event list — 2-column grid ── */
 .cc-event-list {
   display: grid;
@@ -5428,7 +5449,13 @@ body.cc-page .cc-event-actions .btn.secondary:hover {
 }
 
 .cc-recommended-widget {
-  background: linear-gradient(135deg, rgba(48, 209, 88, 0.12), rgba(255, 214, 10, 0.08));
+  background: linear-gradient(135deg, rgba(48, 209, 88, 0.16), rgba(255, 214, 10, 0.10));
+  border-color: rgba(48, 209, 88, 0.22);
+  box-shadow: 0 18px 60px rgba(48, 209, 88, 0.10);
+}
+
+.cc-dashboard-primary {
+  padding: 24px;
 }
 
 .cc-recommended-list {
@@ -5502,6 +5529,10 @@ body.cc-page .cc-event-actions .btn.secondary:hover {
 }
 
 @media (max-width: 640px) {
+  .cc-organizer-tools-header {
+    display: block;
+  }
+
   .cc-network-widget-top {
     display: block;
   }
