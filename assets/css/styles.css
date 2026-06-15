@@ -84,9 +84,18 @@ textarea::placeholder {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 20px;
   padding: 20px 40px;
   max-width: 1040px;
   margin: 0 auto;
+}
+
+.nav-links {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 10px 20px;
 }
 
 .logo {
@@ -96,7 +105,6 @@ textarea::placeholder {
 }
 
 .nav-links a {
-  margin-left: 20px;
   text-decoration: none;
   color: var(--color-text-secondary);
   transition: color 0.15s ease;
@@ -110,6 +118,25 @@ textarea::placeholder {
   color: var(--color-text-muted);
   font-size: 13px;
   margin-top: 14px;
+}
+
+
+/* Shared centered page rhythm for focused app pages */
+.page-shell,
+.connections-page {
+  width: 100%;
+  max-width: 1040px;
+  margin: 0 auto;
+  padding-left: 40px;
+  padding-right: 40px;
+}
+
+@media (max-width: 720px) {
+  .page-shell,
+  .connections-page {
+    padding-left: 20px;
+    padding-right: 20px;
+  }
 }
 
 /* HERO */
@@ -333,6 +360,7 @@ textarea::placeholder {
 /* FOOTER */
 .footer {
   text-align: center;
+  margin-top: 40px;
   padding: 40px 40px 32px;
   color: var(--color-text-muted);
   border-top: 1px solid rgba(255, 255, 255, 0.06);
@@ -680,10 +708,6 @@ html {
     font-size: 16px;
   }
 
-  .nav-links a {
-    margin-left: 0;
-    margin-right: 16px;
-  }
 
   .steps {
     grid-template-columns: 1fr;
@@ -4916,7 +4940,6 @@ body.cc-page .cc-event-actions .btn.secondary:hover {
    ============================================================ */
 
 .nav-auth-link {
-  margin-left: 20px;
   text-decoration: none;
   color: var(--color-text-muted);
   font-size: 14px;
