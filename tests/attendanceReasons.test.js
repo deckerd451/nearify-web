@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildKnownAttendeeReason, scoreRelationshipStrength } from "../assets/js/attendanceReasons.js";
+import { buildEventDecisionReasons, buildKnownAttendeeReason, scoreRelationshipStrength } from "../assets/js/attendanceReasons.js";
 
 const now = new Date("2026-06-15T00:00:00Z");
 
@@ -45,5 +45,27 @@ describe("attendance relationship reasons", () => {
 
     expect(strength.score).toBe(75);
     expect(strength.level).toBe("strong");
+  });
+
+  it("builds top event decision reasons without exposing scores", () => {
+    const reasons = buildEventDecisionReasons({
+      currentProfileId: "me",
+      connections: [
+        { name: "Doug Hamilton", profile_id: "doug", encounter_count: 12, last_encounter_at: "2026-06-01T00:00:00Z", status: "confirmed" },
+      ],
+      eventAttendees: [
+        { profile_id: "me", intent_primary: "find_cofounder" },
+        { profile_id: "doug", intent_primary: "find_cofounder" },
+        { profile_id: "sarah", intent_primary: "find_cofounder" },
+        { profile_id: "alex", intent_primary: "find_cofounder" },
+      ],
+    });
+
+    expect(reasons.map((reason) => reason.title)).toEqual([
+      "Doug Hamilton is attending",
+      "Strong founder + builder overlap",
+      "4 people attending",
+    ]);
+    expect(reasons.every((reason) => reason.title.includes("100") === false)).toBe(true);
   });
 });

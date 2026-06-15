@@ -94,6 +94,93 @@ export function rankKnownAttendees(connections = [], context = {}) {
     });
 }
 
+const INTENT_REASON_LABELS = {
+  meet_people: "networking",
+  find_cofounder: "founder + builder",
+  hire: "hiring",
+  explore_ideas: "idea exploration",
+  demo_something: "demo + builder",
+};
+
+function stripTerminalPunctuation(value = "") {
+  return String(value).trim().replace(/[.!?]+$/g, "");
+}
+
+function pluralizePeople(count) {
+  return count === 1 ? "person" : "people";
+}
+
+function buildIntentOverlapReason(attendees = [], currentProfileId = null) {
+  if (!currentProfileId || !attendees?.length) return null;
+
+  const myRow = attendees.find((row) => row?.profile_id === currentProfileId || row?.profileId === currentProfileId);
+  const myIntent = myRow?.intent_primary || myRow?.intent;
+  if (!myIntent) return null;
+
+  const overlapCount = attendees.filter((row) => {
+    const profileId = row?.profile_id || row?.profileId;
+    const intent = row?.intent_primary || row?.intent;
+    return profileId !== currentProfileId && intent === myIntent;
+  }).length;
+
+  if (overlapCount < 2) return null;
+
+  const label = INTENT_REASON_LABELS[myIntent] || String(myIntent).replace(/_/g, " ");
+  return {
+    type: "opportunity",
+    title: `Strong ${label} overlap`,
+    rank: 30 + overlapCount,
+    opportunityKind: "shared_goal",
+  };
+}
+
+function buildMomentumReason(attendees = []) {
+  const count = attendees?.length || 0;
+  if (count < 3) return null;
+  return {
+    type: "opportunity",
+    title: `${count} ${pluralizePeople(count)} attending`,
+    rank: 10 + Math.min(count, 20),
+    opportunityKind: "meet_people",
+    count,
+  };
+}
+
+export function buildEventDecisionReasons({ connections = [], eventAttendees = [], currentProfileId = null } = {}) {
+  const reasons = [];
+  const knownReason = buildKnownAttendeeReason(connections, { eventAttendees, currentProfileId });
+
+  if (knownReason) {
+    const ranked = rankKnownAttendees(connections, { eventAttendees, currentProfileId });
+    const top = ranked[0];
+    reasons.push({
+      type: knownReason.startsWith("Reconnect with ") ? "person" : "people",
+      title: stripTerminalPunctuation(knownReason),
+      rank: 100 + (top?.relationshipStrength?.score || 0),
+      personId: top?.profile_id,
+      personName: top?.name,
+      count: ranked.length,
+    });
+  }
+
+  const intentReason = buildIntentOverlapReason(eventAttendees, currentProfileId);
+  if (intentReason) reasons.push(intentReason);
+
+  const momentumReason = buildMomentumReason(eventAttendees);
+  if (momentumReason) reasons.push(momentumReason);
+
+  const seen = new Set();
+  return reasons
+    .filter((reason) => {
+      const key = reason.title.toLowerCase();
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    })
+    .sort((a, b) => b.rank - a.rank)
+    .slice(0, 3);
+}
+
 export function buildKnownAttendeeReason(connections = [], context = {}) {
   const ranked = rankKnownAttendees(connections, context);
   if (!ranked.length) return "";

@@ -5472,3 +5472,46 @@ body.cc-page .cc-event-actions .btn.secondary:hover {
     display: block;
   }
 }
+
+/* ── Why Attend ──────────────────────────────────────────────────────────── */
+
+.why-attend {
+  margin-top: 24px;
+  padding: 18px 20px;
+  max-width: 680px;
+  background: rgba(255, 255, 255, 0.035);
+  border: 1px solid rgba(48, 209, 88, 0.16);
+  border-radius: var(--radius-md);
+}
+
+.why-attend h2 {
+  margin: 0 0 12px;
+  font-size: 13px;
+  line-height: 1.2;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--color-text-secondary);
+}
+
+.why-attend-list {
+  display: grid;
+  gap: 10px;
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.why-attend-list li {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  color: var(--color-text);
+  font-size: 15px;
+  line-height: 1.45;
+}
+
+.why-attend-check {
+  color: var(--color-accent);
+  font-weight: 800;
+  line-height: 1.45;
+}

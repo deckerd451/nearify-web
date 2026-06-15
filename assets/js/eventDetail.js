@@ -14,6 +14,7 @@ import { canManageEvent } from "./events.js";
 import { loadOrganizerInsights } from "./organizerInsights.js";
 import { renderShareButton, buildEventShareUrl, buildEventShareText } from "./share.js";
 import { VALID_INTENTS, INTENT_LABELS } from "./constants/intents.js";
+import { buildEventDecisionReasons } from "./attendanceReasons.js";
 
 const INTENT_STORAGE_KEY = "intent_primary";
 const ATTENDEE_AUTH_KEY = "nearify_attendee_auth_return";
@@ -437,7 +438,7 @@ function getTagArray(value, limit = 3) {
 async function fetchEventAttendees(eventId) {
   const { data: attendeeRows, error: attendeeError } = await supabase
     .from("event_attendees")
-    .select("profile_id, intent_primary")
+    .select("profile_id, intent_primary, intent_secondary")
     .eq("event_id", eventId);
 
   if (attendeeError || !attendeeRows?.length) return [];
@@ -463,6 +464,8 @@ async function fetchEventAttendees(eventId) {
       name:       profile.name || "Attendee",
       avatarUrl:  profile.avatar_url || null,
       intent:     a.intent_primary || null,  // event_attendees is source of truth
+      intent_primary: a.intent_primary || null,
+      intent_secondary: a.intent_secondary || null,
       interests:  profile.interests || null,
       skills:     profile.skills || null,
     };
@@ -505,6 +508,40 @@ function findKnownAttendees(attendees, connections, myProfileId) {
       const aLast = a.last_encounter_at ? new Date(a.last_encounter_at).getTime() : 0;
       return bLast - aLast;
     });
+}
+
+function renderWhyAttend(reasons = []) {
+  const section = document.getElementById("whyAttendSection");
+  const list = document.getElementById("whyAttendList");
+  if (!section || !list) return;
+
+  const meaningful = reasons
+    .map((reason) => reason?.title || reason?.reason || "")
+    .map((title) => String(title).trim())
+    .filter(Boolean)
+    .slice(0, 3);
+
+  if (!meaningful.length) {
+    section.style.display = "none";
+    list.innerHTML = "";
+    return;
+  }
+
+  list.innerHTML = "";
+  meaningful.forEach((title) => {
+    const item = document.createElement("li");
+    const icon = document.createElement("span");
+    const text = document.createElement("span");
+    icon.className = "why-attend-check";
+    icon.setAttribute("aria-hidden", "true");
+    icon.textContent = "✓";
+    text.textContent = title;
+    item.appendChild(icon);
+    item.appendChild(text);
+    list.appendChild(item);
+  });
+
+  section.style.display = "";
 }
 
 function renderPeopleYouKnowHere(knownAttendees) {
@@ -663,8 +700,15 @@ async function loadAttendeeDiscovery(eventId, isPast = false) {
 
   if (!isPast && currentUser && attendees.length) {
     const connections = await fetchMyConnections();
-    renderPeopleYouKnowHere(findKnownAttendees(attendees, connections, myProfileId));
+    const knownAttendees = findKnownAttendees(attendees, connections, myProfileId);
+    renderWhyAttend(buildEventDecisionReasons({
+      connections: knownAttendees,
+      eventAttendees: attendees,
+      currentProfileId: myProfileId,
+    }));
+    renderPeopleYouKnowHere(knownAttendees);
   } else {
+    renderWhyAttend([]);
     renderPeopleYouKnowHere([]);
   }
 
