@@ -1,8 +1,9 @@
 /**
  * dashboard.js — Event Control Center
  *
- * Renders the homepage as a live event management dashboard for
- * authenticated organizers. Logged-out users see a minimal landing.
+ * Renders the homepage as a personalized event recommendation dashboard for
+ * authenticated users, with organizer controls placed after discovery surfaces.
+ * Logged-out users see a minimal landing.
  *
  * Extension point for Live Mode:
  *   Each event card contains a hidden <div class="cc-live-panel" id="cc-live-<eventId}">
