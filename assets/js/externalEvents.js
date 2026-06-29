@@ -163,6 +163,7 @@ function renderMatchedCard(ev) {
         ${ev.source_url ? `<a href="${escapeAttr(ev.source_url)}" class="admin-btn admin-btn-copy" target="_blank" rel="noopener noreferrer">Source ↗</a>` : ""}
         <button class="admin-btn admin-btn-copy" data-action="copy-join" data-url="${escapeAttr(joinUrl)}">Copy join URL</button>
         <a href="${escapeAttr(joinUrl)}" class="admin-btn admin-btn-copy" target="_blank" rel="noopener noreferrer">Open join page ↗</a>
+        <button class="admin-btn admin-btn-delete" data-action="remove-match" data-extid="${escapeAttr(ev.id)}">Remove</button>
       </div>` : ""}
     </div>`;
 }
@@ -406,7 +407,43 @@ function wireListDelegation(listId) {
       setTimeout(() => { btn.textContent = orig; }, 1500);
       return;
     }
+
+    if (action === "remove-match") {
+      const extId = btn.dataset.extid;
+      if (extId) await unmatchExternalEvent(extId);
+      return;
+    }
   });
+}
+
+async function unmatchExternalEvent(extId) {
+  const ev = allExternalEvents.find(e => e.id === extId);
+  if (!ev) return;
+
+  const card = document.getElementById(`ext-card-${extId}`);
+  const removeBtn = card?.querySelector(`[data-action="remove-match"]`);
+
+  if (removeBtn) {
+    removeBtn.disabled = true;
+    removeBtn.textContent = "Removing…";
+  }
+
+  const { error } = await supabase
+    .from("external_events")
+    .update({ matched_event_id: null, updated_at: new Date().toISOString() })
+    .eq("id", extId);
+
+  if (error) {
+    logger.warn("[ExtEvents] Unmatch failed:", error);
+    if (removeBtn) {
+      removeBtn.disabled = false;
+      removeBtn.textContent = "Remove";
+    }
+    return;
+  }
+
+  ev.matched_event_id = null;
+  renderLists();
 }
 
 // ── Load & refresh ────────────────────────────────────────────────────────────
