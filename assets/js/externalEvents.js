@@ -428,20 +428,47 @@ async function unmatchExternalEvent(extId) {
     removeBtn.textContent = "Removing…";
   }
 
-  const { error } = await supabase
+  const { error: updateError } = await supabase
     .from("external_events")
     .update({ matched_event_id: null, updated_at: new Date().toISOString() })
     .eq("id", extId);
 
-  if (error) {
-    logger.warn("[ExtEvents] Unmatch failed:", error);
-    if (removeBtn) {
-      removeBtn.disabled = false;
-      removeBtn.textContent = "Remove";
-    }
+  if (updateError) {
+    logger.warn("[ExtEvents] Unmatch update failed:", updateError);
+    if (removeBtn) { removeBtn.disabled = false; removeBtn.textContent = "Remove"; }
     return;
   }
 
+  // Re-fetch the row to confirm the write persisted (Supabase JS v2 returns
+  // no error when RLS silently blocks an update, so we verify via a fresh read).
+  const { data: rows, error: fetchError } = await supabase
+    .from("external_events")
+    .select("matched_event_id")
+    .eq("id", extId)
+    .limit(1);
+
+  if (fetchError) {
+    logger.warn("[ExtEvents] Post-unmatch fetch failed:", fetchError);
+    if (removeBtn) { removeBtn.disabled = false; removeBtn.textContent = "Remove"; }
+    return;
+  }
+
+  const persisted = rows?.[0];
+  if (!persisted || persisted.matched_event_id !== null) {
+    // Update was silently rejected (RLS or missing row) — restore button with error hint.
+    logger.warn("[ExtEvents] Unmatch did not persist — matched_event_id still set:", persisted);
+    if (card) {
+      const statusEl = card.querySelector(".ext-card-status") ??
+        Object.assign(document.createElement("p"), { className: "ext-card-status field-help" });
+      statusEl.textContent = "Remove failed: check RLS policy on external_events (UPDATE permission).";
+      statusEl.style.color = "#f87171";
+      card.appendChild(statusEl);
+    }
+    if (removeBtn) { removeBtn.disabled = false; removeBtn.textContent = "Remove"; }
+    return;
+  }
+
+  // Confirmed persisted — update local state and re-render.
   ev.matched_event_id = null;
   renderLists();
 }
