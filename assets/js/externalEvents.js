@@ -97,7 +97,7 @@ async function loadExternalEvents() {
   const { data, error } = await supabase
     .from("external_events")
     .select(
-      "id, source, source_event_id, title, description, start_time, end_time, location, source_url, matched_event_id, image_url"
+      "id, source, source_event_id, title, description, start_time, end_time, location, source_url, matched_event_id, image_url, manually_unmatched_at, manually_unmatched_by"
     )
     .order("start_time", { ascending: true });
 
@@ -119,12 +119,14 @@ function renderUnmatchedCard(ev) {
   const dateStr = formatDateTime(ev.start_time);
   const metaParts = [dateStr, ev.location].filter(Boolean);
   const desc = (ev.description || "").substring(0, 180);
+  const manuallyUnmatched = !!ev.manually_unmatched_at;
 
   return `
     <div class="ext-event-card" id="ext-card-${escapeAttr(ev.id)}" data-extid="${escapeAttr(ev.id)}">
       <div class="ext-card-top">
         ${renderSourceBadge(ev.source)}
         <span class="ext-event-title">${escapeHtml(ev.title)}</span>
+        ${manuallyUnmatched ? `<span class="ext-source-badge" style="background:rgba(251,191,36,0.15);color:#fbbf24;border-color:rgba(251,191,36,0.3);" title="Manually removed on ${escapeAttr(formatDateTime(ev.manually_unmatched_at))}">Removed</span>` : ""}
       </div>
       ${metaParts.length ? `<div class="ext-event-meta">${metaParts.map(escapeHtml).join(" &middot; ")}</div>` : ""}
       ${desc ? `<p class="ext-event-desc">${escapeHtml(desc)}${ev.description && ev.description.length > 180 ? "…" : ""}</p>` : ""}
@@ -314,20 +316,19 @@ async function activateExternalEvent(extId) {
   setStatus("Linking to external event record…");
   logger.log("[ExtEvents] events row created:", createdEvent.id);
 
-  // 3 — Link external_events.matched_event_id
-  const { error: linkError } = await supabase
-    .from("external_events")
-    .update({
-      matched_event_id: createdEvent.id,
-      updated_at:       new Date().toISOString(),
-    })
-    .eq("id", ev.id);
+  // 3 — Link external_events.matched_event_id via SECURITY DEFINER RPC.
+  //     link_external_event also clears manually_unmatched_at/by so the DB
+  //     trigger does not block this intentional re-match.
+  const { error: linkError } = await supabase.rpc("link_external_event", {
+    p_ext_id:           ev.id,
+    p_nearify_event_id: createdEvent.id,
+  });
 
   const joinUrl = buildJoinUrl(createdEvent.id, ev.source, ev.source_event_id);
 
   if (linkError) {
     // Event was created but linking failed — report both pieces clearly.
-    logger.warn("[ExtEvents] Link update failed:", linkError);
+    logger.warn("[ExtEvents] link_external_event RPC failed:", linkError);
     if (card) {
       card.innerHTML = `
         <div class="ext-success-state">
@@ -337,11 +338,11 @@ async function activateExternalEvent(extId) {
           <div class="ext-event-title" style="font-size:15px;">${escapeHtml(ev.title)}</div>
           <div class="ext-event-meta" style="color:#fbbf24;">
             The events row was created (ID: <code>${escapeHtml(createdEvent.id)}</code>)
-            but updating <code>external_events.matched_event_id</code> failed:<br>
-            ${escapeHtml(linkError.message || linkError.code || "Unknown RLS or permission error")}
+            but the link_external_event RPC failed:<br>
+            ${escapeHtml(linkError.message || linkError.code || "Unknown error")}
           </div>
           <div class="ext-event-meta">
-            You can update it manually in Supabase Studio, or check RLS on external_events.
+            You can update it manually in Supabase Studio.
           </div>
           <div class="ext-success-join-row" style="margin-top:6px;">
             <span class="ext-join-url-text">${escapeHtml(joinUrl)}</span>
@@ -357,7 +358,9 @@ async function activateExternalEvent(extId) {
   logger.log("[ExtEvents] external_events linked to", createdEvent.id);
 
   // 4 — Update local state and replace card with success view
-  ev.matched_event_id = createdEvent.id;
+  ev.matched_event_id       = createdEvent.id;
+  ev.manually_unmatched_at  = null;
+  ev.manually_unmatched_by  = null;
 
   if (card) {
     card.outerHTML = renderSuccessState(ev, createdEvent.id, joinUrl);
@@ -449,7 +452,9 @@ async function unmatchExternalEvent(extId) {
   }
 
   // Confirmed — update local state and re-render.
-  ev.matched_event_id = null;
+  ev.matched_event_id      = null;
+  ev.manually_unmatched_at = new Date().toISOString();
+  ev.manually_unmatched_by = null; // uid not available client-side; DB has it
   renderLists();
 }
 
