@@ -428,47 +428,27 @@ async function unmatchExternalEvent(extId) {
     removeBtn.textContent = "Removing…";
   }
 
-  const { error: updateError } = await supabase
-    .from("external_events")
-    .update({ matched_event_id: null, updated_at: new Date().toISOString() })
-    .eq("id", extId);
+  // Use a SECURITY DEFINER RPC so the write runs as the DB owner and bypasses
+  // any RLS WITH CHECK constraint that blocks nullifying matched_event_id
+  // from the client (the same privileged pattern used by other admin mutations).
+  const { error: rpcError } = await supabase.rpc("unmatch_external_event", {
+    p_ext_id: extId,
+  });
 
-  if (updateError) {
-    logger.warn("[ExtEvents] Unmatch update failed:", updateError);
-    if (removeBtn) { removeBtn.disabled = false; removeBtn.textContent = "Remove"; }
-    return;
-  }
-
-  // Re-fetch the row to confirm the write persisted (Supabase JS v2 returns
-  // no error when RLS silently blocks an update, so we verify via a fresh read).
-  const { data: rows, error: fetchError } = await supabase
-    .from("external_events")
-    .select("matched_event_id")
-    .eq("id", extId)
-    .limit(1);
-
-  if (fetchError) {
-    logger.warn("[ExtEvents] Post-unmatch fetch failed:", fetchError);
-    if (removeBtn) { removeBtn.disabled = false; removeBtn.textContent = "Remove"; }
-    return;
-  }
-
-  const persisted = rows?.[0];
-  if (!persisted || persisted.matched_event_id !== null) {
-    // Update was silently rejected (RLS or missing row) — restore button with error hint.
-    logger.warn("[ExtEvents] Unmatch did not persist — matched_event_id still set:", persisted);
+  if (rpcError) {
+    logger.warn("[ExtEvents] unmatch_external_event RPC failed:", rpcError);
     if (card) {
       const statusEl = card.querySelector(".ext-card-status") ??
         Object.assign(document.createElement("p"), { className: "ext-card-status field-help" });
-      statusEl.textContent = "Remove failed: check RLS policy on external_events (UPDATE permission).";
+      statusEl.textContent = `Remove failed: ${rpcError.message || rpcError.code || "unknown error"}`;
       statusEl.style.color = "#f87171";
-      card.appendChild(statusEl);
+      if (!card.contains(statusEl)) card.appendChild(statusEl);
     }
     if (removeBtn) { removeBtn.disabled = false; removeBtn.textContent = "Remove"; }
     return;
   }
 
-  // Confirmed persisted — update local state and re-render.
+  // Confirmed — update local state and re-render.
   ev.matched_event_id = null;
   renderLists();
 }
