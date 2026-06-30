@@ -299,14 +299,40 @@ async function activateExternalEvent(extId) {
     false // create, not update
   );
 
+  let createdEvent = Array.isArray(eventData) ? eventData[0] : eventData;
+
   if (saveError) {
-    logger.warn("[ExtEvents] saveEvent failed:", saveError);
-    if (activateBtn) { activateBtn.disabled = false; activateBtn.textContent = "Activate on Nearify"; }
-    setStatus(`Could not create event: ${saveError.message || saveError.code || "Unknown error"}`, true);
-    return;
+    // Slug already exists — this event was previously activated then removed.
+    // Look up the existing events row and reuse it for the link step.
+    const isSlugConflict =
+      (saveError.code === "23505") ||
+      (saveError.message || "").includes("events_slug_key");
+
+    if (isSlugConflict && slug) {
+      setStatus("Event already exists — re-linking…");
+      logger.log("[ExtEvents] Slug conflict, looking up existing event by slug:", slug);
+      const { data: existing, error: lookupError } = await supabase
+        .from("events")
+        .select("id")
+        .eq("slug", slug)
+        .maybeSingle();
+
+      if (lookupError || !existing?.id) {
+        logger.warn("[ExtEvents] Slug lookup failed:", lookupError);
+        if (activateBtn) { activateBtn.disabled = false; activateBtn.textContent = "Activate on Nearify"; }
+        setStatus(`Could not create event: ${saveError.message || saveError.code || "Unknown error"}`, true);
+        return;
+      }
+      createdEvent = existing;
+      logger.log("[ExtEvents] Reusing existing event:", existing.id);
+    } else {
+      logger.warn("[ExtEvents] saveEvent failed:", saveError);
+      if (activateBtn) { activateBtn.disabled = false; activateBtn.textContent = "Activate on Nearify"; }
+      setStatus(`Could not create event: ${saveError.message || saveError.code || "Unknown error"}`, true);
+      return;
+    }
   }
 
-  const createdEvent = Array.isArray(eventData) ? eventData[0] : eventData;
   if (!createdEvent?.id) {
     if (activateBtn) { activateBtn.disabled = false; activateBtn.textContent = "Activate on Nearify"; }
     setStatus("Event insert returned no data — check Supabase RLS on events.", true);
