@@ -34,7 +34,7 @@ function renderAvatar(name, avatarUrl) {
 }
 
 function renderConnection(conn) {
-  const profileUrl = `../profile.html?id=${encodeURIComponent(conn.profile_id)}&from=connections`;
+  const profileUrl = `/profile/${encodeURIComponent(conn.profile_id)}?from=connections`;
 
   let metaParts = [];
 

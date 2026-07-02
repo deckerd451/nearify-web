@@ -171,7 +171,8 @@ async function init() {
 
   const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
   const params    = new URLSearchParams(window.location.search);
-  const rawProfileId = params.get("id");
+  const profilePathMatch = window.location.pathname.match(/^\/profile\/([^/?#]+)\/?$/);
+  const rawProfileId = params.get("id") || (profilePathMatch ? decodeURIComponent(profilePathMatch[1]) : null);
   const rawEventId   = params.get("event");
   const profileId  = rawProfileId && UUID_RE.test(rawProfileId) ? rawProfileId : null;
   const eventId    = rawEventId   && UUID_RE.test(rawEventId)   ? rawEventId   : null;
