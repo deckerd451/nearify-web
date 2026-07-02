@@ -4,6 +4,19 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Page Not Found | Nearify</title>
+
+  <script>
+    (function () {
+      var match = window.location.pathname.match(/^\/profile\/([^/?#]+)\/?$/);
+      if (!match) return;
+
+      var params = new URLSearchParams(window.location.search);
+      if (!params.has("id")) params.set("id", decodeURIComponent(match[1]));
+
+      var target = "/profile.html?" + params.toString() + window.location.hash;
+      window.location.replace(target);
+    })();
+  </script>
   <meta name="description" content="This page doesn't exist. Find upcoming Nearify events or get the app." />
   <link rel="stylesheet" href="/assets/css/styles.css?v=20260430" />
 </head>
