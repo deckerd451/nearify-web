@@ -22,6 +22,45 @@ function showState(id) {
   });
 }
 
+// Builds the "save them back" CTA shown when the viewed profile already
+// proposed a relationship with the current user. Mirrors the confirm flow
+// in intelligence.js's renderRelationshipFooter.
+function renderConfirmRelationshipButton(profileId, eventId) {
+  const btn = document.createElement("button");
+  btn.type = "button";
+  btn.className = "profile-rel-confirm-btn";
+  const originalText = "Save them back";
+  btn.textContent = originalText;
+
+  btn.addEventListener("click", async () => {
+    if (btn.disabled) return;
+    btn.disabled = true;
+    btn.textContent = "Saving…";
+
+    const { data: result, error } = await supabase.rpc("confirm_relationship", {
+      p_other_profile_id: profileId,
+      p_source_event_id: eventId ?? null,
+      p_source_intel_id: null,
+    });
+
+    if (error) {
+      btn.disabled = false;
+      btn.textContent = originalText;
+      return;
+    }
+
+    const newStatus = result?.status === "confirmed" ? "confirmed" : "proposed_by_me";
+    const statusEl = document.createElement("p");
+    statusEl.className = "profile-rel-context-status";
+    statusEl.textContent = newStatus === "confirmed"
+      ? "Saved in My Connections"
+      : "You saved them — waiting for them to save you back";
+    btn.replaceWith(statusEl);
+  });
+
+  return btn;
+}
+
 function renderRelationshipContext(ctx, options = {}) {
   const el = document.getElementById("profileRelContext");
   if (!el) return;
@@ -101,6 +140,10 @@ function renderRelationshipContext(ctx, options = {}) {
       p.textContent = d;
       el.appendChild(p);
     });
+  }
+
+  if (status === "proposed_by_them" && options.profileId) {
+    el.appendChild(renderConfirmRelationshipButton(options.profileId, options.eventId));
   }
 
   const narrativeEl = document.getElementById("profileRelNarrative");
@@ -212,7 +255,7 @@ async function init() {
     const { data: ctx, error: ctxErr } = await supabase.rpc("get_relationship_context", {
       p_other_profile_id: profileId,
     });
-    if (!ctxErr && ctx) renderRelationshipContext(ctx, { relationshipMode: fromConnections });
+    if (!ctxErr && ctx) renderRelationshipContext(ctx, { relationshipMode: fromConnections, profileId, eventId });
 
     if (fromConnections) {
       // Swap app-install CTAs for a back link when arriving from the connections list.
