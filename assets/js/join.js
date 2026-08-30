@@ -1095,7 +1095,7 @@ function renderAttendeeSuggestions(query) {
       : a.relationshipStatus === "proposed_by_me"
         ? `<span class="guest-attendee-rel-badge">Saved</span>`
         : a.relationshipStatus === "proposed_by_them"
-          ? `<span class="guest-attendee-rel-badge">Wants to connect</span>`
+          ? `<span class="guest-attendee-rel-badge">Save them back</span>`
           : "";
     return `<li role="option" class="guest-attendee-option" data-idx="${i}" tabindex="0">` +
       `<span class="guest-attendee-avatar" aria-hidden="true">${escapeHtml(initials)}</span>` +
@@ -1125,7 +1125,32 @@ async function handleAttendeeSelect(attendee) {
   if (statusEl) statusEl.textContent = "";
 
   const ghostToken = localStorage.getItem("nearify_ghost_token");
-  const eventId    = localStorage.getItem("nearify_ghost_event_id");
+  const eventId    = localStorage.getItem("nearify_ghost_event_id")
+    || new URLSearchParams(window.location.search).get("event");
+
+  if (attendee.relationshipStatus === "proposed_by_them") {
+    if (statusEl) statusEl.textContent = `Saving ${attendee.name}…`;
+
+    const { data: result, error } = await supabase.rpc("confirm_relationship", {
+      p_other_profile_id: attendee.profileId,
+      p_source_event_id:  eventId,
+      p_source_intel_id:  null,
+    });
+
+    if (error) {
+      logger.warn("[GuestConnect] confirm_relationship failed", error);
+      if (statusEl) statusEl.textContent = `Couldn't save ${attendee.name}. Please try again.`;
+      return;
+    }
+
+    attendee.relationshipStatus = result?.status === "confirmed" ? "confirmed" : "proposed_by_me";
+    if (statusEl) {
+      statusEl.textContent = attendee.relationshipStatus === "confirmed"
+        ? `${attendee.name} is saved in My Connections.`
+        : `You saved ${attendee.name} — waiting for them to save you back.`;
+    }
+    return;
+  }
 
   if (!ghostToken || !eventId) {
     if (statusEl) statusEl.textContent = "Guest session missing. Please join as guest again.";
