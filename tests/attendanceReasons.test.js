@@ -107,6 +107,7 @@ describe("attendance relationship reasons", () => {
 
   it("builds top event decision reasons without exposing scores", () => {
     const reasons = buildEventDecisionReasons({
+      now,
       currentProfileId: "me",
       connections: [
         { name: "Doug Hamilton", profile_id: "doug", encounter_count: 12, last_encounter_at: "2026-06-01T00:00:00Z", status: "confirmed" },
