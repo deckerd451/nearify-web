@@ -30,8 +30,7 @@
       <div class="nav-links">
         <a href="events/index.html">Events</a>
         <a href="vision.html">Vision</a>
-        <a href="admin/event-setup.html">Host an Event</a>
-        <!-- navAuth.js injects the signed-in user pill here -->
+        <!-- navAuth.js injects the signed-in user pill and admin link here -->
       </div>
       <button class="nav-hamburger" id="navHamburger" aria-label="Open menu" aria-expanded="false">
         <span></span><span></span><span></span>
@@ -40,7 +39,6 @@
     <nav class="nav-drawer" id="navDrawer" aria-label="Site navigation">
       <a href="events/index.html">Events</a>
       <a href="vision.html">Vision</a>
-      <a href="admin/event-setup.html" class="nav-drawer-highlight">Host an Event</a>
     </nav>
   </div>
 
@@ -60,7 +58,6 @@
           <p>Nearify shows you the right people before an event, lets you save who you meet, and keeps the context for follow-up.</p>
           <div class="hero-actions cc-landing-hero-actions" aria-label="Homepage actions">
             <a href="/events/index.html" class="btn primary">Find an Event</a>
-            <a href="/admin/event-setup.html" class="btn secondary">Host an Event</a>
             <button id="landingSignInBtn" type="button" class="btn secondary cc-google-btn">
               <svg class="cc-google-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
                 <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
@@ -120,7 +117,6 @@
           <h2>Make your next event easier to remember.</h2>
           <div class="hero-actions cc-landing-final-actions">
             <a href="/events/index.html" class="btn primary">Find an Event</a>
-            <a href="/admin/event-setup.html" class="btn secondary">Host an Event</a>
           </div>
           <a href="/vision.html" class="cc-landing-link">Read the Vision</a>
         </section>
@@ -140,7 +136,7 @@
             <h1 class="cc-dashboard-title">Recommended For You</h1>
             <p class="cc-dashboard-subtitle">Event picks based on people you know and goals you share · <a href="/events/index.html" class="cc-dashboard-subtitle-link">Browse all events</a></p>
           </div>
-          <button id="openCreateModalBtn" class="btn primary">+ Create Event</button>
+          <button id="openCreateModalBtn" class="btn primary" data-admin-create hidden>+ Create Event</button>
         </div>
 
         <section id="recommendedForYouWidget" class="cc-network-widget cc-recommended-widget cc-dashboard-primary" aria-label="Recommended For You" hidden></section>
@@ -263,7 +259,6 @@
       <a href="index.html">Home</a>
       <a href="events/index.html">Events</a>
       <a href="vision.html">Vision</a>
-      <a href="admin/event-setup.html">Host an Event</a>
       <a href="https://nearify.org/privacy.html">Privacy</a>
       <a href="https://nearify.org/terms.html">Terms</a>
       <a href="https://nearify.org/support.html">Support</a>

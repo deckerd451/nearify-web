@@ -168,7 +168,6 @@
       <div class="logo"><a href="../index.html">Nearify</a></div>
       <div class="nav-links">
         <a href="../events/index.html">Events</a>
-        <a href="event-setup.html">Host an Event</a>
       </div>
       <button class="nav-hamburger" id="navHamburger" aria-label="Open menu" aria-expanded="false">
         <span></span><span></span><span></span>
@@ -176,7 +175,6 @@
     </header>
     <nav class="nav-drawer" id="navDrawer" aria-label="Site navigation">
       <a href="../events/index.html">Events</a>
-      <a href="event-setup.html" class="nav-drawer-highlight">Host an Event</a>
     </nav>
   </div>
 
@@ -258,7 +256,6 @@
     <nav class="footer-links">
       <a href="../index.html">Home</a>
       <a href="../events/index.html">Events</a>
-      <a href="event-setup.html">Host an Event</a>
       <a href="../privacy.html">Privacy</a>
     </nav>
     <p>&copy; 2026 Nearify</p>
@@ -267,7 +264,7 @@
   <!-- Auth gate + nav -->
   <script type="module">
     import { supabase } from "../assets/js/supabaseClient.js?v=20260508";
-    import { requireAdminAccess } from "../assets/js/adminAccess.js";
+    import { resolveAdminAccess } from "../assets/js/adminAccess.js";
 
     const authGate       = document.getElementById("adminAuthGate");
     const adminRestricted = document.getElementById("adminRestricted");
@@ -276,8 +273,7 @@
     const authStatus     = document.getElementById("adminAuthStatus");
 
     supabase.auth.onAuthStateChange((event, session) => {
-      const user = session?.user ?? null;
-      requireAdminAccess(user, {
+      resolveAdminAccess(supabase, session, {
         gateEl:       authGate,
         contentEl:    adminContent,
         restrictedEl: adminRestricted,

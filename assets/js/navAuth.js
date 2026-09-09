@@ -1,5 +1,5 @@
 import { supabase } from "./supabaseClient.js";
-import { isAdminUser } from "./adminAccess.js";
+import { fetchIsAdmin, resetAdminCache } from "./adminAccess.js";
 
 // ---------------------------------------------------------------------------
 // Hamburger / nav-drawer toggle (wired here since this module loads on every page)
@@ -149,8 +149,6 @@ function injectSignedIn(profile, email, user) {
   document.querySelectorAll(".nav-drawer-signout").forEach((el) => el.remove());
   document.querySelectorAll(".nav-auth-link").forEach((el) => el.remove());
 
-  const admin = isAdminUser(user);
-
   const navLinks = document.querySelector(".nav-links");
   if (navLinks) {
     const networkLink = document.createElement("a");
@@ -164,13 +162,6 @@ function injectSignedIn(profile, email, user) {
     dashLink.textContent = "Your Events";
     dashLink.className = "nav-auth-link";
     navLinks.appendChild(dashLink);
-    if (admin) {
-      const adminLink = document.createElement("a");
-      adminLink.href = "/admin/";
-      adminLink.textContent = "Admin";
-      adminLink.className = "nav-auth-link";
-      navLinks.appendChild(adminLink);
-    }
     navLinks.appendChild(buildPill(profile, email));
   }
 
@@ -187,15 +178,32 @@ function injectSignedIn(profile, email, user) {
     drawerDash.textContent = "Your Events";
     drawerDash.className = "nav-auth-link";
     drawer.appendChild(drawerDash);
-    if (admin) {
+    drawer.appendChild(buildDrawerSignOut());
+  }
+
+  // Admin link is added only after the SERVER confirms admin membership, so it
+  // never flashes for non-admins.
+  fetchIsAdmin(supabase).then((admin) => {
+    if (!admin) return;
+    if (navLinks) {
+      const adminLink = document.createElement("a");
+      adminLink.href = "/admin/";
+      adminLink.textContent = "Admin";
+      adminLink.className = "nav-auth-link nav-admin-link";
+      // Keep the account pill last.
+      const pill = navLinks.querySelector(".nav-user-wrapper");
+      navLinks.insertBefore(adminLink, pill || null);
+    }
+    const d = document.getElementById("navDrawer");
+    if (d) {
       const drawerAdmin = document.createElement("a");
       drawerAdmin.href = "/admin/";
       drawerAdmin.textContent = "Admin";
-      drawerAdmin.className = "nav-auth-link";
-      drawer.appendChild(drawerAdmin);
+      drawerAdmin.className = "nav-auth-link nav-admin-link";
+      const signOut = d.querySelector(".nav-drawer-signout");
+      d.insertBefore(drawerAdmin, signOut || null);
     }
-    drawer.appendChild(buildDrawerSignOut());
-  }
+  }).catch(() => { /* fail closed: no admin link */ });
 }
 
 function removeSignedIn() {
@@ -218,6 +226,7 @@ function initNavAuth() {
         .then((profile) => injectSignedIn(profile, user.email, user))
         .catch(() => injectSignedIn(null, user.email, user));
     } else {
+      resetAdminCache();
       removeSignedIn();
     }
   });

@@ -1,5 +1,5 @@
 import { supabase } from "./supabaseClient.js";
-import { requireAdminAccess } from "./adminAccess.js";
+import { resolveAdminAccess } from "./adminAccess.js";
 
 // ── Constants ──────────────────────────────────────────────────────────────────
 
@@ -39,18 +39,19 @@ const $restricted = document.getElementById("fdRestricted");
 
 supabase.auth.onAuthStateChange((_event, session) => {
   const user = session?.user ?? null;
-  const result = requireAdminAccess(user, {
+  resolveAdminAccess(supabase, session, {
     gateEl:       $gate,
     contentEl:    $content,
     restrictedEl: $restricted,
+  }).then((result) => {
+    if (result === "granted") {
+      $content.style.display = "block"; // override #fdContent { display:none } CSS rule
+      $userEmail.textContent = user?.email ?? "";
+      loadData();
+    }
+    // Override gate display style to match the existing flex layout
+    if (result === "unauthenticated") $gate.style.display = "flex";
   });
-  if (result === "granted") {
-    $content.style.display = "block"; // override #fdContent { display:none } CSS rule
-    $userEmail.textContent = user.email ?? "";
-    loadData();
-  }
-  // Override gate display style to match the existing flex layout
-  if (!user) $gate.style.display = "flex";
 });
 
 $signIn.addEventListener("click", () => {

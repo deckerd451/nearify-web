@@ -14,7 +14,7 @@ import { supabase } from "./supabaseClient.js";
 import { saveEvent, getOrganizerProfileId } from "./events.js";
 import { copyText } from "./utils.js";
 import { logger } from "./logger.js";
-import { requireAdminAccess } from "./adminAccess.js";
+import { resolveAdminAccess } from "./adminAccess.js";
 
 const NEARIFY_BASE = "https://nearify.org";
 
@@ -548,13 +548,13 @@ function initAuthGate() {
 
   supabase.auth.onAuthStateChange((event, session) => {
     logger.log("[ExtEvents] auth:", event, !!session?.user);
-    const user = session?.user ?? null;
-    const result = requireAdminAccess(user, {
+    resolveAdminAccess(supabase, session, {
       gateEl:       gate,
       contentEl:    content,
       restrictedEl: restricted,
+    }).then((result) => {
+      if (result === "granted") loadAndRender();
     });
-    if (result === "granted") loadAndRender();
   });
 
   const signInBtn  = document.getElementById("adminSignInBtn");

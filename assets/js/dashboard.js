@@ -18,6 +18,7 @@ import { escapeHtml, escapeAttr, copyText } from "./utils.js";
 import { logger } from "./logger.js";
 import { buildEventDecisionReasons, buildKnownAttendeeReason, computeEventDecisionScore } from "./attendanceReasons.js";
 import { pollingCoordinator } from "./pollingCoordinator.js";
+import { fetchIsAdmin, resetAdminCache } from "./adminAccess.js";
 logger.log("[Dashboard] dashboard.js loaded");
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -1028,6 +1029,7 @@ async function copyCurrentJoinLink(btn) {
 // ─── Create Event Modal ───────────────────────────────────────────────────────
 
 function openCreateModal() {
+  if (!_isAdminCreator) return; // creation is admin-only
   _focusBeforeModal = document.activeElement;
   document.getElementById("createEventModal").hidden = false;
   document.body.classList.add("cc-modal-open");
@@ -1150,6 +1152,27 @@ function showDashboard() {
   document.getElementById("dashboardView").style.display = "block";
 }
 
+/**
+ * Reveals event-creation controls only for admins, using the canonical
+ * SERVER-SIDE admin result (public.is_admin() via fetchIsAdmin). Controls start
+ * hidden in markup so they never flash for non-admins while auth resolves.
+ * Pass a signed-in session's presence via `signedIn`; pass false to force-hide.
+ */
+async function applyCreateControlVisibility(signedIn) {
+  let isAdmin = false;
+  if (signedIn) {
+    isAdmin = await fetchIsAdmin(supabase);
+  } else {
+    resetAdminCache();
+  }
+  _isAdminCreator = isAdmin;
+  document.querySelectorAll("[data-admin-create]").forEach((el) => {
+    el.hidden = !isAdmin;
+  });
+  return isAdmin;
+}
+let _isAdminCreator = false;
+
 function showLoading() {
   showDashboard();
   const list = document.getElementById("eventCardList");
@@ -1171,8 +1194,10 @@ function initDashboard() {
 
     if (event === "SIGNED_OUT" || (event === "INITIAL_SESSION" && !session?.user)) {
       pollingCoordinator.stop(DASHBOARD_EVENTS_POLL_KEY);
+      applyCreateControlVisibility(false);
       showLanding();
     } else if (event === "SIGNED_IN" || (event === "INITIAL_SESSION" && session?.user)) {
+      applyCreateControlVisibility(true);
       startDashboardPolling();
       loadDashboard().catch((err) => {
         logger.error("[Dashboard] loadDashboard failed:", err);
