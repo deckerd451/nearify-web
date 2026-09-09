@@ -33,7 +33,9 @@ function stateLabelText(state) {
   switch (state) {
     case CONNECTION_STATE.CONNECTED: return "Connected";
     case CONNECTION_STATE.SAVE_BACK: return "Saved you";
-    case CONNECTION_STATE.SAVED:     return "Saved";
+    // A passive "Saved" badge adds no information on a page already titled
+    // "My Connections", so we don't show a chip for the plain SAVED state.
+    case CONNECTION_STATE.SAVED:     return "";
     default:                          return "";
   }
 }

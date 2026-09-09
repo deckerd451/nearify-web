@@ -51,7 +51,16 @@
       gap: 12px;
     }
 
+    /* Each row: the link fills the space, state/actions sit inline at the end
+       (never floating below the card). */
+    .connections-list > li {
+      display: flex;
+      align-items: stretch;
+      gap: 10px;
+    }
+
     .connection-row {
+      flex: 1;
       display: flex;
       align-items: center;
       gap: 14px;
@@ -92,10 +101,10 @@
     }
 
     .connection-row-event {
-      white-space: nowrap;
+      max-width: 420px;
       overflow: hidden;
       text-overflow: ellipsis;
-      max-width: 260px;
+      white-space: nowrap;
     }
 
     .connection-row-arrow {
