@@ -37,7 +37,7 @@
   }
   </script>
 
-  <link rel="stylesheet" href="../assets/css/styles.css?v=20260430" />
+  <link rel="stylesheet" href="../assets/css/styles.css?v=20260909" />
 </head>
 <body>
   <a href="#main-content" class="skip-link">Skip to main content</a>
@@ -156,21 +156,21 @@
     <p>© 2026 Nearify</p>
   </footer>
 
-  <script type="module" src="../assets/js/navAuth.js?v=20260430"></script>
+  <script type="module" src="../assets/js/navAuth.js?v=20260909"></script>
   <script type="module">
-    import { trackPageView, wireAppCtaTracking } from "../assets/js/analytics.js?v=20260430";
-    import { patchAppStoreLinks } from "../assets/js/config.js?v=20260430";
+    import { trackPageView, wireAppCtaTracking } from "../assets/js/analytics.js?v=20260909";
+    import { patchAppStoreLinks } from "../assets/js/config.js?v=20260909";
     patchAppStoreLinks();
     trackPageView();
     wireAppCtaTracking();
   </script>
   <script type="module">
-    import { fetchPublicEvents } from "../assets/js/events.js?v=20260430";
+    import { fetchPublicEvents } from "../assets/js/events.js?v=20260909";
     import { supabase } from "../assets/js/supabaseClient.js";
-    import { getCurrentUser } from "../assets/js/appState.js?v=20260430";
-    import { escapeHtml } from "../assets/js/utils.js?v=20260430";
+    import { getCurrentUser } from "../assets/js/appState.js?v=20260909";
+    import { escapeHtml } from "../assets/js/utils.js?v=20260909";
     import { buildKnownAttendeeReason } from "../assets/js/attendanceReasons.js";
-    import { fetchIsAdmin, resetAdminCache } from "../assets/js/adminAccess.js?v=20260430";
+    import { fetchIsAdmin, resetAdminCache } from "../assets/js/adminAccess.js?v=20260909";
 
     const upcomingGrid   = document.getElementById("eventsListGrid");
     const pastSection    = document.getElementById("pastEventsSection");
