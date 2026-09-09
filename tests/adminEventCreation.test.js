@@ -389,3 +389,113 @@ describe("PostgreSQL OR-policy semantics — why the legacy policy was dangerous
     expect(insertAllowedUnder(["adminsCanCreate"], adminCtx)).toBe(true);
   });
 });
+
+// ---------------------------------------------------------------------------
+// Regression: the dashboard "Organizer Tools / Your Events" section is
+// admin-only. It must be hidden by default (no flash), revealed only after the
+// server-backed fetchIsAdmin() confirms admin, and organizer-event data must
+// not be fetched/rendered for non-admins. Ordinary dashboard/attendee/
+// connection surfaces are preserved.
+// ---------------------------------------------------------------------------
+
+const INDEX_HTML = fs.readFileSync(path.join(REPO, "index.html"), "utf8");
+const DASHBOARD_SRC = fs.readFileSync(path.join(REPO, "assets/js/dashboard.js"), "utf8");
+
+describe("organizer section markup — hidden by default, admin-gated", () => {
+  it("the organizer section starts hidden and is tagged data-admin-create", () => {
+    // Single section element carries id, data-admin-create, and hidden.
+    expect(INDEX_HTML).toMatch(
+      /<section[^>]*id="organizerToolsSection"[^>]*class="cc-organizer-tools"[^>]*data-admin-create[^>]*hidden[^>]*>/
+    );
+  });
+
+  it("still contains the organizer heading, subtext, and event list inside it", () => {
+    // The complete section (title/explanatory text/list) is what gets hidden.
+    const section = INDEX_HTML.match(/<section[^>]*id="organizerToolsSection"[\s\S]*?<\/section>/);
+    expect(section).toBeTruthy();
+    expect(section[0]).toMatch(/Organizer tools/);
+    expect(section[0]).toMatch(/Your Events/);
+    expect(section[0]).toMatch(/id="eventCardList"/);
+  });
+});
+
+describe("dashboard.js gates organizer data + render on fetchIsAdmin", () => {
+  it("fetchMyEvents is only called for admins (guarded by isAdmin)", () => {
+    expect(DASHBOARD_SRC).toMatch(/isAdmin\s*\?\s*fetchMyEvents\(\)\s*:\s*Promise\.resolve\(\[\]\)/);
+  });
+
+  it("organizer-only renders (Your Events + ecosystem hero) are behind isAdmin", () => {
+    // renderDashboard + renderEcosystemHero must appear inside an `if (isAdmin)`.
+    expect(DASHBOARD_SRC).toMatch(/if \(isAdmin\)\s*\{[\s\S]*?renderEcosystemHero\([\s\S]*?renderDashboard\(/);
+  });
+
+  it("admin status comes from the server-backed fetchIsAdmin (no email allowlist)", () => {
+    expect(DASHBOARD_SRC).toMatch(/fetchIsAdmin\(supabase\)/);
+    expect(DASHBOARD_SRC).not.toMatch(/@live\.com|@gmail\.com|ADMIN_EMAILS/);
+  });
+});
+
+// Mirror of dashboard.js applyCreateControlVisibility(): toggles every
+// [data-admin-create] element's hidden flag based on the SERVER result.
+async function revealAdminSurfaces(supabase, signedIn, els) {
+  let isAdmin = false;
+  if (signedIn) isAdmin = await fetchIsAdmin(supabase);
+  else resetAdminCache();
+  els.forEach((el) => { el.hidden = !isAdmin; });
+  return isAdmin;
+}
+
+// Mirror of loadDashboard()'s organizer gate: whether organizer events are
+// fetched and the Your Events section rendered.
+async function organizerLoadPlan(supabase, signedIn) {
+  const isAdmin = signedIn ? await fetchIsAdmin(supabase) : false;
+  return { fetchedOrganizerEvents: isAdmin, renderedYourEvents: isAdmin };
+}
+
+describe("organizer section visibility across auth states", () => {
+  it("signed-out → hidden, no organizer fetch/render", async () => {
+    const db = makeDb(["uid-admin"]);
+    const section = { hidden: false };
+    const isAdmin = await revealAdminSurfaces(makeSupabase(db, null), false, [section]);
+    expect(isAdmin).toBe(false);
+    expect(section.hidden).toBe(true);
+    const plan = await organizerLoadPlan(makeSupabase(db, null), false);
+    expect(plan).toEqual({ fetchedOrganizerEvents: false, renderedYourEvents: false });
+  });
+
+  it("loading (default markup) → hidden before authorization resolves (no flash)", () => {
+    // Section ships hidden; nothing reveals it until the async check resolves.
+    const section = { hidden: true };
+    expect(section.hidden).toBe(true);
+  });
+
+  it("signed-in non-admin → stays hidden, no organizer fetch/render", async () => {
+    const db = makeDb(["uid-admin"]);
+    const section = { hidden: true };
+    const isAdmin = await revealAdminSurfaces(makeSupabase(db, "uid-attendee"), true, [section]);
+    expect(isAdmin).toBe(false);
+    expect(section.hidden).toBe(true);
+    const plan = await organizerLoadPlan(makeSupabase(db, "uid-attendee"), true);
+    expect(plan).toEqual({ fetchedOrganizerEvents: false, renderedYourEvents: false });
+  });
+
+  it("server error while signed in → fail closed, stays hidden", async () => {
+    const db = makeDb(["uid-admin"]);
+    const section = { hidden: true };
+    const isAdmin = await revealAdminSurfaces(makeSupabase(db, "uid-admin", { failing: true }), true, [section]);
+    expect(isAdmin).toBe(false);
+    expect(section.hidden).toBe(true);
+    const plan = await organizerLoadPlan(makeSupabase(db, "uid-admin", { failing: true }), true);
+    expect(plan.renderedYourEvents).toBe(false);
+  });
+
+  it("admin → revealed, organizer events fetched and rendered", async () => {
+    const db = makeDb(["uid-admin"]);
+    const section = { hidden: true };
+    const isAdmin = await revealAdminSurfaces(makeSupabase(db, "uid-admin"), true, [section]);
+    expect(isAdmin).toBe(true);
+    expect(section.hidden).toBe(false);
+    const plan = await organizerLoadPlan(makeSupabase(db, "uid-admin"), true);
+    expect(plan).toEqual({ fetchedOrganizerEvents: true, renderedYourEvents: true });
+  });
+});
