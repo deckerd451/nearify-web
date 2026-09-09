@@ -203,6 +203,9 @@ function injectSignedIn(profile, email, user) {
     if (!admin) return;
     if (_currentUserId !== injectedForUserId) return; // account changed mid-flight
     if (navLinks) {
+      // Idempotent: drop any admin link a prior (possibly still-pending) auth
+      // event already inserted, so overlapping events can't stack copies.
+      navLinks.querySelectorAll(".nav-admin-link").forEach((el) => el.remove());
       const adminLink = document.createElement("a");
       adminLink.href = "/admin/";
       adminLink.textContent = "Admin";
@@ -213,6 +216,7 @@ function injectSignedIn(profile, email, user) {
     }
     const d = document.getElementById("navDrawer");
     if (d) {
+      d.querySelectorAll(".nav-admin-link").forEach((el) => el.remove());
       const drawerAdmin = document.createElement("a");
       drawerAdmin.href = "/admin/";
       drawerAdmin.textContent = "Admin";
