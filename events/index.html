@@ -67,6 +67,21 @@
       <p class="event-subhead">Find an upcoming event and show up knowing who to meet.</p>
     </div>
 
+    <!-- Admin-only organizer area. Hidden by default; revealed only after the
+         server-backed is_admin check confirms an admin (see inline script).
+         Event creation/management reuses the canonical /admin/event-setup.html
+         surface — no duplicate implementation here. -->
+    <section id="organizerBar" class="organizer-bar" hidden aria-label="Organizer tools">
+      <div class="organizer-bar-text">
+        <p class="organizer-bar-kicker">Organizer tools</p>
+        <h2 class="organizer-bar-title">Your Events</h2>
+      </div>
+      <div class="organizer-bar-actions">
+        <a href="/admin/event-setup.html" class="btn secondary">Manage your events</a>
+        <a href="/admin/event-setup.html" class="btn primary">+ Create Event</a>
+      </div>
+    </section>
+
     <!-- Connections section — populated by connections.js for signed-in users -->
     <section id="connectionsSection" class="connections-section" hidden>
       <div class="connections-section-inner">
@@ -172,10 +187,32 @@
     import { getCurrentUser } from "../assets/js/appState.js?v=20260430";
     import { escapeHtml } from "../assets/js/utils.js?v=20260430";
     import { buildKnownAttendeeReason } from "../assets/js/attendanceReasons.js";
+    import { fetchIsAdmin, resetAdminCache } from "../assets/js/adminAccess.js?v=20260430";
 
     const upcomingGrid   = document.getElementById("eventsListGrid");
     const pastSection    = document.getElementById("pastEventsSection");
     const pastGrid       = document.getElementById("pastEventsGrid");
+    const organizerBar   = document.getElementById("organizerBar");
+
+    // Organizer bar is admin-only. Hidden by default (no flash); revealed only
+    // after the server-backed is_admin check confirms the CURRENT user. Re-runs
+    // on every auth change so an account switch immediately hides/shows it.
+    let _organizerUserId = null;
+    supabase.auth.onAuthStateChange((_event, session) => {
+      const userId = session?.user?.id ?? null;
+      if (userId !== _organizerUserId) {
+        resetAdminCache();          // never reuse another account's answer
+        _organizerUserId = userId;
+      }
+      if (!organizerBar) return;
+      if (!userId) { organizerBar.hidden = true; return; }
+      organizerBar.hidden = true;   // keep hidden while we ask the server
+      fetchIsAdmin(supabase, userId).then((admin) => {
+        // Guard against a mid-flight account switch.
+        if (_organizerUserId !== userId) return;
+        organizerBar.hidden = !admin;
+      }).catch(() => { organizerBar.hidden = true; });
+    });
     const pastCount      = document.getElementById("pastEventsCount");
     const pastEmpty      = document.getElementById("pastEventsEmpty");
 

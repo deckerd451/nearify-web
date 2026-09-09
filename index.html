@@ -128,131 +128,21 @@
 
       <div class="cc-dashboard">
 
-        <!-- Ecosystem hero — populated by dashboard.js after events load -->
-        <div id="ecosystemHero" class="cc-ecosystem-hero" style="display:none;" aria-label="Event ecosystem overview"></div>
-
         <div class="cc-dashboard-header">
           <div>
             <h1 class="cc-dashboard-title">Recommended For You</h1>
             <p class="cc-dashboard-subtitle">Event picks based on people you know and goals you share · <a href="/events/index.html" class="cc-dashboard-subtitle-link">Browse all events</a></p>
           </div>
-          <button id="openCreateModalBtn" class="btn primary" data-admin-create hidden>+ Create Event</button>
         </div>
 
         <section id="recommendedForYouWidget" class="cc-network-widget cc-recommended-widget cc-dashboard-primary" aria-label="Recommended For You" hidden></section>
         <section id="seeAgainWidget" class="cc-network-widget cc-see-again-widget" aria-label="See them again soon" hidden></section>
         <section id="networkMemoryWidget" class="cc-network-widget cc-network-memory-widget" aria-label="My Network" hidden></section>
 
-        <section id="organizerToolsSection" class="cc-organizer-tools" aria-labelledby="organizerToolsTitle" data-admin-create hidden>
-          <div class="cc-organizer-tools-header">
-            <div>
-              <p class="cc-network-kicker">Organizer tools</p>
-              <h2 id="organizerToolsTitle" class="cc-organizer-tools-title">Your Events</h2>
-              <p class="cc-network-count">Manage events you are organizing after reviewing recommendations.</p>
-            </div>
-          </div>
-
-          <!-- Event cards rendered by dashboard.js -->
-          <div id="eventCardList" class="cc-event-list" aria-live="polite" aria-label="Your events"></div>
-        </section>
-
       </div>
     </div>
 
   </main>
-
-  <!-- ─── CREATE EVENT MODAL ────────────────────────────────────────────── -->
-  <div id="createEventModal" class="cc-modal-overlay" hidden>
-    <div class="cc-modal" role="dialog" aria-modal="true" aria-labelledby="createModalTitle">
-
-      <div class="cc-modal-header">
-        <h2 id="createModalTitle">Create Event</h2>
-        <button id="closeCreateModalBtn" class="cc-modal-close" aria-label="Close">×</button>
-      </div>
-
-      <form id="createEventForm" class="cc-modal-form" novalidate>
-
-        <div class="form-row">
-          <label for="ceEventName">Event name <span class="field-required" aria-hidden="true">*</span></label>
-          <input
-            id="ceEventName"
-            type="text"
-            placeholder="My Meetup"
-            autocomplete="off"
-            required
-            aria-required="true"
-            aria-describedby="ceEventNameError"
-          />
-          <p class="field-error" id="ceEventNameError" role="alert" style="display:none;">Event name is required.</p>
-        </div>
-
-        <div class="form-row two-up">
-          <div>
-            <label for="ceDate">Date</label>
-            <input id="ceDate" type="date" />
-          </div>
-          <div>
-            <label for="ceTime">Time</label>
-            <input id="ceTime" type="time" />
-          </div>
-        </div>
-
-        <div class="form-row">
-          <label for="ceLocation">Location</label>
-          <input id="ceLocation" type="text" placeholder="Venue or address" autocomplete="off" />
-        </div>
-
-        <div class="form-row">
-          <label for="ceDescription">Description</label>
-          <textarea id="ceDescription" rows="3" placeholder="Optional"></textarea>
-        </div>
-
-        <div class="form-row">
-          <label for="ceSlug">Event slug</label>
-          <input id="ceSlug" type="text" placeholder="my-meetup" autocomplete="off" aria-describedby="ceSlugHelp ceSlugError" />
-          <p class="field-help" id="ceSlugHelp">Sets the public URL: nearify.org/events/<em>slug</em>.html — auto-filled from name.</p>
-          <p class="field-error" id="ceSlugError" role="alert" style="display:none;">Slug can only contain lowercase letters, numbers, and hyphens.</p>
-        </div>
-
-        <div class="form-row">
-          <label class="cc-checkbox-label">
-            <input id="ceIsOrganizer" type="checkbox" checked />
-            I am organizing this event
-          </label>
-          <p class="field-help">Uncheck if you're adding a community event you're not running — it won't appear on your dashboard.</p>
-        </div>
-
-        <div class="cc-modal-actions">
-          <button type="submit" id="createEventSubmitBtn" class="btn primary">Create Event</button>
-        </div>
-
-        <p id="createEventStatus" class="field-help" aria-live="polite" style="margin-top:10px;"></p>
-
-      </form>
-    </div>
-  </div>
-
-  <!-- ─── QR MODAL ──────────────────────────────────────────────────────── -->
-  <div id="qrModal" class="cc-modal-overlay" hidden>
-    <div class="cc-modal cc-qr-modal" role="dialog" aria-modal="true" aria-labelledby="qrModalTitle">
-
-      <button id="closeQrModalBtn" class="cc-modal-close" aria-label="Close">×</button>
-
-      <div class="cc-qr-event-name" id="qrModalTitle"></div>
-
-      <div class="cc-qr-shell">
-        <div id="qrModalQrCode"></div>
-      </div>
-
-      <p class="cc-qr-subtext">Scan to join this event and set your goals for the room</p>
-
-      <div class="cc-qr-actions">
-        <button id="qrModalCopyBtn" class="btn primary">Copy Link</button>
-        <button id="qrModalCloseBtn" class="btn secondary">Close</button>
-      </div>
-
-    </div>
-  </div>
 
   <footer class="footer">
     <nav class="footer-links">
