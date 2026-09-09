@@ -564,6 +564,81 @@ html {
   line-height: 1.65;
 }
 
+/* ── Past events — progressive disclosure ─────────────────────────────────── */
+.past-events-disclosure {
+  max-width: 1200px;
+  margin: 0 auto;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.02);
+}
+
+/* Compact disclosure row: "Past events (N)" with an expand/collapse affordance. */
+.past-events-summary {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px; /* touch target */
+  padding: 12px 20px;
+  cursor: pointer;
+  list-style: none; /* hide default marker (Firefox) */
+  font-weight: 600;
+  font-size: 17px;
+  color: #c5cfdd;
+  user-select: none;
+}
+/* Hide default disclosure triangle (WebKit/Blink) */
+.past-events-summary::-webkit-details-marker { display: none; }
+
+.past-events-count {
+  color: #8fa0b8;
+  font-weight: 500;
+}
+
+.past-events-chevron {
+  margin-left: auto;
+  width: 10px;
+  height: 10px;
+  border-right: 2px solid #8fa0b8;
+  border-bottom: 2px solid #8fa0b8;
+  transform: rotate(45deg); /* points down when collapsed */
+  transition: transform 0.2s ease;
+}
+.past-events-disclosure[open] .past-events-chevron {
+  transform: rotate(-135deg); /* points up when expanded */
+}
+
+/* Visible keyboard focus */
+.past-events-summary:focus-visible {
+  outline: 2px solid #6ea8fe;
+  outline-offset: 2px;
+  border-radius: 8px;
+}
+
+.past-events-body {
+  padding: 4px 20px 20px;
+}
+.past-events-explanation {
+  color: #aab4c5;
+  font-size: 15px;
+  line-height: 1.6;
+  margin: 0 0 20px;
+  max-width: 860px;
+}
+
+.past-events-empty {
+  max-width: 1200px;
+  margin: 0 auto;
+  color: #8fa0b8;
+  font-size: 15px;
+  text-align: center;
+}
+
+@media (max-width: 600px) {
+  .past-events-summary { font-size: 16px; padding: 12px 16px; }
+  .past-events-body { padding: 4px 16px 16px; }
+}
+
 .feature-grid,
 .timeline-grid,
 .comparison-grid {

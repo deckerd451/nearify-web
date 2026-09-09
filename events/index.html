@@ -86,15 +86,24 @@
       </div>
     </section>
 
-    <!-- Past events — hidden until there are past events to show -->
-    <section id="pastEventsSection" class="section event-section" style="display:none;">
-      <div class="section-heading">
-        <h2>Past events</h2>
-        <p>
-          These events have already taken place. If you attended with Nearify, your saved connections and follow-up notes are available on the event page.
-        </p>
-      </div>
-      <div class="events-list-grid" id="pastEventsGrid"></div>
+    <!-- Past events — progressive disclosure. Hidden until there are past
+         events; collapsed by default so upcoming events stay the priority. -->
+    <section class="section event-section">
+      <details id="pastEventsSection" class="past-events-disclosure" hidden>
+        <summary class="past-events-summary">
+          <span class="past-events-summary-label">Past events</span>
+          <span class="past-events-count" id="pastEventsCount"></span>
+          <span class="past-events-chevron" aria-hidden="true"></span>
+        </summary>
+        <div class="past-events-body">
+          <p class="past-events-explanation">
+            These events have already taken place. If you attended with Nearify, your saved connections and follow-up notes are available on the event page.
+          </p>
+          <div class="events-list-grid" id="pastEventsGrid"></div>
+        </div>
+      </details>
+      <!-- Minimal, non-interactive empty state (shown when there are no past events) -->
+      <p id="pastEventsEmpty" class="past-events-empty" hidden>No past events</p>
     </section>
 
     <!-- How to attend -->
@@ -167,6 +176,8 @@
     const upcomingGrid   = document.getElementById("eventsListGrid");
     const pastSection    = document.getElementById("pastEventsSection");
     const pastGrid       = document.getElementById("pastEventsGrid");
+    const pastCount      = document.getElementById("pastEventsCount");
+    const pastEmpty      = document.getElementById("pastEventsEmpty");
 
     async function fetchAttendeeMeta(eventIds) {
       if (!eventIds.length) return { counts: new Map(), intents: new Map(), relationshipReasons: new Map() };
@@ -346,14 +357,21 @@
           .join("");
       }
 
-      // Past
+      // Past events — progressive disclosure, collapsed by default.
       if (past.length && pastSection && pastGrid) {
         pastGrid.innerHTML = past.map(ev => renderCard(ev, {
           past: true,
           count: counts.get(ev.id) || 0,
           intentMap: intents.get(ev.id) || null
         })).join("");
-        pastSection.style.display = "";
+        if (pastCount) pastCount.textContent = "(" + past.length + ")";
+        pastSection.open = false;   // collapsed by default
+        pastSection.hidden = false; // reveal the disclosure row now that we have data
+        if (pastEmpty) pastEmpty.hidden = true;
+      } else {
+        // No past events: hide the disclosure, show a minimal non-interactive state.
+        if (pastSection) pastSection.hidden = true;
+        if (pastEmpty) pastEmpty.hidden = false;
       }
     }
 
