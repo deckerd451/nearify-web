@@ -15,6 +15,12 @@ import { loadOrganizerInsights } from "./organizerInsights.js";
 import { renderShareButton, buildEventShareUrl, buildEventShareText } from "./share.js";
 import { VALID_INTENTS, INTENT_LABELS } from "./constants/intents.js";
 import { buildEventDecisionReasons } from "./attendanceReasons.js";
+import {
+  CONNECTION_STATE,
+  performSave,
+  buildConnectionStateMap,
+  confirmedOnly,
+} from "./connectionState.js";
 
 const INTENT_STORAGE_KEY = "intent_primary";
 const ATTENDEE_AUTH_KEY = "nearify_attendee_auth_return";
@@ -480,7 +486,12 @@ function formatEncounterCount(count) {
 async function fetchMyConnections() {
   if (!currentUser) return [];
 
-  const { data, error } = await supabase.rpc("get_my_connections", { p_status: "confirmed" });
+  // Fetch every relationship state (proposed_by_me, proposed_by_them,
+  // confirmed, ghost_claimed) so attendee cards can render a durable
+  // Save / Saved / Save back / Connected state. The confirmed-only subset
+  // for "People You Know Here" and recommendations is derived separately
+  // via confirmedOnly() — proposed/ghost states must NOT affect those.
+  const { data, error } = await supabase.rpc("get_my_connections", { p_status: "all" });
   if (error) {
     logger.warn("[PeopleYouKnow] get_my_connections failed", error);
     return [];
@@ -610,7 +621,7 @@ function renderPeopleYouKnowHere(knownAttendees) {
   section.style.display = "";
 }
 
-function buildAttendeeCard(attendee, showDetails) {
+function buildAttendeeCard(attendee, showDetails, cardState = CONNECTION_STATE.SAVE, eventId = null) {
   const initials    = getInitials(attendee.name);
   const intentLabel = attendee.intent ? (INTENT_LABELS[attendee.intent] || attendee.intent) : null;
   const tags        = showDetails
@@ -665,10 +676,95 @@ function buildAttendeeCard(attendee, showDetails) {
 
   card.appendChild(avatarEl);
   card.appendChild(infoEl);
+
+  // Save control — only for signed-in attendees (full access) with a valid event.
+  if (showDetails && eventId && attendee.profileId) {
+    card.appendChild(buildAttendeeSaveControl(attendee.profileId, cardState, eventId));
+  }
+
   return card;
 }
 
-function renderAttendeeDiscovery(attendees, myProfileId, isFullAccess) {
+/**
+ * Build the Save / Saved / Save back / Connected control for an attendee card.
+ * Reuses the canonical confirm_relationship write path. Static states render as
+ * a label; actionable states render an accessible button.
+ */
+function buildAttendeeSaveControl(profileId, cardState, eventId) {
+  const wrap = document.createElement("div");
+  wrap.className = "attendee-save";
+
+  if (cardState === CONNECTION_STATE.SAVED) {
+    wrap.appendChild(buildSaveStatusLabel("Saved"));
+    return wrap;
+  }
+  if (cardState === CONNECTION_STATE.CONNECTED) {
+    wrap.appendChild(buildSaveStatusLabel("Connected"));
+    return wrap;
+  }
+
+  const isSaveBack = cardState === CONNECTION_STATE.SAVE_BACK;
+  const originalText = isSaveBack ? "Save back" : "Save";
+
+  const btn = document.createElement("button");
+  btn.type = "button";
+  btn.className = "attendee-save-btn btn primary";
+  btn.textContent = originalText;
+
+  const err = document.createElement("p");
+  err.className = "attendee-save-error";
+  err.setAttribute("role", "alert");
+  err.style.display = "none";
+
+  let inFlight = false;
+
+  btn.addEventListener("click", async () => {
+    btn.setAttribute("aria-busy", "true");
+    btn.textContent = "Saving…";
+    err.style.display = "none";
+    err.textContent = "";
+
+    const outcome = await performSave({
+      supabase,
+      otherProfileId: profileId,
+      eventId,
+      isInFlight: () => inFlight,
+      setInFlight: (v) => {
+        inFlight = v;
+        btn.disabled = v;   // disable while running; prevents double submission
+      },
+    });
+
+    if (outcome.blocked) return;
+
+    if (!outcome.ok) {
+      logger.warn("[AttendeeSave] confirm_relationship failed", outcome.error);
+      btn.removeAttribute("aria-busy");
+      btn.textContent = originalText;
+      err.textContent = "Couldn't save — try again.";
+      err.style.display = "";
+      return;
+    }
+
+    const label = buildSaveStatusLabel(
+      outcome.state === CONNECTION_STATE.CONNECTED ? "Connected" : "Saved"
+    );
+    btn.replaceWith(label);
+  });
+
+  wrap.appendChild(btn);
+  wrap.appendChild(err);
+  return wrap;
+}
+
+function buildSaveStatusLabel(text) {
+  const el = document.createElement("span");
+  el.className = "attendee-save-status";
+  el.textContent = text;
+  return el;
+}
+
+function renderAttendeeDiscovery(attendees, myProfileId, isFullAccess, stateMap = new Map(), eventId = null) {
   const grid    = document.getElementById("attendeeDiscoveryGrid");
   const gate    = document.getElementById("attendeeDiscoveryGate");
   const section = document.getElementById("attendeeDiscoverySection");
@@ -682,7 +778,10 @@ function renderAttendeeDiscovery(attendees, myProfileId, isFullAccess) {
   const gated     = !isFullAccess && others.length > 0;
 
   grid.innerHTML = "";
-  visible.forEach((a) => grid.appendChild(buildAttendeeCard(a, isFullAccess)));
+  visible.forEach((a) => {
+    const cardState = stateMap.get(a.profileId) || CONNECTION_STATE.SAVE;
+    grid.appendChild(buildAttendeeCard(a, isFullAccess, cardState, eventId));
+  });
 
   if (gated && gate) {
     const msg = gate.querySelector(".attendee-gate-message");
@@ -710,10 +809,14 @@ async function loadAttendeeDiscovery(eventId, isPast = false) {
     myProfileId = p?.id ?? null;
   }
 
+  const connections = (!isPast && currentUser) ? await fetchMyConnections() : [];
+
   if (!isPast && attendees.length) {
-    const connections = currentUser ? await fetchMyConnections() : [];
+    // Confirmed-only subset preserves existing "People You Know Here" and
+    // EventReason behavior — proposed/ghost states must not leak into it.
+    const confirmedConnections = confirmedOnly(connections);
     const knownAttendees = currentUser
-      ? findKnownAttendees(attendees, connections, myProfileId)
+      ? findKnownAttendees(attendees, confirmedConnections, myProfileId)
       : [];
 
     renderWhyAttend(buildEventDecisionReasons({
@@ -732,7 +835,12 @@ async function loadAttendeeDiscovery(eventId, isPast = false) {
   const isAttendee  = myProfileId ? attendees.some((a) => a.profileId === myProfileId) : false;
   const isFullAccess = !!currentUser && isAttendee;
 
-  renderAttendeeDiscovery(attendees, myProfileId, isFullAccess);
+  // Full caller-relative state map (all statuses) drives the Save / Saved /
+  // Save back / Connected control on each card. Only signed-in attendees get
+  // the control; anonymous visitors get plain, action-free cards.
+  const stateMap = isFullAccess ? buildConnectionStateMap(connections) : new Map();
+
+  renderAttendeeDiscovery(attendees, myProfileId, isFullAccess, stateMap, eventId);
 }
 
 async function renderPersonalConnectSection(eventId) {
