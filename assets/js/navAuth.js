@@ -132,6 +132,23 @@ function buildDrawerSignOut() {
 }
 
 // ---------------------------------------------------------------------------
+// Home link (signed-in primary nav) — links to the personalized dashboard and
+// shows the active-page state when the user is on "/" or "/index.html".
+// ---------------------------------------------------------------------------
+
+function buildHomeLink() {
+  const link = document.createElement("a");
+  link.href = "/index.html";
+  link.textContent = "Home";
+  link.className = "nav-auth-link nav-home-link";
+  const path = window.location.pathname;
+  if (path === "/" || path === "/index.html") {
+    link.setAttribute("aria-current", "page");
+  }
+  return link;
+}
+
+// ---------------------------------------------------------------------------
 // Sign-out
 // ---------------------------------------------------------------------------
 
@@ -151,6 +168,11 @@ function injectSignedIn(profile, email, user) {
 
   const navLinks = document.querySelector(".nav-links");
   if (navLinks) {
+    // Home is the personalized dashboard. Signed-in users get it as the first
+    // primary nav item, linking to /index.html.
+    const homeLink = buildHomeLink();
+    navLinks.insertBefore(homeLink, navLinks.firstChild);
+
     const networkLink = document.createElement("a");
     networkLink.href = "/connections/";
     networkLink.textContent = "My Connections";
@@ -161,6 +183,9 @@ function injectSignedIn(profile, email, user) {
 
   const drawer = document.getElementById("navDrawer");
   if (drawer) {
+    const drawerHome = buildHomeLink();
+    drawer.insertBefore(drawerHome, drawer.firstChild);
+
     const drawerNetwork = document.createElement("a");
     drawerNetwork.href = "/connections/";
     drawerNetwork.textContent = "My Connections";
