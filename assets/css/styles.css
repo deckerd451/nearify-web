@@ -36,6 +36,14 @@
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
+/* The `hidden` attribute must always win, even over rules that set an explicit
+   display (e.g. display:flex). Without this, `<el class="…" hidden>` would still
+   render because the class's display overrides the UA [hidden] rule — which is
+   how the admin organizer bar leaked to non-admins. */
+[hidden] {
+  display: none !important;
+}
+
 /* SKIP LINK — visible only on keyboard focus */
 .skip-link {
   position: absolute;
@@ -112,6 +120,19 @@ textarea::placeholder {
 
 .nav-links a:hover {
   color: #ffffff;
+}
+
+/* Subtle current-page indicator in the main navigation. */
+.nav-links a[aria-current="page"] {
+  color: #ffffff;
+}
+.nav-links a[aria-current="page"]::after {
+  content: "";
+  display: block;
+  height: 2px;
+  margin-top: 3px;
+  border-radius: 2px;
+  background: var(--color-accent);
 }
 
 .hero-platform-note {
@@ -634,42 +655,16 @@ html {
   text-align: center;
 }
 
-/* ── Events page — compact admin-only organizer bar ───────────────────────── */
-.organizer-bar {
+/* ── Events page — compact admin-only organizer toolbar (beside heading) ──── */
+.organizer-toolbar {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  flex-wrap: wrap;
-  max-width: 1200px;
-  margin: 0 auto 8px;
-  padding: 16px 20px;
-  border: 1px solid rgba(110, 168, 254, 0.35);
-  border-radius: 12px;
-  background: rgba(110, 168, 254, 0.08);
-}
-.organizer-bar-kicker {
-  margin: 0 0 2px;
-  font-size: 12px;
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: #8fa0b8;
-}
-.organizer-bar-title {
-  margin: 0;
-  font-size: 20px;
-  font-weight: 700;
-}
-.organizer-bar-actions {
-  display: flex;
   gap: 10px;
   flex-wrap: wrap;
 }
 @media (max-width: 600px) {
-  .organizer-bar { padding: 14px 16px; }
-  .organizer-bar-actions { width: 100%; }
-  .organizer-bar-actions .btn { flex: 1; text-align: center; }
+  .organizer-toolbar { width: 100%; }
+  .organizer-toolbar .btn { flex: 1; text-align: center; }
 }
 
 @media (max-width: 600px) {
@@ -851,10 +846,16 @@ html {
 }
 
 .events-page-header {
-  padding: 52px 40px 36px;
+  padding: 40px 40px 24px;
   max-width: 1200px;
   margin: 0 auto;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 20px;
+  flex-wrap: wrap;
 }
+.events-page-header-main { min-width: 0; }
 
 .events-page-header h1 {
   font-size: 36px;
@@ -4367,7 +4368,7 @@ code {
 .cc-dashboard {
   max-width: 960px;
   margin: 0 auto;
-  padding: 56px 40px 80px;
+  padding: 40px 40px 64px;
   overflow: hidden;
 }
 
@@ -4381,7 +4382,7 @@ code {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  margin-bottom: 36px;
+  margin-bottom: 24px;
   gap: 16px;
 }
 
@@ -5897,6 +5898,7 @@ body.cc-page .cc-event-actions .btn.secondary:hover {
   display: flex;
   flex-direction: column;
   align-items: flex-end;
+  justify-content: center;
   gap: 8px;
   flex-shrink: 0;
 }

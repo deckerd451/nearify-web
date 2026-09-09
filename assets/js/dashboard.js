@@ -889,22 +889,9 @@ function renderRecommendedForYouWidget(recommendations) {
     return;
   }
 
-  const top = document.createElement("div");
-  top.className = "cc-network-widget-top";
-
-  const textWrap = document.createElement("div");
-  const kicker = document.createElement("div");
-  kicker.className = "cc-network-kicker";
-  kicker.textContent = "EventReason ranked";
-  const title = document.createElement("h2");
-  title.className = "cc-network-title";
-  title.textContent = "Recommended For You";
-  const subtitle = document.createElement("p");
-  subtitle.className = "cc-network-count";
-  subtitle.textContent = "Upcoming events surfaced by people you know, shared goals, and event momentum.";
-  textWrap.append(kicker, title, subtitle);
-  top.append(textWrap);
-
+  // The page already shows the "Recommended For You" heading + subtitle above
+  // this widget, so we render just the list here (no duplicated nested heading,
+  // no internal "EventReason ranked" label).
   const list = document.createElement("ul");
   list.className = "cc-recommended-list";
 
@@ -947,7 +934,7 @@ function renderRecommendedForYouWidget(recommendations) {
     list.appendChild(item);
   });
 
-  widget.replaceChildren(top, list);
+  widget.replaceChildren(list);
   widget.hidden = false;
 }
 

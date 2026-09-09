@@ -417,13 +417,13 @@ describe("unified events page + navigation", () => {
     expect(DASHBOARD_SRC).not.toMatch(/[^.\w]fetchMyEvents\(\)(?!\s*\{)/);
   });
 
-  it("events page has an admin-only organizer bar, hidden by default (no flash)", () => {
-    expect(EVENTS_HTML).toMatch(/<section[^>]*id="organizerBar"[^>]*hidden[^>]*>/);
-    const bar = EVENTS_HTML.match(/<section[^>]*id="organizerBar"[\s\S]*?<\/section>/)[0];
-    expect(bar).toMatch(/Your Events/);
+  it("events page has an admin-only organizer toolbar, hidden by default (no flash)", () => {
+    expect(EVENTS_HTML).toMatch(/id="organizerBar"[^>]*class="organizer-toolbar"[^>]*hidden|id="organizerBar"[^>]*hidden/);
+    const bar = EVENTS_HTML.match(/id="organizerBar"[\s\S]*?<\/div>/)[0];
     // Reuses the canonical management surface — no duplicate create form here.
     expect(bar).toMatch(/\/admin\/event-setup\.html/);
-    expect(bar).toMatch(/Create Event/);
+    expect(bar).toMatch(/Create event/i);
+    expect(bar).toMatch(/Manage events/i);
   });
 
   it("organizer bar is revealed only for admins, hidden for signed-out and non-admins", async () => {
