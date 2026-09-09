@@ -957,10 +957,14 @@ function renderRecommendedForYouWidget(recommendations) {
 async function refreshDashboard() {
   if (refreshDashboard._inFlight) return refreshDashboard._inFlight;
   refreshDashboard._inFlight = (async () => {
-  const list = document.getElementById("eventCardList");
-  if (list) list.innerHTML = renderSkeletonCards();
+  // Organizer tools (Your Events) are admin-only — skip for non-admins.
+  const isAdmin = await fetchIsAdmin(supabase);
+  if (isAdmin) {
+    const list = document.getElementById("eventCardList");
+    if (list) list.innerHTML = renderSkeletonCards();
+  }
   const [events, connections] = await Promise.all([
-    fetchMyEvents(),
+    isAdmin ? fetchMyEvents() : Promise.resolve([]),
     fetchMyConnections(),
   ]);
   const currentProfileId = await fetchCurrentProfileId();
@@ -973,11 +977,13 @@ async function refreshDashboard() {
     eventIds.length ? fetchAttendeeCounts(eventIds) : Promise.resolve(new Map()),
     eventIds.length ? fetchIntentDistribution(eventIds) : Promise.resolve(new Map()),
   ]);
-  renderEcosystemHero(events, counts, intentsByEvent);
   renderNetworkMemoryWidget(connections, events);
   renderRecommendedForYouWidget(recommendations);
   renderSeeAgainWidget(seeAgainOpportunities);
-  renderDashboard(events, counts, intentsByEvent, buildRelationshipReasonMap(seeAgainOpportunities));
+  if (isAdmin) {
+    renderEcosystemHero(events, counts, intentsByEvent);
+    renderDashboard(events, counts, intentsByEvent, buildRelationshipReasonMap(seeAgainOpportunities));
+  }
   })().finally(() => { refreshDashboard._inFlight = null; });
   return refreshDashboard._inFlight;
 }
@@ -1213,8 +1219,12 @@ async function loadDashboard() {
   showLoading();
 
   try {
+    // Organizer tools (Your Events) are admin-only. Do NOT fetch or render
+    // organizer-event data for non-admins. Cached, so no extra round-trip.
+    const isAdmin = await fetchIsAdmin(supabase);
+
     const [events, connections] = await Promise.all([
-      fetchMyEvents(),
+      isAdmin ? fetchMyEvents() : Promise.resolve([]),
       fetchMyConnections(),
     ]);
     const currentProfileId = await fetchCurrentProfileId();
@@ -1230,11 +1240,15 @@ async function loadDashboard() {
       eventIds.length ? fetchIntentDistribution(eventIds) : Promise.resolve(new Map()),
     ]);
 
-    renderEcosystemHero(events, counts, intentsByEvent);
     renderNetworkMemoryWidget(connections, events);
     renderRecommendedForYouWidget(recommendations);
     renderSeeAgainWidget(seeAgainOpportunities);
-    renderDashboard(events, counts, intentsByEvent, buildRelationshipReasonMap(seeAgainOpportunities));
+    if (isAdmin) {
+      // Organizer-only surfaces: the live-event hero (built from the user's own
+      // events) and the Your Events list.
+      renderEcosystemHero(events, counts, intentsByEvent);
+      renderDashboard(events, counts, intentsByEvent, buildRelationshipReasonMap(seeAgainOpportunities));
+    }
   } catch (err) {
     logger.error("[Dashboard] failed to load dashboard:", err);
     renderDashboardError(err);
