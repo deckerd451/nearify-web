@@ -30,7 +30,6 @@
     <div class="logo"><a href="../index.html">Nearify</a></div>
     <div class="nav-links">
       <a href="../events/index.html">Events</a>
-      <a href="event-setup.html">Host an Event</a>
     </div>
     <button class="nav-hamburger" id="navHamburger" aria-label="Open menu" aria-expanded="false">
       <span></span><span></span><span></span>
@@ -38,7 +37,6 @@
   </header>
   <nav class="nav-drawer" id="navDrawer" aria-label="Site navigation">
     <a href="../events/index.html">Events</a>
-    <a href="event-setup.html" class="nav-drawer-highlight">Host an Event</a>
   </nav>
   </div>
 
@@ -60,7 +58,23 @@
       </div>
     </section>
 
-    <!-- ORGANIZER CONTENT — hidden until authenticated -->
+    <!-- RESTRICTED — shown when signed in but not an admin -->
+    <section id="adminRestricted" class="event-hero admin-hero" style="display:none;">
+      <div class="event-hero-copy" style="text-align:center; max-width:560px; margin:0 auto;">
+        <div class="event-kicker">For Organizers</div>
+        <h1>You don't have access to this page</h1>
+        <p class="event-subhead">
+          Creating events is limited to the Nearify team. You can still browse,
+          join, and save people at events. If you think this is a mistake, contact
+          the Nearify team.
+        </p>
+        <div class="hero-actions" style="justify-content:center;">
+          <a href="../events/index.html" class="btn primary">Browse events</a>
+        </div>
+      </div>
+    </section>
+
+    <!-- ORGANIZER CONTENT — hidden until admin access is resolved -->
     <div id="adminContent" style="display:none;">
 
     <section class="event-hero admin-hero">
@@ -266,7 +280,6 @@
     <nav class="footer-links">
       <a href="../index.html">Home</a>
       <a href="../events/index.html">Events</a>
-      <a href="event-setup.html">Host an Event</a>
       <a href="https://nearify.org/privacy.html">Privacy</a>
       <a href="mailto:hello@nearify.org">Contact</a>
     </nav>
@@ -284,9 +297,11 @@
   <script type="module">
     import { supabase } from "../assets/js/supabaseClient.js?v=20260508";
     import { saveEvent, getOrganizerProfileId, fetchOrganizerEvents } from "../assets/js/events.js?v=20260508";
+    import { resolveAdminAccess } from "../assets/js/adminAccess.js?v=20260508";
 
-    const authGate     = document.getElementById("adminAuthGate");
-    const adminContent = document.getElementById("adminContent");
+    const authGate       = document.getElementById("adminAuthGate");
+    const adminContent   = document.getElementById("adminContent");
+    const adminRestricted = document.getElementById("adminRestricted");
     const signInBtn    = document.getElementById("adminSignInBtn");
     const authStatus   = document.getElementById("adminAuthStatus");
     const saveBtnEl    = document.getElementById("saveToSupabaseBtn");
@@ -324,22 +339,27 @@
       saveStatus.textContent = "";
     }
 
-    // --- Auth gate ---
-    function showAuthGate() {
-      authGate.style.display = "";
-      adminContent.style.display = "none";
-    }
-
-    function showAdminContent(user) {
-      authGate.style.display = "none";
-      adminContent.style.display = "";
-      console.log("[Admin] Authenticated:", user.email);
-      getOrganizerProfileId().then(profileId => {
-        if (!profileId) {
-          saveStatus.textContent = "Warning: no organizer profile found. Create a profile in the Nearify app first.";
-        }
+    // --- Auth + admin gate ---
+    // Uses the canonical SERVER-SIDE admin check (resolveAdminAccess →
+    // is_admin RPC). Non-admins — signed in or not — never see the
+    // event-creation content, and it never flashes while loading.
+    async function applyAccess(session) {
+      const state = await resolveAdminAccess(supabase, session, {
+        gateEl: authGate,
+        contentEl: adminContent,
+        restrictedEl: adminRestricted,
       });
-      hydrateEditFromUrl();
+
+      if (state === "granted") {
+        console.log("[Admin] Admin access granted:", session?.user?.email);
+        getOrganizerProfileId().then(profileId => {
+          if (!profileId) {
+            saveStatus.textContent = "Warning: no organizer profile found. Create a profile in the Nearify app first.";
+          }
+        });
+        hydrateEditFromUrl();
+      }
+      return state;
     }
 
     async function hydrateEditFromUrl() {
@@ -383,11 +403,11 @@
       supabase.auth.onAuthStateChange((event, session) => {
         console.log("[Admin] auth change:", event, !!session?.user);
         if (event === "SIGNED_OUT" || (event === "INITIAL_SESSION" && !session?.user)) {
-          showAuthGate();
+          applyAccess(null);
         } else if (
           (event === "SIGNED_IN" || event === "INITIAL_SESSION") && session?.user
         ) {
-          showAdminContent(session.user);
+          applyAccess(session);
         }
         // Ignore TOKEN_REFRESHED and other events — no need to re-hydrate
       });
