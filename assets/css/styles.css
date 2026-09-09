@@ -112,6 +112,18 @@ textarea::placeholder {
   letter-spacing: -0.02em;
 }
 
+/* Header brand icon (the Nearify "n"). Sized to match the prior text logo
+   footprint and vertically centered by the flex .nav container. */
+.logo a {
+  display: inline-flex;
+  align-items: center;
+}
+.logo-img {
+  display: block;
+  height: 28px;
+  width: auto;
+}
+
 .nav-links a {
   text-decoration: none;
   color: var(--color-text-secondary);
