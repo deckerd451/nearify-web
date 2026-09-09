@@ -1,0 +1,35 @@
+-- ============================================================================
+-- 027_drop_legacy_events_insert_policy.sql
+--
+-- Follow-up to 026_admin_membership_and_event_creation.sql.
+--
+-- WHY THIS EXISTS
+--   026 restricted event creation to admins via the policy
+--     "Admins can create events"  WITH CHECK (is_admin() AND created_by = current_profile_id())
+--   and dropped "Authenticated users can create events" (the policy created by
+--   003_events_rls.sql).
+--
+--   However, production (nearify-prod) also had a SEPARATE, differently-cased
+--   legacy policy that 026 did not name:
+--     "authenticated users can create events"  WITH CHECK (true)
+--   PostgreSQL policy names are case-sensitive identifiers, so the lowercase
+--   policy was never dropped and remained active.
+--
+--   PostgreSQL combines MULTIPLE PERMISSIVE policies for the same command with
+--   OR. With both policies present, the effective INSERT check became:
+--     (true) OR (is_admin() AND created_by = current_profile_id())
+--   which is always true — silently defeating the admin-only restriction and
+--   allowing any authenticated user to create events.
+--
+--   This legacy policy was already dropped MANUALLY in production. This
+--   migration records that exact correction in version control so the schema
+--   history matches prod and the permissive policy cannot reappear on a fresh
+--   or re-provisioned database.
+--
+-- SCOPE
+--   Drops only the legacy permissive INSERT policy. It does NOT recreate,
+--   modify, or touch the admin-only INSERT policy from 026, nor any
+--   SELECT/UPDATE/DELETE policy. No event rows are changed. Idempotent.
+-- ============================================================================
+
+DROP POLICY IF EXISTS "authenticated users can create events" ON public.events;
