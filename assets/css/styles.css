@@ -5738,3 +5738,110 @@ body.cc-page .cc-event-actions .btn.secondary:hover {
     grid-template-columns: 1fr;
   }
 }
+
+/* ─── Durable Save control: event attendee cards ─────────────────────────── */
+/* The attendee card is a flex row (avatar + info). The save control takes the
+   full width beneath it, so it needs to break onto its own line. */
+.attendee-card {
+  flex-wrap: wrap;
+}
+
+.attendee-save {
+  flex-basis: 100%;
+  margin-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.attendee-save-btn {
+  min-height: 44px;
+  align-self: flex-start;
+}
+
+.attendee-save-btn[aria-busy="true"] {
+  opacity: 0.7;
+  cursor: progress;
+}
+
+.attendee-save-status {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-accent);
+}
+
+.attendee-save-error {
+  margin: 0;
+  font-size: 13px;
+  color: #f87171;
+}
+
+/* ─── Durable Save state: My Connections rows ────────────────────────────── */
+.connection-row-aside {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.connection-state-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+}
+
+.connection-state-connected {
+  color: var(--color-accent);
+  background: rgba(48, 209, 88, 0.12);
+  border: 1px solid rgba(48, 209, 88, 0.24);
+}
+
+.connection-state-saved {
+  color: #c5cfdd;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.connection-state-save_back {
+  color: #dfe6ef;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.connection-save-back {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+}
+
+.connection-save-btn {
+  min-height: 44px;
+}
+
+.connection-save-btn[aria-busy="true"] {
+  opacity: 0.7;
+  cursor: progress;
+}
+
+.connection-save-error {
+  font-size: 13px;
+  color: #f87171;
+}
+
+@media (max-width: 640px) {
+  .connection-row-aside {
+    align-items: flex-start;
+    width: 100%;
+    margin-top: 10px;
+  }
+}
