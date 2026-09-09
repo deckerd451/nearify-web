@@ -156,12 +156,6 @@ function injectSignedIn(profile, email, user) {
     networkLink.textContent = "My Connections";
     networkLink.className = "nav-auth-link";
     navLinks.appendChild(networkLink);
-
-    const dashLink = document.createElement("a");
-    dashLink.href = "/index.html";
-    dashLink.textContent = "Your Events";
-    dashLink.className = "nav-auth-link";
-    navLinks.appendChild(dashLink);
     navLinks.appendChild(buildPill(profile, email));
   }
 
@@ -172,19 +166,17 @@ function injectSignedIn(profile, email, user) {
     drawerNetwork.textContent = "My Connections";
     drawerNetwork.className = "nav-auth-link";
     drawer.appendChild(drawerNetwork);
-
-    const drawerDash = document.createElement("a");
-    drawerDash.href = "/index.html";
-    drawerDash.textContent = "Your Events";
-    drawerDash.className = "nav-auth-link";
-    drawer.appendChild(drawerDash);
     drawer.appendChild(buildDrawerSignOut());
   }
 
   // Admin link is added only after the SERVER confirms admin membership, so it
-  // never flashes for non-admins.
-  fetchIsAdmin(supabase).then((admin) => {
+  // never flashes for non-admins. Cache is keyed by user id; we also re-check
+  // the current user id when the promise resolves so a fast account switch
+  // cannot inject an admin link for the wrong (now signed-in) user.
+  const injectedForUserId = user?.id ?? null;
+  fetchIsAdmin(supabase, injectedForUserId).then((admin) => {
     if (!admin) return;
+    if (_currentUserId !== injectedForUserId) return; // account changed mid-flight
     if (navLinks) {
       const adminLink = document.createElement("a");
       adminLink.href = "/admin/";
@@ -220,16 +212,27 @@ function initNavAuth() {
   initHamburger();
 
   supabase.auth.onAuthStateChange((event, session) => {
+    const nextUserId = session?.user?.id ?? null;
+    // On any change of authenticated user (sign-in, sign-out, or account
+    // switch), drop the cached admin result so it can never leak across users.
+    if (nextUserId !== _currentUserId) {
+      resetAdminCache();
+      _currentUserId = nextUserId;
+    }
+
     if (session?.user) {
       const user = session.user;
       fetchProfile(user.id)
         .then((profile) => injectSignedIn(profile, user.email, user))
         .catch(() => injectSignedIn(null, user.email, user));
     } else {
-      resetAdminCache();
       removeSignedIn();
     }
   });
 }
+
+// Tracks the currently authenticated user id so async admin checks can detect
+// an account switch that happened while they were in flight.
+let _currentUserId = null;
 
 initNavAuth();

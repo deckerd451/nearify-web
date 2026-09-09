@@ -634,6 +634,44 @@ html {
   text-align: center;
 }
 
+/* ── Events page — compact admin-only organizer bar ───────────────────────── */
+.organizer-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  max-width: 1200px;
+  margin: 0 auto 8px;
+  padding: 16px 20px;
+  border: 1px solid rgba(110, 168, 254, 0.35);
+  border-radius: 12px;
+  background: rgba(110, 168, 254, 0.08);
+}
+.organizer-bar-kicker {
+  margin: 0 0 2px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #8fa0b8;
+}
+.organizer-bar-title {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 700;
+}
+.organizer-bar-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+@media (max-width: 600px) {
+  .organizer-bar { padding: 14px 16px; }
+  .organizer-bar-actions { width: 100%; }
+  .organizer-bar-actions .btn { flex: 1; text-align: center; }
+}
+
 @media (max-width: 600px) {
   .past-events-summary { font-size: 16px; padding: 12px 16px; }
   .past-events-body { padding: 4px 16px 16px; }

@@ -17,35 +17,59 @@ export const ADMIN_STATE = {
   GRANTED: "granted",             // signed in and an admin
 };
 
-// Per-session cache so we don't re-hit the RPC on every auth event.
-let _isAdminCache = null; // boolean once resolved
+// Per-authenticated-user cache so we don't re-hit the RPC on every auth event,
+// while never serving a stale result across an account switch. We remember WHO
+// the cached answer belongs to; if the current user id differs (sign-out,
+// sign-in, or switching accounts), the cache is treated as a miss.
+let _adminCache = { userId: null, value: null }; // value: boolean once resolved
 
 /**
- * Reset the cached admin result (e.g. on sign-out). Exposed for completeness.
+ * Reset the cached admin result (e.g. on sign-out / account change).
  */
 export function resetAdminCache() {
-  _isAdminCache = null;
+  _adminCache = { userId: null, value: null };
 }
 
 /**
- * Ask the server whether the current session is an admin.
- * Fails CLOSED (returns false) on any error — never grants on ambiguity.
+ * Ask the server whether the current session is an admin, caching the answer
+ * per authenticated user id. Passing a different (or null) userId than the
+ * cached one forces a re-check, so an admin → non-admin switch never serves a
+ * stale "true". Fails CLOSED (returns false) on any error.
  *
  * @param {object} supabase - Supabase client
+ * @param {string|null} [userId] - current authenticated user id (session.user.id)
  * @returns {Promise<boolean>}
  */
-export async function fetchIsAdmin(supabase) {
-  if (_isAdminCache !== null) return _isAdminCache;
+export async function fetchIsAdmin(supabase, userId = null) {
+  // No user id supplied → resolve it from the client so callers that don't have
+  // a session handy still get correct per-user behavior.
+  if (userId === null) {
+    try {
+      const { data } = await supabase.auth.getUser();
+      userId = data?.user?.id ?? null;
+    } catch {
+      userId = null;
+    }
+  }
+
+  // No authenticated user → not an admin, and clear any prior cache.
+  if (!userId) {
+    resetAdminCache();
+    return false;
+  }
+
+  // Cache hit only when it belongs to the SAME user.
+  if (_adminCache.userId === userId && _adminCache.value !== null) {
+    return _adminCache.value;
+  }
+
   try {
     const { data, error } = await supabase.rpc("is_admin");
-    if (error) {
-      _isAdminCache = false;
-      return false;
-    }
-    _isAdminCache = data === true;
-    return _isAdminCache;
+    const value = !error && data === true;
+    _adminCache = { userId, value };
+    return value;
   } catch {
-    _isAdminCache = false;
+    _adminCache = { userId, value: false };
     return false;
   }
 }
@@ -102,7 +126,7 @@ export async function resolveAdminAccess(supabase, session, els = {}) {
   }
   // Keep everything hidden while we ask the server.
   renderAdminGate(ADMIN_STATE.LOADING, els);
-  const isAdmin = await fetchIsAdmin(supabase);
+  const isAdmin = await fetchIsAdmin(supabase, session.user.id);
   return renderAdminGate(
     isAdmin ? ADMIN_STATE.GRANTED : ADMIN_STATE.FORBIDDEN,
     els

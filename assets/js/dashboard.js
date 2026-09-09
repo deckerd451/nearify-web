@@ -18,7 +18,6 @@ import { escapeHtml, escapeAttr, copyText } from "./utils.js";
 import { logger } from "./logger.js";
 import { buildEventDecisionReasons, buildKnownAttendeeReason, computeEventDecisionScore } from "./attendanceReasons.js";
 import { pollingCoordinator } from "./pollingCoordinator.js";
-import { fetchIsAdmin, resetAdminCache } from "./adminAccess.js";
 logger.log("[Dashboard] dashboard.js loaded");
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -957,33 +956,16 @@ function renderRecommendedForYouWidget(recommendations) {
 async function refreshDashboard() {
   if (refreshDashboard._inFlight) return refreshDashboard._inFlight;
   refreshDashboard._inFlight = (async () => {
-  // Organizer tools (Your Events) are admin-only — skip for non-admins.
-  const isAdmin = await fetchIsAdmin(supabase);
-  if (isAdmin) {
-    const list = document.getElementById("eventCardList");
-    if (list) list.innerHTML = renderSkeletonCards();
-  }
-  const [events, connections] = await Promise.all([
-    isAdmin ? fetchMyEvents() : Promise.resolve([]),
-    fetchMyConnections(),
-  ]);
+  // Homepage: recommendations + connections only (no organizer events).
+  const connections = await fetchMyConnections();
   const currentProfileId = await fetchCurrentProfileId();
   const [seeAgainOpportunities, recommendations] = await Promise.all([
     fetchUpcomingEventsForConnections(connections, currentProfileId),
     buildRecommendedEvents(connections, currentProfileId),
   ]);
-  const eventIds = events.map((e) => e.id);
-  const [counts, intentsByEvent] = await Promise.all([
-    eventIds.length ? fetchAttendeeCounts(eventIds) : Promise.resolve(new Map()),
-    eventIds.length ? fetchIntentDistribution(eventIds) : Promise.resolve(new Map()),
-  ]);
-  renderNetworkMemoryWidget(connections, events);
+  renderNetworkMemoryWidget(connections, []);
   renderRecommendedForYouWidget(recommendations);
   renderSeeAgainWidget(seeAgainOpportunities);
-  if (isAdmin) {
-    renderEcosystemHero(events, counts, intentsByEvent);
-    renderDashboard(events, counts, intentsByEvent, buildRelationshipReasonMap(seeAgainOpportunities));
-  }
   })().finally(() => { refreshDashboard._inFlight = null; });
   return refreshDashboard._inFlight;
 }
@@ -1035,9 +1017,12 @@ async function copyCurrentJoinLink(btn) {
 // ─── Create Event Modal ───────────────────────────────────────────────────────
 
 function openCreateModal() {
-  if (!_isAdminCreator) return; // creation is admin-only
+  // Event creation moved to /events/index.html (admin-only). No create modal
+  // exists on the homepage anymore; keep this a safe no-op.
+  const modal = document.getElementById("createEventModal");
+  if (!modal) return;
   _focusBeforeModal = document.activeElement;
-  document.getElementById("createEventModal").hidden = false;
+  modal.hidden = false;
   document.body.classList.add("cc-modal-open");
   setTimeout(() => document.getElementById("ceEventName")?.focus(), 60);
 }
@@ -1159,30 +1144,10 @@ function showDashboard() {
 }
 
 /**
- * Reveals event-creation controls only for admins, using the canonical
- * SERVER-SIDE admin result (public.is_admin() via fetchIsAdmin). Controls start
- * hidden in markup so they never flash for non-admins while auth resolves.
- * Pass a signed-in session's presence via `signedIn`; pass false to force-hide.
+ * (Organizer event management now lives on /events/index.html, admin-only.)
  */
-async function applyCreateControlVisibility(signedIn) {
-  let isAdmin = false;
-  if (signedIn) {
-    isAdmin = await fetchIsAdmin(supabase);
-  } else {
-    resetAdminCache();
-  }
-  _isAdminCreator = isAdmin;
-  document.querySelectorAll("[data-admin-create]").forEach((el) => {
-    el.hidden = !isAdmin;
-  });
-  return isAdmin;
-}
-let _isAdminCreator = false;
-
 function showLoading() {
   showDashboard();
-  const list = document.getElementById("eventCardList");
-  if (list) list.innerHTML = renderSkeletonCards();
 }
 
 function initDashboard() {
@@ -1200,10 +1165,8 @@ function initDashboard() {
 
     if (event === "SIGNED_OUT" || (event === "INITIAL_SESSION" && !session?.user)) {
       pollingCoordinator.stop(DASHBOARD_EVENTS_POLL_KEY);
-      applyCreateControlVisibility(false);
       showLanding();
     } else if (event === "SIGNED_IN" || (event === "INITIAL_SESSION" && session?.user)) {
-      applyCreateControlVisibility(true);
       startDashboardPolling();
       loadDashboard().catch((err) => {
         logger.error("[Dashboard] loadDashboard failed:", err);
@@ -1219,36 +1182,19 @@ async function loadDashboard() {
   showLoading();
 
   try {
-    // Organizer tools (Your Events) are admin-only. Do NOT fetch or render
-    // organizer-event data for non-admins. Cached, so no extra round-trip.
-    const isAdmin = await fetchIsAdmin(supabase);
-
-    const [events, connections] = await Promise.all([
-      isAdmin ? fetchMyEvents() : Promise.resolve([]),
-      fetchMyConnections(),
-    ]);
+    // Homepage focuses on recommendations + connections. Organizer event
+    // management lives on /events/index.html (admin-only), so we never fetch
+    // organizer-owned events here for anyone.
+    const connections = await fetchMyConnections();
     const currentProfileId = await fetchCurrentProfileId();
     const [seeAgainOpportunities, recommendations] = await Promise.all([
       fetchUpcomingEventsForConnections(connections, currentProfileId),
       buildRecommendedEvents(connections, currentProfileId),
     ]);
-    logger.log("[Dashboard] events loaded:", events.length);
-    const eventIds = events.map((e) => e.id);
 
-    const [counts, intentsByEvent] = await Promise.all([
-      eventIds.length ? fetchAttendeeCounts(eventIds) : Promise.resolve(new Map()),
-      eventIds.length ? fetchIntentDistribution(eventIds) : Promise.resolve(new Map()),
-    ]);
-
-    renderNetworkMemoryWidget(connections, events);
+    renderNetworkMemoryWidget(connections, []);
     renderRecommendedForYouWidget(recommendations);
     renderSeeAgainWidget(seeAgainOpportunities);
-    if (isAdmin) {
-      // Organizer-only surfaces: the live-event hero (built from the user's own
-      // events) and the Your Events list.
-      renderEcosystemHero(events, counts, intentsByEvent);
-      renderDashboard(events, counts, intentsByEvent, buildRelationshipReasonMap(seeAgainOpportunities));
-    }
   } catch (err) {
     logger.error("[Dashboard] failed to load dashboard:", err);
     renderDashboardError(err);
