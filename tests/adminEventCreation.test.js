@@ -21,6 +21,10 @@ const MIGRATION = fs.readFileSync(
   path.join(REPO, "supabase/migrations/026_admin_membership_and_event_creation.sql"),
   "utf8"
 );
+const MIGRATION_027 = fs.readFileSync(
+  path.join(REPO, "supabase/migrations/027_drop_legacy_events_insert_policy.sql"),
+  "utf8"
+);
 const ADMIN_ACCESS_SRC = fs.readFileSync(
   path.join(REPO, "assets/js/adminAccess.js"),
   "utf8"
@@ -38,6 +42,23 @@ function makeDb(initialAdminUserIds = []) {
     canCreateEvent: ({ uid, createdBy, currentProfileId }) =>
       admins.has(uid) && createdBy != null && createdBy === currentProfileId,
   };
+}
+
+// Named permissive INSERT policies as predicates over the insert context.
+// PostgreSQL combines MULTIPLE PERMISSIVE policies for the same command with OR:
+// a row is allowed if ANY policy's WITH CHECK passes. This models that so we can
+// prove why a leftover "WITH CHECK (true)" policy defeats the admin-only rule.
+const POLICIES = {
+  // Legacy permissive policy that was left active in prod ("WITH CHECK (true)").
+  legacyPermissive: () => true,
+  // The 026 admin-only policy.
+  adminsCanCreate: ({ isAdmin, createdBy, currentProfileId }) =>
+    isAdmin && createdBy != null && createdBy === currentProfileId,
+};
+
+/** OR-combine the given permissive policies (PostgreSQL semantics). */
+function insertAllowedUnder(policyNames, ctx) {
+  return policyNames.some((name) => POLICIES[name](ctx));
 }
 
 // A fake supabase whose rpc('is_admin') consults the DB model for a given uid.
@@ -259,5 +280,112 @@ describe("resolveAdminAccess — end-to-end client gate from server result", () 
     const state = await resolveAdminAccess(sb, session, { gateEl, contentEl, restrictedEl });
     expect(state).toBe("forbidden");
     expect(contentEl.style.display).toBe("none");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Regression: legacy permissive INSERT policy must not survive.
+//
+// PostgreSQL combines MULTIPLE PERMISSIVE policies for the same command with OR.
+// Production had a differently-cased leftover policy:
+//   "authenticated users can create events"  WITH CHECK (true)
+// alongside 026's "Admins can create events". The effective INSERT check became
+//   (true) OR (is_admin() AND created_by = current_profile_id())  ==> always true,
+// silently defeating the admin-only rule. Migration 027 drops that exact policy.
+// ---------------------------------------------------------------------------
+describe("migration 027 — drops the legacy permissive events INSERT policy", () => {
+  it("drops the exact legacy policy name on public.events", () => {
+    expect(MIGRATION_027).toMatch(
+      /DROP POLICY IF EXISTS "authenticated users can create events" ON public\.events;/
+    );
+  });
+
+  it("does NOT recreate or weaken the admin-only INSERT policy", () => {
+    // 027 must be a pure drop — it never creates a policy. (Its header comment
+    // quotes the legacy "WITH CHECK (true)" only to explain the bug.)
+    expect(MIGRATION_027).not.toMatch(/CREATE POLICY/i);
+    // No executable statement re-grants a permissive true check. Strip comment
+    // lines first so the explanatory text does not trip this guard.
+    const executable = MIGRATION_027
+      .split("\n")
+      .filter((l) => !l.trim().startsWith("--"))
+      .join("\n");
+    expect(executable).not.toMatch(/WITH CHECK\s*\(\s*true\s*\)/i);
+  });
+
+  it("explains the PostgreSQL OR-combination cause", () => {
+    expect(MIGRATION_027).toMatch(/OR/);
+    expect(MIGRATION_027.toLowerCase()).toMatch(/permissive/);
+  });
+});
+
+describe("no permissive 'WITH CHECK (true)' INSERT policy survives in schema history", () => {
+  // Load each events-related migration with its filename so we can reason about
+  // ordering (a CREATE must be followed by a later DROP of the same name).
+  const MIG_DIR = path.join(REPO, "supabase/migrations");
+  const files = fs
+    .readdirSync(MIG_DIR)
+    .filter((f) => f.endsWith(".sql"))
+    .sort();
+  const sqlByFile = files.map((f) => ({ f, sql: fs.readFileSync(path.join(MIG_DIR, f), "utf8") }));
+
+  it("no migration creates an events INSERT policy with WITH CHECK (true)", () => {
+    // Match a CREATE POLICY targeting the events table (not analytics_events etc.)
+    // whose INSERT check is the always-true predicate.
+    const offending = sqlByFile.filter(({ sql }) =>
+      /CREATE POLICY\s+"[^"]+"\s+ON\s+(?:public\.)?events\s+FOR INSERT\s+WITH CHECK\s*\(\s*true\s*\)/i.test(sql)
+    );
+    expect(offending.map((x) => x.f)).toEqual([]);
+  });
+
+  it("every events INSERT policy that is created is either admin-only or later dropped", () => {
+    // Collect (policyName, createdInFile) for INSERT policies on `events`.
+    const created = [];
+    for (const { f, sql } of sqlByFile) {
+      for (const m of sql.matchAll(
+        /CREATE POLICY\s+"([^"]+)"\s+ON\s+(?:public\.)?events\s+FOR INSERT/gi
+      )) {
+        created.push({ name: m[1], file: f });
+      }
+    }
+    // The admin-only policy is allowed to persist; all others must be dropped
+    // by a later migration (case-sensitive name match, DROP POLICY IF EXISTS).
+    for (const { name, file } of created) {
+      if (name === "Admins can create events") continue;
+      const droppedLater = sqlByFile.some(
+        ({ f, sql }) =>
+          f > file &&
+          new RegExp(
+            `DROP POLICY IF EXISTS\\s+"${name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}"\\s+ON\\s+(?:public\\.)?events`,
+            "i"
+          ).test(sql)
+      );
+      expect(droppedLater, `policy "${name}" created in ${file} must be dropped later`).toBe(true);
+    }
+  });
+
+  it("027 drops the legacy lowercase policy that 026's drop (capital A) missed", () => {
+    // The case-sensitivity gap is the root cause: 026 dropped "Authenticated…",
+    // prod also had "authenticated…" (lowercase) which survived until 027.
+    expect(MIGRATION).toMatch(/DROP POLICY IF EXISTS "Authenticated users can create events"/);
+    expect(MIGRATION_027).toMatch(/DROP POLICY IF EXISTS "authenticated users can create events"/);
+  });
+});
+
+describe("PostgreSQL OR-policy semantics — why the legacy policy was dangerous", () => {
+  const nonAdminCtx = { isAdmin: false, createdBy: "p1", currentProfileId: "p1" };
+  const adminCtx = { isAdmin: true, createdBy: "pa", currentProfileId: "pa" };
+
+  it("BUG: legacy permissive + admin policy OR-combine to allow a non-admin", () => {
+    // Both policies active (the defective production state before the manual fix).
+    expect(insertAllowedUnder(["legacyPermissive", "adminsCanCreate"], nonAdminCtx)).toBe(true);
+  });
+
+  it("FIXED: with only the admin policy, a non-admin is denied", () => {
+    expect(insertAllowedUnder(["adminsCanCreate"], nonAdminCtx)).toBe(false);
+  });
+
+  it("FIXED: with only the admin policy, an admin (own profile) is allowed", () => {
+    expect(insertAllowedUnder(["adminsCanCreate"], adminCtx)).toBe(true);
   });
 });
