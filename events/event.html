@@ -20,7 +20,7 @@
   <meta name="twitter:description" content="Know who to meet at this Nearify event, save who you met, and remember why they matter." />
   <meta name="twitter:image"      content="https://nearify.org/assets/images/og-default.png" />
 
-  <link rel="stylesheet" href="../assets/css/styles.css?v=20260910i" />
+  <link rel="stylesheet" href="../assets/css/styles.css?v=20260910j" />
 </head>
 <body>
   <a href="#main-content" class="skip-link">Skip to main content</a>
@@ -75,10 +75,14 @@
 
         <div class="event-meta-grid" id="eventMetaGrid"></div>
 
-        <!-- Compact 2–3 line description preview (full text lives in "About this event"). -->
+        <!-- Compact 2–3 line description preview; "Read more" expands the full
+             description + logistics inline in this same location. -->
         <div id="eventSummaryPreview" class="event-summary-preview" style="display:none;">
           <p id="eventSummaryPreviewText" class="event-summary-preview-text"></p>
-          <button id="eventSummaryReadMore" class="event-inline-link" type="button" aria-expanded="false" aria-controls="eventAboutSection" hidden>Read more</button>
+          <div id="eventSummaryDetails" class="event-summary-details" hidden>
+            <dl id="eventSummaryLogistics" class="event-about-details"></dl>
+          </div>
+          <button id="eventSummaryReadMore" class="event-inline-link" type="button" aria-expanded="false" aria-controls="eventSummaryDetails" hidden>Read more</button>
         </div>
 
         <!-- Momentum indicator — populated by JS -->
@@ -245,18 +249,6 @@
       </div>
     </section>
 
-    <!-- About this event — full description + logistics, progressive disclosure. -->
-    <section class="section event-section event-about" id="eventAboutSection" aria-labelledby="eventAboutHeading" style="display:none;">
-      <div class="section-heading">
-        <h2 id="eventAboutHeading">About this event</h2>
-      </div>
-      <div id="eventAboutBody" class="event-about-body">
-        <p id="eventAboutDescription" class="event-about-description"></p>
-        <dl id="eventAboutDetails" class="event-about-details"></dl>
-      </div>
-      <button id="eventAboutToggle" class="event-inline-link" type="button" aria-expanded="false" aria-controls="eventAboutBody" hidden>Read more</button>
-    </section>
-
     <!-- Share your Nearify profile — compact secondary action; QR/link live in
          an accessible disclosure (values/behavior unchanged, presentation only). -->
     <section class="section event-section event-share-profile" id="personalConnectSection" style="display:none;">
@@ -330,7 +322,7 @@
   </footer>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" integrity="sha384-3zSEDfvllQohrq0PHL1fOXJuC/jSOO34H46t6UQfobFOmxE5BpjjaIJY5F2/bMnU" crossorigin="anonymous"></script>
-  <script type="module" src="../assets/js/eventDetail.js?v=20260910c"></script>
+  <script type="module" src="../assets/js/eventDetail.js?v=20260910d"></script>
   <script type="module" src="../assets/js/navAuth.js?v=20260910"></script>
 </body>
 </html>

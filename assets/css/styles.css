@@ -2098,7 +2098,7 @@ code {
 }
 .event-inline-link:hover { color: var(--color-text-primary); }
 
-/* Compact 2–3 line description preview in the summary. */
+/* Compact 2–3 line description preview in the summary; expands inline. */
 .event-summary-preview {
   margin-top: 4px;
   max-width: 640px;
@@ -2107,10 +2107,21 @@ code {
   margin: 0;
   color: var(--color-text-secondary);
   line-height: 1.55;
+  text-align: left;
   display: -webkit-box;
   -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
   overflow: hidden;
+}
+/* Expanded: show the full description (left-aligned, preserve line breaks). */
+.event-summary-preview-text.is-expanded {
+  display: block;
+  -webkit-line-clamp: none;
+  overflow: visible;
+  white-space: pre-line;
+}
+.event-summary-details {
+  margin-top: 6px;
 }
 
 .event-summary-cta {
@@ -2170,22 +2181,7 @@ code {
   font-size: 13px;
 }
 
-/* About this event */
-.event-about-body {
-  max-width: 860px;
-  margin: 0 auto;
-}
-.event-about .event-inline-link {
-  display: flex;
-  margin: 12px auto 0;
-  max-width: 860px;
-}
-.event-about-description {
-  margin: 0;
-  color: var(--color-text-secondary);
-  line-height: 1.6;
-  white-space: pre-line;
-}
+/* Description logistics list (rendered inline in the expanded summary). */
 .event-about-details {
   margin: 18px 0 0;
   display: grid;
