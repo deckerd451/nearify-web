@@ -169,7 +169,7 @@ async function fetchMyAttendingEvents(currentProfileId) {
 
   const { data: attendeeRows, error: attendeeError } = await supabase
     .from("event_attendees")
-    .select("event_id, intent_primary")
+    .select("event_id, intent_primary, status")
     .eq("profile_id", profileId);
 
   if (attendeeError) {
@@ -177,10 +177,14 @@ async function fetchMyAttendingEvents(currentProfileId) {
     return [];
   }
 
-  const eventIds = [...new Set((attendeeRows || []).map((r) => r.event_id).filter(Boolean))];
+  // Exclude events the user has left (status = "left"). Rows with a null/absent
+  // status are treated as active (joined) to stay backward-compatible.
+  const activeRows = (attendeeRows || []).filter((r) => r.status !== "left");
+
+  const eventIds = [...new Set(activeRows.map((r) => r.event_id).filter(Boolean))];
   if (!eventIds.length) return [];
 
-  const intentByEvent = new Map((attendeeRows || []).map((r) => [r.event_id, r.intent_primary]));
+  const intentByEvent = new Map(activeRows.map((r) => [r.event_id, r.intent_primary]));
 
   const { data: events, error: eventsError } = await supabase
     .from("events")
