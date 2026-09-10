@@ -117,11 +117,18 @@ textarea::placeholder {
 .logo a {
   display: inline-flex;
   align-items: center;
+  gap: 8px;
 }
 .logo-img {
   display: block;
   height: 28px;
   width: auto;
+}
+/* Wordmark beside the icon; matches the prior text-logo typography
+   (font-weight 700, font-size 20px, letter-spacing -0.02em from .logo). */
+.logo-text {
+  display: inline-block;
+  line-height: 1;
 }
 
 .nav-links a {
