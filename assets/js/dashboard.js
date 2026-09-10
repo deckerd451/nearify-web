@@ -159,6 +159,46 @@ async function fetchMyConnections() {
   return Array.isArray(data) ? data : [];
 }
 
+/**
+ * Events the current user is attending (has an event_attendees row for).
+ * Ordered live → upcoming → past, matching the dashboard ordering used elsewhere.
+ */
+async function fetchMyAttendingEvents(currentProfileId) {
+  const profileId = currentProfileId ?? await fetchCurrentProfileId();
+  if (!profileId) return [];
+
+  const { data: attendeeRows, error: attendeeError } = await supabase
+    .from("event_attendees")
+    .select("event_id, intent_primary")
+    .eq("profile_id", profileId);
+
+  if (attendeeError) {
+    logger.warn("[Dashboard] fetchMyAttendingEvents attendees:", attendeeError);
+    return [];
+  }
+
+  const eventIds = [...new Set((attendeeRows || []).map((r) => r.event_id).filter(Boolean))];
+  if (!eventIds.length) return [];
+
+  const intentByEvent = new Map((attendeeRows || []).map((r) => [r.event_id, r.intent_primary]));
+
+  const { data: events, error: eventsError } = await supabase
+    .from("events")
+    .select("id, name, slug, location, starts_at, ends_at, is_active, description")
+    .in("id", eventIds)
+    .is("deleted_at", null);
+
+  if (eventsError) {
+    logger.warn("[Dashboard] fetchMyAttendingEvents events:", eventsError);
+    return [];
+  }
+
+  return (events || []).map((event) => ({
+    event,
+    myIntent: intentByEvent.get(event.id) || null,
+  }));
+}
+
 async function fetchCurrentProfileId() {
   return getOrganizerProfileId();
 }
@@ -879,11 +919,88 @@ function renderSeeAgainWidget(opportunities) {
   widget.hidden = false;
 }
 
+function renderAttendingWidget(attending) {
+  const section = document.getElementById("attendingSection");
+  const widget  = document.getElementById("attendingWidget");
+  if (!widget) return;
+
+  if (!attending.length) {
+    if (section) section.hidden = true;
+    widget.replaceChildren();
+    return;
+  }
+
+  // Order: live → upcoming → past (soonest first within each group).
+  const rank = { live: 0, upcoming: 1, ended: 2 };
+  const sorted = [...attending].sort((a, b) => {
+    const ra = rank[getEventStatus(a.event)] ?? 3;
+    const rb = rank[getEventStatus(b.event)] ?? 3;
+    if (ra !== rb) return ra - rb;
+    const aStart = a.event.starts_at ? new Date(a.event.starts_at).getTime() : Number.MAX_SAFE_INTEGER;
+    const bStart = b.event.starts_at ? new Date(b.event.starts_at).getTime() : Number.MAX_SAFE_INTEGER;
+    return aStart - bStart;
+  });
+
+  const list = document.createElement("ul");
+  list.className = "cc-attending-list";
+
+  sorted.forEach(({ event, myIntent }) => {
+    const status = getEventStatus(event);
+    const item = document.createElement("li");
+    item.className = "cc-attending-item";
+
+    const details = document.createElement("div");
+
+    const heading = document.createElement("p");
+    heading.className = "cc-attending-heading";
+    heading.textContent = event.name || "Event";
+    details.appendChild(heading);
+
+    const statusBadge = document.createElement("span");
+    statusBadge.className = "cc-event-status cc-event-status--" + status;
+    const dot = document.createElement("span");
+    dot.className = "cc-status-dot";
+    statusBadge.appendChild(dot);
+    statusBadge.appendChild(document.createTextNode(statusLabel(status)));
+    heading.appendChild(document.createTextNode(" "));
+    heading.appendChild(statusBadge);
+
+    const metaParts = [event.location, formatDateTime(event.starts_at)].filter(Boolean);
+    if (metaParts.length) {
+      const meta = document.createElement("p");
+      meta.className = "cc-attending-meta";
+      meta.textContent = metaParts.join(" · ");
+      details.appendChild(meta);
+    }
+
+    if (myIntent && INTENT_LABELS[myIntent]) {
+      const intent = document.createElement("p");
+      intent.className = "cc-attending-meta";
+      intent.textContent = "Your goal: " + INTENT_LABELS[myIntent];
+      details.appendChild(intent);
+    }
+
+    const link = document.createElement("a");
+    link.className = "btn primary";
+    link.href = getEventDetailUrl(event);
+    link.textContent = "View Event";
+
+    item.append(details, link);
+    list.appendChild(item);
+  });
+
+  widget.replaceChildren(list);
+  widget.hidden = false;
+  if (section) section.hidden = false;
+}
+
 function renderRecommendedForYouWidget(recommendations) {
   const widget = document.getElementById("recommendedForYouWidget");
+  const section = document.getElementById("recommendedSection");
   if (!widget) return;
 
   if (!recommendations.length) {
+    if (section) section.hidden = true;
     widget.hidden = true;
     widget.replaceChildren();
     return;
@@ -936,6 +1053,7 @@ function renderRecommendedForYouWidget(recommendations) {
 
   widget.replaceChildren(list);
   widget.hidden = false;
+  if (section) section.hidden = false;
 }
 
 // ─── Refresh ──────────────────────────────────────────────────────────────────
@@ -946,10 +1064,12 @@ async function refreshDashboard() {
   // Homepage: recommendations + connections only (no organizer events).
   const connections = await fetchMyConnections();
   const currentProfileId = await fetchCurrentProfileId();
-  const [seeAgainOpportunities, recommendations] = await Promise.all([
+  const [attending, seeAgainOpportunities, recommendations] = await Promise.all([
+    fetchMyAttendingEvents(currentProfileId),
     fetchUpcomingEventsForConnections(connections, currentProfileId),
     buildRecommendedEvents(connections, currentProfileId),
   ]);
+  renderAttendingWidget(attending);
   renderNetworkMemoryWidget(connections, []);
   renderRecommendedForYouWidget(recommendations);
   renderSeeAgainWidget(seeAgainOpportunities);
@@ -1174,11 +1294,13 @@ async function loadDashboard() {
     // organizer-owned events here for anyone.
     const connections = await fetchMyConnections();
     const currentProfileId = await fetchCurrentProfileId();
-    const [seeAgainOpportunities, recommendations] = await Promise.all([
+    const [attending, seeAgainOpportunities, recommendations] = await Promise.all([
+      fetchMyAttendingEvents(currentProfileId),
       fetchUpcomingEventsForConnections(connections, currentProfileId),
       buildRecommendedEvents(connections, currentProfileId),
     ]);
 
+    renderAttendingWidget(attending);
     renderNetworkMemoryWidget(connections, []);
     renderRecommendedForYouWidget(recommendations);
     renderSeeAgainWidget(seeAgainOpportunities);

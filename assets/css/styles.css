@@ -5939,6 +5939,42 @@ body.cc-page .cc-event-actions .btn.secondary:hover {
   font-size: 13px;
 }
 
+/* ── Events You're Attending ─────────────────────────────────────────────── */
+
+.cc-attending-list {
+  margin: 16px 0 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 10px;
+}
+
+.cc-attending-item {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  align-items: center;
+  padding: 12px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.07);
+}
+
+.cc-attending-heading {
+  margin: 0;
+  color: #e5edf7;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.cc-attending-meta {
+  margin: 4px 0 0;
+  color: #aab4c5;
+  font-size: 13px;
+}
+
 @media (max-width: 640px) {
   .cc-organizer-tools-header {
     display: block;
@@ -5956,6 +5992,16 @@ body.cc-page .cc-event-actions .btn.secondary:hover {
 
   .cc-see-again-item {
     display: block;
+  }
+
+  .cc-attending-item {
+    display: block;
+  }
+
+  .cc-attending-item .btn {
+    margin-top: 14px;
+    width: 100%;
+    justify-content: center;
   }
 }
 

@@ -104,14 +104,28 @@
 
       <div class="cc-dashboard">
 
-        <div class="cc-dashboard-header">
-          <div>
-            <h1 class="cc-dashboard-title">Recommended For You</h1>
-            <p class="cc-dashboard-subtitle">Event picks based on people you know and goals you share · <a href="/events/index.html" class="cc-dashboard-subtitle-link">Browse all events</a></p>
+        <!-- ─── EVENTS YOU'RE ATTENDING (top) ──────────────────────────── -->
+        <section id="attendingSection" class="cc-dashboard-section cc-dashboard-primary" aria-labelledby="attendingHeading" hidden>
+          <div class="cc-dashboard-header">
+            <div>
+              <h1 class="cc-dashboard-title" id="attendingHeading">Your Events</h1>
+              <p class="cc-dashboard-subtitle">Events you're attending · <a href="/events/index.html" class="cc-dashboard-subtitle-link">Browse all events</a></p>
+            </div>
           </div>
-        </div>
+          <div id="attendingWidget" class="cc-network-widget cc-attending-widget"></div>
+        </section>
 
-        <section id="recommendedForYouWidget" class="cc-network-widget cc-recommended-widget cc-dashboard-primary" aria-label="Recommended For You" hidden></section>
+        <!-- ─── RECOMMENDED FOR YOU (after) ────────────────────────────── -->
+        <section id="recommendedSection" class="cc-dashboard-section" aria-labelledby="recommendedHeading" hidden>
+          <div class="cc-dashboard-header">
+            <div>
+              <h2 class="cc-dashboard-title" id="recommendedHeading">Recommended For You</h2>
+              <p class="cc-dashboard-subtitle">Event picks based on people you know and goals you share · <a href="/events/index.html" class="cc-dashboard-subtitle-link">Browse all events</a></p>
+            </div>
+          </div>
+          <div id="recommendedForYouWidget" class="cc-network-widget cc-recommended-widget" aria-label="Recommended For You" hidden></div>
+        </section>
+
         <section id="seeAgainWidget" class="cc-network-widget cc-see-again-widget" aria-label="See them again soon" hidden></section>
         <section id="networkMemoryWidget" class="cc-network-widget cc-network-memory-widget" aria-label="My Network" hidden></section>
 
@@ -146,7 +160,7 @@
   <!-- QR code library (must load before dashboard.js) -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" integrity="sha384-3zSEDfvllQohrq0PHL1fOXJuC/jSOO34H46t6UQfobFOmxE5BpjjaIJY5F2/bMnU" crossorigin="anonymous"></script>
 
-  <script type="module" src="/assets/js/dashboard.js?v=20260909b"></script>
+  <script type="module" src="/assets/js/dashboard.js?v=20260910c"></script>
   <script type="module" src="/assets/js/navAuth.js?v=20260910"></script>
 
 </body>
