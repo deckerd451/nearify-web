@@ -930,21 +930,8 @@ function renderAttendingWidget(attending) {
     return;
   }
 
-  // Order: live → upcoming → past (soonest first within each group).
-  const rank = { live: 0, upcoming: 1, ended: 2 };
-  const sorted = [...attending].sort((a, b) => {
-    const ra = rank[getEventStatus(a.event)] ?? 3;
-    const rb = rank[getEventStatus(b.event)] ?? 3;
-    if (ra !== rb) return ra - rb;
-    const aStart = a.event.starts_at ? new Date(a.event.starts_at).getTime() : Number.MAX_SAFE_INTEGER;
-    const bStart = b.event.starts_at ? new Date(b.event.starts_at).getTime() : Number.MAX_SAFE_INTEGER;
-    return aStart - bStart;
-  });
-
-  const list = document.createElement("ul");
-  list.className = "cc-attending-list";
-
-  sorted.forEach(({ event, myIntent }) => {
+  // Build a single attending list item.
+  const buildItem = ({ event, myIntent }) => {
     const status = getEventStatus(event);
     const item = document.createElement("li");
     item.className = "cc-attending-item";
@@ -986,10 +973,58 @@ function renderAttendingWidget(attending) {
     link.textContent = "View Event";
 
     item.append(details, link);
-    list.appendChild(item);
-  });
+    return item;
+  };
 
-  widget.replaceChildren(list);
+  // Soonest-first ordering within a group.
+  const byStart = (a, b) => {
+    const aStart = a.event.starts_at ? new Date(a.event.starts_at).getTime() : Number.MAX_SAFE_INTEGER;
+    const bStart = b.event.starts_at ? new Date(b.event.starts_at).getTime() : Number.MAX_SAFE_INTEGER;
+    return aStart - bStart;
+  };
+
+  // Active (live + upcoming) are shown; ended are minimized behind a toggle.
+  const active = attending
+    .filter((a) => getEventStatus(a.event) !== "ended")
+    .sort((a, b) => {
+      const rank = { live: 0, upcoming: 1 };
+      const ra = rank[getEventStatus(a.event)] ?? 2;
+      const rb = rank[getEventStatus(b.event)] ?? 2;
+      if (ra !== rb) return ra - rb;
+      return byStart(a, b);
+    });
+
+  // Ended: most recent first.
+  const ended = attending
+    .filter((a) => getEventStatus(a.event) === "ended")
+    .sort((a, b) => byStart(b, a));
+
+  widget.replaceChildren();
+
+  if (active.length) {
+    const list = document.createElement("ul");
+    list.className = "cc-attending-list";
+    active.forEach((a) => list.appendChild(buildItem(a)));
+    widget.appendChild(list);
+  }
+
+  if (ended.length) {
+    const detailsEl = document.createElement("details");
+    detailsEl.className = "cc-attending-ended";
+
+    const summary = document.createElement("summary");
+    summary.className = "cc-attending-ended-summary";
+    summary.textContent = `Past events (${ended.length})`;
+    detailsEl.appendChild(summary);
+
+    const endedList = document.createElement("ul");
+    endedList.className = "cc-attending-list cc-attending-list--ended";
+    ended.forEach((a) => endedList.appendChild(buildItem(a)));
+    detailsEl.appendChild(endedList);
+
+    widget.appendChild(detailsEl);
+  }
+
   widget.hidden = false;
   if (section) section.hidden = false;
 }

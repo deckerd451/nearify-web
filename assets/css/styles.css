@@ -5975,6 +5975,44 @@ body.cc-page .cc-event-actions .btn.secondary:hover {
   font-size: 13px;
 }
 
+.cc-attending-ended {
+  margin-top: 12px;
+}
+
+.cc-attending-ended-summary {
+  cursor: pointer;
+  color: #aab4c5;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 8px 4px;
+  list-style: none;
+  user-select: none;
+}
+
+.cc-attending-ended-summary::-webkit-details-marker {
+  display: none;
+}
+
+.cc-attending-ended-summary::before {
+  content: "▸";
+  display: inline-block;
+  margin-right: 8px;
+  transition: transform 0.15s ease;
+  color: #7d8798;
+}
+
+.cc-attending-ended[open] > .cc-attending-ended-summary::before {
+  transform: rotate(90deg);
+}
+
+.cc-attending-ended-summary:hover {
+  color: #e5edf7;
+}
+
+.cc-attending-list--ended {
+  opacity: 0.75;
+}
+
 @media (max-width: 640px) {
   .cc-organizer-tools-header {
     display: block;
