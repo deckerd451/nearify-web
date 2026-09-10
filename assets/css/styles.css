@@ -6013,6 +6013,13 @@ body.cc-page .cc-event-actions .btn.secondary:hover {
   opacity: 0.75;
 }
 
+.cc-attending-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-shrink: 0;
+}
+
 @media (max-width: 640px) {
   .cc-organizer-tools-header {
     display: block;
@@ -6036,9 +6043,13 @@ body.cc-page .cc-event-actions .btn.secondary:hover {
     display: block;
   }
 
-  .cc-attending-item .btn {
+  .cc-attending-actions {
     margin-top: 14px;
     width: 100%;
+  }
+
+  .cc-attending-actions .btn {
+    flex: 1;
     justify-content: center;
   }
 }

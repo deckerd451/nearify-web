@@ -199,6 +199,20 @@ async function fetchMyAttendingEvents(currentProfileId) {
   }));
 }
 
+/**
+ * Revoke the current user's attendance for an event via the leave_event RPC.
+ * Returns true on success.
+ */
+async function leaveEventAttendance(eventId) {
+  const { data, error } = await supabase.rpc("leave_event", { p_event_id: eventId });
+  if (error) {
+    logger.error("[Dashboard] leaveEventAttendance:", error);
+    return false;
+  }
+  logger.log("[Dashboard] left event:", eventId, data);
+  return true;
+}
+
 async function fetchCurrentProfileId() {
   return getOrganizerProfileId();
 }
@@ -972,7 +986,23 @@ function renderAttendingWidget(attending) {
     link.href = getEventDetailUrl(event);
     link.textContent = "View Event";
 
-    item.append(details, link);
+    const actions = document.createElement("div");
+    actions.className = "cc-attending-actions";
+    actions.appendChild(link);
+
+    // Only offer "Leave" for events that haven't ended.
+    if (status !== "ended") {
+      const leaveBtn = document.createElement("button");
+      leaveBtn.type = "button";
+      leaveBtn.className = "btn secondary cc-attending-leave";
+      leaveBtn.textContent = "Leave";
+      leaveBtn.dataset.action = "leave-event";
+      leaveBtn.dataset.eventId = event.id;
+      leaveBtn.dataset.eventName = event.name || "this event";
+      actions.appendChild(leaveBtn);
+    }
+
+    item.append(details, actions);
     return item;
   };
 
@@ -1392,6 +1422,23 @@ async function handleArchive(eventId, eventName) {
   await refreshDashboard();
 }
 
+async function handleLeaveEventAttendance(btn, eventId, eventName) {
+  if (!confirm(`Leave "${eventName}"?\n\nYou'll be removed from this event's attendee list. You can join again anytime.`)) return;
+
+  btn.disabled = true;
+  const orig = btn.textContent;
+  btn.textContent = "Leaving…";
+
+  const ok = await leaveEventAttendance(eventId);
+  if (!ok) {
+    btn.disabled = false;
+    btn.textContent = orig;
+    alert("Could not leave this event. Please try again.");
+    return;
+  }
+  await refreshDashboard();
+}
+
 // ─── Handler wiring ───────────────────────────────────────────────────────────
 
 function bindStaticHandlers() {
@@ -1460,6 +1507,14 @@ function bindStaticHandlers() {
         case "archive":         await handleArchive(eventId, eventName); break;
         case "toggle-overflow": toggleOverflowMenu(btn); e.stopPropagation(); break;
       }
+    });
+
+  // Attending widget delegation (leave-event)
+  document.getElementById("attendingWidget")
+    ?.addEventListener("click", async (e) => {
+      const btn = e.target.closest("[data-action='leave-event']");
+      if (!btn) return;
+      await handleLeaveEventAttendance(btn, btn.dataset.eventId, btn.dataset.eventName);
     });
 
   // Close all overflow menus when clicking outside
