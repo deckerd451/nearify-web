@@ -20,7 +20,7 @@
   <meta name="twitter:description" content="Know who to meet at this Nearify event, save who you met, and remember why they matter." />
   <meta name="twitter:image"      content="https://nearify.org/assets/images/og-default.png" />
 
-  <link rel="stylesheet" href="../assets/css/styles.css?v=20260910k" />
+  <link rel="stylesheet" href="../assets/css/styles.css?v=20260910l" />
 </head>
 <body>
   <a href="#main-content" class="skip-link">Skip to main content</a>
@@ -93,9 +93,17 @@
           <ul id="whyAttendList" class="why-attend-list"></ul>
         </section>
 
-        <!-- Primary next action — add the event to the visitor's calendar (.ics). Upcoming events only. -->
+        <!-- Primary next action — add the event to the visitor's calendar. Upcoming events only. -->
         <div id="eventPrepareCta" class="event-summary-cta" style="display:none;">
-          <button id="eventPrepareBtn" class="btn primary" type="button">Add to Calendar</button>
+          <button id="eventPrepareBtn" class="btn primary" type="button" aria-expanded="false" aria-controls="eventCalendarOptions">Add to Calendar</button>
+          <div id="eventCalendarOptions" class="event-calendar-options" hidden>
+            <p class="event-calendar-hint">Choose your calendar:</p>
+            <div class="event-calendar-actions">
+              <a id="eventCalendarGoogle" class="btn secondary" href="#" target="_blank" rel="noopener noreferrer">Google Calendar</a>
+              <button id="eventCalendarIcs" class="btn secondary" type="button">Apple / Outlook (.ics)</button>
+            </div>
+            <p class="event-calendar-note">Google opens in a new tab. Apple / Outlook downloads a calendar file you open to add the event.</p>
+          </div>
         </div>
 
         <div id="eventAttendeeAuthPrompt" class="intent-signin-gate" style="display:none;">
@@ -322,7 +330,7 @@
   </footer>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" integrity="sha384-3zSEDfvllQohrq0PHL1fOXJuC/jSOO34H46t6UQfobFOmxE5BpjjaIJY5F2/bMnU" crossorigin="anonymous"></script>
-  <script type="module" src="../assets/js/eventDetail.js?v=20260910e"></script>
+  <script type="module" src="../assets/js/eventDetail.js?v=20260910f"></script>
   <script type="module" src="../assets/js/navAuth.js?v=20260910"></script>
 </body>
 </html>

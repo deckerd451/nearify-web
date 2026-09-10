@@ -411,6 +411,30 @@ function downloadEventIcs(event) {
   setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
 }
 
+// Build a Google Calendar "add event" URL from existing event fields. Uses the
+// same 2-hour default end as the .ics when no end time is present.
+function buildGoogleCalendarUrl(event) {
+  if (!event?.starts_at) return null;
+  const start = new Date(event.starts_at);
+  if (isNaN(start)) return null;
+  const end = event.ends_at && !isNaN(new Date(event.ends_at))
+    ? new Date(event.ends_at)
+    : new Date(start.getTime() + 2 * 60 * 60 * 1000);
+
+  const url = (typeof buildEventShareUrl === "function" && buildEventShareUrl(event)) || window.location.href;
+  const details = [event.description, url ? `Details: ${url}` : ""]
+    .filter(Boolean).join("\n\n");
+
+  const params = new URLSearchParams({
+    action: "TEMPLATE",
+    text: event.name || "Nearify Event",
+    dates: `${toIcsUtc(start)}/${toIcsUtc(end)}`,
+  });
+  if (details) params.set("details", details);
+  if (event.location) params.set("location", event.location);
+  return `https://calendar.google.com/calendar/render?${params.toString()}`;
+}
+
 // Presentation wiring for the simplified flow: the "Add to Calendar" summary
 // button (downloads an .ics), the goal "Change" control (reveals the existing
 // picker), and the compact "Show my QR" disclosure. None of these change
@@ -418,12 +442,32 @@ function downloadEventIcs(event) {
 function wirePlanControls() {
   const prepareCta = document.getElementById("eventPrepareCta");
   const prepareBtn = document.getElementById("eventPrepareBtn");
-  // "Add to Calendar" — only meaningful when the event has a start time.
+  // "Add to Calendar" — reveal calendar options; only when the event has a
+  // start time. Options: Google Calendar (opens a tab) and Apple/Outlook (.ics).
   if (prepareCta && prepareBtn && currentEvent?.starts_at) {
     prepareCta.style.display = "";
+
+    const options = document.getElementById("eventCalendarOptions");
+    const googleLink = document.getElementById("eventCalendarGoogle");
+    const icsBtn = document.getElementById("eventCalendarIcs");
+
+    const googleUrl = buildGoogleCalendarUrl(currentEvent);
+    if (googleLink) {
+      if (googleUrl) googleLink.href = googleUrl;
+      else googleLink.hidden = true;
+    }
+
     prepareBtn.addEventListener("click", () => {
-      downloadEventIcs(currentEvent);
+      const expanded = prepareBtn.getAttribute("aria-expanded") === "true";
+      if (options) options.hidden = expanded;
+      prepareBtn.setAttribute("aria-expanded", String(!expanded));
     });
+
+    if (icsBtn) {
+      icsBtn.addEventListener("click", () => {
+        downloadEventIcs(currentEvent);
+      });
+    }
   } else if (prepareCta) {
     prepareCta.style.display = "none";
   }

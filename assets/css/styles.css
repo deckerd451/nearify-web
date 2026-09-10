@@ -2128,6 +2128,35 @@ code {
   margin-top: 20px;
 }
 
+/* Add to Calendar options disclosure. */
+.event-calendar-options {
+  margin-top: 14px;
+  max-width: 420px;
+}
+.event-calendar-hint {
+  margin: 0 0 10px;
+  color: var(--color-text-secondary);
+  font-size: 14px;
+  font-weight: 600;
+}
+.event-calendar-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.event-calendar-note {
+  margin: 10px 0 0;
+  color: var(--color-text-muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+@media (max-width: 480px) {
+  .event-calendar-actions .btn {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
 /* Your plan for this event — one cohesive panel with stacked items. */
 .event-plan .section-heading {
   text-align: center;
