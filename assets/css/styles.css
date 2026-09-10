@@ -489,6 +489,16 @@ html {
   align-items: start;
 }
 
+/* Event-detail page: the hero has a single copy column (the old right-hand
+   panel was removed), so render it as one centered, readable column instead of
+   a 2-col grid that leaves a large empty area on the right. */
+.event-page .event-hero {
+  grid-template-columns: minmax(0, 1fr);
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 72px 40px 48px;
+}
+
 .event-kicker {
   color: var(--color-accent);
   font-size: 13px;
@@ -587,6 +597,9 @@ html {
 @media (max-width: 600px) {
   .event-section {
     padding: 40px 24px;
+  }
+  .event-page .event-hero {
+    padding: 56px 24px 36px;
   }
   .section-heading h2 {
     font-size: 26px;
@@ -2106,12 +2119,13 @@ code {
 
 /* Your plan for this event — one cohesive panel with stacked items. */
 .event-plan .section-heading {
-  text-align: left;
+  text-align: center;
 }
 .event-plan-panel {
   display: grid;
   gap: 22px;
-  max-width: 720px;
+  max-width: 960px;
+  margin: 0 auto;
   background: var(--color-surface);
   border: 1px solid var(--color-border-subtle);
   border-radius: var(--radius-lg);
@@ -2158,7 +2172,13 @@ code {
 
 /* About this event */
 .event-about-body {
-  max-width: 720px;
+  max-width: 860px;
+  margin: 0 auto;
+}
+.event-about .event-inline-link {
+  display: flex;
+  margin: 12px auto 0;
+  max-width: 860px;
 }
 .event-about-description {
   margin: 0;
@@ -2199,6 +2219,43 @@ code {
 }
 .event-organizer-disclosure .event-poster-panel {
   max-width: 480px;
+}
+
+/* ── Centered, rebalanced event-detail layout ─────────────────────────────
+   Center each section's content column while keeping paragraphs, metrics,
+   controls, and card contents left-aligned for readability. Section headings
+   stay centered on the same page axis. */
+.event-page .event-section {
+  padding-top: 44px;
+  padding-bottom: 44px;
+}
+
+/* Share your Nearify profile — centered compact control + disclosure. */
+.event-share-profile {
+  text-align: center;
+}
+.event-share-profile .event-organizer-hint,
+.event-share-profile #personalConnectToggle {
+  margin-left: auto;
+  margin-right: auto;
+}
+.event-share-profile #personalConnectDisclosure {
+  max-width: 460px;
+  margin: 18px auto 0;
+  text-align: left;
+}
+
+/* Organizer tools poster: center within the admin section. */
+.event-organizer-tools .event-organizer-disclosure {
+  max-width: 520px;
+  margin: 0 auto;
+}
+
+/* Admin-only Organizer Insights: center the container and balance the metric
+   cards into a two-column grid on desktop (no large empty right area). */
+#organizerSection {
+  max-width: 960px;
+  margin: 0 auto;
 }
 
 @media (min-width: 560px) {
@@ -5524,9 +5581,15 @@ body.cc-page .cc-event-actions .btn.secondary:hover {
 /* ── Card grid ── */
 .organizer-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 14px;
   margin-bottom: 14px;
+}
+
+@media (max-width: 600px) {
+  .organizer-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 /* ── Individual card ── */
