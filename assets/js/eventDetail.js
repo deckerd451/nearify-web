@@ -1035,9 +1035,11 @@ function renderAttendeeDiscovery(attendees, myProfileId, isFullAccess, stateMap 
   const others  = attendees.filter((a) => a.profileId !== myProfileId);
   if (!others.length) return;
 
-  const GATE_LIMIT = 6;
-  const visible   = isFullAccess ? others : others.slice(0, GATE_LIMIT);
-  const gated     = !isFullAccess && others.length > 0;
+  // Option B — co-attendee gating: only attendees of THIS event may see the
+  // roster of other attendees (names/photos/intent). Non-attendees (whether
+  // signed in or anonymous) see no stranger cards — just the gate message.
+  const visible = isFullAccess ? others : [];
+  const gated   = !isFullAccess && others.length > 0;
 
   grid.innerHTML = "";
   visible.forEach((a) => {
@@ -1049,10 +1051,12 @@ function renderAttendeeDiscovery(attendees, myProfileId, isFullAccess, stateMap 
     const msg = gate.querySelector(".attendee-gate-message");
     if (msg) {
       msg.textContent = currentUser
-        ? "On event day, open the Nearify iPhone app to see the live room and connect."
-        : "Sign in to see everyone attending and what they're here for.";
+        ? "Attend this event to see who else is going and what they're here for."
+        : "Sign in and attend to see who else is going and what they're here for.";
     }
     gate.style.display = "";
+  } else if (gate) {
+    gate.style.display = "none";
   }
 
   section.style.display = "";
