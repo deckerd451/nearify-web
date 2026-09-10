@@ -330,6 +330,19 @@ async function beginAttendeeSignIn() {
   });
 }
 
+// Records the current user's attendance for the event via the join_event RPC.
+// Requires an authenticated session with a profile. Returns true on success.
+async function recordAttendance(eventId) {
+  if (!eventId) return false;
+  const { data, error } = await supabase.rpc("join_event", { p_event_id: eventId });
+  if (error) {
+    logger.error("[EventDetail] recordAttendance failed:", error);
+    return false;
+  }
+  logger.log("[EventDetail] attendance recorded:", eventId, data);
+  return true;
+}
+
 function wireIntentCapture() {
   const section = document.getElementById("eventIntentSection");
   if (!section) return;
@@ -442,12 +455,12 @@ function buildGoogleCalendarUrl(event) {
 function wirePlanControls() {
   const prepareCta = document.getElementById("eventPrepareCta");
   const prepareBtn = document.getElementById("eventPrepareBtn");
-  // "Add to Calendar" — reveal calendar options; only when the event has a
-  // start time. Options: Google Calendar (opens a tab) and Apple/Outlook (.ics).
+  // "Attend" — record attendance, then reveal calendar options. Only when the
+  // event has a start time. Calendar options: Google Calendar (opens a tab)
+  // and Apple/Outlook (.ics).
   if (prepareCta && prepareBtn && currentEvent?.starts_at) {
     prepareCta.style.display = "";
 
-    const options = document.getElementById("eventCalendarOptions");
     const googleLink = document.getElementById("eventCalendarGoogle");
     const icsBtn = document.getElementById("eventCalendarIcs");
 
@@ -457,10 +470,40 @@ function wirePlanControls() {
       else googleLink.hidden = true;
     }
 
-    prepareBtn.addEventListener("click", () => {
-      const expanded = prepareBtn.getAttribute("aria-expanded") === "true";
-      if (options) options.hidden = expanded;
-      prepareBtn.setAttribute("aria-expanded", String(!expanded));
+    prepareBtn.addEventListener("click", async () => {
+      const options = document.getElementById("eventCalendarOptions");
+
+      // If already expanded, treat the click as a collapse toggle.
+      if (prepareBtn.getAttribute("aria-expanded") === "true") {
+        if (options) options.hidden = true;
+        prepareBtn.setAttribute("aria-expanded", "false");
+        return;
+      }
+
+      // Not signed in — attendance requires a profile. Route through the
+      // existing attendee sign-in flow, which returns to this page.
+      if (!currentUser) {
+        await beginAttendeeSignIn();
+        return;
+      }
+
+      // Signed in — record attendance, then reveal calendar options.
+      const orig = prepareBtn.textContent;
+      prepareBtn.disabled = true;
+      prepareBtn.textContent = "Saving…";
+
+      const ok = await recordAttendance(currentEvent.id);
+
+      prepareBtn.disabled = false;
+      if (!ok) {
+        prepareBtn.textContent = orig;
+        alert("Could not record your attendance. Please try again.");
+        return;
+      }
+
+      prepareBtn.textContent = "Attending ✓";
+      if (options) options.hidden = false;
+      prepareBtn.setAttribute("aria-expanded", "true");
     });
 
     if (icsBtn) {
