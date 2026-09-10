@@ -20,7 +20,7 @@
   <meta name="twitter:description" content="Know who to meet at this Nearify event, save who you met, and remember why they matter." />
   <meta name="twitter:image"      content="https://nearify.org/assets/images/og-default.png" />
 
-  <link rel="stylesheet" href="../assets/css/styles.css?v=20260910e" />
+  <link rel="stylesheet" href="../assets/css/styles.css?v=20260910f" />
 </head>
 <body>
   <a href="#main-content" class="skip-link">Skip to main content</a>
@@ -158,7 +158,7 @@
     <section class="section event-section event-everything-else" id="eventEverythingElseSection">
       <div class="section-heading">
         <h2>Everything Else</h2>
-        <p>Set your goal, get the app, download the poster, or create your personal connect QR.</p>
+        <p id="eventEverythingElseCopy">Set your goal, get the app<span id="eventPosterCopyClause" hidden>, download the poster</span>, or create your personal connect QR.</p>
       </div>
       <div class="event-everything-else-grid">
         <section id="eventIntentSection" class="section event-section intent-section" style="display:none;">
@@ -208,7 +208,10 @@
 
         <!-- Side panel — Event poster (upcoming events only) -->
         <aside id="eventSidePanel" class="event-side-panel">
-          <div class="event-panel event-poster-panel">
+          <!-- Event poster — admin-only. Hidden by default; eventDetail.js reveals
+               it only after the server-backed admin check resolves GRANTED. Fails
+               closed for signed-out users, non-admins, and admin-check errors. -->
+          <div class="event-panel event-poster-panel" id="eventPosterPanel" hidden>
             <div class="event-kicker" style="margin-bottom:14px;">Event poster</div>
             <article id="eventPosterCard" class="event-poster-card" aria-label="Event poster">
               <div class="event-poster-media" id="eventPosterMedia" style="display:none;">
@@ -224,17 +227,20 @@
             </article>
             <div class="event-poster-actions" id="eventPosterActions">
               <button id="eventDownloadPosterBtn" class="btn secondary" type="button">Download Poster</button>
-              <a
-                id="eventTestflightBtn"
-                href="https://testflight.apple.com/join/ZayvEbAy"
-                class="btn primary"
-                target="_blank"
-                rel="noopener noreferrer"
-                data-track-cta="event_detail_get_app"
-              >
-                Get Nearify on TestFlight
-              </a>
             </div>
+          </div>
+          <!-- Get-the-app CTA — always available (not gated by the poster panel). -->
+          <div class="event-side-actions" id="eventSideActions">
+            <a
+              id="eventTestflightBtn"
+              href="https://testflight.apple.com/join/ZayvEbAy"
+              class="btn primary"
+              target="_blank"
+              rel="noopener noreferrer"
+              data-track-cta="event_detail_get_app"
+            >
+              Get Nearify on TestFlight
+            </a>
           </div>
         </aside>
         <section class="section event-section" id="personalConnectSection" style="display:none;">
@@ -278,7 +284,7 @@
   </footer>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" integrity="sha384-3zSEDfvllQohrq0PHL1fOXJuC/jSOO34H46t6UQfobFOmxE5BpjjaIJY5F2/bMnU" crossorigin="anonymous"></script>
-  <script type="module" src="../assets/js/eventDetail.js?v=20260909"></script>
+  <script type="module" src="../assets/js/eventDetail.js?v=20260910"></script>
   <script type="module" src="../assets/js/navAuth.js?v=20260910"></script>
 </body>
 </html>

@@ -11,6 +11,7 @@ import { patchAppStoreLinks } from "./config.js";
 import { escapeHtml } from "./utils.js";
 import { logger } from "./logger.js";
 import { canManageEvent } from "./events.js";
+import { fetchIsAdmin } from "./adminAccess.js";
 import { loadOrganizerInsights } from "./organizerInsights.js";
 import { renderShareButton, buildEventShareUrl, buildEventShareText } from "./share.js";
 import { VALID_INTENTS, INTENT_LABELS } from "./constants/intents.js";
@@ -955,7 +956,6 @@ function renderPosterCard(event) {
   const location = document.getElementById("eventPosterLocation");
   const description = document.getElementById("eventPosterDescription");
   const actions = document.getElementById("eventPosterActions");
-  const tfBtn = document.getElementById("eventTestflightBtn");
   const downloadBtn = document.getElementById("eventDownloadPosterBtn");
 
   if (title) title.textContent = event.name || "Nearify Event";
@@ -976,8 +976,68 @@ function renderPosterCard(event) {
       actions.appendChild(downloadBtn);
       downloadBtn.onclick = () => downloadPosterCard(event);
     }
-    if (tfBtn) actions.appendChild(tfBtn);
   }
+}
+
+// ---------------------------------------------------------------------------
+// Event poster is ADMIN-ONLY. The panel/Download button are hidden by default
+// in the HTML; we render + reveal them only after the server-backed admin check
+// (is_admin() via fetchIsAdmin) resolves GRANTED for the CURRENT user. Fails
+// closed: signed-out users, non-admins, and any error keep the non-admin view
+// (no poster generated, no poster wording). Idempotent + guarded against stale
+// auth events so repeated auth changes can't duplicate or wrongly reveal it.
+let _posterRevealToken = 0;
+
+async function applyPosterAdminGate(event) {
+  const panel = document.getElementById("eventPosterPanel");
+  const posterClause = document.getElementById("eventPosterCopyClause");
+
+  // Resolve who we're gating for right now; a later auth event bumps the token
+  // so an in-flight check for a previous user can never reveal for a new one.
+  const token = ++_posterRevealToken;
+  let userId = null;
+  try {
+    userId = currentUser?.id ?? null;
+    if (userId === null) {
+      const { data } = await supabase.auth.getUser();
+      userId = data?.user?.id ?? null;
+    }
+  } catch {
+    userId = null;
+  }
+
+  // Fail closed by default: keep the poster panel + poster wording hidden and
+  // do not generate poster content.
+  const denyView = () => {
+    if (token !== _posterRevealToken) return;
+    if (panel) panel.hidden = true;
+    if (posterClause) posterClause.hidden = true;
+  };
+
+  if (!userId) {
+    denyView();
+    return;
+  }
+
+  let isAdmin = false;
+  try {
+    isAdmin = await fetchIsAdmin(supabase, userId);
+  } catch {
+    isAdmin = false; // fail closed on error
+  }
+
+  // A newer gate run (e.g. account switch / repeated auth event) supersedes us.
+  if (token !== _posterRevealToken) return;
+
+  if (!isAdmin) {
+    denyView();
+    return;
+  }
+
+  // Admin: render the poster and reveal the panel + poster wording.
+  renderPosterCard(event);
+  if (panel) panel.hidden = false;
+  if (posterClause) posterClause.hidden = false;
 }
 
 // ---------------------------------------------------------------------------
@@ -1169,7 +1229,9 @@ async function populatePage(event) {
     await loadAttendeeDiscovery(event.id, true);
     await loadIntelligence(event);
   } else {
-    renderPosterCard(event);
+    // Event poster tools are admin-only; render/reveal only after the
+    // server-backed admin check resolves GRANTED (fails closed otherwise).
+    await applyPosterAdminGate(event);
 
     const sections = document.getElementById("eventSections");
     if (sections) sections.style.display = "";

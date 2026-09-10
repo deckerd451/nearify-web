@@ -2049,6 +2049,24 @@ code {
   justify-content: center;
 }
 
+/* Side panel stacks the (admin-only) poster panel above the always-visible
+   get-the-app CTA, with a consistent gap. When the poster panel is hidden for
+   non-admins, the CTA simply moves up — no empty column or gap. */
+.event-side-panel {
+  display: grid;
+  gap: 14px;
+}
+
+.event-side-actions {
+  display: grid;
+  gap: 10px;
+}
+
+.event-side-actions .btn {
+  width: 100%;
+  justify-content: center;
+}
+
 /* In-app event QR on join page */
 .join-qr-box {
   margin-top: 20px;
