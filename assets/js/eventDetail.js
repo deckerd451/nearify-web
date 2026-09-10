@@ -345,19 +345,87 @@ function wireIntentCapture() {
   });
 }
 
-// Presentation wiring for the simplified flow: the "Prepare for this event"
-// summary button (scrolls to the plan), the goal "Change" control (reveals the
-// existing picker), and the compact "Show my QR" disclosure. None of these
-// change persistence, queries, QR values, or the TestFlight destination.
+// Format a Date as a UTC iCalendar timestamp (YYYYMMDDTHHMMSSZ).
+function toIcsUtc(date) {
+  return date.toISOString().replace(/[-:]/g, "").replace(/\.\d{3}Z$/, "Z");
+}
+
+// Escape text per RFC 5545 (commas, semicolons, backslashes, newlines).
+function escapeIcsText(value) {
+  return String(value || "")
+    .replace(/\\/g, "\\\\")
+    .replace(/;/g, "\\;")
+    .replace(/,/g, "\\,")
+    .replace(/\r?\n/g, "\\n");
+}
+
+// Build an .ics (iCalendar) document for the event. Reuses existing event
+// fields only — no new data or queries. Works with Apple/Google/Outlook.
+function buildEventIcs(event) {
+  if (!event?.starts_at) return null;
+  const start = new Date(event.starts_at);
+  if (isNaN(start)) return null;
+
+  // Default to a 2-hour block when no end time is present.
+  const end = event.ends_at && !isNaN(new Date(event.ends_at))
+    ? new Date(event.ends_at)
+    : new Date(start.getTime() + 2 * 60 * 60 * 1000);
+
+  const uid = `${event.slug || event.id || Date.now()}@nearify.org`;
+  const url = (typeof buildEventShareUrl === "function" && buildEventShareUrl(event)) || window.location.href;
+
+  const lines = [
+    "BEGIN:VCALENDAR",
+    "VERSION:2.0",
+    "PRODID:-//Nearify//Event//EN",
+    "CALSCALE:GREGORIAN",
+    "METHOD:PUBLISH",
+    "BEGIN:VEVENT",
+    `UID:${uid}`,
+    `DTSTAMP:${toIcsUtc(new Date())}`,
+    `DTSTART:${toIcsUtc(start)}`,
+    `DTEND:${toIcsUtc(end)}`,
+    `SUMMARY:${escapeIcsText(event.name || "Nearify Event")}`,
+  ];
+  if (event.description) lines.push(`DESCRIPTION:${escapeIcsText(event.description)}`);
+  if (event.location) lines.push(`LOCATION:${escapeIcsText(event.location)}`);
+  if (url) lines.push(`URL:${escapeIcsText(url)}`);
+  lines.push("END:VEVENT", "END:VCALENDAR");
+
+  return lines.join("\r\n");
+}
+
+function downloadEventIcs(event) {
+  const ics = buildEventIcs(event);
+  if (!ics) return;
+  const base = String(event.name || "nearify-event")
+    .toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") || "nearify-event";
+  const blob = new Blob([ics], { type: "text/calendar;charset=utf-8" });
+  const objectUrl = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = objectUrl;
+  link.download = `${base}.ics`;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
+}
+
+// Presentation wiring for the simplified flow: the "Add to Calendar" summary
+// button (downloads an .ics), the goal "Change" control (reveals the existing
+// picker), and the compact "Show my QR" disclosure. None of these change
+// persistence, queries, QR values, or the TestFlight destination.
 function wirePlanControls() {
   const prepareCta = document.getElementById("eventPrepareCta");
   const prepareBtn = document.getElementById("eventPrepareBtn");
-  const plan = document.getElementById("eventPlanSection");
-  if (prepareCta) prepareCta.style.display = "";
-  if (prepareBtn && plan) {
+  // "Add to Calendar" — only meaningful when the event has a start time.
+  if (prepareCta && prepareBtn && currentEvent?.starts_at) {
+    prepareCta.style.display = "";
     prepareBtn.addEventListener("click", () => {
-      plan.scrollIntoView({ behavior: "smooth", block: "start" });
+      downloadEventIcs(currentEvent);
     });
+  } else if (prepareCta) {
+    prepareCta.style.display = "none";
   }
 
   // Goal "Change" — reveal the existing picker; behavior of the picker itself
