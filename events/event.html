@@ -20,7 +20,7 @@
   <meta name="twitter:description" content="Know who to meet at this Nearify event, save who you met, and remember why they matter." />
   <meta name="twitter:image"      content="https://nearify.org/assets/images/og-default.png" />
 
-  <link rel="stylesheet" href="../assets/css/styles.css?v=20260910f" />
+  <link rel="stylesheet" href="../assets/css/styles.css?v=20260910g" />
 </head>
 <body>
   <a href="#main-content" class="skip-link">Skip to main content</a>
@@ -132,6 +132,97 @@
     <!-- Pre-event sections — upcoming events only, shown by JS -->
     <div id="eventSections" style="display:none;">
 
+    <!-- Get ready for this event — cohesive preparation flow (web + iPhone app) -->
+    <section class="section event-section event-prepare" id="eventPrepareSection" aria-labelledby="eventPrepareHeading">
+      <div class="section-heading">
+        <h2 id="eventPrepareHeading">Get ready for this event</h2>
+        <p>Use the website to prepare. Your account and event goal sync automatically with the Nearify iPhone app for the event.</p>
+      </div>
+      <ol class="event-prepare-steps">
+        <li class="event-prepare-step">
+          <div class="event-prepare-step-num" aria-hidden="true">1</div>
+          <div class="event-prepare-step-body">
+            <h3 class="event-prepare-step-title">Choose your goal</h3>
+            <p class="event-prepare-step-copy">Tell Nearify who you want to meet.</p>
+
+            <section id="eventIntentSection" class="section event-section intent-section" style="display:none;">
+              <div class="section-heading">
+                <h4 id="eventIntentHeading">What do you want from this event?</h4>
+                <p id="eventSignedInNote" class="intent-helper-note" style="display:none;">You’re signed in. Your goal syncs with the Nearify app — you can also change it there anytime.</p>
+              </div>
+
+              <!-- Read-only display: shown when intent already set (e.g. via iOS app) -->
+              <div id="eventIntentDisplay" style="display:none;" aria-live="polite">
+                <div class="intent-display-row">
+                  <span class="intent-display-label">Your goal:</span>
+                  <span id="eventIntentDisplayValue" class="intent-display-value"></span>
+                  <span class="intent-display-badge">Set in Nearify</span>
+                </div>
+                <p class="intent-display-hint">Change your goal anytime in the Nearify app.</p>
+              </div>
+
+              <!-- Editable picker: shown when no intent set yet -->
+              <div id="eventIntentPicker">
+                <div class="intent-grid">
+                  <button class="intent-chip" data-intent="meet_people" type="button">
+                    <span class="intent-chip-label">Meet people</span>
+                    <span class="intent-chip-sub">Open to all conversations</span>
+                  </button>
+                  <button class="intent-chip" data-intent="find_cofounder" type="button">
+                    <span class="intent-chip-label">Find a cofounder</span>
+                    <span class="intent-chip-sub">Looking for a partner to build with</span>
+                  </button>
+                  <button class="intent-chip" data-intent="hire" type="button">
+                    <span class="intent-chip-label">Hire</span>
+                    <span class="intent-chip-sub">Recruiting for a role or project</span>
+                  </button>
+                  <button class="intent-chip" data-intent="explore_ideas" type="button">
+                    <span class="intent-chip-label">Explore ideas</span>
+                    <span class="intent-chip-sub">Thinking out loud, seeking feedback</span>
+                  </button>
+                  <button class="intent-chip" data-intent="demo_something" type="button">
+                    <span class="intent-chip-label">Demo something</span>
+                    <span class="intent-chip-sub">Here to show what I’ve built</span>
+                  </button>
+                </div>
+              </div>
+
+              <p id="eventIntentStatus" class="intent-status" aria-live="polite"></p>
+            </section>
+          </div>
+        </li>
+
+        <li class="event-prepare-step">
+          <div class="event-prepare-step-num" aria-hidden="true">2</div>
+          <div class="event-prepare-step-body">
+            <h3 class="event-prepare-step-title">Get Nearify for iPhone</h3>
+            <p class="event-prepare-step-copy">Use the app at the event to see the live room and connect with attendees.</p>
+            <div class="event-prepare-action">
+              <a
+                id="eventTestflightBtn"
+                href="https://testflight.apple.com/join/ZayvEbAy"
+                class="btn primary"
+                target="_blank"
+                rel="noopener noreferrer"
+                data-track-cta="event_detail_get_app"
+              >
+                Get the iPhone app
+              </a>
+              <p class="event-prepare-step-note">Currently available through TestFlight.</p>
+            </div>
+          </div>
+        </li>
+
+        <li class="event-prepare-step">
+          <div class="event-prepare-step-num" aria-hidden="true">3</div>
+          <div class="event-prepare-step-body">
+            <h3 class="event-prepare-step-title">Check in at the event</h3>
+            <p class="event-prepare-step-copy">Open the app when you arrive to enter the live room, discover attendees, and save the people you meet.</p>
+          </div>
+        </li>
+      </ol>
+    </section>
+
     <!-- People you know here — populated by JS for authenticated visitors -->
     <section class="section event-section people-you-know-section" id="peopleYouKnowSection" style="display:none;">
       <div class="section-heading">
@@ -155,115 +246,53 @@
       </div>
     </section>
 
-    <section class="section event-section event-everything-else" id="eventEverythingElseSection">
+    <!-- Share your Nearify profile (formerly "Your personal connect QR") -->
+    <section class="section event-section" id="personalConnectSection" style="display:none;">
       <div class="section-heading">
-        <h2>Everything Else</h2>
-        <p id="eventEverythingElseCopy">Set your goal, get the app<span id="eventPosterCopyClause" hidden>, download the poster</span>, or create your personal connect QR.</p>
+        <h2>Share your Nearify profile</h2>
+        <p>Let someone without the app scan this to connect with you instantly.</p>
       </div>
-      <div class="event-everything-else-grid">
-        <section id="eventIntentSection" class="section event-section intent-section" style="display:none;">
-          <div class="section-heading">
-            <h2 id="eventIntentHeading">What do you want from this event?</h2>
-            <p id="eventSignedInNote" class="intent-helper-note" style="display:none;">You’re signed in. Your goal syncs with the Nearify app — you can also change it there anytime.</p>
-          </div>
 
-          <!-- Read-only display: shown when intent already set (e.g. via iOS app) -->
-          <div id="eventIntentDisplay" style="display:none;" aria-live="polite">
-            <div class="intent-display-row">
-              <span class="intent-display-label">Your goal:</span>
-              <span id="eventIntentDisplayValue" class="intent-display-value"></span>
-              <span class="intent-display-badge">Set in Nearify</span>
-            </div>
-            <p class="intent-display-hint">Change your goal anytime in the Nearify app.</p>
-          </div>
+      <div class="join-payload-card">
+        <div class="meta-label">Personal connect link</div>
+        <div class="join-payload" id="personalConnectUrl">Loading...</div>
 
-          <!-- Editable picker: shown when no intent set yet -->
-          <div id="eventIntentPicker">
-            <div class="intent-grid">
-              <button class="intent-chip" data-intent="meet_people" type="button">
-                <span class="intent-chip-label">Meet people</span>
-                <span class="intent-chip-sub">Open to all conversations</span>
-              </button>
-              <button class="intent-chip" data-intent="find_cofounder" type="button">
-                <span class="intent-chip-label">Find a cofounder</span>
-                <span class="intent-chip-sub">Looking for a partner to build with</span>
-              </button>
-              <button class="intent-chip" data-intent="hire" type="button">
-                <span class="intent-chip-label">Hire</span>
-                <span class="intent-chip-sub">Recruiting for a role or project</span>
-              </button>
-              <button class="intent-chip" data-intent="explore_ideas" type="button">
-                <span class="intent-chip-label">Explore ideas</span>
-                <span class="intent-chip-sub">Thinking out loud, seeking feedback</span>
-              </button>
-              <button class="intent-chip" data-intent="demo_something" type="button">
-                <span class="intent-chip-label">Demo something</span>
-                <span class="intent-chip-sub">Here to show what I’ve built</span>
-              </button>
-            </div>
+        <div class="join-qr-box" id="personalConnectQrBox" style="display:none;">
+          <div class="join-qr-label">Scan to connect with me</div>
+          <div class="join-qr-shell">
+            <div id="personalConnectQr"></div>
           </div>
-
-          <p id="eventIntentStatus" class="intent-status" aria-live="polite"></p>
-        </section>
-
-        <!-- Side panel — Event poster (upcoming events only) -->
-        <aside id="eventSidePanel" class="event-side-panel">
-          <!-- Event poster — admin-only. Hidden by default; eventDetail.js reveals
-               it only after the server-backed admin check resolves GRANTED. Fails
-               closed for signed-out users, non-admins, and admin-check errors. -->
-          <div class="event-panel event-poster-panel" id="eventPosterPanel" hidden>
-            <div class="event-kicker" style="margin-bottom:14px;">Event poster</div>
-            <article id="eventPosterCard" class="event-poster-card" aria-label="Event poster">
-              <div class="event-poster-media" id="eventPosterMedia" style="display:none;">
-                <img id="eventPosterImage" alt="Event poster image" loading="lazy" />
-              </div>
-              <div class="event-poster-fallback" id="eventPosterFallback">
-                <div class="event-poster-brand">Nearify</div>
-                <h2 id="eventPosterTitle">Loading event…</h2>
-                <p id="eventPosterDate">Date to be announced</p>
-                <p id="eventPosterLocation">Location to be announced</p>
-                <p id="eventPosterDescription">Join this event in Nearify for live attendee recommendations.</p>
-              </div>
-            </article>
-            <div class="event-poster-actions" id="eventPosterActions">
-              <button id="eventDownloadPosterBtn" class="btn secondary" type="button">Download Poster</button>
-            </div>
-          </div>
-          <!-- Get-the-app CTA — always available (not gated by the poster panel). -->
-          <div class="event-side-actions" id="eventSideActions">
-            <a
-              id="eventTestflightBtn"
-              href="https://testflight.apple.com/join/ZayvEbAy"
-              class="btn primary"
-              target="_blank"
-              rel="noopener noreferrer"
-              data-track-cta="event_detail_get_app"
-            >
-              Get Nearify on TestFlight
-            </a>
-          </div>
-        </aside>
-        <section class="section event-section" id="personalConnectSection" style="display:none;">
-          <div class="section-heading">
-            <h2>Your personal connect QR</h2>
-            <p>Let someone without the app scan this to connect with you instantly.</p>
-          </div>
-
-          <div class="join-payload-card">
-            <div class="meta-label">Personal connect link</div>
-            <div class="join-payload" id="personalConnectUrl">Loading...</div>
-
-            <div class="join-qr-box" id="personalConnectQrBox" style="display:none;">
-      <div class="join-qr-label">Scan to connect with me</div>
-      <div class="join-qr-shell">
-        <div id="personalConnectQr"></div>
-      </div>
-    </div>
-          </div>
-        </section>
+        </div>
       </div>
     </section>
     </div><!-- /eventSections -->
+
+    <!-- Organizer tools — admin-only. Hidden by default; eventDetail.js reveals
+         the poster only after the server-backed admin check resolves GRANTED.
+         Fails closed for signed-out users, non-admins, and admin-check errors. -->
+    <section class="section event-section event-organizer-tools" id="eventPosterPanel" aria-labelledby="eventOrganizerToolsHeading" hidden>
+      <div class="section-heading">
+        <h2 id="eventOrganizerToolsHeading">Organizer tools</h2>
+        <p>Download a shareable poster to promote this event.</p>
+      </div>
+      <div class="event-poster-panel">
+        <article id="eventPosterCard" class="event-poster-card" aria-label="Event poster">
+          <div class="event-poster-media" id="eventPosterMedia" style="display:none;">
+            <img id="eventPosterImage" alt="Event poster image" loading="lazy" />
+          </div>
+          <div class="event-poster-fallback" id="eventPosterFallback">
+            <div class="event-poster-brand">Nearify</div>
+            <h3 id="eventPosterTitle">Loading event…</h3>
+            <p id="eventPosterDate">Date to be announced</p>
+            <p id="eventPosterLocation">Location to be announced</p>
+            <p id="eventPosterDescription">Join this event in Nearify for live attendee recommendations.</p>
+          </div>
+        </article>
+        <div class="event-poster-actions" id="eventPosterActions">
+          <button id="eventDownloadPosterBtn" class="btn secondary" type="button">Download Poster</button>
+        </div>
+      </div>
+    </section>
 
     <!-- Organizer-only section — JS unhides and populates this only when canManageEvent() returns true -->
     <div id="organizerSection" style="display:none;" aria-label="Organizer tools">
@@ -284,7 +313,7 @@
   </footer>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" integrity="sha384-3zSEDfvllQohrq0PHL1fOXJuC/jSOO34H46t6UQfobFOmxE5BpjjaIJY5F2/bMnU" crossorigin="anonymous"></script>
-  <script type="module" src="../assets/js/eventDetail.js?v=20260910"></script>
+  <script type="module" src="../assets/js/eventDetail.js?v=20260910b"></script>
   <script type="module" src="../assets/js/navAuth.js?v=20260910"></script>
 </body>
 </html>

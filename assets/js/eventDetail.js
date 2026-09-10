@@ -788,7 +788,7 @@ function renderAttendeeDiscovery(attendees, myProfileId, isFullAccess, stateMap 
     const msg = gate.querySelector(".attendee-gate-message");
     if (msg) {
       msg.textContent = currentUser
-        ? "Join in the Nearify app to see all attendees and connect."
+        ? "On event day, open the Nearify iPhone app to see the live room and connect."
         : "Sign in to see everyone attending and what they're here for.";
     }
     gate.style.display = "";
@@ -990,7 +990,6 @@ let _posterRevealToken = 0;
 
 async function applyPosterAdminGate(event) {
   const panel = document.getElementById("eventPosterPanel");
-  const posterClause = document.getElementById("eventPosterCopyClause");
 
   // Resolve who we're gating for right now; a later auth event bumps the token
   // so an in-flight check for a previous user can never reveal for a new one.
@@ -1006,12 +1005,11 @@ async function applyPosterAdminGate(event) {
     userId = null;
   }
 
-  // Fail closed by default: keep the poster panel + poster wording hidden and
-  // do not generate poster content.
+  // Fail closed by default: keep the admin-only Organizer tools poster hidden
+  // and do not generate poster content.
   const denyView = () => {
     if (token !== _posterRevealToken) return;
     if (panel) panel.hidden = true;
-    if (posterClause) posterClause.hidden = true;
   };
 
   if (!userId) {
@@ -1034,10 +1032,9 @@ async function applyPosterAdminGate(event) {
     return;
   }
 
-  // Admin: render the poster and reveal the panel + poster wording.
+  // Admin: render the poster and reveal the Organizer tools section.
   renderPosterCard(event);
   if (panel) panel.hidden = false;
-  if (posterClause) posterClause.hidden = false;
 }
 
 // ---------------------------------------------------------------------------
@@ -1208,7 +1205,7 @@ async function populatePage(event) {
 
   if (isPast) {
     const heroActions = document.getElementById("eventHeroActions");
-    const sidePanel = document.getElementById("eventSidePanel");
+    const sidePanel = document.getElementById("eventPrepareSection");
     const sections = document.getElementById("eventSections");
     const intentSection = document.getElementById("eventIntentSection");
     const authPrompt = document.getElementById("eventAttendeeAuthPrompt");
@@ -1297,8 +1294,8 @@ function maybeShowCreatedBanner(event) {
   const qrBtn = document.getElementById("createdShowQr");
   if (qrBtn) {
     qrBtn.addEventListener("click", () => {
-      // Scroll to the poster/QR section
-      const poster = document.getElementById("eventSidePanel");
+      // Scroll to the Share your Nearify profile (QR) section
+      const poster = document.getElementById("personalConnectSection");
       if (poster) poster.scrollIntoView({ behavior: "smooth", block: "start" });
     });
   }

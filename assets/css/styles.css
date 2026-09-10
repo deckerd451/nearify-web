@@ -2052,19 +2052,106 @@ code {
 /* Side panel stacks the (admin-only) poster panel above the always-visible
    get-the-app CTA, with a consistent gap. When the poster panel is hidden for
    non-admins, the CTA simply moves up — no empty column or gap. */
+/* Shared side-panel layout (join + admin event pages). */
 .event-side-panel {
   display: grid;
   gap: 14px;
 }
 
-.event-side-actions {
-  display: grid;
-  gap: 10px;
+/* ── Get ready for this event: cohesive numbered step sequence ─────────── */
+.event-prepare .section-heading {
+  text-align: center;
+  max-width: 640px;
+  margin-left: auto;
+  margin-right: auto;
 }
 
-.event-side-actions .btn {
+.event-prepare-steps {
+  list-style: none;
+  margin: 28px auto 0;
+  padding: 0;
+  max-width: 680px;
+  display: grid;
+  gap: 16px;
+}
+
+.event-prepare-step {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-lg);
+  padding: 22px;
+}
+
+.event-prepare-step-num {
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-full);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 17px;
+  color: var(--color-accent);
+  background: rgba(var(--color-accent-rgb), 0.14);
+  border: 1px solid rgba(var(--color-accent-rgb), 0.30);
+}
+
+.event-prepare-step-body {
+  min-width: 0;
+}
+
+.event-prepare-step-title {
+  margin: 0;
+  font-size: 19px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.event-prepare-step-copy {
+  margin: 6px 0 0;
+  color: var(--color-text-secondary);
+  line-height: 1.55;
+  font-size: 15px;
+}
+
+/* The event-goal selector sits inside step 1; drop its extra top spacing so it
+   reads as part of the step. Behavior/IDs are unchanged. */
+.event-prepare-step .intent-section {
+  margin-top: 16px;
+}
+
+.event-prepare-step .intent-section .section-heading {
+  text-align: left;
+  margin: 0 0 12px;
+}
+
+.event-prepare-step .intent-grid {
+  grid-template-columns: 1fr;
+}
+
+.event-prepare-action {
+  margin-top: 14px;
+}
+
+.event-prepare-action .btn {
   width: 100%;
   justify-content: center;
+}
+
+.event-prepare-step-note {
+  margin: 8px 0 0;
+  color: var(--color-text-muted);
+  font-size: 13px;
+}
+
+@media (min-width: 560px) {
+  .event-prepare-action .btn {
+    width: auto;
+  }
 }
 
 /* In-app event QR on join page */
@@ -5826,51 +5913,14 @@ body.cc-page .cc-event-actions .btn.secondary:hover {
   max-width: 760px;
 }
 
-.event-everything-else {
+/* ── Organizer tools (admin-only): standalone section wrapping the poster ── */
+.event-organizer-tools {
   border-top: 1px solid rgba(160, 150, 255, 0.06);
 }
 
-.event-everything-else-grid {
-  display: grid;
-  grid-template-columns: minmax(0, 1.15fr) minmax(280px, 0.85fr);
-  gap: 24px;
-  max-width: 1100px;
+.event-organizer-tools .event-poster-panel {
+  max-width: 480px;
   margin: 0 auto;
-  align-items: start;
-}
-
-.event-everything-else-grid > .event-section,
-.event-everything-else-grid > .event-side-panel {
-  padding: 0;
-}
-
-.event-everything-else-grid .section-heading {
-  text-align: left;
-  margin: 0 0 20px;
-}
-
-.event-everything-else-grid .section-heading h2 {
-  font-size: 28px;
-}
-
-.event-everything-else-grid .intent-grid {
-  grid-template-columns: 1fr;
-  margin: 20px 0 0;
-}
-
-.event-everything-else-grid .event-panel {
-  position: static;
-}
-
-.event-everything-else-grid #personalConnectSection {
-  grid-column: 1 / -1;
-  max-width: 680px;
-}
-
-@media (max-width: 820px) {
-  .event-everything-else-grid {
-    grid-template-columns: 1fr;
-  }
 }
 
 /* ─── Durable Save control: event attendee cards ─────────────────────────── */
