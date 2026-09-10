@@ -166,6 +166,8 @@ function renderMetaGrid(event, isPast) {
   const cards = [];
   if (event.location) cards.push({ label: "Location", value: event.location });
   if (event.starts_at) cards.push({ label: "Date & time", value: formatDateTime(event.starts_at) });
+  const organizerName = event.organizer_name || event.organizer || event.host || event.host_name;
+  if (organizerName) cards.push({ label: "Organizer", value: organizerName });
   if (!isPast) cards.push({ label: "Experience", value: "Live attendee discovery" });
 
   grid.innerHTML = cards.map((c) =>
@@ -174,6 +176,95 @@ function renderMetaGrid(event, isPast) {
       <div class="meta-value">${escapeHtml(c.value)}</div>
     </div>`
   ).join("");
+}
+
+// Concise 2–3 line description preview for the summary. Full text lives in the
+// "About this event" section; this only truncates for display (content is
+// unchanged there). CSS line-clamps to 3 lines; JS shows a Read more control
+// that jumps to the full About section.
+function renderSummaryPreview(event) {
+  const wrap = document.getElementById("eventSummaryPreview");
+  const text = document.getElementById("eventSummaryPreviewText");
+  const more = document.getElementById("eventSummaryReadMore");
+  if (!wrap || !text) return;
+
+  const desc = String(event.description || "").trim();
+  if (!desc) {
+    wrap.style.display = "none";
+    return;
+  }
+
+  text.textContent = desc; // CSS clamps to ~3 lines
+  wrap.style.display = "";
+
+  if (more) {
+    more.hidden = false;
+    more.addEventListener("click", () => {
+      const about = document.getElementById("eventAboutSection");
+      const body = document.getElementById("eventAboutBody");
+      const aboutToggle = document.getElementById("eventAboutToggle");
+      if (body) body.hidden = false;
+      if (aboutToggle) aboutToggle.setAttribute("aria-expanded", "true");
+      if (about) about.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  }
+}
+
+// "About this event": complete description + available logistics, rendered
+// safely (textContent only). Uses progressive disclosure when the content is
+// long so it doesn't dominate the page.
+function renderAboutSection(event) {
+  const section = document.getElementById("eventAboutSection");
+  const desc = document.getElementById("eventAboutDescription");
+  const details = document.getElementById("eventAboutDetails");
+  const body = document.getElementById("eventAboutBody");
+  const toggle = document.getElementById("eventAboutToggle");
+  if (!section) return;
+
+  const description = String(event.description || "").trim();
+  if (desc) desc.textContent = description;
+
+  // Available logistics — only fields that already exist on the event.
+  const rows = [];
+  if (event.location) rows.push(["Location", event.location]);
+  const organizerName = event.organizer_name || event.organizer || event.host || event.host_name;
+  if (organizerName) rows.push(["Organizer", organizerName]);
+  if (event.parking) rows.push(["Parking", event.parking]);
+  if (event.ends_at) rows.push(["Ends", formatDateTime(event.ends_at)]);
+
+  if (details) {
+    details.innerHTML = "";
+    rows.forEach(([label, value]) => {
+      const dt = document.createElement("dt");
+      dt.textContent = label;
+      const dd = document.createElement("dd");
+      dd.textContent = value;
+      details.appendChild(dt);
+      details.appendChild(dd);
+    });
+  }
+
+  // Nothing to show → keep the section hidden.
+  if (!description && !rows.length) {
+    section.style.display = "none";
+    return;
+  }
+  section.style.display = "";
+
+  // Progressive disclosure only when the description is long.
+  const isLong = description.length > 320;
+  if (body) body.hidden = isLong;
+  if (toggle) {
+    toggle.hidden = !isLong;
+    if (isLong) {
+      toggle.addEventListener("click", () => {
+        const expanded = toggle.getAttribute("aria-expanded") === "true";
+        if (body) body.hidden = expanded;
+        toggle.setAttribute("aria-expanded", String(!expanded));
+        toggle.textContent = expanded ? "Read more" : "Show less";
+      });
+    }
+  }
 }
 
 function showNotFound(message = "") {
@@ -280,6 +371,47 @@ function wireIntentCapture() {
       await persistIntent(intent);
     });
   });
+}
+
+// Presentation wiring for the simplified flow: the "Prepare for this event"
+// summary button (scrolls to the plan), the goal "Change" control (reveals the
+// existing picker), and the compact "Show my QR" disclosure. None of these
+// change persistence, queries, QR values, or the TestFlight destination.
+function wirePlanControls() {
+  const prepareCta = document.getElementById("eventPrepareCta");
+  const prepareBtn = document.getElementById("eventPrepareBtn");
+  const plan = document.getElementById("eventPlanSection");
+  if (prepareCta) prepareCta.style.display = "";
+  if (prepareBtn && plan) {
+    prepareBtn.addEventListener("click", () => {
+      plan.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  }
+
+  // Goal "Change" — reveal the existing picker; behavior of the picker itself
+  // (persistence/selected-state) is unchanged. The picker is hidden by
+  // renderIntentReadOnly when a goal is already set; Change toggles it back on.
+  const changeBtn = document.getElementById("eventIntentChangeBtn");
+  const picker = document.getElementById("eventIntentPicker");
+  if (changeBtn && picker) {
+    changeBtn.addEventListener("click", () => {
+      const showing = picker.style.display !== "none";
+      picker.style.display = showing ? "none" : "";
+      changeBtn.setAttribute("aria-expanded", String(!showing));
+    });
+  }
+
+  // "Show my QR" — reveal the personal-connect disclosure (values unchanged).
+  const qrToggle = document.getElementById("personalConnectToggle");
+  const qrDisclosure = document.getElementById("personalConnectDisclosure");
+  if (qrToggle && qrDisclosure) {
+    qrToggle.addEventListener("click", () => {
+      const expanded = qrToggle.getAttribute("aria-expanded") === "true";
+      qrDisclosure.hidden = expanded;
+      qrToggle.setAttribute("aria-expanded", String(!expanded));
+      qrToggle.textContent = expanded ? "Show my QR" : "Hide my QR";
+    });
+  }
 }
 
 function wireJoinActions() {
@@ -1184,13 +1316,16 @@ async function populatePage(event) {
   if (kickerEl) kickerEl.textContent = isPast ? "Past Event" : "Nearify Event";
   if (titleEl) titleEl.textContent = event.name;
   if (subheadEl) {
-    subheadEl.textContent = event.description ||
-      (isPast
-        ? "This event has ended."
-        : "Set what you want from this event, join, and open Nearify for live recommendations in the room.");
+    // Keep the top summary concise: a short tagline, NOT the full description.
+    // The complete description lives in the "About this event" section.
+    subheadEl.textContent = isPast
+      ? "This event has ended."
+      : "Discover the event and prepare on the web — use the Nearify iPhone app at the event.";
   }
 
   renderMetaGrid(event, isPast);
+  renderSummaryPreview(event);
+  renderAboutSection(event);
   setCurrentEventId(event.id);
 
   // Share button — rendered into the momentum area for both past and upcoming
@@ -1205,20 +1340,33 @@ async function populatePage(event) {
 
   if (isPast) {
     const heroActions = document.getElementById("eventHeroActions");
-    const sidePanel = document.getElementById("eventPrepareSection");
-    const sections = document.getElementById("eventSections");
+    const prepareCta = document.getElementById("eventPrepareCta");
     const intentSection = document.getElementById("eventIntentSection");
     const authPrompt = document.getElementById("eventAttendeeAuthPrompt");
     const signedInNote = document.getElementById("eventSignedInNote");
     const fallback = document.getElementById("eventAppFallback");
 
     if (heroActions) heroActions.style.display = "none";
-    if (sidePanel) sidePanel.style.display = "none";
-    if (sections) sections.style.display = "none";
-    if (intentSection) intentSection.style.display = "none";
+    if (prepareCta) prepareCta.style.display = "none";
     if (authPrompt) authPrompt.style.display = "none";
     if (signedInNote) signedInNote.style.display = "none";
     if (fallback) fallback.style.display = "none";
+
+    // Past events: no prepare/goal/install/check-in prompts. Keep only a compact
+    // attendee recap (reusing the existing discovery data) inside the plan panel.
+    const sections = document.getElementById("eventSections");
+    const goalItem = document.getElementById("eventPlanGoalItem");
+    const atEventItem = document.getElementById("eventPlanAtEventItem");
+    const planHeading = document.getElementById("eventPlanHeading");
+    const peopleTitle = document.getElementById("eventPlanPeopleTitle");
+    const peopleCopy = document.getElementById("eventPlanPeopleCopy");
+    if (sections) sections.style.display = "";
+    if (intentSection) intentSection.style.display = "none";
+    if (goalItem) goalItem.style.display = "none";
+    if (atEventItem) atEventItem.style.display = "none";
+    if (planHeading) planHeading.textContent = "Who attended";
+    if (peopleTitle) peopleTitle.textContent = "Attendees";
+    if (peopleCopy) peopleCopy.textContent = "People who attended this event.";
 
     const heroEl = document.querySelector(".event-hero");
     if (heroEl) heroEl.classList.add("event-hero--past");
@@ -1234,6 +1382,7 @@ async function populatePage(event) {
     if (sections) sections.style.display = "";
 
     wireIntentCapture();
+    wirePlanControls();
     wireJoinActions();
     updateAuthPositioning();
     await hydrateIntent();
