@@ -893,7 +893,9 @@ function buildAttendeeCard(attendee, showDetails, cardState = CONNECTION_STATE.S
 
   const avatarEl = document.createElement("div");
   avatarEl.className = "attendee-avatar";
-  if (attendee.avatarUrl) {
+  // Only show real photos to signed-in users. Anonymous visitors always get
+  // the initials placeholder — user photos are not exposed when logged out.
+  if (attendee.avatarUrl && currentUser) {
     const img = document.createElement("img");
     img.className = "attendee-avatar-img";
     img.src = attendee.avatarUrl;
