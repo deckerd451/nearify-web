@@ -4274,46 +4274,10 @@ code {
   justify-content: center;
 }
 
-.cc-landing-framework {
+.cc-landing-vision-link {
   margin: 28px auto 0;
   max-width: 760px;
   text-align: center;
-}
-
-.cc-landing-section-kicker {
-  color: var(--color-text-muted);
-  font-size: 12px;
-  font-weight: 600;
-  letter-spacing: 0.08em;
-  margin-bottom: 14px;
-  text-transform: uppercase;
-}
-
-.cc-landing-framework-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 12px;
-  margin-bottom: 18px;
-}
-
-.cc-landing-framework-card {
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid var(--color-border-subtle);
-  border-radius: var(--radius-md);
-  padding: 16px 14px;
-}
-
-.cc-landing-framework-title {
-  color: var(--color-text-primary);
-  font-size: 17px;
-  font-weight: 700;
-  margin-bottom: 4px;
-}
-
-.cc-landing-framework-desc {
-  color: var(--color-text-muted);
-  font-size: 13px;
-  line-height: 1.4;
 }
 
 .cc-landing-link {
@@ -4371,10 +4335,6 @@ code {
   .cc-landing-hero-actions #landingSignInBtn {
     justify-content: center;
     width: 100%;
-  }
-
-  .cc-landing-framework-grid {
-    grid-template-columns: 1fr;
   }
 
   .cc-landing-final {
