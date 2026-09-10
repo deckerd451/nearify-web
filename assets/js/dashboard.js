@@ -331,11 +331,12 @@ async function fetchAttendeesForEvents(eventIds) {
   return attendeesByEvent;
 }
 
-async function buildRecommendedEvents(connections, currentProfileId) {
+async function buildRecommendedEvents(connections, currentProfileId, excludeEventIds = new Set()) {
   const publicEvents = await fetchPublicEvents();
   const now = new Date();
   const upcoming = (publicEvents || [])
     .filter((event) => !event.starts_at || new Date(event.starts_at) >= now)
+    .filter((event) => !excludeEventIds.has(event.id))
     .sort((a, b) => {
       const aStart = a.starts_at ? new Date(a.starts_at).getTime() : Number.MAX_SAFE_INTEGER;
       const bStart = b.starts_at ? new Date(b.starts_at).getTime() : Number.MAX_SAFE_INTEGER;
@@ -1133,10 +1134,11 @@ async function refreshDashboard() {
   // Homepage: recommendations + connections only (no organizer events).
   const connections = await fetchMyConnections();
   const currentProfileId = await fetchCurrentProfileId();
-  const [attending, seeAgainOpportunities, recommendations] = await Promise.all([
-    fetchMyAttendingEvents(currentProfileId),
+  const attending = await fetchMyAttendingEvents(currentProfileId);
+  const attendingIds = new Set(attending.map((a) => a.event?.id).filter(Boolean));
+  const [seeAgainOpportunities, recommendations] = await Promise.all([
     fetchUpcomingEventsForConnections(connections, currentProfileId),
-    buildRecommendedEvents(connections, currentProfileId),
+    buildRecommendedEvents(connections, currentProfileId, attendingIds),
   ]);
   renderAttendingWidget(attending);
   renderNetworkMemoryWidget(connections, []);
@@ -1363,10 +1365,11 @@ async function loadDashboard() {
     // organizer-owned events here for anyone.
     const connections = await fetchMyConnections();
     const currentProfileId = await fetchCurrentProfileId();
-    const [attending, seeAgainOpportunities, recommendations] = await Promise.all([
-      fetchMyAttendingEvents(currentProfileId),
+    const attending = await fetchMyAttendingEvents(currentProfileId);
+    const attendingIds = new Set(attending.map((a) => a.event?.id).filter(Boolean));
+    const [seeAgainOpportunities, recommendations] = await Promise.all([
       fetchUpcomingEventsForConnections(connections, currentProfileId),
-      buildRecommendedEvents(connections, currentProfileId),
+      buildRecommendedEvents(connections, currentProfileId, attendingIds),
     ]);
 
     renderAttendingWidget(attending);
