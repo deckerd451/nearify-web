@@ -94,6 +94,16 @@ function buildPill(profile, email) {
   emailEl.textContent = email || "";
   dropdown.appendChild(emailEl);
 
+  // Account management (signed-in only). Uses the existing destination; the
+  // deletion workflow itself is unchanged.
+  const deleteLink = document.createElement("a");
+  deleteLink.className = "nav-dropdown-delete";
+  deleteLink.href = "https://nearify.org/delete-account.html";
+  deleteLink.textContent = "Delete Account";
+  deleteLink.setAttribute("role", "menuitem");
+  dropdown.appendChild(deleteLink);
+
+  // Keep Sign out clearly separated from account management.
   const signOutBtn = document.createElement("button");
   signOutBtn.className = "nav-dropdown-signout";
   signOutBtn.type = "button";
@@ -129,6 +139,16 @@ function buildDrawerSignOut() {
   btn.textContent = "Sign out";
   btn.addEventListener("click", handleSignOut);
   return btn;
+}
+
+// Delete Account entry for the mobile drawer (signed-in only). Uses the
+// existing destination; the deletion workflow itself is unchanged.
+function buildDrawerDeleteAccount() {
+  const link = document.createElement("a");
+  link.className = "nav-auth-link nav-drawer-delete";
+  link.href = "https://nearify.org/delete-account.html";
+  link.textContent = "Delete Account";
+  return link;
 }
 
 // ---------------------------------------------------------------------------
@@ -191,6 +211,7 @@ function injectSignedIn(profile, email, user) {
     drawerNetwork.textContent = "My Connections";
     drawerNetwork.className = "nav-auth-link";
     drawer.appendChild(drawerNetwork);
+    drawer.appendChild(buildDrawerDeleteAccount());
     drawer.appendChild(buildDrawerSignOut());
   }
 

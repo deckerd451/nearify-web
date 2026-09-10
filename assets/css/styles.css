@@ -3390,6 +3390,31 @@ code {
   margin-bottom: 6px;
 }
 
+.nav-dropdown-delete {
+  display: block;
+  width: 100%;
+  text-align: left;
+  color: var(--color-text-secondary);
+  font-size: 14px;
+  font-weight: 500;
+  padding: 8px 10px;
+  border-radius: 6px;
+  text-decoration: none;
+  transition: background 0.12s ease, color 0.12s ease;
+}
+
+.nav-dropdown-delete:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: #ffffff;
+}
+
+/* Keep Sign out clearly separated from account management above it. */
+.nav-dropdown-delete + .nav-dropdown-signout {
+  margin-top: 6px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  padding-top: 10px;
+}
+
 .nav-dropdown-signout {
   width: 100%;
   text-align: left;
