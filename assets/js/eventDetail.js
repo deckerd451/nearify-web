@@ -178,90 +178,62 @@ function renderMetaGrid(event, isPast) {
   ).join("");
 }
 
-// Concise 2–3 line description preview for the summary. Full text lives in the
-// "About this event" section; this only truncates for display (content is
-// unchanged there). CSS line-clamps to 3 lines; JS shows a Read more control
-// that jumps to the full About section.
+// Concise 2–3 line description preview beneath the event details. "Read more"
+// expands the complete description + available logistics inline in this same
+// location (no separate section); "Show less" restores the clamped preview.
+// Content is rendered safely (textContent only) and is unchanged when expanded.
 function renderSummaryPreview(event) {
   const wrap = document.getElementById("eventSummaryPreview");
   const text = document.getElementById("eventSummaryPreviewText");
+  const details = document.getElementById("eventSummaryDetails");
+  const logistics = document.getElementById("eventSummaryLogistics");
   const more = document.getElementById("eventSummaryReadMore");
   if (!wrap || !text) return;
 
   const desc = String(event.description || "").trim();
-  if (!desc) {
+
+  // Available logistics — only fields that already exist on the event.
+  const rows = [];
+  const organizerName = event.organizer_name || event.organizer || event.host || event.host_name;
+  if (event.parking) rows.push(["Parking", event.parking]);
+  if (event.ends_at) rows.push(["Ends", formatDateTime(event.ends_at)]);
+  if (organizerName) rows.push(["Organizer", organizerName]);
+  if (event.location) rows.push(["Location", event.location]);
+
+  // Nothing to show at all → keep the preview hidden.
+  if (!desc && !rows.length) {
     wrap.style.display = "none";
     return;
   }
 
-  text.textContent = desc; // CSS clamps to ~3 lines
+  text.textContent = desc; // CSS clamps to ~3 lines while collapsed
   wrap.style.display = "";
 
-  if (more) {
-    more.hidden = false;
-    more.addEventListener("click", () => {
-      const about = document.getElementById("eventAboutSection");
-      const body = document.getElementById("eventAboutBody");
-      const aboutToggle = document.getElementById("eventAboutToggle");
-      if (body) body.hidden = false;
-      if (aboutToggle) aboutToggle.setAttribute("aria-expanded", "true");
-      if (about) about.scrollIntoView({ behavior: "smooth", block: "start" });
-    });
-  }
-}
-
-// "About this event": complete description + available logistics, rendered
-// safely (textContent only). Uses progressive disclosure when the content is
-// long so it doesn't dominate the page.
-function renderAboutSection(event) {
-  const section = document.getElementById("eventAboutSection");
-  const desc = document.getElementById("eventAboutDescription");
-  const details = document.getElementById("eventAboutDetails");
-  const body = document.getElementById("eventAboutBody");
-  const toggle = document.getElementById("eventAboutToggle");
-  if (!section) return;
-
-  const description = String(event.description || "").trim();
-  if (desc) desc.textContent = description;
-
-  // Available logistics — only fields that already exist on the event.
-  const rows = [];
-  if (event.location) rows.push(["Location", event.location]);
-  const organizerName = event.organizer_name || event.organizer || event.host || event.host_name;
-  if (organizerName) rows.push(["Organizer", organizerName]);
-  if (event.parking) rows.push(["Parking", event.parking]);
-  if (event.ends_at) rows.push(["Ends", formatDateTime(event.ends_at)]);
-
-  if (details) {
-    details.innerHTML = "";
+  if (logistics) {
+    logistics.innerHTML = "";
     rows.forEach(([label, value]) => {
       const dt = document.createElement("dt");
       dt.textContent = label;
       const dd = document.createElement("dd");
       dd.textContent = value;
-      details.appendChild(dt);
-      details.appendChild(dd);
+      logistics.appendChild(dt);
+      logistics.appendChild(dd);
     });
   }
 
-  // Nothing to show → keep the section hidden.
-  if (!description && !rows.length) {
-    section.style.display = "none";
-    return;
-  }
-  section.style.display = "";
-
-  // Progressive disclosure only when the description is long.
-  const isLong = description.length > 320;
-  if (body) body.hidden = isLong;
-  if (toggle) {
-    toggle.hidden = !isLong;
-    if (isLong) {
-      toggle.addEventListener("click", () => {
-        const expanded = toggle.getAttribute("aria-expanded") === "true";
-        if (body) body.hidden = expanded;
-        toggle.setAttribute("aria-expanded", String(!expanded));
-        toggle.textContent = expanded ? "Read more" : "Show less";
+  // Only offer expansion when there is more to reveal than the clamped preview
+  // (a long description, or extra logistics beyond what the summary shows).
+  const hasMore = desc.length > 200 || rows.length > 0;
+  if (more) {
+    more.hidden = !hasMore;
+    if (hasMore) {
+      more.addEventListener("click", () => {
+        const expanded = more.getAttribute("aria-expanded") === "true";
+        const next = !expanded;
+        text.classList.toggle("is-expanded", next);
+        if (details) details.hidden = !next;
+        more.setAttribute("aria-expanded", String(next));
+        more.textContent = next ? "Show less" : "Read more";
       });
     }
   }
@@ -1317,7 +1289,7 @@ async function populatePage(event) {
   if (titleEl) titleEl.textContent = event.name;
   if (subheadEl) {
     // Keep the top summary concise: a short tagline, NOT the full description.
-    // The complete description lives in the "About this event" section.
+    // The full description expands inline from the summary "Read more" control.
     subheadEl.textContent = isPast
       ? "This event has ended."
       : "Discover the event and prepare on the web — use the Nearify iPhone app at the event.";
@@ -1325,7 +1297,6 @@ async function populatePage(event) {
 
   renderMetaGrid(event, isPast);
   renderSummaryPreview(event);
-  renderAboutSection(event);
   setCurrentEventId(event.id);
 
   // Share button — rendered into the momentum area for both past and upcoming
