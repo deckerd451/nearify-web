@@ -4507,8 +4507,7 @@ code {
   max-width: 540px;
 }
 
-.cc-landing-hero-actions,
-.cc-landing-final-actions {
+.cc-landing-hero-actions {
   justify-content: center;
 }
 
@@ -4532,22 +4531,6 @@ code {
   color: var(--color-text-primary);
 }
 
-.cc-landing-final {
-  border-top: 1px solid var(--color-border-subtle);
-  margin: 44px auto 0;
-  max-width: 720px;
-  padding-top: 36px;
-  text-align: center;
-}
-
-.cc-landing-final h2 {
-  color: var(--color-text-primary);
-  font-size: clamp(24px, 4vw, 34px);
-  font-weight: 700;
-  letter-spacing: -0.02em;
-  margin-bottom: 18px;
-}
-
 @media (max-width: 600px) {
   .cc-landing {
     align-items: flex-start;
@@ -4558,22 +4541,15 @@ code {
     margin-bottom: 36px;
   }
 
-  .cc-landing-hero-actions,
-  .cc-landing-final-actions {
+  .cc-landing-hero-actions {
     align-items: stretch;
     flex-direction: column;
   }
 
   .cc-landing-hero-actions .btn,
-  .cc-landing-final-actions .btn,
   .cc-landing-hero-actions #landingSignInBtn {
     justify-content: center;
     width: 100%;
-  }
-
-  .cc-landing-final {
-    margin-top: 36px;
-    padding-top: 30px;
   }
 }
 
