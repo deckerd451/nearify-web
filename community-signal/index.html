@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Community Signal — Nearify prototype</title>
+<style>
+:root{font-family:system-ui,-apple-system,sans-serif;color:#172033;background:#f5f7fb}*{box-sizing:border-box}body{margin:0}main{max-width:850px;margin:auto;padding:28px 18px}header{display:flex;justify-content:space-between;align-items:center;gap:16px}h1{margin:12px 0 6px;font-size:2rem}p{line-height:1.5;color:#526077}.pill{background:#e4eafc;border-radius:50px;padding:7px 12px;font-size:.8rem}.panel{background:white;border:1px solid #e1e5ee;border-radius:16px;padding:20px;margin:20px 0;box-shadow:0 3px 14px #18253b08}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px}.person{border:1px solid #e1e5ee;border-radius:12px;padding:16px}button{border:0;background:#265de4;color:white;border-radius:9px;padding:11px 14px;font:inherit;cursor:pointer}button:disabled{opacity:.45;cursor:not-allowed}.secondary{background:#e9edf5;color:#20304a}.muted{font-size:.86rem;color:#617087}label{display:flex;gap:9px;align-items:center}input[type=checkbox]{width:18px;height:18px}nav{display:flex;gap:8px;flex-wrap:wrap;margin:16px 0}nav button[aria-pressed=true]{background:#142b63}.hidden{display:none}.notice{background:#fff7df;padding:12px;border-radius:9px}.success{color:#126849}ul{padding-left:22px}li{margin:9px 0}button:focus-visible,input:focus-visible{outline:3px solid #ffb547;outline-offset:3px}
+</style></head><body><main>
+<header><strong>Nearify / Community Signal</strong><span class="pill">Local prototype · no messages sent</span></header>
+<h1>Notice the people making things happen.</h1><p>Discover work, acknowledge it, and give people a choice to reciprocate. This demo uses fictional participants and stores nothing remotely.</p>
+<div class="panel"><label><input id="optin" type="checkbox"> I opt in to receiving acknowledgement signals (demo)</label><p class="muted">In a production version, recipients must opt in, and senders must be authenticated. This switch simulates the recipient's preference.</p></div>
+<nav aria-label="Demo views"><button data-view="discover" aria-pressed="true">Discover</button><button data-view="inbox" class="secondary" aria-pressed="false">Recipient inbox</button><button data-view="activity" class="secondary" aria-pressed="false">Activity</button></nav>
+<section id="discover" class="panel"><h2>Discover</h2><div id="people" class="grid"></div></section>
+<section id="inbox" class="panel hidden"><h2>Recipient inbox</h2><p class="muted">Preview of what an opted-in recipient sees.</p><div id="inbox-items"></div></section>
+<section id="activity" class="panel hidden"><h2>Your activity</h2><ul id="activity-items"></ul></section>
+<p class="notice"><strong>Privacy by design:</strong> No LinkedIn automation, scraping, external notifications, account creation, or live identity matching is performed. This is a user-flow prototype only.</p>
+</main><script>
+"use strict";
+const people=[{id:"a",name:"Alex Rivera",work:"Building accessible civic technology",category:"Civic tech"},{id:"b",name:"Jordan Lee",work:"Exploring practical AI tools for small businesses",category:"Applied AI"},{id:"c",name:"Sam Morgan",work:"Organizing creative technology workshops",category:"Community"}];
+const signals=[];const reciprocated=new Set();
+const $=id=>document.getElementById(id);
+function el(tag,text,cls){const node=document.createElement(tag);if(text!==undefined)node.textContent=text;if(cls)node.className=cls;return node}
+function render(){
+ const list=$("people");list.replaceChildren();
+ for(const p of people){const card=el("article",undefined,"person");card.append(el("strong",p.name),el("p",p.work),el("p",p.category,"muted"));const button=el("button",signals.some(s=>s.id===p.id)?"Acknowledged":"Notice their work");button.disabled=!$("optin").checked||signals.some(s=>s.id===p.id);button.addEventListener("click",()=>{if(!$("optin").checked||signals.some(s=>s.id===p.id))return;signals.push({id:p.id,at:new Date().toLocaleTimeString()});render()});card.append(button);list.append(card)}
+ const inbox=$("inbox-items");inbox.replaceChildren();
+ if(!signals.length)inbox.append(el("p","No acknowledgements yet. Opt in and send one in Discover.","muted"));
+ for(const s of signals){const p=people.find(p=>p.id===s.id);const card=el("div",undefined,"person");card.append(el("strong",p.name),el("p","A community member noticed your work: "+p.work));const button=el("button",reciprocated.has(s.id)?"Acknowledged back":"Acknowledge back");button.disabled=reciprocated.has(s.id);button.addEventListener("click",()=>{reciprocated.add(s.id);render()});card.append(button);inbox.append(card)}
+ const activity=$("activity-items");activity.replaceChildren();if(!signals.length)activity.append(el("li","No activity yet."));
+ for(const s of signals){const p=people.find(p=>p.id===s.id);activity.append(el("li",p.name+" — noticed at "+s.at+(reciprocated.has(s.id)?" — reciprocated":"")))}
+}
+$("optin").addEventListener("change",render);
+document.querySelectorAll("[data-view]").forEach(button=>button.addEventListener("click",()=>{const view=button.dataset.view;document.querySelectorAll("[data-view]").forEach(b=>{const active=b.dataset.view===view;b.setAttribute("aria-pressed",String(active));b.classList.toggle("secondary",!active)});for(const id of ["discover","inbox","activity"])$(id).classList.toggle("hidden",id!==view)}));
+render();
+</script></body></html>
