@@ -20,3 +20,21 @@ All state is in memory and disappears on refresh. The prototype does not send re
 6. Pilot with consenting community members before enabling discovery or recommendations.
 
 **Do not treat a third-party profile visit as an acknowledgement delivered by Nearify.** External platforms require their own authorized workflows.
+
+## Authenticated implementation candidate (not deployed)
+
+- `live.html` imports Nearify's existing `assets/js/supabaseClient.js` and uses the signed-in session.
+- `migration.sql` defines opt-in preferences, signals, row-level policies, a limited opt-in discovery RPC, and a send RPC.
+- The SQL migration **has not been applied** to the hosted Supabase project. The page will show a database-unavailable message until it is applied.
+- The standalone page is not linked from the main navigation.
+- Sender/recipient UUID prefixes are placeholders in the inbox; profile display-name resolution, recipient blocking, moderation, notification delivery, retention/deletion controls, and integration tests remain necessary before a public rollout.
+- Database policy migration must be reviewed against existing `profiles` schema and deployment practices before applying. Never deploy this migration without confirming that assumptions match production.
+- There is no LinkedIn automation or external outreach.
+
+### Review and validation
+
+1. Review `migration.sql` against the live database schema and existing migrations.
+2. Apply to an isolated Supabase test project, never directly to production.
+3. Test anonymous access, self-signalling, non-opted-in recipients, repeated sends, concurrent daily-limit enforcement, and RLS visibility.
+4. Sign in with two consenting test accounts and validate opt-in, discovery, acknowledgement, and inbox behavior.
+5. Add proper profile presentation, blocking/reporting, consent withdrawal and deletion semantics, then run automated browser tests.
