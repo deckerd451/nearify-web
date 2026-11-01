@@ -470,6 +470,7 @@ function wirePlanControls() {
       else googleLink.hidden = true;
     }
 
+    let attendanceConfirmedThisVisit = false;
     prepareBtn.addEventListener("click", async () => {
       const options = document.getElementById("eventCalendarOptions");
 
@@ -487,6 +488,13 @@ function wirePlanControls() {
         return;
       }
 
+      // A confirmed join should not submit another join_event RPC just to reopen calendars.
+      if (attendanceConfirmedThisVisit) {
+        if (options) options.hidden = false;
+        prepareBtn.setAttribute("aria-expanded", "true");
+        return;
+      }
+
       // Signed in — record attendance, then reveal calendar options.
       const orig = prepareBtn.textContent;
       prepareBtn.disabled = true;
@@ -501,6 +509,7 @@ function wirePlanControls() {
         return;
       }
 
+      attendanceConfirmedThisVisit = true;
       prepareBtn.textContent = "Attending ✓";
       if (options) options.hidden = false;
       prepareBtn.setAttribute("aria-expanded", "true");
