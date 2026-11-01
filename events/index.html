@@ -296,7 +296,7 @@
         : "";
       const meta     = [ev.location, dateTimeStr].filter(Boolean).join(" \u00b7 ");
       const desc     = ev.description
-        ? '<p class="event-list-desc">' + escapeHtml(ev.description) + '</p>'
+        ? '<p class="event-list-desc">' + escapeHtml(ev.description.replace(/\*\*([^*]+)\*\*/g, '$1').replace(/\[([^\]]+)\]\([^)]+\)/g, '$1').replace(/\s+/g, ' ').trim()) + '</p>'
         : "";
       const detailUrl = ev.slug
         ? "event.html?slug=" + encodeURIComponent(ev.slug)

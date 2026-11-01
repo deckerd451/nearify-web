@@ -312,8 +312,11 @@
     </section>
 
     <!-- Organizer-only section — JS unhides and populates this only when canManageEvent() returns true -->
-    <div id="organizerSection" style="display:none;" aria-label="Organizer tools">
-      <section class="section event-section organizer-section" id="organizerInsightsMount"></section>
+    <div id="organizerSection" style="display:none;" aria-label="Organizer insights">
+      <details class="event-organizer-insights-disclosure">
+        <summary>Organizer insights <span class="event-organizer-private-note">Only visible to event organizers</span></summary>
+        <section class="section event-section organizer-section" id="organizerInsightsMount"></section>
+      </details>
     </div>
   </main>
 

@@ -6451,3 +6451,38 @@ body.cc-page .cc-event-actions .btn.secondary:hover {
   .join-page .ghost-recommendations {min-width:0}
   .join-page .guest-joined-actions .btn {min-height:44px}
 }
+
+
+/* Events + event detail: attendee-first, mobile-first refinements. */
+.events-page .event-list-desc {
+  display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:3;
+  overflow:hidden;overflow-wrap:anywhere;
+}
+.event-page .event-organizer-insights-disclosure {
+  max-width:1100px;margin:0 auto 24px;padding:0 16px;
+}
+.event-page .event-organizer-insights-disclosure > summary {
+  cursor:pointer;list-style:revert;min-height:44px;padding:12px 14px;
+  border:1px solid rgba(170,150,255,.3);border-radius:14px;
+  color:#d6c5ff;font-weight:700;
+}
+.event-page .event-organizer-private-note {
+  display:block;margin-top:3px;color:#a9b2ca;font-size:12px;font-weight:400;
+}
+.event-page .event-organizer-insights-disclosure[open] > summary {margin-bottom:12px}
+@media(max-width:600px) {
+  .events-page .event-list-desc {-webkit-line-clamp:2;margin:8px 0;line-height:1.4}
+  .events-page .event-list-card {padding:14px}
+  .events-page .event-list-card .card-badge {margin-bottom:6px}
+  .events-page .event-card-actions {margin-top:10px}
+  .event-page .event-hero {padding-top:14px;padding-bottom:12px;gap:10px}
+  .event-page .event-hero h1 {font-size:clamp(24px,6.6vw,30px);margin-bottom:8px}
+  .event-page .event-subhead {margin-bottom:8px}
+  .event-page .event-meta-grid {gap:8px;margin-top:8px}
+  .event-page .event-summary-preview {padding:12px}
+  .event-page .event-plan-panel {padding:12px}
+  .event-page .event-plan-item {padding-top:12px;padding-bottom:12px}
+  .event-page .event-section .section-heading h2 {font-size:clamp(23px,6vw,29px);line-height:1.2}
+  .event-page .event-organizer-insights-disclosure {padding:0 16px;margin-bottom:12px}
+  .event-page .event-organizer-insights-disclosure .event-section {padding:12px 0}
+}
