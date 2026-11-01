@@ -6242,3 +6242,41 @@ body.cc-page .cc-event-actions .btn.secondary:hover {
     margin-top: 10px;
   }
 }
+
+
+/* ── Member-page mobile glanceability: home, profile, connections ──
+   Scoped selectors avoid altering event, admin, and public content pages. */
+@media (max-width: 600px) {
+  .cc-landing { padding: 28px 16px 40px; }
+  .cc-landing-hero { margin-bottom: 24px; }
+  .cc-landing-hero > p {
+    font-size: 16px;
+    line-height: 1.5;
+    margin-bottom: 20px;
+  }
+  .cc-landing-vision-link { margin-top: 18px; }
+  .cc-dashboard { padding-left: 16px; padding-right: 16px; }
+  .cc-dashboard-header { gap: 10px; margin-bottom: 16px; }
+  .cc-dashboard-title { font-size: clamp(23px, 6vw, 28px); line-height: 1.2; }
+  .cc-dashboard-subtitle { line-height: 1.45; }
+  .cc-dashboard .cc-organizer-tools { margin-top: 20px; padding-top: 18px; }
+  .cc-dashboard .cc-organizer-tools-header { gap: 10px; margin-bottom: 12px; }
+  .cc-dashboard .cc-organizer-tools-title { font-size: 19px; }
+  .profile-page { min-height: auto; padding: 28px 16px 48px; align-items: flex-start; }
+  .profile-card { padding: 26px 20px; }
+  .profile-avatar-wrap { margin-bottom: 14px; }
+  .profile-name { font-size: clamp(23px, 6vw, 28px); overflow-wrap: anywhere; }
+  .profile-context { margin-bottom: 18px; line-height: 1.45; }
+  .profile-card .btn { min-height: 44px; }
+  .connections-page { padding-left: 16px; padding-right: 16px; }
+  .connections-page-header { margin-top: 18px; margin-bottom: 16px; }
+  .connections-page-header h1 { font-size: 24px; line-height: 1.2; }
+  .connections-page-subhead { line-height: 1.45; }
+  .connections-list { gap: 9px; padding-bottom: 40px; }
+  .connections-list > li { min-width: 0; flex-wrap: wrap; }
+  .connection-row { min-width: 0; padding: 13px 14px; gap: 10px; }
+  .connection-row-name { overflow-wrap: anywhere; white-space: normal; }
+  .connection-row-event { overflow-wrap: anywhere; }
+  .connection-row-aside { min-width: 0; }
+  .connection-save-btn { min-height: 44px; }
+}
