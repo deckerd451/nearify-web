@@ -26,7 +26,7 @@ button:focus-visible,input:focus-visible,a:focus-visible{outline:3px solid #d8c8
 <div id="status" role="status" aria-live="polite">Checking sign-in…</div>
 <section id="app" hidden><div class="card"><h2>Your preferences</h2><label><input type="checkbox" id="enabled">Join Community Signal: appear in discovery and receive acknowledgements</label><button id="save">Save preferences</button><p><small>Switch off anytime to stop discovery and new acknowledgements. Previous signals remain visible to participants until deletion.</small></p></div>
 <div class="card"><h2>Discover members</h2><p><small>Only people who opted in appear here. Maximum 10 new acknowledgements per 24 hours.</small></p><ul id="members"></ul></div>
-<div class="card"><h2>Mutual interest <span class="section-count" id="mutualCount"></span></h2><p><small>Both members acknowledged each other. No message is sent automatically.</small></p><ul id="mutual"></ul><button type="button" class="show-more" id="moreMutual" hidden>Show more mutual interests</button></div><div class="card"><h2>Signals you've received <span class="section-count" id="receivedCount"></span></h2><ul id="received"></ul><button type="button" class="show-more" id="moreReceived" hidden>Show more received signals</button></div>
+<div class="card"><h2>Mutual interest <span class="section-count" id="mutualCount"></span></h2><p><small>Both members acknowledged each other. No message is sent automatically. These counts include past acknowledgements, even if someone later turns off participation.</small></p><ul id="mutual"></ul><button type="button" class="show-more" id="moreMutual" hidden>Show more mutual interests</button></div><div class="card"><h2>Signals you've received <span class="section-count" id="receivedCount"></span></h2><p><small>History remains visible to the people involved after opting out.</small></p><ul id="received"></ul><button type="button" class="show-more" id="moreReceived" hidden>Show more received signals</button></div>
 <div class="card"><h2>Signals you've sent <span class="section-count" id="sentCount"></span></h2><ul id="sent"></ul><button type="button" class="show-more" id="moreSent" hidden>Show more sent signals</button></div></section>
 </main><script type="module">
 import {supabase} from "../assets/js/supabaseClient.js";
@@ -78,7 +78,7 @@ async function refresh(){
  const names=new Map((members.data||[]).map(p=>[p.user_id,p.display_name]));
  const mutual=[...sentTo].filter(id=>receivedFrom.has(id));
  $("mutualCount").textContent="("+mutual.length+")";
- showMore("mutual",mutual,id=>line((names.get(id)||"Participating member")+" — you both noticed each other."));
+ showMore("mutual",mutual,id=>line((names.get(id)||"Community member")+" — you both noticed each other."));
  if(!mutual.length)$("mutual").append(line("No mutual acknowledgements yet."));
  const list=$("members");list.replaceChildren();
  if(!enabled)list.append(line("Opt in to discover and acknowledge members."));
