@@ -38,3 +38,17 @@ All state is in memory and disappears on refresh. The prototype does not send re
 3. Test anonymous access, self-signalling, non-opted-in recipients, repeated sends, concurrent daily-limit enforcement, and RLS visibility.
 4. Sign in with two consenting test accounts and validate opt-in, discovery, acknowledgement, and inbox behavior.
 5. Add proper profile presentation, blocking/reporting, consent withdrawal and deletion semantics, then run automated browser tests.
+
+## Mutual acknowledgement (feature branch)
+
+The authenticated `live.html` page now detects two-way acknowledgements among the signals it loads, displays a **Mutual interest** section, and offers **Acknowledge back** for incoming signals. It does not automatically send introductions, messages, or external notifications.
+
+**Known limitation:** The page currently loads the latest 100 participant-visible signals and computes mutual matches in the browser. This is sufficient for an early limited pilot, but production should use a server-side paginated mutual-match query to avoid missing older matches. The UI uses participant names from the discoverable member list when available, otherwise an abbreviated ID. Blocking, consent withdrawal, and a dedicated mutual-introduction workflow still need design and implementation.
+
+### Manual acceptance scenarios
+
+1. With two opted-in test accounts A and B, A acknowledges B; B sees an incoming acknowledgement.
+2. B chooses **Acknowledge back**; both accounts show mutual interest on refresh.
+3. Repeating an acknowledgement does not create a second signal.
+4. Non-participating recipients cannot be acknowledged.
+5. No messages or notifications are sent automatically.
