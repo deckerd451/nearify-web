@@ -764,7 +764,7 @@ async function renderDiscoveryConsentControl(eventId, profileId, isAttendee, isP
     section.prepend(control);
   }
   control.replaceChildren();
-  if (!currentUser?.id || !profileId || !isAttendee || isPast) {
+  if (!currentUser?.id || !profileId) {
     control.style.display = "none";
     return;
   }
@@ -778,18 +778,52 @@ async function renderDiscoveryConsentControl(eventId, profileId, isAttendee, isP
     return;
   }
 
+  // A former attendee must still be able to withdraw. The database
+  // permits deleting/updating their own preference without active membership.
+  // Enabling discovery remains restricted to active attendees.
+  if (!isAttendee && enabled !== true) {
+    control.style.display = "none";
+    return;
+  }
   const label = document.createElement("label");
   const input = document.createElement("input");
   input.type = "checkbox";
   input.checked = enabled === true;
+  input.disabled = !isAttendee;
   label.append(input, document.createTextNode(
     " Let other attendees of this event discover my name, photo, interests, skills and event goals."
   ));
   const note = document.createElement("p");
-  note.textContent = "Off by default. You can withdraw at any time. Only signed-in attendees can see opted-in people.";
+  note.textContent = isAttendee
+    ? "Off by default. You can withdraw at any time. Only signed-in attendees can see opted-in people."
+    : "You are no longer attending. Withdraw your previous discovery consent below.";
   const feedback = document.createElement("p");
   feedback.setAttribute("role", "status");
   control.append(label, note, feedback);
+  if (!isAttendee && enabled === true) {
+    const withdraw = document.createElement("button");
+    withdraw.type = "button";
+    withdraw.textContent = "Withdraw discovery consent";
+    control.append(withdraw);
+    withdraw.addEventListener("click", async () => {
+      withdraw.disabled = true;
+      const { error: withdrawError } = await supabase
+        .from("event_discovery_preferences")
+        .delete()
+        .eq("event_id", eventId)
+        .eq("profile_id", profileId);
+      if (withdrawError) {
+        feedback.textContent = "Withdrawal failed. Please try again.";
+        withdraw.disabled = false;
+        logger.error("[EventDetail] consent withdrawal failed:", withdrawError);
+      } else {
+        feedback.textContent = "Discovery consent withdrawn.";
+        input.checked = false;
+        withdraw.remove();
+      }
+    });
+    return;
+  }
   input.addEventListener("change", async () => {
     const next = input.checked;
     input.disabled = true;
@@ -1468,9 +1502,10 @@ function renderMomentumIndicator(attendees, isPast) {
   const momentum = buildMomentumLine(attendees);
   if (!momentum) return;
 
+  // This is the consented roster size, not the total event attendance.
   const countText = isPast
-    ? `${momentum.count} attended`
-    : `${momentum.count} attending`;
+    ? `${momentum.count} opted-in past attendees`
+    : `${momentum.count} discoverable attendees`;
 
   let html = `<span class="momentum-count">${escapeHtml(countText)}</span>`;
   if (momentum.flavor && !isPast) {
