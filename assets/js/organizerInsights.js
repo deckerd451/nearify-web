@@ -3,9 +3,9 @@
  *
  * Privacy model:
  *   Aggregate counts only. No individual names or profile-identifying data.
- *   Reads: event_attendees (intent_primary), profiles (interests, skills).
+ *   Reads: server-authorized aggregate RPC only.
  *   Never reads: interaction_events, BLE traces, encounter history.
- *   Access controlled upstream by canManageEvent() in eventDetail.js.
+ *   Access enforced by RPC via events.created_by and auth.uid().
  */
 import { supabase } from "./supabaseClient.js";
 import { logger } from "./logger.js";
@@ -19,71 +19,30 @@ const INTENT_LABELS = {
 };
 
 // ---- Data layer ----
-
+// The database RPC independently checks events.created_by against auth.uid()
+// and returns aggregates only. No raw attendee or profile rows reach the browser.
 async function fetchInsightsData(eventId) {
-  const { data: attendeeRows, error: aErr } = await supabase
-    .from("event_attendees")
-    .select("profile_id, intent_primary")
-    .eq("event_id", eventId);
-
-  if (aErr) {
-    logger.error("[OrgInsights] attendees fetch:", aErr);
+  const { data, error } = await supabase.rpc("get_organizer_event_insights", {
+    p_event_id: eventId,
+  });
+  if (error || !data || typeof data !== "object") {
+    logger.error("[OrgInsights] aggregate RPC unavailable:", error);
     return null;
   }
-  if (!attendeeRows?.length) return { attendees: [], profiles: [] };
-
-  const profileIds = attendeeRows.map((r) => r.profile_id);
-
-  const { data: profileRows, error: pErr } = await supabase
-    .from("profiles")
-    .select("id, interests, skills")
-    .in("id", profileIds);
-
-  if (pErr) {
-    logger.error("[OrgInsights] profiles fetch:", pErr);
-    return null;
-  }
-
-  return { attendees: attendeeRows, profiles: profileRows || [] };
-}
-
-// ---- Computation ----
-
-function toTagArray(value) {
-  if (Array.isArray(value)) return value.filter(Boolean);
-  if (typeof value === "string" && value.trim()) {
-    return value.split(",").map((s) => s.trim()).filter(Boolean);
-  }
-  return [];
-}
-
-function computeInsights({ attendees, profiles }) {
-  const total = attendees.length;
-  const withGoals = attendees.filter((a) => a.intent_primary).length;
-
-  const goalMap = {};
-  for (const a of attendees) {
-    if (a.intent_primary) goalMap[a.intent_primary] = (goalMap[a.intent_primary] || 0) + 1;
-  }
-  const sortedGoals = Object.entries(goalMap).sort((a, b) => b[1] - a[1]);
-
-  const interestMap = {};
-  for (const p of profiles) {
-    for (const tag of toTagArray(p.interests)) {
-      interestMap[tag] = (interestMap[tag] || 0) + 1;
-    }
-  }
-  const topInterests = Object.entries(interestMap).sort((a, b) => b[1] - a[1]).slice(0, 10);
-
-  const skillMap = {};
-  for (const p of profiles) {
-    for (const tag of toTagArray(p.skills)) {
-      skillMap[tag] = (skillMap[tag] || 0) + 1;
-    }
-  }
-  const topSkills = Object.entries(skillMap).sort((a, b) => b[1] - a[1]).slice(0, 10);
-
-  return { total, withGoals, sortedGoals, topInterests, topSkills };
+  if (data.suppressed === true) return { suppressed: true };
+  const pairs = (value) => Array.isArray(value)
+    ? value.filter((pair) => Array.isArray(pair) && pair.length === 2 &&
+        typeof pair[0] === "string" && Number.isFinite(Number(pair[1])))
+        .map(([key, count]) => [key, Number(count)])
+    : [];
+  return {
+    suppressed: false,
+    total: Number(data.total) || 0,
+    withGoals: Number(data.withGoals) || 0,
+    sortedGoals: pairs(data.sortedGoals),
+    topInterests: pairs(data.topInterests),
+    topSkills: pairs(data.topSkills),
+  };
 }
 
 // ---- Natural language summary ----
@@ -267,6 +226,11 @@ export async function loadOrganizerInsights(event) {
     return;
   }
 
-  const metrics = computeInsights(raw);
-  renderInsights(mount, event, metrics);
+  if (raw.suppressed) {
+    mount.innerHTML = "";
+    mount.appendChild(textEl("div", "organizer-empty",
+      "Insights are hidden for small events to protect attendee privacy."));
+    return;
+  }
+  renderInsights(mount, event, raw);
 }
