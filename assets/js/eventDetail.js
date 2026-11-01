@@ -710,41 +710,104 @@ function getTagArray(value, limit = 3) {
   return arr.slice(0, limit).map((s) => String(s).trim()).filter(Boolean);
 }
 
+// The RPC enforces membership and event-specific opt-in on the server.
+// Never query the unfiltered event_attendees/profiles roster in this path.
 async function fetchEventAttendees(eventId) {
-  const { data: attendeeRows, error: attendeeError } = await supabase
-    .from("event_attendees")
-    .select("profile_id, intent_primary, intent_secondary")
-    .eq("event_id", eventId);
-
-  if (attendeeError || !attendeeRows?.length) return [];
-
-  const profileIds = attendeeRows.map((r) => r.profile_id);
-  const { data: profileRows, error: profileError } = await supabase
-    .from("profiles")
-    .select("id, name, avatar_url, interests, skills")
-    .in("id", profileIds);
-
-  if (profileError) {
-    logger.error("[EventDetail] attendee discovery profiles error:", profileError);
+  if (!currentUser?.id) return [];
+  const { data, error } = await supabase.rpc("get_consented_event_attendees", {
+    p_event_id: eventId,
+  });
+  if (error) {
+    logger.error("[EventDetail] consented discovery unavailable:", error);
     return [];
   }
+  return (data || []).map((a) => ({
+    profileId: a.profile_id,
+    name: a.name || "Attendee",
+    avatarUrl: a.avatar_url || null,
+    intent: a.intent_primary || null,
+    intent_primary: a.intent_primary || null,
+    intent_secondary: a.intent_secondary || null,
+    interests: a.interests || null,
+    skills: a.skills || null,
+  }));
+}
 
-  const profileMap = new Map((profileRows || []).map((p) => [p.id, p]));
+// Only read the caller's own attendance. A consent-filtered roster cannot
+// establish whether the caller is a member, since their consent may be off.
+async function getOwnEventAttendance(eventId, profileId) {
+  if (!currentUser?.id || !profileId) return false;
+  const { data, error } = await supabase
+    .from("event_attendees")
+    .select("id,status")
+    .eq("event_id", eventId)
+    .eq("profile_id", profileId)
+    .in("status", ["joined", "inEvent"])
+    .limit(1);
+  if (error) {
+    logger.error("[EventDetail] own attendance lookup failed:", error);
+    return false;
+  }
+  return !!data?.length;
+}
 
-  return attendeeRows.map((a) => {
-    const profile = profileMap.get(a.profile_id);
-    if (!profile) return null;
-    return {
-      profileId:  a.profile_id,
-      name:       profile.name || "Attendee",
-      avatarUrl:  profile.avatar_url || null,
-      intent:     a.intent_primary || null,  // event_attendees is source of truth
-      intent_primary: a.intent_primary || null,
-      intent_secondary: a.intent_secondary || null,
-      interests:  profile.interests || null,
-      skills:     profile.skills || null,
-    };
-  }).filter(Boolean);
+// Insert/update only the caller's own event preference. RLS must enforce
+// ownership and current membership regardless of this client-side gating.
+async function renderDiscoveryConsentControl(eventId, profileId, isAttendee, isPast) {
+  const section = document.getElementById("attendeeDiscoverySection");
+  if (!section) return;
+  let control = document.getElementById("eventDiscoveryConsentControl");
+  if (!control) {
+    control = document.createElement("div");
+    control.id = "eventDiscoveryConsentControl";
+    control.className = "attendee-discovery-consent";
+    section.prepend(control);
+  }
+  control.replaceChildren();
+  if (!currentUser?.id || !profileId || !isAttendee || isPast) {
+    control.style.display = "none";
+    return;
+  }
+  control.style.display = "";
+  const { data: enabled, error } = await supabase.rpc(
+    "get_my_event_discovery_preference", { p_event_id: eventId }
+  );
+  if (error) {
+    logger.error("[EventDetail] discovery preference unavailable:", error);
+    control.textContent = "Discovery preference is currently unavailable.";
+    return;
+  }
+
+  const label = document.createElement("label");
+  const input = document.createElement("input");
+  input.type = "checkbox";
+  input.checked = enabled === true;
+  label.append(input, document.createTextNode(
+    " Let other attendees of this event discover my name, photo, interests, skills and event goals."
+  ));
+  const note = document.createElement("p");
+  note.textContent = "Off by default. You can withdraw at any time. Only signed-in attendees can see opted-in people.";
+  const feedback = document.createElement("p");
+  feedback.setAttribute("role", "status");
+  control.append(label, note, feedback);
+  input.addEventListener("change", async () => {
+    const next = input.checked;
+    input.disabled = true;
+    feedback.textContent = "Saving preference…";
+    const { error: saveError } = await supabase
+      .from("event_discovery_preferences")
+      .upsert({ event_id: eventId, profile_id: profileId, discoverable: next },
+        { onConflict: "event_id,profile_id" });
+    if (saveError) {
+      input.checked = !next;
+      feedback.textContent = "Could not save your preference. Please try again.";
+      logger.error("[EventDetail] discovery preference save failed:", saveError);
+    } else {
+      feedback.textContent = next ? "Discovery enabled for this event." : "Discovery disabled for this event.";
+      await loadAttendeeDiscovery(eventId, false);
+    }
+    input.disabled = false;
+  });
 }
 
 function formatEncounterCount(count) {
@@ -1072,28 +1135,25 @@ function renderAttendeeDiscovery(attendees, myProfileId, isFullAccess, stateMap 
 }
 
 async function loadAttendeeDiscovery(eventId, isPast = false) {
-  const attendees = await fetchEventAttendees(eventId);
-
-  // Render momentum indicator regardless of attendee count
-  renderMomentumIndicator(attendees, isPast);
-
   let myProfileId = null;
   if (currentUser?.id) {
     const { data: p } = await supabase
       .from("profiles").select("id").eq("user_id", currentUser.id).maybeSingle();
     myProfileId = p?.id ?? null;
   }
+  const isAttendee = await getOwnEventAttendance(eventId, myProfileId);
+  const isFullAccess = !!currentUser && isAttendee;
+  await renderDiscoveryConsentControl(eventId, myProfileId, isAttendee, isPast);
 
-  const connections = (!isPast && currentUser) ? await fetchMyConnections() : [];
+  // Never fetch a roster for guests or non-attendees, even for display gating.
+  const attendees = isFullAccess ? await fetchEventAttendees(eventId) : [];
+  // This count is opt-in discovery participation, NOT total event attendance.
+  renderMomentumIndicator(attendees, isPast);
 
-  if (!isPast && attendees.length) {
-    // Confirmed-only subset preserves existing "People You Know Here" and
-    // EventReason behavior — proposed/ghost states must not leak into it.
+  const connections = (!isPast && isFullAccess) ? await fetchMyConnections() : [];
+  if (!isPast && isFullAccess && attendees.length) {
     const confirmedConnections = confirmedOnly(connections);
-    const knownAttendees = currentUser
-      ? findKnownAttendees(attendees, confirmedConnections, myProfileId)
-      : [];
-
+    const knownAttendees = findKnownAttendees(attendees, confirmedConnections, myProfileId);
     renderWhyAttend(buildEventDecisionReasons({
       connections: knownAttendees,
       eventAttendees: attendees,
@@ -1105,17 +1165,23 @@ async function loadAttendeeDiscovery(eventId, isPast = false) {
     renderPeopleYouKnowHere([]);
   }
 
+  const grid = document.getElementById("attendeeDiscoveryGrid");
+  const gate = document.getElementById("attendeeDiscoveryGate");
+  if (grid) grid.replaceChildren();
+  if (gate) gate.style.display = "none";
+  if (!isFullAccess) {
+    if (gate) {
+      const msg = gate.querySelector(".attendee-gate-message");
+      if (msg) msg.textContent = currentUser
+        ? "Attend this event to discover people who choose to be visible."
+        : "Sign in and attend to discover people who choose to be visible.";
+      gate.style.display = "";
+    }
+    return;
+  }
   if (!attendees.length) return;
-
-  const isAttendee  = myProfileId ? attendees.some((a) => a.profileId === myProfileId) : false;
-  const isFullAccess = !!currentUser && isAttendee;
-
-  // Full caller-relative state map (all statuses) drives the Save / Saved /
-  // Save back / Connected control on each card. Only signed-in attendees get
-  // the control; anonymous visitors get plain, action-free cards.
-  const stateMap = isFullAccess ? buildConnectionStateMap(connections) : new Map();
-
-  renderAttendeeDiscovery(attendees, myProfileId, isFullAccess, stateMap, eventId);
+  const stateMap = buildConnectionStateMap(connections);
+  renderAttendeeDiscovery(attendees, myProfileId, true, stateMap, eventId);
 }
 
 async function renderPersonalConnectSection(eventId) {
