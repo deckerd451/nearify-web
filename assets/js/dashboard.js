@@ -921,6 +921,12 @@ function renderSeeAgainWidget(opportunities, attendingIds = new Set()) {
       ? `${connection.name || "Someone you met"} is going too`
       : `${connection.name || "Someone you met"} — ${event.name || "Upcoming event"}`;
     details.appendChild(heading);
+    if (alreadyAttending) {
+      const eventLabel = document.createElement("p");
+      eventLabel.className = "cc-see-again-meta cc-see-again-event-name";
+      eventLabel.textContent = event.name || "Upcoming event";
+      details.appendChild(eventLabel);
+    }
 
     const dateText = formatDateTime(event.starts_at);
     if (dateText && !alreadyAttending) {
