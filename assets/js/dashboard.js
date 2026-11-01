@@ -878,7 +878,7 @@ function buildRelationshipReasonMap(opportunities) {
   return reasons;
 }
 
-function renderSeeAgainWidget(opportunities) {
+function renderSeeAgainWidget(opportunities, attendingIds = new Set()) {
   const widget = document.getElementById("seeAgainWidget");
   if (!widget) return;
 
@@ -908,17 +908,22 @@ function renderSeeAgainWidget(opportunities) {
   list.className = "cc-see-again-list";
 
   opportunities.forEach(({ connection, event }) => {
+    // Show a compact reminder instead of a second full card for events
+    // already listed in Your Events.
+    const alreadyAttending = Boolean(event.id && attendingIds.has(event.id));
     const item = document.createElement("li");
     item.className = "cc-see-again-item";
 
     const details = document.createElement("div");
     const heading = document.createElement("p");
     heading.className = "cc-see-again-heading";
-    heading.textContent = `${connection.name || "Someone you met"} — ${event.name || "Upcoming event"}`;
+    heading.textContent = alreadyAttending
+      ? `${connection.name || "Someone you met"} is also going to your event`
+      : `${connection.name || "Someone you met"} — ${event.name || "Upcoming event"}`;
     details.appendChild(heading);
 
     const dateText = formatDateTime(event.starts_at);
-    if (dateText) {
+    if (dateText && !alreadyAttending) {
       const meta = document.createElement("p");
       meta.className = "cc-see-again-meta";
       meta.textContent = dateText;
@@ -930,7 +935,9 @@ function renderSeeAgainWidget(opportunities) {
     link.href = getEventDetailUrl(event);
     link.textContent = "View Event";
 
-    item.append(details, link);
+    item.appendChild(details);
+    if (!alreadyAttending) item.appendChild(link);
+    else item.classList.add("cc-see-again-item--attending");
     list.appendChild(item);
   });
 
@@ -1039,7 +1046,11 @@ function renderAttendingWidget(attending) {
   if (active.length) {
     const list = document.createElement("ul");
     list.className = "cc-attending-list";
-    active.forEach((a) => list.appendChild(buildItem(a)));
+    active.forEach((a, index) => {
+      const item = buildItem(a);
+      if (index === 0) item.classList.add("cc-attending-item--next");
+      list.appendChild(item);
+    });
     widget.appendChild(list);
   }
 
@@ -1143,7 +1154,7 @@ async function refreshDashboard() {
   renderAttendingWidget(attending);
   renderNetworkMemoryWidget(connections, []);
   renderRecommendedForYouWidget(recommendations);
-  renderSeeAgainWidget(seeAgainOpportunities);
+  renderSeeAgainWidget(seeAgainOpportunities, attendingIds);
   })().finally(() => { refreshDashboard._inFlight = null; });
   return refreshDashboard._inFlight;
 }
@@ -1375,7 +1386,7 @@ async function loadDashboard() {
     renderAttendingWidget(attending);
     renderNetworkMemoryWidget(connections, []);
     renderRecommendedForYouWidget(recommendations);
-    renderSeeAgainWidget(seeAgainOpportunities);
+    renderSeeAgainWidget(seeAgainOpportunities, attendingIds);
   } catch (err) {
     logger.error("[Dashboard] failed to load dashboard:", err);
     renderDashboardError(err);
