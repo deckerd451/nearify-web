@@ -13,7 +13,7 @@ button{font:inherit;font-weight:650;background:#7857f8;color:white;border:1px so
 button:hover:not(:disabled){background:#9076ff}button:disabled{background:#343b59;color:#c6cbe1;cursor:default;opacity:1}
 label{display:flex;align-items:flex-start;gap:12px;margin:14px 0 18px;cursor:pointer}
 input[type=checkbox]{width:20px;height:20px;min-width:20px;margin:3px 0 0;accent-color:#8466ff}
-li button{margin-left:10px}small{color:#b7c1d8;font-size:.9rem}
+li button{margin-left:10px}#save[aria-busy="true"]{cursor:wait}small{color:#b7c1d8;font-size:.9rem}
 #status{min-height:24px;color:#c8bbff}#status:empty{min-height:0}
 button:focus-visible,input:focus-visible,a:focus-visible{outline:3px solid #d8c8ff;outline-offset:3px}
 @media(max-width:600px){main{padding-top:24px}.card{border-radius:16px;margin:16px 0}.card li button{display:block;margin:10px 0 0;width:100%}h1{margin-top:14px}}
@@ -37,6 +37,7 @@ async function load(){
  const {data:pref,error:prefError}=await supabase.from("community_signal_preferences").select("discoverable,receive_signals").eq("user_id",user.id).maybeSingle();
  if(prefError){status("Community Signal database is not available yet.");return}
  enabled=!!(pref?.discoverable&&pref?.receive_signals);$("enabled").checked=enabled;
+ status("");
  await refresh();
 }
 async function refresh(){
@@ -58,7 +59,7 @@ async function refresh(){
  else if(!members.data?.length)list.append(line("No other members have opted in yet."));
  else for(const p of members.data){
  const li=line(p.display_name+" ");const btn=document.createElement("button");btn.textContent=sentTo.has(p.user_id)?"Acknowledged":receivedFrom.has(p.user_id)?"Acknowledge back":"Notice their work";btn.disabled=sentTo.has(p.user_id);
- btn.addEventListener("click",async()=>{btn.disabled=true;const {error}=await supabase.rpc("community_signal_send",{target:p.user_id});if(error){status(error.message);btn.disabled=false}else{status("Acknowledgement saved.");await refresh()}});li.append(btn);list.append(li)
+ btn.addEventListener("click",async()=>{btn.disabled=true;const {error}=await supabase.rpc("community_signal_send",{target:p.user_id});if(error){status(error.message);btn.disabled=false}else{await refresh();status("Acknowledgement saved.")}});li.append(btn);list.append(li)
  }
  for(const [id,filter,empty] of [["received",s=>s.recipient_id===user.id,"No acknowledgements received."],["sent",s=>s.sender_id===user.id,"No acknowledgements sent."]]){
  const target=$(id);target.replaceChildren();const rows=(signals.data||[]).filter(filter);
@@ -67,13 +68,24 @@ async function refresh(){
  const li=line((names.get(other)||"Member "+other.slice(0,8)+"…")+" · "+new Date(s.created_at).toLocaleString()+" ");
  if(id==="received"&&!sentTo.has(other)&&enabled){
   const btn=document.createElement("button");btn.textContent="Acknowledge back";
-  btn.addEventListener("click",async()=>{btn.disabled=true;const {error}=await supabase.rpc("community_signal_send",{target:other});if(error){status(error.message);btn.disabled=false}else await refresh()});li.append(btn);
+  btn.addEventListener("click",async()=>{btn.disabled=true;const {error}=await supabase.rpc("community_signal_send",{target:other});if(error){status(error.message);btn.disabled=false}else{await refresh();status("Acknowledgement returned.")}});li.append(btn);
  }
  target.append(li);
 }
  }
- status("");
 }
-$("save").addEventListener("click",async()=>{const value=$("enabled").checked;const {error}=await supabase.from("community_signal_preferences").upsert({user_id:user.id,discoverable:value,receive_signals:value,updated_at:new Date().toISOString()});if(error){status(error.message);return}enabled=value;status("Preferences saved.");await refresh()});
+$("save").addEventListener("click",async()=>{
+ const button=$("save");const value=$("enabled").checked;
+ button.disabled=true;button.setAttribute("aria-busy","true");
+ status("Saving preferences…");
+ try{
+  const {error}=await supabase.from("community_signal_preferences").upsert({user_id:user.id,discoverable:value,receive_signals:value,updated_at:new Date().toISOString()});
+  if(error){status("Unable to save preferences: "+error.message);return}
+  enabled=value;
+  await refresh();
+  status(value?"You're participating in Community Signal. Preferences saved.":"Community Signal turned off. Preferences saved.");
+ }catch(error){status("Unable to save preferences. Please try again.")}
+ finally{button.disabled=false;button.removeAttribute("aria-busy")}
+});
 load().catch(()=>status("Unable to load Community Signal."));
 </script></body></html>
