@@ -6318,3 +6318,35 @@ body.cc-page .cc-event-actions .btn.secondary:hover {
   #dashboardView .cc-recommended-item { min-height: 0; padding: 13px; gap: 10px; }
   #dashboardView .cc-network-widget .btn { min-height: 44px; }
 }
+
+
+/* Home structure: compact primary event, contextual network reminders, quick links. */
+#dashboardView .cc-home-quicklinks {
+  display:flex;flex-wrap:wrap;gap:8px;margin:0 0 18px;
+}
+#dashboardView .cc-home-quicklinks a {
+  display:inline-flex;align-items:center;min-height:44px;padding:9px 13px;
+  border:1px solid rgba(170,150,255,.32);border-radius:999px;
+  color:#d5c5ff;text-decoration:none;font-size:14px;font-weight:650;
+  background:rgba(150,120,255,.08);
+}
+#dashboardView .cc-home-quicklinks a:focus-visible {outline:2px solid #bca7ff;outline-offset:3px}
+#dashboardView .cc-attending-item--next {border:1px solid rgba(160,130,255,.25)}
+#dashboardView .cc-see-again-item--attending {
+  padding:12px 14px;border-left:3px solid #9f83ff;
+}
+@media(max-width:600px) {
+  #dashboardView .cc-dashboard {padding-top:6px}
+  #dashboardView .cc-home-quicklinks {margin-bottom:16px;gap:7px}
+  #dashboardView .cc-home-quicklinks a {font-size:13px;padding:8px 11px}
+  #dashboardView .cc-dashboard-primary {padding:0;background:none;border:0}
+  #dashboardView .cc-attending-widget {padding:14px;margin-bottom:12px}
+  #dashboardView .cc-attending-list {margin-top:0}
+  #dashboardView .cc-attending-item--next {padding:13px}
+  #dashboardView .cc-attending-actions {margin-top:10px}
+  #dashboardView .cc-attending-actions .btn {min-height:44px}
+  #dashboardView .cc-attending-meta {margin-top:4px}
+  #dashboardView .cc-see-again-widget {padding:14px}
+  #dashboardView .cc-see-again-item--attending {padding:12px}
+  #dashboardView .cc-see-again-item--attending .cc-see-again-heading {font-size:15px}
+}
