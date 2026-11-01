@@ -918,7 +918,7 @@ function renderSeeAgainWidget(opportunities, attendingIds = new Set()) {
     const heading = document.createElement("p");
     heading.className = "cc-see-again-heading";
     heading.textContent = alreadyAttending
-      ? `${connection.name || "Someone you met"} is also going to your event`
+      ? `${connection.name || "Someone you met"} is going too`
       : `${connection.name || "Someone you met"} — ${event.name || "Upcoming event"}`;
     details.appendChild(heading);
 
@@ -936,8 +936,12 @@ function renderSeeAgainWidget(opportunities, attendingIds = new Set()) {
     link.textContent = "View Event";
 
     item.appendChild(details);
-    if (!alreadyAttending) item.appendChild(link);
-    else item.classList.add("cc-see-again-item--attending");
+    if (alreadyAttending) {
+      item.classList.add("cc-see-again-item--attending");
+      link.className = "cc-see-again-event-link";
+      link.textContent = "View event";
+    }
+    item.appendChild(link);
     list.appendChild(item);
   });
 
