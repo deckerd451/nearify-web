@@ -9,6 +9,10 @@ h2{font-size:clamp(1.3rem,3vw,1.6rem);line-height:1.25;margin:0 0 16px}
 main>p{color:#bdc5da}main>p:first-child{margin:0 0 28px}
 .card{background:linear-gradient(125deg,#17213a,#19172f);border:1px solid #303653;border-radius:20px;padding:clamp(20px,4vw,32px);margin:22px 0;box-shadow:0 8px 28px #0002}
 .card p{margin:12px 0}.card ul{padding-left:22px;margin:12px 0 0}.card li{padding:8px 0;overflow-wrap:anywhere}
+.section-count{font-size:.85rem;font-weight:600;color:#c8bbff;margin-left:8px}
+#mutual li{border-left:3px solid #a99aff;padding-left:12px}
+#received li,#sent li{border-bottom:1px solid #303653}
+#received li:last-child,#sent li:last-child{border-bottom:0}
 button{font:inherit;font-weight:650;background:#7857f8;color:white;border:1px solid transparent;border-radius:12px;padding:11px 17px;cursor:pointer;min-height:44px;max-width:100%;margin:5px 0}
 button:hover:not(:disabled){background:#9076ff}button:disabled{background:#343b59;color:#c6cbe1;cursor:default;opacity:1}
 label{display:flex;align-items:flex-start;gap:12px;margin:14px 0 18px;cursor:pointer}
@@ -22,8 +26,8 @@ button:focus-visible,input:focus-visible,a:focus-visible{outline:3px solid #d8c8
 <div id="status" role="status" aria-live="polite">Checking sign-in…</div>
 <section id="app" hidden><div class="card"><h2>Your preferences</h2><label><input type="checkbox" id="enabled">Join Community Signal: appear in discovery and receive acknowledgements</label><button id="save">Save preferences</button><p><small>Switch off anytime to stop discovery and new acknowledgements. Previous signals remain visible to participants until deletion.</small></p></div>
 <div class="card"><h2>Discover members</h2><p><small>Only people who opted in appear here. Maximum 10 new acknowledgements per 24 hours.</small></p><ul id="members"></ul></div>
-<div class="card"><h2>Mutual interest</h2><p><small>Both members acknowledged each other. No message is sent automatically.</small></p><ul id="mutual"></ul></div><div class="card"><h2>Signals you've received</h2><ul id="received"></ul></div>
-<div class="card"><h2>Signals you've sent</h2><ul id="sent"></ul></div></section>
+<div class="card"><h2>Mutual interest <span class="section-count" id="mutualCount"></span></h2><p><small>Both members acknowledged each other. No message is sent automatically.</small></p><ul id="mutual"></ul></div><div class="card"><h2>Signals you've received <span class="section-count" id="receivedCount"></span></h2><ul id="received"></ul></div>
+<div class="card"><h2>Signals you've sent <span class="section-count" id="sentCount"></span></h2><ul id="sent"></ul></div></section>
 </main><script type="module">
 import {supabase} from "../assets/js/supabaseClient.js";
 const $=id=>document.getElementById(id);
@@ -51,6 +55,7 @@ async function refresh(){
  const receivedFrom=new Set(all.filter(s=>s.recipient_id===user.id).map(s=>s.sender_id));
  const names=new Map((members.data||[]).map(p=>[p.user_id,p.display_name]));
  const mutual=[...sentTo].filter(id=>receivedFrom.has(id));
+ $("mutualCount").textContent="("+mutual.length+")";
  const mutualList=$("mutual");mutualList.replaceChildren();
  if(!mutual.length)mutualList.append(line("No mutual acknowledgements yet."));
  for(const id of mutual)mutualList.append(line((names.get(id)||"Participating member")+" — you both noticed each other."));
@@ -63,9 +68,10 @@ async function refresh(){
  }
  for(const [id,filter,empty] of [["received",s=>s.recipient_id===user.id,"No acknowledgements received."],["sent",s=>s.sender_id===user.id,"No acknowledgements sent."]]){
  const target=$(id);target.replaceChildren();const rows=(signals.data||[]).filter(filter);
+ $(id+"Count").textContent="("+rows.length+")";
  if(!rows.length)target.append(line(empty));else for(const s of rows){
  const other=id==="received"?s.sender_id:s.recipient_id;
- const li=line((names.get(other)||"Member "+other.slice(0,8)+"…")+" · "+new Date(s.created_at).toLocaleString()+" ");
+ const li=line((names.get(other)||"Community member")+" · "+new Date(s.created_at).toLocaleString()+" ");
  if(id==="received"&&!sentTo.has(other)&&enabled){
   const btn=document.createElement("button");btn.textContent="Acknowledge back";
   btn.addEventListener("click",async()=>{btn.disabled=true;const {error}=await supabase.rpc("community_signal_send",{target:other});if(error){status(error.message);btn.disabled=false}else{if(await refresh())status("Acknowledgement returned.")}});li.append(btn);
