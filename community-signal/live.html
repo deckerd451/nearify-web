@@ -18,16 +18,33 @@ button:hover:not(:disabled){background:#9076ff}button:disabled{background:#343b5
 label{display:flex;align-items:flex-start;gap:12px;margin:14px 0 18px;cursor:pointer}
 input[type=checkbox]{width:20px;height:20px;min-width:20px;margin:3px 0 0;accent-color:#8466ff}
 li button{margin-left:10px}.show-more{background:transparent;border:1px solid #6552a5;color:#d2c7ff;margin-top:16px}.show-more:hover:not(:disabled){background:#30264e}#save[aria-busy="true"]{cursor:wait}small{color:#b7c1d8;font-size:.9rem}
+.overview{background:linear-gradient(135deg,#20254a,#1b1837);border:1px solid #45416b;border-radius:20px;padding:22px;margin:20px 0}
+.overview-top{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.overview h2{margin:0;font-size:1.2rem}
+.participation{font-size:.82rem;font-weight:700;border-radius:99px;padding:5px 11px;background:#33364f;color:#e2e3ef}
+.participation.active{background:#273e3b;color:#baf3d5}
+.stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:18px}
+.stat{display:flex;flex-direction:column;align-items:center;gap:2px;text-align:center;text-decoration:none;color:#d4d9ed;background:#151d35;border:1px solid #353a5d;border-radius:14px;padding:12px 5px;min-width:0}
+.stat strong{font-size:1.65rem;line-height:1.25;color:#d4c5ff;font-variant-numeric:tabular-nums}
+.stat span{font-size:.8rem}
+.stat:hover{border-color:#a99aff;background:#252446}
+.overview-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
+.overview-actions a{color:#d5caff;font-size:.9rem;text-underline-offset:3px}
+.card{scroll-margin-top:20px}
+.history-details{margin-top:12px}
+.history-details summary{cursor:pointer;color:#d5caff;font-weight:650;padding:10px 0;min-height:44px}
+.history-details summary:hover{color:white}
+.history-details[open] summary{margin-bottom:8px}
 #status{min-height:24px;color:#c8bbff}#status:empty{min-height:0}
 button:focus-visible,input:focus-visible,a:focus-visible{outline:3px solid #d8c8ff;outline-offset:3px}
-@media(max-width:600px){main{padding-top:24px}.card{border-radius:16px;margin:16px 0}.card li button{display:block;margin:10px 0 0;width:100%}h1{margin-top:14px}}
+@media(max-width:600px){main{padding:18px 14px 60px}.card{border-radius:16px;margin:14px 0;padding:18px}.overview{border-radius:16px;margin:14px 0;padding:16px}.stats{gap:7px}.stat{padding:12px 3px}.stat strong{font-size:1.45rem}.stat span{font-size:.72rem}.card li button{display:block;margin:10px 0 0;width:100%}h1{font-size:2rem;margin-top:14px}h2{font-size:1.25rem}.card ul{padding-left:18px}.overview-actions{justify-content:space-between}}
 @media(prefers-reduced-motion:no-preference){button{transition:background-color .15s ease}}
 </style></head><body><main><p><a href="/">← Nearify</a></p><h1>Community Signal</h1><p>Notice someone's work without sending a message. Participation is optional and visible only to signed-in members.</p>
 <div id="status" role="status" aria-live="polite">Checking sign-in…</div>
-<section id="app" hidden><div class="card"><h2>Your preferences</h2><label><input type="checkbox" id="enabled">Join Community Signal: appear in discovery and receive acknowledgements</label><button id="save">Save preferences</button><p><small>Switch off anytime to stop discovery and new acknowledgements. Previous signals remain visible to participants until deletion.</small></p></div>
-<div class="card"><h2>Discover members</h2><p><small>Only people who opted in appear here. Maximum 10 new acknowledgements per 24 hours.</small></p><ul id="members"></ul></div>
-<div class="card"><h2>Mutual interest <span class="section-count" id="mutualCount"></span></h2><p><small>Both members acknowledged each other. No message is sent automatically. These counts include past acknowledgements, even if someone later turns off participation.</small></p><ul id="mutual"></ul><button type="button" class="show-more" id="moreMutual" hidden>Show more mutual interests</button></div><div class="card"><h2>Signals you've received <span class="section-count" id="receivedCount"></span></h2><p><small>History remains visible to the people involved after opting out.</small></p><ul id="received"></ul><button type="button" class="show-more" id="moreReceived" hidden>Show more received signals</button></div>
-<div class="card"><h2>Signals you've sent <span class="section-count" id="sentCount"></span></h2><ul id="sent"></ul><button type="button" class="show-more" id="moreSent" hidden>Show more sent signals</button></div></section>
+<section id="app" hidden><div class="overview" aria-label="Your Community Signal overview"><div class="overview-top"><h2>At a glance</h2><span id="participation" class="participation">Checking…</span></div><div class="stats"><a class="stat" href="#mutualCard"><strong id="overviewMutual">0</strong><span>Mutual</span></a><a class="stat" href="#receivedCard"><strong id="overviewReceived">0</strong><span>Received</span></a><a class="stat" href="#sentCard"><strong id="overviewSent">0</strong><span>Sent</span></a></div><div class="overview-actions"><a href="#discoverCard">Discover members</a><a href="#preferencesCard">Manage participation</a></div></div><div class="card" id="preferencesCard"><h2>Your preferences</h2><label><input type="checkbox" id="enabled">Join Community Signal: appear in discovery and receive acknowledgements</label><button id="save">Save preferences</button><p><small>Switch off anytime to stop discovery and new acknowledgements. Previous signals remain visible to participants until deletion.</small></p></div>
+<div class="card" id="discoverCard"><h2>Discover members</h2><p><small>Only people who opted in appear here. Maximum 10 new acknowledgements per 24 hours.</small></p><ul id="members"></ul></div>
+<div class="card" id="mutualCard"><h2>Mutual interest <span class="section-count" id="mutualCount"></span></h2><p><small>Both members acknowledged each other. No message is sent automatically. These counts include past acknowledgements, even if someone later turns off participation.</small></p><ul id="mutual"></ul><button type="button" class="show-more" id="moreMutual" hidden>Show more mutual interests</button></div><div class="card" id="receivedCard"><h2>Signals you've received <span class="section-count" id="receivedCount"></span></h2><p><small>History remains visible to the people involved after opting out.</small></p><details class="history-details"><summary>View received history</summary><ul id="received"></ul><button type="button" class="show-more" id="moreReceived" hidden>Show more received signals</button></details></div>
+<div class="card" id="sentCard"><h2>Signals you've sent <span class="section-count" id="sentCount"></span></h2><details class="history-details"><summary>View sent history</summary><ul id="sent"></ul><button type="button" class="show-more" id="moreSent" hidden>Show more sent signals</button></details></div></section>
 </main><script type="module">
 import {supabase} from "../assets/js/supabaseClient.js";
 const $=id=>document.getElementById(id);
@@ -54,6 +71,11 @@ async function loadSignals(){
  }
  return {data:all,error:null};
 }
+function updateParticipation(){
+ const pill=$("participation");
+ pill.textContent=enabled?"Participating":"Not participating";
+ pill.classList.toggle("active",enabled);
+}
 function status(message){$("status").textContent=message}
 function line(text){const li=document.createElement("li");li.textContent=text;return li}
 async function load(){
@@ -62,7 +84,7 @@ async function load(){
  user=current;$("app").hidden=false;
  const {data:pref,error:prefError}=await supabase.from("community_signal_preferences").select("discoverable,receive_signals").eq("user_id",user.id).maybeSingle();
  if(prefError){status("Community Signal database is not available yet.");return}
- enabled=!!(pref?.discoverable&&pref?.receive_signals);$("enabled").checked=enabled;
+ enabled=!!(pref?.discoverable&&pref?.receive_signals);$("enabled").checked=enabled;updateParticipation();
  status("");
  await refresh();
 }
@@ -77,7 +99,7 @@ async function refresh(){
  const receivedFrom=new Set(all.filter(s=>s.recipient_id===user.id).map(s=>s.sender_id));
  const names=new Map((members.data||[]).map(p=>[p.user_id,p.display_name]));
  const mutual=[...sentTo].filter(id=>receivedFrom.has(id));
- $("mutualCount").textContent="("+mutual.length+")";
+ $("mutualCount").textContent="("+mutual.length+")";$("overviewMutual").textContent=mutual.length;
  showMore("mutual",mutual,id=>line((names.get(id)||"Community member")+" — you both noticed each other."));
  if(!mutual.length)$("mutual").append(line("No mutual acknowledgements yet."));
  const list=$("members");list.replaceChildren();
@@ -89,7 +111,7 @@ async function refresh(){
  }
  for(const [id,filter,empty] of [["received",s=>s.recipient_id===user.id,"No acknowledgements received."],["sent",s=>s.sender_id===user.id,"No acknowledgements sent."]]){
  const rows=all.filter(filter);
- $(id+"Count").textContent="("+rows.length+")";
+ $(id+"Count").textContent="("+rows.length+")";$("overview"+id[0].toUpperCase()+id.slice(1)).textContent=rows.length;
  showMore(id,rows,s=>{
   const other=id==="received"?s.sender_id:s.recipient_id;
   const li=line((names.get(other)||"Community member")+" · "+new Date(s.created_at).toLocaleString()+" ");
@@ -116,7 +138,7 @@ $("save").addEventListener("click",async()=>{
  try{
   const {error}=await supabase.from("community_signal_preferences").upsert({user_id:user.id,discoverable:value,receive_signals:value,updated_at:new Date().toISOString()});
   if(error){status("Unable to save preferences: "+error.message);return}
-  enabled=value;
+  enabled=value;updateParticipation();
   if(!await refresh())return;
   status(value?"You're participating in Community Signal. Preferences saved.":"Community Signal turned off. Preferences saved.");
  }catch(error){status("Unable to save preferences. Please try again.")}
