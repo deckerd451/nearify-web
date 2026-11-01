@@ -45,7 +45,7 @@ async function refresh(){
  supabase.rpc("community_signal_discover"),
  supabase.from("community_signals").select("sender_id,recipient_id,created_at").order("created_at",{ascending:false}).limit(100)
  ]);
- if(members.error||signals.error){status("Unable to load signals. Try again later.");return}
+ if(members.error||signals.error){status("Unable to load signals. Try again later.");return false}
  const all=signals.data||[];
  const sentTo=new Set(all.filter(s=>s.sender_id===user.id).map(s=>s.recipient_id));
  const receivedFrom=new Set(all.filter(s=>s.recipient_id===user.id).map(s=>s.sender_id));
@@ -59,7 +59,7 @@ async function refresh(){
  else if(!members.data?.length)list.append(line("No other members have opted in yet."));
  else for(const p of members.data){
  const li=line(p.display_name+" ");const btn=document.createElement("button");btn.textContent=sentTo.has(p.user_id)?"Acknowledged":receivedFrom.has(p.user_id)?"Acknowledge back":"Notice their work";btn.disabled=sentTo.has(p.user_id);
- btn.addEventListener("click",async()=>{btn.disabled=true;const {error}=await supabase.rpc("community_signal_send",{target:p.user_id});if(error){status(error.message);btn.disabled=false}else{await refresh();status("Acknowledgement saved.")}});li.append(btn);list.append(li)
+ btn.addEventListener("click",async()=>{btn.disabled=true;const {error}=await supabase.rpc("community_signal_send",{target:p.user_id});if(error){status(error.message);btn.disabled=false}else{if(await refresh())status("Acknowledgement saved.")}});li.append(btn);list.append(li)
  }
  for(const [id,filter,empty] of [["received",s=>s.recipient_id===user.id,"No acknowledgements received."],["sent",s=>s.sender_id===user.id,"No acknowledgements sent."]]){
  const target=$(id);target.replaceChildren();const rows=(signals.data||[]).filter(filter);
@@ -68,11 +68,12 @@ async function refresh(){
  const li=line((names.get(other)||"Member "+other.slice(0,8)+"…")+" · "+new Date(s.created_at).toLocaleString()+" ");
  if(id==="received"&&!sentTo.has(other)&&enabled){
   const btn=document.createElement("button");btn.textContent="Acknowledge back";
-  btn.addEventListener("click",async()=>{btn.disabled=true;const {error}=await supabase.rpc("community_signal_send",{target:other});if(error){status(error.message);btn.disabled=false}else{await refresh();status("Acknowledgement returned.")}});li.append(btn);
+  btn.addEventListener("click",async()=>{btn.disabled=true;const {error}=await supabase.rpc("community_signal_send",{target:other});if(error){status(error.message);btn.disabled=false}else{if(await refresh())status("Acknowledgement returned.")}});li.append(btn);
  }
  target.append(li);
 }
  }
+ return true;
 }
 $("save").addEventListener("click",async()=>{
  const button=$("save");const value=$("enabled").checked;
@@ -82,7 +83,7 @@ $("save").addEventListener("click",async()=>{
   const {error}=await supabase.from("community_signal_preferences").upsert({user_id:user.id,discoverable:value,receive_signals:value,updated_at:new Date().toISOString()});
   if(error){status("Unable to save preferences: "+error.message);return}
   enabled=value;
-  await refresh();
+  if(!await refresh())return;
   status(value?"You're participating in Community Signal. Preferences saved.":"Community Signal turned off. Preferences saved.");
  }catch(error){status("Unable to save preferences. Please try again.")}
  finally{button.disabled=false;button.removeAttribute("aria-busy")}
