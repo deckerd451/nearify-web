@@ -6280,3 +6280,41 @@ body.cc-page .cc-event-actions .btn.secondary:hover {
   .connection-row-aside { min-width: 0; }
   .connection-save-btn { min-height: 44px; }
 }
+
+
+/* Home dashboard: compact, glanceable mobile presentation.
+   Scope to #dashboardView to avoid changing event and admin pages. */
+#dashboardView .cc-dashboard-subtitle-link,
+#dashboardView .cc-dashboard-subtitle a {
+  color: #bca7ff;
+  text-decoration-color: currentColor;
+  text-underline-offset: 3px;
+}
+#dashboardView .cc-dashboard-subtitle-link:focus-visible {
+  outline: 2px solid #bca7ff;
+  outline-offset: 3px;
+}
+@media (max-width: 600px) {
+  #dashboardView .cc-dashboard { padding-top: 12px; padding-bottom: 30px; }
+  #dashboardView .cc-dashboard-section { margin-bottom: 16px; }
+  #dashboardView .cc-dashboard-primary { padding: 14px; }
+  #dashboardView .cc-dashboard-header { margin-bottom: 12px; }
+  #dashboardView .cc-dashboard-subtitle { margin-top: 4px; line-height: 1.45; }
+  #dashboardView .cc-network-widget { padding: 15px; margin-bottom: 14px; border-radius: 16px; }
+  #dashboardView .cc-network-widget-top { gap: 8px; }
+  #dashboardView .cc-network-title { font-size: 21px; line-height: 1.2; }
+  #dashboardView .cc-network-kicker { margin-bottom: 4px; }
+  #dashboardView .cc-attending-list,
+  #dashboardView .cc-see-again-list { margin-top: 10px; gap: 8px; }
+  #dashboardView .cc-attending-item,
+  #dashboardView .cc-see-again-item { padding: 12px; gap: 10px; min-width: 0; }
+  #dashboardView .cc-attending-item > *,
+  #dashboardView .cc-see-again-item > * { min-width: 0; }
+  #dashboardView .cc-see-again-heading { overflow-wrap: anywhere; line-height: 1.35; }
+  #dashboardView .cc-event-card { padding: 15px; border-radius: 15px; }
+  #dashboardView .cc-event-name { font-size: 17px; line-height: 1.3; overflow-wrap: anywhere; }
+  #dashboardView .cc-event-actions { margin-top: 12px; gap: 8px; }
+  #dashboardView .cc-event-actions .btn { min-height: 44px; }
+  #dashboardView .cc-recommended-item { min-height: 0; padding: 13px; gap: 10px; }
+  #dashboardView .cc-network-widget .btn { min-height: 44px; }
+}
