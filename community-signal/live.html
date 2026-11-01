@@ -93,7 +93,7 @@ async function refresh(){
  showMore(id,rows,s=>{
   const other=id==="received"?s.sender_id:s.recipient_id;
   const li=line((names.get(other)||"Community member")+" · "+new Date(s.created_at).toLocaleString()+" ");
-  if(id==="received"&&!sentTo.has(other)&&enabled){
+  if(id==="received"&&!sentTo.has(other)&&enabled&&names.has(other)){
    const btn=document.createElement("button");btn.textContent="Acknowledge back";
    btn.addEventListener("click",async()=>{
     btn.disabled=true;
