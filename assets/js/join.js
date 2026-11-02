@@ -593,10 +593,10 @@ function renderGenericJoinUx(event, fallbackName, source) {
   setText(els.joinKicker, "Join Event");
 
   if (isMeetup) {
-    setText(els.joinTitle, "You're joining the live network for this event.");
+    setText(els.joinTitle, "Save someone you meet at this event.");
     setText(
       els.joinDescription,
-      "See who's going, find people worth talking to, and stay connected after the event ends — without chasing down contact info later."
+      "Join as a guest in your browser, then scan a personal Nearify QR to save someone you met."
     );
   } else {
     setText(els.joinTitle, title);
@@ -605,7 +605,7 @@ function renderGenericJoinUx(event, fallbackName, source) {
     } else {
       setText(
         els.joinDescription,
-        "Nearify shows you who's actually at this event so you can discover and connect in real time."
+        "Join as a guest and save people you meet by scanning their personal Nearify QR codes."
       );
     }
   }
@@ -613,7 +613,7 @@ function renderGenericJoinUx(event, fallbackName, source) {
   renderEventMeta(event);
   renderPayload(event.id);
 
-  if (els.getAppBtn) els.getAppBtn.textContent = isMeetup ? "Enter Live Network" : "Get Nearify (TestFlight)";
+  if (els.getAppBtn) els.getAppBtn.textContent = "Get iPhone app (optional)";
   if (els.alreadyInstalledHint) {
     els.alreadyInstalledHint.textContent = isMeetup
       ? "Already have the app? Open it to browse attendees and check in."
@@ -637,18 +637,9 @@ function renderGenericJoinUx(event, fallbackName, source) {
     els.joinPanelList.className = "join-steps-list";
     if (isMeetup) {
       els.joinPanelList.innerHTML = `
-        <li>
-          <div class="join-step-label">See who's actually here</div>
-          <div class="join-step-detail">Real attendee presence, not an RSVP count. Get the app to see who's in the live network.</div>
-        </li>
-        <li>
-          <div class="join-step-label">Let relevant people find you</div>
-          <div class="join-step-detail">Your profile signals your intent. Others with aligned goals can discover you before you even meet.</div>
-        </li>
-        <li>
-          <div class="join-step-label">Keep who you meet after it ends</div>
-          <div class="join-step-detail">Check in at the venue. The people you meet are saved so you can follow up later.</div>
-        </li>
+        <li><div class="join-step-label">Join as guest</div><div class="join-step-detail">Enter your name in the browser. No app required.</div></li>
+        <li><div class="join-step-label">Meet in person</div><div class="join-step-detail">Ask someone you met for their personal Nearify QR code.</div></li>
+        <li><div class="join-step-label">Save the connection</div><div class="join-step-detail">Scan their QR and sign in later to keep your connections.</div></li>
       `;
     } else {
       els.joinPanelList.innerHTML = `
@@ -668,13 +659,13 @@ function renderGenericJoinUx(event, fallbackName, source) {
     }
   }
 
-  if (els.joinBottomCtaTitle) els.joinBottomCtaTitle.textContent = isMeetup ? "Ready to enter the live network?" : "Ready to join?";
+  if (els.joinBottomCtaTitle) els.joinBottomCtaTitle.textContent = "The iPhone app is optional";
   if (els.joinBottomCtaDescription) {
     els.joinBottomCtaDescription.textContent = isMeetup
-      ? "See who else is going, know who is worth talking to, and save the people who matter."
+      ? "You can join as a guest in your browser. No app required."
       : "Install the app, then join and check in when you arrive (in app or via event QR).";
   }
-  if (els.joinBottomCtaButton) els.joinBottomCtaButton.textContent = isMeetup ? "Enter Live Network" : "Get Nearify on TestFlight";
+  if (els.joinBottomCtaButton) els.joinBottomCtaButton.textContent = "Get iPhone app (optional)";
   if (els.joinBottomCtaHint) els.joinBottomCtaHint.textContent = "Already installed? Open the app to browse, join, and check in.";
 
   // ── CTA click tracking ──────────────────────────────────────────────────
@@ -963,49 +954,10 @@ function saveGhostFlatKeys(ghost) {
 let guestEventAttendees = [];
 const attendeeRequestByEventId = new Map();
 
-async function fetchGuestEventAttendees(eventId) {
-  console.log("[GuestAttendees] Loading attendees for event", eventId);
-  if (!eventId) return { attendees: [] };
-  if (attendeeRequestByEventId.has(eventId)) {
-    return attendeeRequestByEventId.get(eventId);
-  }
-  const request = dedupeRequest(`attendees:${eventId}`, () =>
-    withRetry("join:get_public_event_attendees", () => supabase.rpc("get_public_event_attendees", {
-      p_event_id: eventId,
-    }))
-  )
-    .then(({ data, error }) => {
-      console.log("[GuestAttendees] get_public_event_attendees result", data, error);
-
-      if (error) {
-        logger.warn("[GuestAttendees] RPC failed", error.message, error.code);
-        return { attendees: [], loadError: "Couldn't load attendees." };
-      }
-
-      if (!data?.length) {
-        return { attendees: [], empty: "No attendees found for this event yet." };
-      }
-
-      const normalized = data
-        .filter((r) => r.name)
-        .map((r) => {
-          const attendee = {
-            profileId:          r.profile_id,
-            name:               r.name,
-            avatarUrl:          r.avatar_url || null,
-            intent:             r.intent_primary || null,
-            relationshipStatus: r.relationship_status ?? null,
-          };
-          logger.log("[RelationshipVisibility]", `relationshipStatus=${attendee.relationshipStatus}`, attendee.name);
-          return attendee;
-        });
-
-      console.log("[GuestAttendees] normalized attendees", normalized);
-      return { attendees: normalized };
-    })
-    .finally(() => attendeeRequestByEventId.delete(eventId));
-  attendeeRequestByEventId.set(eventId, request);
-  return request;
+// The legacy anonymous roster is intentionally not queried: consent and
+// event membership must be enforced server-side before any directory ships.
+async function fetchGuestEventAttendees(_eventId) {
+  return { attendees: [], empty: "Scan a person's Nearify QR to save them." };
 }
 
 function getAttendeeInitials(name) {
@@ -1217,7 +1169,7 @@ function showGuestJoinedState(ghost) {
 
   const joinedLabel = joined?.querySelector(".guest-joined-label");
   if (joinedLabel && isMeetupSource) {
-    joinedLabel.textContent = "You're in the live Nearify network for this event.";
+    joinedLabel.textContent = "You're joining this event as a guest.";
   }
 
   wireGuestConnectSection();
@@ -1231,41 +1183,14 @@ function showGuestJoinedState(ghost) {
     || localStorage.getItem("nearify_ghost_event_id")
     || new URLSearchParams(window.location.search).get("event");
 
-  if (connectEventId) {
-    fetchGuestEventAttendees(connectEventId).then(({ attendees, loadError, empty }) => {
-      guestEventAttendees = attendees;
-      logger.log("[GuestConnect] Loaded", attendees.length, "attendees");
-
-      if (attendees.length > 0) {
-        const recs = computeGhostRecommendations(attendees, ghostIntentPrimary);
-        renderGhostRecommendations(recs, connectEventId);
-        // Show intent refinement chips below recommendations
-        show(document.getElementById("ghostIntentStep"));
-        // Mark the active chip for the current intent
-        const intentStep = document.getElementById("ghostIntentStep");
-        if (intentStep && ghostIntentPrimary) {
-          intentStep.querySelectorAll(".ghost-intent-chip").forEach((c) => {
-            c.classList.toggle("ghost-intent-chip--active", c.dataset.intent === ghostIntentPrimary);
-          });
-        }
-      }
-
-      const statusEl = document.getElementById("guestConnectStatus");
-      if (statusEl) {
-        if (loadError) {
-          statusEl.textContent = loadError;
-        } else if (empty) {
-          statusEl.textContent = empty;
-        } else if (attendees.length > 0) {
-          // Attendees loaded — placeholder is no longer needed; clear only if
-          // no connection message is already showing.
-          if (statusEl.textContent === "Search for someone you met and save the interaction.") {
-            statusEl.textContent = "";
-          }
-        }
-      }
-    });
-  }
+  // Disable directory search, recommendations and intent suggestions: the
+  // existing backend roster does not enforce attendee discovery consent.
+  const searchWrap = document.querySelector(".guest-search-wrap");
+  if (searchWrap) hide(searchWrap);
+  hide(document.getElementById("ghostRecommendations"));
+  hide(document.getElementById("ghostIntentStep"));
+  const connectStatus = document.getElementById("guestConnectStatus");
+  if (connectStatus) connectStatus.textContent = "To save someone you met, scan their personal Nearify QR code. Your saved people will appear here.";
 
   // Wire the claim sign-in button every time the joined state is shown
   // (runs for both new-join and restored-session paths)
@@ -2041,15 +1966,7 @@ async function initJoinPage() {
       await maybeClaimPendingGhostSession();
       await maybeAutoClaimGhostForAuthenticatedUser(event.id);
 
-      if (isMeetupSource) {
-        renderLiveStatusIndicator();
-        fetchGuestEventAttendees(event.id).then(({ attendees }) => {
-          guestEventAttendees  = attendees;
-          lastKnownAttendees   = attendees.slice();
-          renderLiveAttendeePreview(attendees);
-          startLivePolling(event.id);
-        });
-      }
+      // Anonymous live roster disabled pending consent-scoped backend access.
 
     } else {
       // ── Unauthenticated → full guest flow ──────────────────────────────
@@ -2068,16 +1985,7 @@ async function initJoinPage() {
       initGuestJoinSection(event.id);
       await maybeClaimPendingGhostSession();
 
-      if (isMeetupSource) {
-        renderLiveStatusIndicator();
-        // Initial fetch: render preview, seed the diff baseline, start polling.
-        fetchGuestEventAttendees(event.id).then(({ attendees }) => {
-          guestEventAttendees  = attendees;
-          lastKnownAttendees   = attendees.slice();
-          renderLiveAttendeePreview(attendees);
-          startLivePolling(event.id);
-        });
-      }
+      // Anonymous live roster disabled pending consent-scoped backend access.
     }
 
     showIntentStep();
