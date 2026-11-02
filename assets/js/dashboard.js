@@ -808,7 +808,8 @@ function renderNetworkMemoryWidget(connections, events) {
   const widget = document.getElementById("networkMemoryWidget");
   if (!widget) return;
 
-  const shouldShow = connections.length > 0 || events.length === 0 || !events.some((event) => ["live", "upcoming"].includes(getEventStatus(event)));
+  // Keep a useful, private connections entry point even with an empty network.
+  const shouldShow = true;
   if (!shouldShow) {
     widget.hidden = true;
     widget.replaceChildren();
@@ -1052,6 +1053,8 @@ function renderAttendingWidget(attending) {
     .sort((a, b) => byStart(b, a));
 
   widget.replaceChildren();
+  const heading = document.getElementById("attendingHeading");
+  if (heading) heading.textContent = active.length ? "Your Next Event" : "Your Event History";
 
   if (active.length) {
     const list = document.createElement("ul");
@@ -1157,10 +1160,11 @@ async function refreshDashboard() {
   const currentProfileId = await fetchCurrentProfileId();
   const attending = await fetchMyAttendingEvents(currentProfileId);
   const attendingIds = new Set(attending.map((a) => a.event?.id).filter(Boolean));
-  const [seeAgainOpportunities, recommendations] = await Promise.all([
-    fetchUpcomingEventsForConnections(connections, currentProfileId),
-    buildRecommendedEvents(connections, currentProfileId, attendingIds),
-  ]);
+  // Privacy gate: neither network attendance nor relationship-based event
+  // recommendations may read other users' event_attendees until a consent-
+  // scoped server RPC is deployed and verified.
+  const seeAgainOpportunities = [];
+  const recommendations = [];
   renderAttendingWidget(attending);
   renderNetworkMemoryWidget(connections, []);
   renderRecommendedForYouWidget(recommendations);
@@ -1388,10 +1392,9 @@ async function loadDashboard() {
     const currentProfileId = await fetchCurrentProfileId();
     const attending = await fetchMyAttendingEvents(currentProfileId);
     const attendingIds = new Set(attending.map((a) => a.event?.id).filter(Boolean));
-    const [seeAgainOpportunities, recommendations] = await Promise.all([
-      fetchUpcomingEventsForConnections(connections, currentProfileId),
-      buildRecommendedEvents(connections, currentProfileId, attendingIds),
-    ]);
+    // Privacy gate: no direct reads of other people's attendance.
+    const seeAgainOpportunities = [];
+    const recommendations = [];
 
     renderAttendingWidget(attending);
     renderNetworkMemoryWidget(connections, []);
