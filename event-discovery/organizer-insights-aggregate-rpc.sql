@@ -61,7 +61,8 @@ begin
   ) g;
 
   -- Each distinct tag is counted once per profile, and rare tags are omitted.
-  -- Cast to text to support either text[] or text-based tag storage.
+  -- Both profile tag columns are text[]. Unnest the actual array elements:
+  -- casting arrays to text and splitting on commas corrupts tags with commas.
   select coalesce(jsonb_agg(jsonb_build_array(tag, n) order by n desc, tag), '[]'::jsonb)
     into v_interests
   from (
@@ -70,9 +71,7 @@ begin
       select distinct ea.profile_id, btrim(t.tag) as tag
       from public.event_attendees ea
       join public.profiles p on p.id = ea.profile_id
-      cross join lateral regexp_split_to_table(
-        trim(both '{}' from coalesce(p.interests::text, '')), ','
-      ) as t(tag)
+      cross join lateral unnest(coalesce(p.interests, array[]::text[])) as t(tag)
       where ea.event_id = p_event_id
         and ea.status in ('joined', 'inEvent')
         and btrim(t.tag) <> ''
@@ -91,9 +90,7 @@ begin
       select distinct ea.profile_id, btrim(t.tag) as tag
       from public.event_attendees ea
       join public.profiles p on p.id = ea.profile_id
-      cross join lateral regexp_split_to_table(
-        trim(both '{}' from coalesce(p.skills::text, '')), ','
-      ) as t(tag)
+      cross join lateral unnest(coalesce(p.skills, array[]::text[])) as t(tag)
       where ea.event_id = p_event_id
         and ea.status in ('joined', 'inEvent')
         and btrim(t.tag) <> ''
