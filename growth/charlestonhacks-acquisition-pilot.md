@@ -2,6 +2,19 @@
 
 **Status:** proposal for review; no outreach, event listing, deployment, or data collection has been initiated.
 
+## Confirmed pilot event (organizer-supplied flyer)
+
+- **CharlestonHacks Show & Tell** — open mic night for creators
+- **Tuesday, November 17, 2026 at 5:30 PM**
+- **Freehouse Brewery**, 2895 Pringle St, North Charleston
+- **Free and open to all**
+- **Official RSVP: Meetup** (exact event URL not yet provided; do not invent one)
+- User reports helping organize CharlestonHacks events; still coordinate any promotional placement with fellow organizers.
+
+**Distribution approach:** Keep Meetup as the canonical RSVP. Introduce Nearify as an optional companion for making and remembering connections. Do not make Nearify registration a condition of attending. The attendee discovery feature must not be promoted or enabled before production privacy remediation.
+
+**Event-specific prep:** confirm the exact Meetup RSVP URL, whether the event already exists in Nearify, and which channels organizers can use for an invitation. Use a single QR/link only after the destination and privacy behavior are verified.
+
 ## Hypothesis
 
 Nearify's first constraint is acquiring a concentrated group of people at the **same event**, not adding product features. A CharlestonHacks event is a potential distribution partner, subject to organizer permission.
