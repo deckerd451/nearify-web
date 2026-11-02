@@ -1887,7 +1887,9 @@ async function maybeAutoClaimGhostForAuthenticatedUser(eventId) {
   logger.log("[Ghost] Authenticated user has ghost session — attempting auto-claim");
 
   const { data: { session } } = await getSessionCached();
-  if (!session?.user?.id) { clearGhostSession(); return; }
+  // Keep guest recovery credentials if authentication is temporarily unavailable.
+  // Clearing here would make an unclaimed connection unrecoverable on this device.
+  if (!session?.user?.id) return;
 
   const { data: profileData } = await supabase
     .from("profiles")
@@ -1898,7 +1900,7 @@ async function maybeAutoClaimGhostForAuthenticatedUser(eventId) {
   const profileId = profileData?.id;
   if (!profileId) {
     logger.warn("[Ghost] Auto-claim: no profile found for authenticated user");
-    clearGhostSession();
+    // Profile creation may still be in progress; preserve guest state for retry.
     return;
   }
 
@@ -1914,11 +1916,11 @@ async function maybeAutoClaimGhostForAuthenticatedUser(eventId) {
   });
 
   if (error) {
-    logger.warn("[Ghost] Auto-claim failed", error.message);
-  } else {
-    logger.log("[Ghost] Auto-claim succeeded");
+    logger.warn("[Ghost] Auto-claim failed; guest activity retained for retry", error.message);
+    return;
   }
 
+  logger.log("[Ghost] Auto-claim succeeded");
   clearGhostSession();
 }
 
