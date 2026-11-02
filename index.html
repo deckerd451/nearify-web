@@ -103,18 +103,12 @@
     <div id="dashboardView" style="display:none;">
 
       <div class="cc-dashboard">
-        <nav class="cc-home-quicklinks" aria-label="Your Nearify shortcuts">
-          <a href="/connections/index.html">My Connections</a>
-          <a href="/community-signal/live.html">Community Signal</a>
-          <a href="/events/index.html">Explore events</a>
-        </nav>
-
         <!-- ─── EVENTS YOU'RE ATTENDING (top) ──────────────────────────── -->
         <section id="attendingSection" class="cc-dashboard-section cc-dashboard-primary" aria-labelledby="attendingHeading" hidden>
           <div class="cc-dashboard-header">
             <div>
-              <h1 class="cc-dashboard-title" id="attendingHeading">Your Events</h1>
-              <p class="cc-dashboard-subtitle">Events you're attending · <a href="/events/index.html" class="cc-dashboard-subtitle-link">Browse all events</a></p>
+              <h1 class="cc-dashboard-title" id="attendingHeading">Your Next Event</h1>
+              <p class="cc-dashboard-subtitle">Your upcoming plans · <a href="/events/index.html" class="cc-dashboard-subtitle-link">Browse all events</a></p>
             </div>
           </div>
           <div id="attendingWidget" class="cc-network-widget cc-attending-widget"></div>
@@ -131,8 +125,16 @@
           <div id="recommendedForYouWidget" class="cc-network-widget cc-recommended-widget" aria-label="Recommended For You" hidden></div>
         </section>
 
+        <!-- Connection memory is useful without revealing anyone else's attendance. -->
+        <section id="networkMemoryWidget" class="cc-network-widget cc-network-memory-widget" aria-label="My Connections" hidden></section>
+        <!-- Keep network attendance hidden until consent-scoped server access exists. -->
         <section id="seeAgainWidget" class="cc-network-widget cc-see-again-widget" aria-label="See them again soon" hidden></section>
-        <section id="networkMemoryWidget" class="cc-network-widget cc-network-memory-widget" aria-label="My Network" hidden></section>
+
+        <nav class="cc-home-quicklinks" aria-label="Your Nearify shortcuts">
+          <a href="/connections/index.html">My Connections</a>
+          <a href="/events/index.html">Explore events</a>
+          <a href="/community-signal/live.html">Community Signal</a>
+        </nav>
 
       </div>
     </div>
