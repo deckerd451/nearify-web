@@ -675,12 +675,11 @@ function renderGenericJoinUx(event, fallbackName, source) {
       if (isMeetup) {
         // For Meetup source: attempt to open the specific event in the iOS app
         // instead of navigating directly to TestFlight.
-        e.preventDefault();
-        trackFunnelEvent("enter_live_network_clicked", {
+        // Optional app link follows its TestFlight href; never force a deep link.
+        trackFunnelEvent("testflight_clicked", {
           eventId: event.id, source: "meetup",
           sourceEventId: meetupSourceEventId, button: "hero_primary",
         });
-        attemptEventDeepLink(event.id, "hero_primary");
       } else {
         trackFunnelEvent("testflight_clicked", {
           eventId: event.id, source: null, sourceEventId: null, button: "hero_primary",
@@ -692,12 +691,11 @@ function renderGenericJoinUx(event, fallbackName, source) {
   if (els.joinBottomCtaButton) {
     els.joinBottomCtaButton.addEventListener("click", (e) => {
       if (isMeetup) {
-        e.preventDefault();
-        trackFunnelEvent("enter_live_network_clicked", {
+        // Optional app link follows its TestFlight href; never force a deep link.
+        trackFunnelEvent("testflight_clicked", {
           eventId: event.id, source: "meetup",
           sourceEventId: meetupSourceEventId, button: "bottom_cta",
         });
-        attemptEventDeepLink(event.id, "bottom_cta");
       } else {
         trackFunnelEvent("testflight_clicked", {
           eventId: event.id, source: null, sourceEventId: null, button: "bottom_cta",
