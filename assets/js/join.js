@@ -1187,7 +1187,7 @@ function guestProfileFromQr(value, eventId) {
   try {
     const url = new URL(String(value).trim());
     if (url.protocol !== "https:" || url.hostname !== "nearify.org") return null;
-    if (!/^\\/join\\/?$/.test(url.pathname)) return null;
+    if (url.pathname !== "/join/" && url.pathname !== "/join") return null;
     const profile = url.searchParams.get("profile");
     const linkedEvent = url.searchParams.get("event");
     return UUID_RE.test(profile || "") && linkedEvent === eventId ? profile : null;
