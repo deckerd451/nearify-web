@@ -1172,6 +1172,98 @@ function wireGuestConnectSection() {
   }, { capture: true, once: false });
 }
 
+let guestQrStream = null;
+let guestQrScanActive = false;
+
+function stopGuestQrCamera() {
+  guestQrScanActive = false;
+  if (guestQrStream) guestQrStream.getTracks().forEach((track) => track.stop());
+  guestQrStream = null;
+  const video = document.getElementById("guestQrVideo");
+  if (video) video.srcObject = null;
+}
+
+function guestProfileFromQr(value, eventId) {
+  try {
+    const url = new URL(String(value).trim());
+    if (url.protocol !== "https:" || url.hostname !== "nearify.org") return null;
+    if (!/^\\/join\\/?$/.test(url.pathname)) return null;
+    const profile = url.searchParams.get("profile");
+    const linkedEvent = url.searchParams.get("event");
+    return UUID_RE.test(profile || "") && linkedEvent === eventId ? profile : null;
+  } catch (_) {
+    return null;
+  }
+}
+
+async function saveGuestQrProfile(value, eventId) {
+  const status = document.getElementById("guestQrStatus");
+  const profileId = guestProfileFromQr(value, eventId);
+  if (!profileId) {
+    if (status) status.textContent = "Use a Nearify personal QR link for this event. Other QR codes cannot be saved here.";
+    return;
+  }
+  stopGuestQrCamera();
+  if (status) status.textContent = "Saving your connection…";
+  const result = await maybeConnectGhostToProfile(eventId, profileId);
+  if (!result) {
+    if (status) status.textContent = "Couldn't save this connection. Check the QR and try again.";
+    return;
+  }
+  const connections = await loadGuestConnectionHistory();
+  renderGuestConnectionHistory(connections);
+  updateClaimButtonCount(connections.length);
+  if (status) status.textContent = "Connection saved. Claim your connections when you're ready.";
+  const panel = document.getElementById("guestQrScanner");
+  if (panel) panel.hidden = true;
+}
+
+function wireGuestQrScanner(eventId) {
+  const open = document.getElementById("guestScanQrBtn");
+  const panel = document.getElementById("guestQrScanner");
+  const video = document.getElementById("guestQrVideo");
+  const status = document.getElementById("guestQrStatus");
+  const stop = document.getElementById("guestStopQrBtn");
+  const save = document.getElementById("guestSaveQrLinkBtn");
+  const input = document.getElementById("guestQrLink");
+  if (!open || !panel || open.dataset.wired) return;
+  open.dataset.wired = "true";
+  stop?.addEventListener("click", stopGuestQrCamera);
+  save?.addEventListener("click", () => saveGuestQrProfile(input?.value || "", eventId));
+  open.addEventListener("click", async () => {
+    panel.hidden = false;
+    if (guestQrStream) return;
+    if (!navigator.mediaDevices?.getUserMedia || typeof BarcodeDetector === "undefined") {
+      if (status) status.textContent = "Camera QR scanning isn't supported in this browser. Paste the person's Nearify link below.";
+      return;
+    }
+    try {
+      const detector = new BarcodeDetector({ formats: ["qr_code"] });
+      guestQrStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" }, audio: false });
+      video.srcObject = guestQrStream;
+      await video.play();
+      guestQrScanActive = true;
+      if (status) status.textContent = "Point your camera at their personal Nearify QR.";
+      const scan = async () => {
+        if (!guestQrScanActive) return;
+        try {
+          const codes = await detector.detect(video);
+          if (codes.length && codes[0].rawValue) {
+            await saveGuestQrProfile(codes[0].rawValue, eventId);
+            return;
+          }
+        } catch (_) {}
+        if (guestQrScanActive) setTimeout(scan, 250);
+      };
+      scan();
+    } catch (_) {
+      stopGuestQrCamera();
+      if (status) status.textContent = "Camera unavailable. Paste their Nearify link below instead.";
+    }
+  });
+  window.addEventListener("pagehide", stopGuestQrCamera, { once: true });
+}
+
 function showGuestJoinedState(ghost) {
   const section = document.getElementById("guestJoinSection");
   const form = document.getElementById("guestForm");
@@ -1193,11 +1285,24 @@ function showGuestJoinedState(ghost) {
   }
 
   wireGuestConnectSection();
+  wireGuestQrScanner(ghost.eventId || localStorage.getItem("nearify_ghost_event_id") || new URLSearchParams(window.location.search).get("event"));
   wireGhostIntentChips(ghost.eventId || localStorage.getItem("nearify_ghost_event_id") || new URLSearchParams(window.location.search).get("event"));
-  loadGuestConnectionHistory().then((connections) => {
-    renderGuestConnectionHistory(connections);
-    updateClaimButtonCount(connections.length);
-  });
+  const scannedProfile = getQueryParams().profileId;
+  const scannedEvent = getQueryParams().eventId;
+  if (scannedProfile && scannedEvent === ghost.eventId) {
+    // A personal QR opened before guest registration. Record it once the
+    // guest session exists; no anonymous attendee directory is queried.
+    saveGuestQrProfile(window.location.href, scannedEvent).then(() => {
+      const clean = new URL(window.location.href);
+      clean.searchParams.delete("profile");
+      history.replaceState(null, "", clean);
+    });
+  } else {
+    loadGuestConnectionHistory().then((connections) => {
+      renderGuestConnectionHistory(connections);
+      updateClaimButtonCount(connections.length);
+    });
+  }
 
   const connectEventId = ghost.eventId
     || localStorage.getItem("nearify_ghost_event_id")
