@@ -1,3 +1,25 @@
+// Render the limited Markdown used in imported event descriptions without HTML injection.
+// Text stays textContent; only **bold** markers and line breaks become DOM nodes.
+function renderEventDescription(target, value) {
+  if (!target) return;
+  const source = String(value ?? "");
+  target.replaceChildren();
+  const lines = source.split(/\r?\n/);
+  lines.forEach((line, lineIndex) => {
+    if (lineIndex) target.appendChild(document.createElement("br"));
+    const parts = line.split(/(\*\*[^*\n]+\*\*)/g);
+    parts.forEach((part) => {
+      if (part.startsWith("**") && part.endsWith("**") && part.length > 4) {
+        const strong = document.createElement("strong");
+        strong.textContent = part.slice(2, -2);
+        target.appendChild(strong);
+      } else if (part) {
+        target.appendChild(document.createTextNode(part));
+      }
+    });
+  });
+}
+
 import { supabase, getSessionCached } from "./supabaseClient.js";
 import { setCurrentEventId } from "./appState.js";
 import { fetchIntelligence, fetchEventMeta, renderIntelligenceInto } from "./intelligence.js";
@@ -206,7 +228,7 @@ function renderSummaryPreview(event) {
     return;
   }
 
-  text.textContent = desc; // CSS clamps to ~3 lines while collapsed
+  renderEventDescription(text, desc); // CSS clamps to ~3 lines while collapsed
   wrap.style.display = "";
 
   if (logistics) {
