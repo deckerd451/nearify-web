@@ -28,7 +28,7 @@ select e.signature,
        coalesce(p.proconfig @> array['search_path=']::text[],false) as empty_search_path,
        has_function_privilege('anon', p.oid, 'EXECUTE') as anon_execute,
        has_function_privilege('authenticated', p.oid, 'EXECUTE') as authenticated_execute,
-       has_function_privilege('public', p.oid, 'EXECUTE') as public_execute
+       exists (select 1 from pg_catalog.aclexplode(coalesce(p.proacl, pg_catalog.acldefault('f',p.proowner))) a where a.grantee=0 and a.privilege_type='EXECUTE') as public_execute
 from expected_functions e
 left join pg_catalog.pg_proc p on p.oid=to_regprocedure(e.signature)
 order by e.signature;
