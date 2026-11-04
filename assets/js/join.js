@@ -1400,7 +1400,15 @@ function showGuestJoinedState(ghost) {
   wireGhostIntentChips(ghost.eventId || localStorage.getItem("nearify_ghost_event_id") || new URLSearchParams(window.location.search).get("event"));
   const scannedProfile = getQueryParams().profileId;
   const scannedEvent = getQueryParams().eventId;
-  if (scannedProfile && scannedEvent === ghost.eventId) {
+  const resolvedEventId = ghost.eventId || localStorage.getItem("nearify_ghost_event_id") || scannedEvent;
+  const scannedGuest = new URLSearchParams(window.location.search).get("guest");
+  if (scannedGuest && scannedEvent === resolvedEventId) {
+    saveGuestQrCode(window.location.href, resolvedEventId).then(() => {
+      const clean = new URL(window.location.href);
+      clean.searchParams.delete("guest");
+      history.replaceState(null, "", clean);
+    });
+  } else if (scannedProfile && scannedEvent === resolvedEventId) {
     // A personal QR opened before guest registration. Record it once the
     // guest session exists; no anonymous attendee directory is queried.
     saveGuestQrProfile(window.location.href, scannedEvent).then(() => {
