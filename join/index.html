@@ -229,8 +229,15 @@
             <!-- A guest has no public profile QR until they claim an account.
                  Scan a member's personal QR to record a guest connection. -->
             <div class="guest-qr-actions" style="margin-top:18px;">
+              <button id="guestShowQrBtn" class="btn primary" type="button">Show My QR</button>
+              <div id="guestMyQrPanel" hidden style="margin:12px 0;padding:16px;border-radius:12px;background:#fff;color:#111;">
+                <p style="margin:0 0 10px;">Let another guest scan this QR to save meeting you.</p>
+                <div id="guestMyQrCode" style="display:flex;justify-content:center;"></div>
+                <p id="guestMyQrStatus" role="status" aria-live="polite"></p>
+                <button id="guestCopyQrBtn" class="btn secondary" type="button">Copy my guest link</button>
+              </div>
               <button id="guestScanQrBtn" class="btn primary" type="button">Scan someone's QR</button>
-              <p class="guest-connect-subtitle" style="margin-top:8px;">Ask a Nearify member to show their personal QR. Your guest connections stay on this device until claimed.</p>
+              <p class="guest-connect-subtitle" style="margin-top:8px;">Scan another guest’s QR or a Nearify member’s personal QR. Guest-to-guest saves remain on this device until account recovery is implemented.</p>
               <div id="guestQrScanner" hidden>
                 <video id="guestQrVideo" autoplay muted playsinline style="width:100%;max-height:300px;border-radius:12px;background:#111;"></video>
                 <button id="guestStopQrBtn" class="btn secondary" type="button">Stop camera</button>
@@ -244,7 +251,7 @@
             <!-- Connection capture -->
             <div class="guest-connect-section">
               <p class="guest-connect-title">People you met</p>
-              <p class="guest-connect-subtitle">Scan someone’s personal Nearify QR code to save the person you met. Your saved connections appear below.</p>
+              <p class="guest-connect-subtitle">Scan someone’s Nearify QR to save who you met. Guest-to-guest connections are not yet transferred when you sign in.</p>
               <div class="guest-search-wrap">
                 <input
                   id="guestAttendeeSearch"
@@ -504,7 +511,7 @@
       });
     }
   </script>
-  <script type="module" src="../assets/js/join.js?v=20261103-qr"></script>
+  <script type="module" src="../assets/js/join.js?v=20261104-guestqr"></script>
   <script type="module" src="../assets/js/navAuth.js?v=20260910"></script>
   <script type="module">
     import { trackPageView, wireAppCtaTracking } from "../assets/js/analytics.js?v=20260909";
