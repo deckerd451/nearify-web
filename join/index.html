@@ -226,6 +226,21 @@
             <p id="guestJoinedName" class="guest-joined-name"></p>
             <p class="guest-joined-sub">Your guest session will stay active on this device.</p>
 
+            <!-- A guest has no public profile QR until they claim an account.
+                 Scan a member's personal QR to record a guest connection. -->
+            <div class="guest-qr-actions" style="margin-top:18px;">
+              <button id="guestScanQrBtn" class="btn primary" type="button">Scan someone's QR</button>
+              <p class="guest-connect-subtitle" style="margin-top:8px;">Ask a Nearify member to show their personal QR. Your guest connections stay on this device until claimed.</p>
+              <div id="guestQrScanner" hidden>
+                <video id="guestQrVideo" autoplay muted playsinline style="width:100%;max-height:300px;border-radius:12px;background:#111;"></video>
+                <button id="guestStopQrBtn" class="btn secondary" type="button">Stop camera</button>
+                <label for="guestQrLink" class="guest-connect-subtitle">Or paste their personal Nearify link</label>
+                <input id="guestQrLink" class="guest-join-input" type="url" inputmode="url" placeholder="https://nearify.org/join/?event=...&amp;profile=..." autocomplete="off" />
+                <button id="guestSaveQrLinkBtn" class="btn secondary" type="button">Save from link</button>
+              </div>
+              <p id="guestQrStatus" class="intent-status" aria-live="polite"></p>
+            </div>
+
             <!-- Connection capture -->
             <div class="guest-connect-section">
               <p class="guest-connect-title">People you met</p>
@@ -489,7 +504,7 @@
       });
     }
   </script>
-  <script type="module" src="../assets/js/join.js?v=20260909"></script>
+  <script type="module" src="../assets/js/join.js?v=20261103-qr"></script>
   <script type="module" src="../assets/js/navAuth.js?v=20260910"></script>
   <script type="module">
     import { trackPageView, wireAppCtaTracking } from "../assets/js/analytics.js?v=20260909";
