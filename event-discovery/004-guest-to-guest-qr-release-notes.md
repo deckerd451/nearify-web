@@ -13,7 +13,7 @@ This PR is **database foundation only**. It does not enable guest-to-guest UI, d
 
 ## Deployment sequence
 
-1. Review `004-guest-to-guest-qr-foundation.sql` against the live Supabase schema (particularly `ghost_participants.claimed_by_profile_id` and the `events` FK). This is additive and transactional, but has **not** been run or tested against production.
+1. Run **`004-read-only-preflight.sql` first** in Supabase SQL Editor and share its output. This checks key columns, primary key, built-in randomness, and collisions with existing guest QR objects without changing data. A pass is necessary but not sufficient; verify the production schema and permissions before installing `004-guest-to-guest-qr-foundation.sql`. Neither file has been run against production by this PR.
 2. After review, run SQL manually in the existing Supabase SQL Editor.
 3. Verify anon has no direct SELECT on either table, and EXECUTE only on the three narrowly scoped functions.
 4. In a **separate PR**, add a guest QR display, scanner recognition for guest share URLs, and outgoing guest history. Feature-gate UI until SQL is verified.
