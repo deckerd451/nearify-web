@@ -1801,13 +1801,73 @@ function wireGuestJoinFlow(eventId) {
   // so it fires for both new-join and restored-session paths.
 }
 
-function initGuestJoinSection(eventId) {
+// A locally restored session is not proof that its database row remains
+// eligible for guest actions. The share-code RPC checks both credentials and
+// claimed_by_profile_id, matching the guest-to-guest save preconditions.
+async function initGuestJoinSection(eventId) {
   const existing = loadGhostSession(eventId);
-  if (existing?.ghostId) {
-    ghostIntentPrimary = existing.intentPrimary || "meet_people";
-    showGuestJoinedState(existing);  // saves flat keys + wires claim btn
-    wireGhostIntentChips(eventId);
-    logger.log("[Guest] Restored existing ghost session on page load");
+  if (existing?.ghostId && existing?.ghostToken) {
+    const { error } = await supabase.rpc("get_my_guest_share_code", {
+      p_event_id: eventId,
+      p_ghost_id: existing.ghostId,
+      p_ghost_token: existing.ghostToken,
+    });
+    if (!error) {
+      ghostIntentPrimary = existing.intentPrimary || "meet_people";
+      showGuestJoinedState(existing);
+      wireGhostIntentChips(eventId);
+      logger.log("[Guest] Verified existing guest session on page load");
+      return;
+    }
+    if (error.code === "P0001" && /Guest session not found/i.test(error.message || "")) {
+      // Do not erase recovery credentials or claim history automatically.
+      hide(document.getElementById("guestJoinedState"));
+      hide(document.getElementById("guestForm"));
+      hide(document.getElementById("guestJoinCta"));
+      const section = document.getElementById("guestJoinSection");
+      show(section);
+      let notice = document.getElementById("guestSessionExpiredNotice");
+      if (!notice) {
+        notice = document.createElement("div");
+        notice.id = "guestSessionExpiredNotice";
+        notice.className = "guest-joined-card";
+        const message = document.createElement("p");
+        message.textContent = "This saved guest session is no longer active. It may already have been claimed by a Nearify account. Sign in to your account to view claimed connections, or start a new guest session for this event.";
+        const restart = document.createElement("button");
+        restart.type = "button";
+        restart.className = "btn secondary";
+        restart.textContent = "Start a new guest session";
+        restart.addEventListener("click", () => {
+          // Explicit choice only. Preserve old credentials for possible recovery.
+          try {
+            const key = "nearify_ghost:" + eventId;
+            const previous = localStorage.getItem(key);
+            if (previous) localStorage.setItem("nearify_previous_ghost:" + eventId, previous);
+            localStorage.removeItem(key);
+            localStorage.removeItem("nearify_ghost_id");
+            localStorage.removeItem("nearify_ghost_token");
+            localStorage.removeItem("nearify_ghost_event_id");
+            localStorage.removeItem("nearify_ghost_display_name");
+          } catch (e) {
+            logger.warn("[Guest] Could not prepare a new guest session", e);
+            return;
+          }
+          hide(notice);
+          showGuestJoinCta();
+          wireGuestJoinFlow(eventId);
+        });
+        notice.append(message, restart);
+        section?.appendChild(notice);
+      }
+      show(notice);
+      logger.warn("[Guest] Saved guest session no longer eligible for guest QR actions");
+      return;
+    }
+    // Network failures and unknown RPC errors must not invalidate local state.
+    logger.warn("[Guest] Could not verify saved guest session; preserving it", {
+      code: error.code, message: error.message,
+    });
+    showGuestJoinedState(existing);
     return;
   }
   showGuestJoinCta();
@@ -2232,7 +2292,7 @@ async function initJoinPage() {
         });
       }
 
-      initGuestJoinSection(event.id);
+      await initGuestJoinSection(event.id);
       await maybeClaimPendingGhostSession();
 
       // Anonymous live roster disabled pending consent-scoped backend access.
