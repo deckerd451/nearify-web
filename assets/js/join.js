@@ -1248,7 +1248,8 @@ async function saveGuestQrCode(value, eventId) {
     p_from_ghost_token: token, p_target_share_code: code,
   });
   if (error) {
-    if (status) status.textContent = "Couldn't save this guest. Check that you're at the same event.";
+    logger.warn("[GuestQR] Save failed", { code: error.code, message: error.message, details: error.details });
+    if (status) status.textContent = /Guest session not found/i.test(error.message || "") ? "Your guest session could not be verified for this event." : /Guest QR unavailable/i.test(error.message || "") ? "This QR belongs to an unavailable guest, yourself, or a different event." : "Couldn't save this guest (error " + (error.code || "unknown") + "). Please report this code.";
     return;
   }
   stopGuestQrCamera();
@@ -1342,12 +1343,16 @@ function wireGuestQrScanner(eventId) {
   const input = document.getElementById("guestQrLink");
   if (!open || !panel || open.dataset.wired) return;
   open.dataset.wired = "true";
-  stop?.addEventListener("click", stopGuestQrCamera);
+  stop?.addEventListener("click", () => { stopGuestQrCamera(); if (video) video.hidden = true; if (stop) stop.hidden = true; if (status) status.textContent = "Camera stopped. Paste their Nearify link below."; input?.focus(); });
   save?.addEventListener("click", () => saveGuestQrCode(input?.value || "", eventId));
   open.addEventListener("click", async () => {
     panel.hidden = false;
     if (guestQrStream) return;
+    if (video) video.hidden = false;
+    if (stop) stop.hidden = false;
     if (!navigator.mediaDevices?.getUserMedia || typeof BarcodeDetector === "undefined") {
+      if (video) video.hidden = true;
+      if (stop) stop.hidden = true;
       if (status) status.textContent = "Camera QR scanning isn't supported in this browser. Paste the person's Nearify link below.";
       return;
     }
