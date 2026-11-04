@@ -41,7 +41,7 @@ begin
       and gp.claimed_by_profile_id is null
   ) then raise exception 'Guest session not found' using errcode = 'P0001'; end if;
   insert into public.ghost_share_codes(ghost_id, share_code)
-  values (p_ghost_id, encode(extensions.gen_random_bytes(24), 'hex'))
+  values (p_ghost_id, replace(pg_catalog.gen_random_uuid()::text, '-', '') || replace(pg_catalog.gen_random_uuid()::text, '-', ''))
   on conflict (ghost_id) do nothing;
   select sc.share_code into v_code from public.ghost_share_codes sc
   where sc.ghost_id = p_ghost_id;
