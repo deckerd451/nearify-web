@@ -1264,6 +1264,7 @@ function wireGuestShowQr(eventId) {
   const qr = document.getElementById("guestMyQrCode");
   const status = document.getElementById("guestMyQrStatus");
   const copy = document.getElementById("guestCopyQrBtn");
+  const linkInput = document.getElementById("guestMyQrLink");
   if (!button || !panel || !qr || button.dataset.wired) return;
   button.dataset.wired = "true";
   let shareUrl = "";
@@ -1287,6 +1288,7 @@ function wireGuestShowQr(eventId) {
       return;
     }
     shareUrl = "https://nearify.org/join/?event=" + encodeURIComponent(eventId) + "&guest=" + encodeURIComponent(data);
+    if (linkInput) linkInput.value = shareUrl;
     qr.replaceChildren();
     if (typeof window.QRCode === "function") {
       new window.QRCode(qr, { text: shareUrl, width: 200, height: 200 });
@@ -1298,10 +1300,12 @@ function wireGuestShowQr(eventId) {
   copy?.addEventListener("click", async () => {
     if (!shareUrl) return;
     try {
+      if (!navigator.clipboard?.writeText) throw new Error("Clipboard API unavailable");
       await navigator.clipboard.writeText(shareUrl);
       if (status) status.textContent = "Guest link copied.";
     } catch (_) {
-      if (status) status.textContent = "Copy unavailable. Please use your browser’s share options.";
+      if (linkInput) { linkInput.focus(); linkInput.select(); }
+      if (status) status.textContent = "Clipboard unavailable. Select and copy the guest link above.";
     }
   });
 }
