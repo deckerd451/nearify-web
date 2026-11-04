@@ -234,7 +234,9 @@
                 <p style="margin:0 0 10px;">Let another guest scan this QR to save meeting you.</p>
                 <div id="guestMyQrCode" style="display:flex;justify-content:center;"></div>
                 <p id="guestMyQrStatus" role="status" aria-live="polite"></p>
-                <button id="guestCopyQrBtn" class="btn secondary" type="button">Copy my guest link</button>
+                <label for="guestMyQrLink" style="display:block;margin:12px 0 6px;font-weight:600;">Your guest link</label>
+                <input id="guestMyQrLink" type="text" readonly aria-label="Your guest link" style="display:block;box-sizing:border-box;width:100%;padding:10px;border:1px solid #aaa;border-radius:8px;background:#fff;color:#111;font-size:14px;" />
+                <button id="guestCopyQrBtn" class="btn primary" type="button" style="margin-top:10px;">Copy my guest link</button>
               </div>
               <button id="guestScanQrBtn" class="btn primary" type="button">Scan someone's QR</button>
               <p class="guest-connect-subtitle" style="margin-top:8px;">Scan another guest’s QR or a Nearify member’s personal QR. Guest-to-guest saves remain on this device until account recovery is implemented.</p>
