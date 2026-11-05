@@ -1228,8 +1228,7 @@ async function refreshAllGuestHistory(eventId) {
     ...profiles,
     ...guests.map((g) => ({ to_profile_name: g.guest_name + " (guest)" })),
   ]);
-  // Only profile connections are currently recoverable through account claim.
-  updateClaimButtonCount(profiles.length);
+  updateClaimButtonCount(profiles.length + guests.length);
 }
 
 async function saveGuestQrCode(value, eventId) {
@@ -1456,12 +1455,6 @@ function showGuestJoinedState(ghost) {
         return;
       }
 
-      const eventId = localStorage.getItem("nearify_ghost_event_id");
-      if (await hasUnrecoverableGuestConnections(eventId, ghostId, ghostToken)) {
-        if (statusEl) statusEl.textContent = "Your guest-to-guest connections are not yet recoverable to an account. Keep using this guest session for now; your saved people are still here.";
-        return;
-      }
-
       logger.log("[GuestClaim] Starting sign-in to claim guest session");
       localStorage.setItem("nearify_pending_ghost_claim", "true");
 
@@ -1485,23 +1478,6 @@ function showGuestJoinedState(ghost) {
   }
 }
 
-// Guest-to-guest edges are not included in claim_ghost_activity. Never mark a
-// guest claim complete (or erase its recovery credentials) while those edges
-// exist. Fail closed on lookup errors so temporary outages cannot lose data.
-async function hasUnrecoverableGuestConnections(eventId, ghostId, ghostToken) {
-  if (!eventId || !ghostId || !ghostToken) return true;
-  const { data, error } = await supabase.rpc("get_my_guest_to_guest_connections", {
-    p_event_id: eventId,
-    p_ghost_id: ghostId,
-    p_ghost_token: ghostToken,
-  });
-  if (error) {
-    logger.warn("[GuestClaim] Cannot verify guest-to-guest history; preserving session", error);
-    return true;
-  }
-  return Array.isArray(data) && data.length > 0;
-}
-
 async function maybeClaimPendingGhostSession() {
   if (localStorage.getItem("nearify_pending_ghost_claim") !== "true") return null;
 
@@ -1515,11 +1491,6 @@ async function maybeClaimPendingGhostSession() {
   if (!ghostId || !ghostToken) {
     localStorage.removeItem("nearify_pending_ghost_claim");
     logger.warn("[GuestClaim] Pending claim found but ghost keys missing");
-    return null;
-  }
-
-  if (await hasUnrecoverableGuestConnections(ghostEventId, ghostId, ghostToken)) {
-    if (statusEl) statusEl.textContent = "Guest-to-guest connections cannot be claimed yet. Your guest session is preserved on this device.";
     return null;
   }
 
@@ -1554,21 +1525,21 @@ async function maybeClaimPendingGhostSession() {
 
   // Fetch connection history BEFORE clearing keys — used for the success screen.
   const history      = await fetchGhostConnectionHistory({ ghostId, ghostToken }, ghostEventId);
-  const claimedNames = [...new Set(history.map((r) => r?.to_profile_name).filter(Boolean))];
-
-  // The scoped client starts with no auth session (persistSession: false).
-  // Inject the current user's JWT so auth.uid() resolves correctly inside
-  // claim_ghost_activity — without this, current_profile_id() returns null
-  // and the function raises P0001 Forbidden.
-  const scoped = createScopedSupabaseClient({ "x-ghost-token": ghostToken });
-  await scoped.auth.setSession({
-    access_token: session.access_token,
-    refresh_token: session.refresh_token,
+  const { data: guestHistory, error: guestHistoryError } = await supabase.rpc("get_my_guest_to_guest_connections", {
+    p_event_id: ghostEventId, p_ghost_id: ghostId, p_ghost_token: ghostToken,
   });
+  if (guestHistoryError) {
+    logger.warn("[GuestClaim] Could not load guest history; preserving credentials", guestHistoryError);
+    if (statusEl) statusEl.textContent = "Could not verify saved guests. Please try again.";
+    return null;
+  }
+  const claimedNames = [...new Set([...history.map(r => r?.to_profile_name), ...(guestHistory || []).map(r => r?.guest_name)].filter(Boolean))];
 
-  const { data: claimData, error } = await scoped.rpc("claim_ghost_activity", {
+  // The new RPC derives the profile from the authenticated JWT and validates
+  // the private guest token itself. Guest-to-guest edges remain durable.
+  const { data: claimData, error } = await supabase.rpc("claim_guest_network", {
     p_ghost_id: ghostId,
-    p_profile_id: profileId,
+    p_ghost_token: ghostToken,
   });
 
   if (error) {
@@ -1602,7 +1573,7 @@ async function maybeClaimPendingGhostSession() {
 
   return {
     success:       true,
-    count:         claimData?.interactions_claimed ?? claimedNames.length,
+    count:         claimedNames.length,
     names:         claimedNames,
     intentPrimary,
     profileId,
@@ -2147,12 +2118,6 @@ async function maybeAutoClaimGhostForAuthenticatedUser(eventId) {
   const ghostToken = localStorage.getItem("nearify_ghost_token");
   if (!ghostId || !ghostToken) return;
 
-  const ghostEventId = localStorage.getItem("nearify_ghost_event_id") || eventId;
-  if (await hasUnrecoverableGuestConnections(ghostEventId, ghostId, ghostToken)) {
-    logger.warn("[Ghost] Auto-claim skipped to preserve guest-to-guest connections");
-    return;
-  }
-
   logger.log("[Ghost] Authenticated user has ghost session — attempting auto-claim");
 
   const { data: { session } } = await getSessionCached();
@@ -2173,15 +2138,9 @@ async function maybeAutoClaimGhostForAuthenticatedUser(eventId) {
     return;
   }
 
-  const scoped = createScopedSupabaseClient({ "x-ghost-token": ghostToken });
-  await scoped.auth.setSession({
-    access_token:  session.access_token,
-    refresh_token: session.refresh_token,
-  });
-
-  const { error } = await scoped.rpc("claim_ghost_activity", {
-    p_ghost_id:   ghostId,
-    p_profile_id: profileId,
+  const { error } = await supabase.rpc("claim_guest_network", {
+    p_ghost_id: ghostId,
+    p_ghost_token: ghostToken,
   });
 
   if (error) {
@@ -2190,7 +2149,9 @@ async function maybeAutoClaimGhostForAuthenticatedUser(eventId) {
   }
 
   logger.log("[Ghost] Auto-claim succeeded");
+  const ghostEventId = localStorage.getItem("nearify_ghost_event_id") || eventId;
   clearGhostSession();
+  try { localStorage.removeItem(`nearify_ghost:${ghostEventId}`); } catch (_) {}
 }
 
 async function initJoinPage() {
