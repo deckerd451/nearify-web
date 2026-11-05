@@ -22,6 +22,7 @@
   <meta name="twitter:image"      content="https://nearify.org/assets/images/og-default.png" />
 
   <link rel="stylesheet" href="../assets/css/styles.css?v=20261101-events-mobile1" />
+  <link rel="stylesheet" href="../assets/css/guest-flow.css?v=20261105-guest2" />
 </head>
 <body>
   <a href="#main-content" class="skip-link">Skip to main content</a>
@@ -43,11 +44,16 @@
   </div>
 
   <main id="main-content" class="join-page">
+    <div class="guest-flow-toolbar" hidden>
+      <button id="guestBackBtn" class="guest-back" type="button" aria-label="Back to event">←</button>
+      <span id="guestFlowEventName"></span>
+      <span class="guest-browser-label">Guest access</span>
+    </div>
     <section class="event-hero join-hero">
       <div class="event-hero-copy">
         <div id="joinSourceBadge" class="join-source-badge" style="display:none;"></div>
         <div class="event-kicker" id="joinKicker">Join Event</div>
-        <h1 id="joinTitle">Get Nearify to join this event</h1>
+        <h1 id="joinTitle">Join the conversation</h1>
         <div id="joinSuccessBadge" class="join-success-badge" style="display:none;">
           <span class="join-success-icon" aria-hidden="true">✓</span>
           <span>Saved so you can remember later</span>
@@ -66,7 +72,7 @@
         <div id="liveActivityFeed" class="live-activity-feed" aria-live="polite" aria-atomic="true"></div>
 
         <p class="event-subhead" id="joinDescription">
-          No account needed. Enter your name to see who to meet and save who you met.
+          Join in your browser, then save someone you meet with their Nearify QR.
         </p>
 
         <!-- Live attendee preview — populated by JS for Meetup source handoffs -->
@@ -156,9 +162,9 @@
 
         <!-- Guest join CTA — browser-first path shown after event validation -->
         <div id="guestJoinCta" class="guest-join-cta" style="display:none;">
-          <div class="guest-join-divider" aria-hidden="true">Start here — no app needed</div>
-          <button id="joinAsGuestBtn" class="btn primary" type="button">Join as Guest — No App Needed</button>
-          <p class="join-hint">No app required. Sign in after the event to save who you met.</p>
+          <div class="guest-join-divider" aria-hidden="true">01 · Join in your browser</div>
+          <button id="joinAsGuestBtn" class="btn primary" type="button">Join as a guest</button>
+          <p class="join-hint">No app or account required. Your guest session stays on this device.</p>
         </div>
 
         <!-- Guest join section — either form or success state, populated by JS -->
@@ -166,10 +172,20 @@
 
           <!-- Name form -->
           <div id="guestForm" class="guest-join-card" style="display:none;">
-            <h2 class="guest-join-title">Join as Guest</h2>
-            <p class="guest-join-sub">No account needed — sign in after the event to save who you met to your profile.</p>
+            <h2 class="guest-join-title" id="guestFormHeading" tabindex="-1">What brings you here?</h2>
+            <p class="guest-join-sub">Choose a goal for this event.</p>
+            <fieldset class="guest-goal-field" aria-describedby="guestGoalHint">
+              <legend class="visually-hidden">Your goal for this event</legend>
+              <label class="guest-goal-card"><input type="radio" name="guestGoal" value="meet_people" data-label="Meet people" checked /><span class="guest-goal-icon" aria-hidden="true">◎</span><span>Meet people</span><span class="guest-goal-check" aria-hidden="true"></span></label>
+              <label class="guest-goal-card"><input type="radio" name="guestGoal" value="find_cofounder" data-label="Find a cofounder"  /><span class="guest-goal-icon" aria-hidden="true">◇</span><span>Find a cofounder</span><span class="guest-goal-check" aria-hidden="true"></span></label>
+              <label class="guest-goal-card"><input type="radio" name="guestGoal" value="explore_ideas" data-label="Explore ideas"  /><span class="guest-goal-icon" aria-hidden="true">✧</span><span>Explore ideas</span><span class="guest-goal-check" aria-hidden="true"></span></label>
+              <details class="guest-more-goals"><summary>More goals</summary>
+                <label class="guest-goal-card"><input type="radio" name="guestGoal" value="hire" data-label="Hire" /><span class="guest-goal-icon" aria-hidden="true">↗</span><span>Hire</span><span class="guest-goal-check" aria-hidden="true"></span></label>
+                <label class="guest-goal-card"><input type="radio" name="guestGoal" value="demo" data-label="Demo something" /><span class="guest-goal-icon" aria-hidden="true">▷</span><span>Demo something</span><span class="guest-goal-check" aria-hidden="true"></span></label>
+              </details>
+            </fieldset>
             <div class="form-row" style="margin-bottom:0;">
-              <label for="guestDisplayName" class="guest-join-label">Your display name</label>
+              <label for="guestDisplayName" class="guest-join-label">Your name</label>
               <input
                 id="guestDisplayName"
                 type="text"
@@ -185,14 +201,16 @@
               </p>
             </div>
             <div class="guest-join-actions">
-              <button id="guestSubmitBtn" class="btn primary" type="button">Join as Guest</button>
-              <button id="guestCancelBtn" class="btn-inline-link" type="button">Cancel</button>
+              <button id="guestSubmitBtn" class="btn primary" type="button">Join as a guest</button>
+              <button id="guestCancelBtn" class="btn-inline-link" type="button">Back to event</button>
             </div>
+            <p class="guest-form-reassurance">No app or account required.</p>
+            <p id="guestGoalHint" class="guest-local-note">Your goal is a reminder saved on this device.</p>
             <p id="guestJoinStatus" class="intent-status" aria-live="polite"></p>
           </div>
 
           <!-- Success state -->
-          <div id="guestJoinedState" class="guest-joined-card" style="display:none;" aria-live="polite">
+          <div id="guestJoinedState" class="guest-joined-card" style="display:none;">
             <!-- Ghost recommendations — populated immediately after join -->
             <div id="ghostRecommendations" class="ghost-recommendations" style="display:none;" aria-live="polite">
               <p class="ghost-recs-title">People you might want to meet</p>
@@ -219,27 +237,45 @@
                 </div>
               </div>
             </div>
+            <section id="guestSaveConfirmation" class="guest-save-confirmation" hidden aria-labelledby="guestSaveHeading">
+              <span class="guest-save-check" aria-hidden="true">✓</span>
+              <h2 id="guestSaveHeading" tabindex="-1">Connection saved</h2>
+              <div class="guest-saved-person">
+                <span id="guestSavedAvatar" class="guest-saved-avatar" aria-hidden="true">✓</span>
+                <div><strong id="guestSavedName">Your new connection</strong><p id="guestSavedContext"></p></div>
+              </div>
+              <p id="guestSaveMessage" role="status"></p>
+              <button id="guestKeepConnectingBtn" class="btn primary" type="button">Keep connecting</button>
+              <button id="guestSavedViewBtn" class="guest-text-action" type="button">View saved connections</button>
+            </section>
+            <div id="guestConnectStage">
             <div class="guest-joined-header">
               <span class="guest-joined-check" aria-hidden="true">✓</span>
               <span class="guest-joined-label">You're in.</span>
             </div>
-            <p id="guestJoinedName" class="guest-joined-name"></p>
-            <p class="guest-joined-sub">Your guest session will stay active on this device.</p>
+            <h2 class="guest-connect-heading" id="guestConnectHeading" tabindex="-1">Make your first connection</h2>
 
-            <!-- A guest has no public profile QR until they claim an account.
-                 Scan a member's personal QR to record a guest connection. -->
+            <p id="guestJoinedGoal" class="guest-joined-sub"></p>
+            <p class="guest-device-note">Your guest session stays on this device.</p>
+
+            <!-- Guest share codes are generated by the existing authorized RPC. -->
             <div class="guest-qr-actions" style="margin-top:18px;">
-              <button id="guestShowQrBtn" class="btn primary" type="button">Show My QR</button>
-              <div id="guestMyQrPanel" hidden style="margin:12px 0;padding:16px;border-radius:12px;background:#fff;color:#111;">
-                <p style="margin:0 0 10px;">Let another guest scan this QR to save meeting you.</p>
-                <div id="guestMyQrCode" style="display:flex;justify-content:center;"></div>
+              <div id="guestMyQrPanel" class="guest-personal-qr" hidden>
+                <div id="guestMyQrCode" aria-label="Your personal guest QR"></div>
+                <strong id="guestJoinedName" class="guest-joined-name"></strong>
+                <p class="guest-qr-caption">Let another guest scan your QR</p>
                 <p id="guestMyQrStatus" role="status" aria-live="polite"></p>
-                <label for="guestMyQrLink" style="display:block;margin:12px 0 6px;font-weight:600;">Your guest link</label>
-                <input id="guestMyQrLink" type="text" readonly aria-label="Your guest link" style="display:block;box-sizing:border-box;width:100%;padding:10px;border:1px solid #aaa;border-radius:8px;background:#fff;color:#111;font-size:14px;" />
-                <button id="guestCopyQrBtn" class="btn primary" type="button" style="margin-top:10px;">Copy my guest link</button>
+                <details id="guestQrLinkDetails" class="guest-link-details">
+                  <summary>Use your guest link instead</summary>
+                  <label for="guestMyQrLink">Your guest link</label>
+                  <input id="guestMyQrLink" type="text" readonly aria-label="Your guest link" />
+                  <button id="guestCopyQrBtn" class="guest-copy-link" type="button">Copy guest link</button>
+                </details>
               </div>
-              <button id="guestScanQrBtn" class="btn primary" type="button">Scan someone's QR</button>
-              <p class="guest-connect-subtitle" style="margin-top:8px;">Scan another guest’s QR or a Nearify member’s personal QR. Saved guest connections can be transferred to your Nearify account using Claim My Connections.</p>
+              <button id="guestShowQrBtn" class="guest-qr-retry" type="button" hidden>Try loading my QR again</button>
+              <button id="guestScanQrBtn" class="btn primary" type="button" aria-expanded="false" aria-controls="guestQrScanner">Scan someone's QR</button>
+              <button id="guestViewConnectionsBtn" class="guest-text-action" type="button">Your saved connections</button>
+              <p class="guest-connect-tip"><span aria-hidden="true">◎</span> Just met someone? Save the connection before you leave.</p>
               <div id="guestQrScanner" hidden>
                 <video id="guestQrVideo" autoplay muted playsinline style="width:100%;max-height:300px;border-radius:12px;background:#111;"></video>
                 <button id="guestStopQrBtn" class="btn secondary" type="button">Stop camera</button>
@@ -250,10 +286,12 @@
               <p id="guestQrStatus" class="intent-status" aria-live="polite"></p>
             </div>
 
+            </div><!-- /guestConnectStage -->
+
             <!-- Connection capture -->
-            <div class="guest-connect-section">
-              <p class="guest-connect-title">People you met</p>
-              <p class="guest-connect-subtitle">Scan someone’s Nearify QR to save who you met. When you're ready, claim your saved connections to keep them with your Nearify account.</p>
+            <div id="guestHistorySection" class="guest-connect-section" hidden>
+              <h2 id="guestHistoryHeading" class="guest-connect-title" tabindex="-1">Your saved connections</h2>
+              <p class="guest-connect-subtitle">People you saved in this guest session.</p>
               <div class="guest-search-wrap">
                 <input
                   id="guestAttendeeSearch"
@@ -275,13 +313,15 @@
               </div>
               <p id="guestConnectStatus" class="intent-status" aria-live="polite" style="margin-top:8px;">Search for someone you met and save the interaction.</p>
               <div id="guestConnectionHistory" class="guest-connection-history" style="display:none;">
-                <p class="guest-connect-history-label">People you met</p>
+
                 <ul id="guestConnectionList" class="ghost-connections-list"></ul>
-                <p class="guest-connect-history-note">Your saved connections are linked to this guest session until you claim them to your account.</p>
+                <p class="guest-connect-history-note">These connections belong to your guest session. Keep using this browser to return to them.</p>
               </div>
             </div>
 
-            <div class="guest-joined-actions" style="margin-top:18px;">
+            <div class="guest-joined-actions" style="margin-top:18px;" hidden>
+              <h3>Keep your connections across devices</h3>
+              <p class="guest-connect-subtitle">Sign in to claim your saved connections, including people you met as guests, and return to them from your Nearify account.</p>
               <button id="guestClaimSignInBtn" class="btn secondary" type="button">Claim My Connections</button>
             </div>
             <p id="guestClaimStatus" class="intent-status" aria-live="polite" style="margin-top:8px;"></p>
@@ -332,7 +372,7 @@
       </aside>
     </section>
 
-    <section class="section event-section">
+    <section class="section event-section join-explainer">
       <div class="section-heading">
         <h2>What is Nearify?</h2>
         <p>
@@ -504,7 +544,7 @@
     <p>© 2026 Nearify</p>
   </footer>
 
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" integrity="sha384-3zSEDfvllQohrq0PHL1fOXJuC/jSOO34H46t6UQfobFOmxE5BpjjaIJY5F2/bMnU" crossorigin="anonymous"></script>
+  <script src="../assets/js/vendor/qrcode.min.js?v=1.0.0" integrity="sha384-3zSEDfvllQohrq0PHL1fOXJuC/jSOO34H46t6UQfobFOmxE5BpjjaIJY5F2/bMnU" crossorigin="anonymous"></script>
   <script>
     // Unregister any previously installed service worker.
     if ("serviceWorker" in navigator) {
@@ -513,7 +553,7 @@
       });
     }
   </script>
-  <script type="module" src="../assets/js/join.js?v=20261105-recovery"></script>
+  <script type="module" src="../assets/js/join.js?v=20261105-guest2"></script>
   <script type="module" src="../assets/js/navAuth.js?v=20260910"></script>
   <script type="module">
     import { trackPageView, wireAppCtaTracking } from "../assets/js/analytics.js?v=20260909";
