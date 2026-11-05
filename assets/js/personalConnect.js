@@ -10,6 +10,7 @@ export function buildPersonalConnectUrl(eventId, profileId) {
   const url = new URL("/join/", getBaseUrl());
   url.searchParams.set("event", eventId);
   url.searchParams.set("profile", profileId);
+  url.searchParams.set("web", "1");
   return url.toString();
 }
 

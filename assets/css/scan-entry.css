@@ -1,0 +1,9 @@
+/* Kept outside nav-links so Scan QR remains visible on mobile. */
+.nav .nav-scan-link {display:inline-flex;align-items:center;justify-content:center;gap:7px;flex-shrink:0;min-height:44px;box-sizing:border-box;padding:8px 12px;border:1px solid #7560ae;border-radius:10px;color:#e0d4ff;background:#7955ff17;text-decoration:none;font-size:14px;font-weight:600;white-space:nowrap}
+.nav .nav-scan-link:hover {background:#7955ff35}
+.nav .nav-scan-link:focus-visible {outline:3px solid #c1a7ff;outline-offset:3px}
+@media(max-width:600px) {
+ .nav {gap:10px}
+ .nav .nav-scan-link {margin-left:auto;padding:8px 10px;font-size:13px}
+ .nav .nav-hamburger {flex-shrink:0}
+}

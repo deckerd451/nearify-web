@@ -807,6 +807,7 @@ function renderInvalidState(message) {
 }
 
 async function renderAuthHandoff(eventId) {
+  if (new URLSearchParams(window.location.search).get("web") === "1") return;
   try {
     const { data: sessionData } = await getSessionCached();
     const session = sessionData?.session;
@@ -1382,7 +1383,7 @@ function wireGuestShowQr(eventId) {
         p_event_id: eventId, p_ghost_id: id, p_ghost_token: token,
       });
       if (error || !/^[0-9a-f]{64}$/.test(data || "")) throw new Error("Guest QR unavailable");
-      shareUrl = "https://nearify.org/join/?event=" + encodeURIComponent(eventId) + "&guest=" + encodeURIComponent(data);
+      shareUrl = "https://nearify.org/join/?event=" + encodeURIComponent(eventId) + "&guest=" + encodeURIComponent(data) + "&web=1";
       if (linkInput) linkInput.value = shareUrl;
       qr.replaceChildren();
       if (typeof window.QRCode === "function") {
@@ -2322,8 +2323,54 @@ async function maybeAutoClaimGhostForAuthenticatedUser(eventId) {
   try { localStorage.removeItem(`nearify_ghost:${ghostEventId}`); } catch (_) {}
 }
 
+function renderWebScanFailure(message) {
+  document.body.classList.add("web-browser-flow");
+  renderInvalidState(message);
+  setText(els.joinTitle, "Connection needs another try");
+  const retry = document.createElement("button");
+  retry.id = "webScanRetryBtn";
+  retry.className = "btn primary";
+  retry.textContent = "Try again";
+  retry.addEventListener("click", () => window.location.reload());
+  els.joinDescription?.after(retry);
+}
+
+async function saveSignedInGuestQr(event, code) {
+  if (!/^[0-9a-f]{64}$/.test(code)) {
+    renderWebScanFailure("This guest QR is invalid. Ask them to show their Nearify QR again.");
+    return;
+  }
+  try {
+    const ghost = await ensureGhostForEvent(event.id);
+    saveGhostFlatKeys(ghost);
+    const { error } = await supabase.rpc("save_guest_to_guest_connection", {
+      p_event_id: event.id, p_from_ghost_id: ghost.ghostId,
+      p_from_ghost_token: ghost.ghostToken, p_target_share_code: code,
+    });
+    if (error) {
+      renderWebScanFailure("Could not save this guest. Their QR may belong to a different event or may no longer be available.");
+      return;
+    }
+    // Preserve credentials on claim failure so a successful guest save is recoverable.
+    localStorage.setItem("nearify_pending_ghost_claim", "true");
+    const claimed = await maybeClaimPendingGhostSession();
+    if (!claimed?.success) {
+      renderWebScanFailure("The connection was saved to this browser session, but account transfer needs another try. Keep using this browser and try again.");
+      return;
+    }
+    renderClaimSuccessUx(event, claimed);
+    const clean = new URL(window.location.href);
+    clean.searchParams.delete("guest");
+    window.history.replaceState(null, "", clean);
+  } catch (_) {
+    renderWebScanFailure("Could not finish saving this connection. Keep this browser session and try again when connected.");
+  }
+}
+
 async function initJoinPage() {
   const { eventId, eventName, profileId, source, sourceEventId } = getQueryParams();
+  const requestedWeb = new URLSearchParams(window.location.search).get("web") === "1";
+  if (requestedWeb) document.body.classList.add("web-browser-flow");
 
   isMeetupSource    = source === "meetup";
   meetupSourceEventId = isMeetupSource ? (sourceEventId || null) : null;
@@ -2368,6 +2415,15 @@ async function initJoinPage() {
     const hasSession    = !!sessionData?.session?.user;
     const isPendingClaim = localStorage.getItem("nearify_pending_ghost_claim") === "true";
 
+    const scannedGuest = new URLSearchParams(window.location.search).get("guest");
+    if (hasSession && scannedGuest) {
+      await saveSignedInGuestQr(event, scannedGuest);
+      return;
+    }
+    if (hasSession && requestedWeb && !profileId && !isPendingClaim) {
+      window.location.replace(`/events/event.html?id=${encodeURIComponent(event.id)}&web=1`);
+      return;
+    }
     if (profileId && hasSession) {
       // ── Personal connect flow: authenticated visitor scanned someone's QR ─
       logger.log("[Join] Authenticated profile detected; rendering personal connect");
@@ -2376,6 +2432,10 @@ async function initJoinPage() {
       const ghost = await ensureGhostForEvent(event.id);
       renderGhostState(ghost);
       connectResult = await maybeConnectGhostToProfile(event.id, profileId);
+      if (!connectResult) {
+        renderWebScanFailure("Could not save this connection. Check that the QR belongs to someone at this event and try again.");
+        return;
+      }
 
       let historyRows = await fetchGhostConnectionHistory(ghost, event.id);
       let isClaimed = historyRows.some((row) => row?.claimed_profile_id);

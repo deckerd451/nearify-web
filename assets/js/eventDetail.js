@@ -27,7 +27,7 @@ import {
   buildPersonalConnectUrl,
   getMyProfileId,
   renderPersonalConnectQr
-} from "./personalConnect.js";
+} from "./personalConnect.js?v=20261105-web1";
 import { trackPageView, wireAppCtaTracking } from "./analytics.js?v=20261105-funnel1";
 import { trackGuestFunnel } from "./guestFunnel.js";
 import { patchAppStoreLinks } from "./config.js";
@@ -36,7 +36,7 @@ import { logger } from "./logger.js";
 import { canManageEvent } from "./events.js";
 import { fetchIsAdmin } from "./adminAccess.js";
 import { loadOrganizerInsights } from "./organizerInsights.js";
-import { renderShareButton, buildEventShareUrl, buildEventShareText } from "./share.js";
+import { renderShareButton, buildEventShareUrl, buildEventShareText } from "./share.js?v=20261105-web1";
 import { VALID_INTENTS, INTENT_LABELS } from "./constants/intents.js";
 import { buildEventDecisionReasons } from "./attendanceReasons.js";
 import {
@@ -72,7 +72,7 @@ function isMobile() {
 }
 
 function getWebJoinUrl(eventId) {
-  return `/join/?event=${encodeURIComponent(eventId)}`;
+  return `/join/?event=${encodeURIComponent(eventId)}&web=1`;
 }
 
 function parseStoredJson(key) {
@@ -313,8 +313,8 @@ function attemptDeepLink(deepLink) {
 function beginJoinFlow(source = "join") {
   if (!currentEvent?.id) return;
 
-  if (!isMobile()) {
-    // Desktop: navigate to the web join page — no beacon:// attempt
+  if (!isMobile() || new URLSearchParams(window.location.search).get("web") === "1") {
+    // Explicit web requests and desktop: navigate to the web join page — no beacon:// attempt
     window.location.href = getWebJoinUrl(currentEvent.id);
     return;
   }
@@ -660,7 +660,7 @@ async function maybeContinueAfterAuth() {
   localStorage.removeItem(ATTENDEE_AUTH_KEY);
 
   // Only attempt the app deep link on mobile — desktop stays on the event page
-  if (isMobile()) {
+  if (isMobile() && new URLSearchParams(window.location.search).get("web") !== "1") {
     beginJoinFlow("after_attendee_sign_in");
   }
 }

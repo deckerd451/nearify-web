@@ -135,3 +135,8 @@
  .bubble-two {right:36px;top:110px;width:32px;height:32px}
  .bubble-three {display:none}
 }
+/* An explicit browser QR route never presents an automatic app handoff. */
+.web-browser-flow #joinActions,.web-browser-flow #joinSidePanel,.web-browser-flow #joinBottomCta,
+.web-browser-flow #joinPayloadCard,.web-browser-flow #authHandoffSection,
+.web-browser-flow #claimSuccessState a[href*='testflight.apple.com'] {display:none!important}
+.web-browser-flow .join-explainer,.web-browser-flow #intentStep {display:none!important}

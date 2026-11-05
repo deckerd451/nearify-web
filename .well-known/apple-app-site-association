@@ -24,12 +24,24 @@
             "comment": "Keep explicitly requested event web pages in the browser"
           },
           {
+            "/": "/profile/*",
+            "?": {
+              "web": "1"
+            },
+            "exclude": true,
+            "comment": "Keep explicitly requested profile web pages in the browser"
+          },
+          {
             "/": "/join/*",
             "comment": "Default join URLs may open Nearify iOS"
           },
           {
             "/": "/events/*",
             "comment": "Default event URLs may open Nearify iOS"
+          },
+          {
+            "/": "/profile/*",
+            "comment": "Preserve existing profile app links"
           }
         ]
       }

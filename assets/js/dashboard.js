@@ -69,6 +69,7 @@ function getEventDetailUrl(event) {
 function buildJoinUrl(event) {
   const params = new URLSearchParams();
   params.set("event", event.id);
+  params.set("web", "1");
   if (event.name) params.set("name", event.name);
   return `https://nearify.org/join/?${params.toString()}`;
 }

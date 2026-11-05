@@ -82,7 +82,47 @@ try {
  const capture = async name => {
   if(process.env.SMOKE_SCREENSHOT) await page.screenshot({path:process.env.SMOKE_SCREENSHOT.replace(/\.png$/, '') + '-' + name + '.png',fullPage:true});
  };
- await page.goto(`${base}/join/?event=${eventId}`);
+ await page.goto(base+'/');
+ await page.locator('.nav-scan-link').waitFor({state:'visible'});
+ if(process.env.SMOKE_SCREENSHOT) await page.locator('.nav').screenshot({path:'/tmp/nearify-visible-scan-header.png'});
+ await page.locator('.nav-scan-link').click();
+ await page.waitForURL('**/scan/?web=1');
+ await checkWidths('scanner');
+ await capture('scanner');
+ await page.locator('#scanPasteDetails summary').click();
+ await page.locator('#scanLinkInput').fill('https://evil.example/');
+ await page.locator('#scanLinkBtn').click();
+ assert.equal(await page.locator('#scanResult').isVisible(),false);
+ await page.addScriptTag({url:base+'/assets/js/vendor/qrcode.min.js?v=1.0.0'});
+ await page.evaluate(()=>{
+  Object.defineProperty(window,'BarcodeDetector',{configurable:true,writable:true,value:undefined});
+  Object.defineProperty(navigator.mediaDevices,'getUserMedia',{configurable:true,writable:true,value:async()=>{throw new DOMException('Denied','NotAllowedError');}});
+ });
+ await page.locator('#scanStartBtn').click();
+ await page.waitForFunction(()=>document.querySelector('#scanStatus').textContent.includes('Camera access was denied'));
+ await page.evaluate(eventId=>{
+  const host=document.createElement('div');
+  new QRCode(host,{text:'beacon://event/'+eventId,width:260,height:260});
+  const frame=document.createElement('canvas');frame.width=292;frame.height=292;
+  const ctx=frame.getContext('2d');ctx.fillStyle='white';ctx.fillRect(0,0,292,292);ctx.drawImage(host.querySelector('canvas'),16,16);
+  window.webCameraStops=0;
+  navigator.mediaDevices.getUserMedia=async()=>{
+   const camera=frame.captureStream(10);
+   const painting=setInterval(()=>ctx.drawImage(host.querySelector('canvas'),16,16),100);
+   for(const track of camera.getTracks()){
+    const stop=track.stop.bind(track);track.stop=()=>{window.webCameraStops++;clearInterval(painting);stop();};
+   }
+   return camera;
+  };
+ },eventId);
+ await page.locator('#scanStartBtn').click();
+ await page.locator('#scanResult').waitFor({state:'visible'});
+ assert.ok(await page.evaluate(()=>window.webCameraStops>0));
+ const scanTarget=new URL(await page.locator('#scanContinueLink').getAttribute('href'),base);
+ assert.equal(scanTarget.searchParams.get('web'),'1');
+ await page.locator('#scanContinueLink').click();
+ await page.waitForURL(`**/join/?event=${eventId}&web=1`);
+
  await page.locator('#guestForm').waitFor({state:'visible'});
  await page.locator('#guestSubmitBtn').click();
  assert.equal(await page.locator('#guestNameError').isVisible(),true);
@@ -111,7 +151,8 @@ try {
  await page.locator('#guestQrLinkDetails summary').click();
  await page.locator('#guestMyQrLink').waitFor({state:'visible'});
  await page.waitForFunction(()=>document.querySelector('#guestMyQrLink').value.includes('guest='));
- assert.ok((await page.locator('#guestMyQrLink').inputValue()).endsWith('a'.repeat(64)));
+ assert.equal(new URL(await page.locator('#guestMyQrLink').inputValue()).searchParams.get('guest'),'a'.repeat(64));
+ assert.equal(new URL(await page.locator('#guestMyQrLink').inputValue()).searchParams.get('web'),'1');
  assert.equal(await page.locator('#guestMyQrStatus').innerText(),'');
  await page.evaluate(()=>{
   Object.defineProperty(window,'BarcodeDetector',{configurable:true,writable:true,value:undefined});
@@ -255,7 +296,7 @@ try {
  await checkWidths('event');
  await capture('event');
  await page.locator('#eventContinueWithoutSignInBtn').click();
- await page.waitForURL(`**/join/?event=${eventId}`);
+ await page.waitForURL(`**/join/?event=${eventId}&web=1`);
  await page.locator('#guestJoinedState').waitFor({state:'visible'});
  await context.route('**/assets/js/vendor/qrcode.min.js*', route=>route.abort());
  await page.reload();
@@ -270,6 +311,22 @@ try {
  await page.waitForFunction(()=>window.smokeAnalytics.some(e=>e.event_name==='guest_account_claimed'));
  assert.equal(await page.evaluate(()=>window.smokeAnalytics.find(e=>e.event_name==='guest_account_claimed').properties.journey_id),expectedJourney);
  assert.ok(await page.evaluate(()=>window.smokeCalls.some(call=>call.name==='claim_guest_network')));
+ await page.goto(`${base}/join/?event=${eventId}&guest=${'d'.repeat(64)}&web=1`);
+ await page.locator('#claimSuccessState').waitFor({state:'visible'});
+ assert.ok(await page.evaluate(()=>window.smokeCalls.some(call=>call.name==='save_guest_to_guest_connection')));
+ assert.ok(await page.evaluate(()=>window.smokeCalls.some(call=>call.name==='claim_guest_network')));
+ assert.equal(await page.locator('#authHandoffSection').isVisible(),false);
+ // A signed-in mobile event QR stays in the browser, including a sign-in return.
+ await page.addInitScript(()=>Object.defineProperty(navigator,'userAgent',{configurable:true,get:()=> 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 Version/17.0 Mobile/15E148 Safari/604.1'}));
+ await page.evaluate(eventId=>{
+  localStorage.setItem('nearify_attendee_auth_return',JSON.stringify({eventId,continueJoin:true}));
+  localStorage.removeItem('nearify_attendee_join_pending');
+ },eventId);
+ await page.goto(`${base}/join/?event=${eventId}&web=1`);
+ await page.waitForURL(`**/events/event.html?id=${eventId}&web=1`);
+ assert.equal(await page.locator('.nav-scan-link').isVisible(),true);
+ await page.locator('#eventHeroCopy').waitFor({state:'visible'});
+ assert.equal(await page.evaluate(()=>localStorage.getItem('nearify_attendee_join_pending')),null,'web sign-in return must not attempt a native app handoff');
  assert.deepEqual(errors,[]);
  console.log('Guest flow passed (including real software QR decoding, synthetic camera-to-save, late camera cleanup, and analytics failure isolation): join validation/retry, local goal, automatic QR/retry/link fallback, dedicated connect/saved/history views, invalid/failed/successful saves, member save, returning session, responsive widths, event-to-guest navigation. No live backend requests.');
 } finally {

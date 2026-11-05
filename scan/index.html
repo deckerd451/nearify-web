@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Scan a QR | Nearify</title>
+  <meta name="description" content="Scan an event or personal Nearify QR in your browser. No app required." />
+  <link rel="stylesheet" href="/assets/css/styles.css?v=20261101-events-mobile1" />
+  <link rel="stylesheet" href="/assets/css/scan.css?v=20261105-entry1" />
+</head>
+<body>
+  <a href="#main-content" class="skip-link">Skip to main content</a>
+  <div class="nav-container">
+    <header class="nav">
+      <div class="logo"><a href="/?web=1" aria-label="Nearify Home"><img class="logo-img" src="/assets/images/nearify-logo.png?v=20260909" alt="" /><span class="logo-text">Nearify</span></a></div>
+      <a href="/events/?web=1" class="btn secondary">Events</a>
+    </header>
+  </div>
+  <main id="main-content" class="scan-page">
+    <p class="scan-eyebrow">NEARIFY · IN YOUR BROWSER</p>
+    <h1>Scan a Nearify QR</h1>
+    <p class="scan-intro">At an event or just met someone? Scan their QR here to continue on the web.</p>
+    <div class="scan-camera-shell" id="scanCameraShell">
+      <svg id="scanPlaceholder" viewBox="0 0 64 64" width="92" height="92" fill="none" stroke="currentColor" stroke-width="3" aria-hidden="true"><path d="M6 23V6h17M41 6h17v17M58 41v17H41M23 58H6V41"/><path d="M18 18h10v10H18zM36 18h10v10H36zM18 36h10v10H18zM36 36h5v5h5v5H36z"/></svg>
+      <video id="scanVideo" autoplay muted playsinline hidden aria-label="Camera QR preview"></video>
+      <p id="scanCameraLabel">Your camera stays in the browser.</p>
+    </div>
+    <button id="scanStartBtn" class="btn primary" type="button">Start camera</button>
+    <button id="scanStopBtn" class="btn secondary" type="button" hidden>Stop camera</button>
+    <p id="scanStatus" class="scan-status" role="status" aria-live="polite"></p>
+    <section id="scanResult" class="scan-result" hidden aria-labelledby="scanResultHeading">
+      <h2 id="scanResultHeading" tabindex="-1">Nearify QR found</h2>
+      <p>Continue to this event or connection in your browser.</p>
+      <a id="scanContinueLink" class="btn primary" href="#">Continue in browser</a>
+    </section>
+    <details id="scanPasteDetails" class="scan-paste">
+      <summary>Have a link instead?</summary>
+      <label for="scanLinkInput">Paste their Nearify link</label>
+      <input id="scanLinkInput" type="url" inputmode="url" autocomplete="off" placeholder="https://nearify.org/join/?event=…" />
+      <button id="scanLinkBtn" class="btn secondary" type="button">Open link in browser</button>
+    </details>
+    <p class="scan-note">No app or sign-in needed to scan. An event or connection may ask you to join or sign in before saving.</p>
+  </main>
+  <script type="module" src="/assets/js/webScan.js?v=20261105-entry1"></script>
+</body>
+</html>
