@@ -490,8 +490,8 @@
       <!-- Overall funnel bars -->
       <div id="fdFunnelSection" class="fd-section" style="display:none;">
         <div class="fd-section-header">
-          <div class="fd-section-title">Overall Funnel</div>
-          <div class="fd-section-subtitle">Aggregate counts across all events. Each bar shows how many users reached that stage. The percentage shown is conversion from the previous step.</div>
+          <div class="fd-section-title">Tracked Activity by Stage</div>
+          <div class="fd-section-subtitle">Independent tracked event counts across all events, scaled to the largest count. These are not sequential stages or unique users.</div>
         </div>
         <div id="fdFunnelList" class="fd-funnel-list"></div>
       </div>
@@ -500,7 +500,7 @@
       <div id="fdEventsSection" class="fd-section" style="display:none;">
         <div class="fd-section-header">
           <div class="fd-section-title">By Event</div>
-          <div class="fd-section-subtitle">Funnel breakdown per meetup event. Conv % is the end-to-end rate from page view to active guest session.</div>
+          <div class="fd-section-subtitle">Tracked event counts by event. Conversion cannot be calculated without visitor-level attribution.</div>
         </div>
         <div class="fd-table-wrap">
           <table class="fd-table">
@@ -508,12 +508,12 @@
               <tr>
                 <th title="Name of the meetup event from the handoff page">Event</th>
                 <th title="Internal source event ID used to link analytics back to the event record">Meetup ID</th>
-                <th class="fd-table-num" title="Users who loaded the meetup handoff page — top of funnel">Views</th>
+                <th class="fd-table-num" title="Tracked handoff page loads; direct guest joins can bypass this page">Views</th>
                 <th class="fd-table-num" title="Users who tapped 'Enter Live Network' — signals active intent to join">CTA Clicks</th>
-                <th class="fd-table-num" title="Users who tapped the TestFlight install link — high-commitment action">Installs</th>
-                <th class="fd-table-num" title="Users who completed onboarding and started a guest session in the app — core conversion">Sessions</th>
-                <th class="fd-table-num" title="Users who returned or deep-linked into the app after their initial session">Opens</th>
-                <th class="fd-table-num" title="End-to-end conversion: guest sessions ÷ page views">Conv %</th>
+                <th class="fd-table-num" title="Tracked TestFlight link clicks, not verified installations">TF Clicks</th>
+                <th class="fd-table-num" title="Tracked guest session creation events, including web guests">Sessions</th>
+                <th class="fd-table-num" title="Tracked Open-in-App button clicks, not confirmed native launches">App Link Clicks</th>
+                <th class="fd-table-num" title="Not available: independent counts do not establish conversion">Conv %*</th>
               </tr>
             </thead>
             <tbody id="fdEventsBody"></tbody>
@@ -525,7 +525,7 @@
       <div id="fdActivitySection" class="fd-section" style="display:none;">
         <div class="fd-section-header">
           <div class="fd-section-title">Hourly Activity</div>
-          <div class="fd-section-subtitle">Stacked bars showing event volume per hour across all funnel stages. Reveals when users are most active and whether traffic spikes correspond to actual conversions.</div>
+          <div class="fd-section-subtitle">Stacked hourly counts of tracked actions; these are not sequential conversions.</div>
         </div>
         <div class="fd-sparkline-wrap">
           <div class="fd-spark-legend" id="fdSparkLegend"></div>
@@ -538,6 +538,6 @@
     </div><!-- #fdContent -->
   </div><!-- .fd-shell -->
 
-  <script type="module" src="../assets/js/funnelDashboard.js"></script>
+  <script type="module" src="../assets/js/funnelDashboard.js?v=20261105"></script>
 </body>
 </html>

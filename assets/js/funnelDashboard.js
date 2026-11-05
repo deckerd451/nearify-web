@@ -12,7 +12,7 @@ const STAGES = [
 ];
 
 const STAGE_KEYS  = STAGES.map(s => s.key);
-const STAGE_INDEX = Object.fromEntries(STAGES.map((s, i) => [s.key, i]));
+
 
 // ── State ──────────────────────────────────────────────────────────────────────
 
@@ -166,159 +166,57 @@ function buildTotals(rows) {
 
 // ── Render: stat cards ─────────────────────────────────────────────────────────
 
+// Counts are independently tracked events, not a sequential user cohort.
+// Direct guest joins do not require the Meetup CTA or TestFlight.
 function renderStats(totals) {
-  const views    = totals["meetup_handoff_view"]        || 0;
-  const sessions = totals["guest_session_created"]      || 0;
-  const clicks   = totals["enter_live_network_clicked"] || 0;
-  const installs = totals["testflight_clicked"]         || 0;
-  const opens    = totals["app_deep_link_clicked"]      || 0;
-
-  const viewToSession = views > 0 ? ((sessions / views) * 100).toFixed(1) + "%" : "—";
-
   const cards = [
-    {
-      label: "Page Views", value: fmt(views), sub: "meetup_handoff_view", accent: false,
-      info: "People who loaded the Nearify meetup handoff page from a shared link. This is the very top of the funnel — all subsequent stages are a subset of this number.",
-    },
-    {
-      label: "CTA Clicks", value: fmt(clicks), sub: pct(clicks, views), accent: false,
-      info: "Visitors who tapped the 'Enter Live Network' call-to-action button. This is the first active signal of intent — a user showing they want to join the event.",
-    },
-    {
-      label: "Installs", value: fmt(installs), sub: pct(installs, clicks), accent: false,
-      info: "Users who tapped the TestFlight install link after clicking the CTA. This is a high-commitment action requiring leaving the browser, making it the steepest drop-off point in most funnels.",
-    },
-    {
-      label: "Guest Sessions", value: fmt(sessions), sub: pct(sessions, installs), accent: false,
-      info: "Users who completed in-app onboarding and started an active guest session. This is the core conversion event — the user is now participating in the live network.",
-    },
-    {
-      label: "App Opens", value: fmt(opens), sub: pct(opens, sessions), accent: true,
-      info: "Users who returned to or deep-linked back into the app after their initial session. A proxy for repeat engagement and product stickiness beyond the first open.",
-    },
-    {
-      label: "View → Session", value: viewToSession, sub: "end-to-end conversion", accent: true,
-      info: "Overall funnel efficiency: the share of page viewers who became active guest session participants. This single number summarises the health of the entire acquisition flow.",
-    },
+    { key: "meetup_handoff_view", label: "Handoff Page Views", info: "Recorded loads of the Meetup handoff page; not all event traffic." },
+    { key: "guest_session_created", label: "Guest Sessions", info: "Recorded guest-session creation events, including direct joins. Not necessarily unique people." },
+    { key: "enter_live_network_clicked", label: "Handoff CTA Clicks", info: "Clicks tracked on the Meetup handoff page only; direct joins may bypass this." },
+    { key: "testflight_clicked", label: "TestFlight Link Clicks", info: "Clicks on TestFlight links, not verified app installations." },
+    { key: "app_deep_link_clicked", label: "Open-in-App Clicks", info: "Tracked deep-link button clicks, not verified native app launches." },
   ];
-
   $stats.innerHTML = cards.map(c => `
-    <div class="fd-stat-card${c.accent ? " is-accent" : ""}">
-      <div class="fd-stat-label">
-        ${c.label}
+    <div class="fd-stat-card">
+      <div class="fd-stat-label">${c.label}
         <span class="fd-info-icon">?<span class="fd-tooltip">${c.info}</span></span>
       </div>
-      <div class="fd-stat-value">${c.value}</div>
-      <div class="fd-stat-sub">${c.sub}</div>
+      <div class="fd-stat-value">${fmt(totals[c.key] || 0)}</div>
+      <div class="fd-stat-sub">Tracked events · not unique users</div>
     </div>
   `).join("");
 }
 
-// ── Render: insight callout ────────────────────────────────────────────────────
-
+// Independent event totals cannot support stage-to-stage drop-off claims.
 function renderInsights(totals) {
-  if (totals[STAGE_KEYS[0]] === 0) {
-    $insight.style.display = "none";
-    return;
-  }
-
-  // Find the step with the largest absolute drop-off
-  let worstStep = null;
-  let worstLost = 0;
-
-  for (let i = 1; i < STAGES.length; i++) {
-    const prev = totals[STAGE_KEYS[i - 1]] || 0;
-    const curr = totals[STAGE_KEYS[i]]     || 0;
-    if (prev === 0) continue;
-    const lost = prev - curr;
-    if (lost > worstLost) {
-      worstLost = lost;
-      worstStep = {
-        from:    STAGES[i - 1].label,
-        to:      STAGES[i].label,
-        lost,
-        lossPct: ((lost / prev) * 100).toFixed(0),
-        convPct: ((curr / prev) * 100).toFixed(0),
-      };
-    }
-  }
-
-  if (!worstStep) {
-    $insight.style.display = "none";
-    return;
-  }
-
-  // Find best-converting step for contrast
-  let bestStep = null;
-  let bestConv = 0;
-  for (let i = 1; i < STAGES.length; i++) {
-    const prev = totals[STAGE_KEYS[i - 1]] || 0;
-    const curr = totals[STAGE_KEYS[i]]     || 0;
-    if (prev === 0) continue;
-    const conv = curr / prev;
-    if (conv > bestConv) {
-      bestConv = conv;
-      bestStep = { from: STAGES[i - 1].label, to: STAGES[i].label, convPct: (conv * 100).toFixed(0) };
-    }
-  }
-
-  const viewToSession = totals[STAGE_KEYS[0]] > 0
-    ? ((totals[STAGE_KEYS[STAGE_KEYS.length - 1]] / totals[STAGE_KEYS[0]]) * 100).toFixed(1)
-    : null;
-
-  let html = `<div class="fd-insight-label">Funnel Insights</div>`;
-  html += `<strong>Biggest drop-off:</strong> ${worstStep.lossPct}% of users (${fmt(worstLost)}) who reached <strong>${worstStep.from}</strong> did not proceed to <strong>${worstStep.to}</strong>. `;
-  html += `Reducing friction at this step would have the greatest impact on overall conversion.`;
-  if (bestStep && bestStep.from !== worstStep.from) {
-    html += ` The strongest step is <strong>${bestStep.from} → ${bestStep.to}</strong> at ${bestStep.convPct}% conversion.`;
-  }
-  if (viewToSession !== null) {
-    html += ` Overall end-to-end rate is <strong>${viewToSession}%</strong>.`;
-  }
-
-  $insight.innerHTML = html;
+  $insight.innerHTML = `<div class="fd-insight-label">Tracking context</div>
+    Guest sessions can be created through direct event joins without a tracked
+    handoff CTA or TestFlight click. These figures are independent event counts,
+    not a sequential conversion funnel. A zero for Open-in-App clicks does not
+    mean the native app was never opened. Reliable conversion rates require
+    visitor/session-level attribution.`;
   $insight.style.display = "block";
 }
 
-// ── Render: funnel bars ────────────────────────────────────────────────────────
-
 function renderFunnelBars(totals) {
-  const top = totals[STAGE_KEYS[0]] || 0;
+  const maxCount = Math.max(1, ...STAGE_KEYS.map(k => totals[k] || 0));
   const $list = document.getElementById("fdFunnelList");
-
-  if (top === 0) {
+  if (STAGE_KEYS.every(k => !totals[k])) {
     $list.innerHTML = '<div class="fd-empty">No data for this period.</div>';
     return;
   }
-
-  $list.innerHTML = STAGES.map((stage, i) => {
-    const cnt      = totals[stage.key] || 0;
-    const prev     = i > 0 ? (totals[STAGE_KEYS[i - 1]] || 0) : null;
-    const widthPct = top > 0 ? (cnt / top * 100).toFixed(1) : 0;
-    const stepRatio = prev !== null && prev > 0 ? cnt / prev : null;
-    const stepPct   = stepRatio !== null ? (stepRatio * 100).toFixed(0) + "%" : "";
-
-    const dropped   = prev !== null ? prev - cnt : null;
-    const lostPct   = stepRatio !== null ? (100 - stepRatio * 100).toFixed(0) : null;
-    const dropLine  = dropped !== null && prev > 0 && dropped > 0
-      ? `<div class="fd-funnel-dropoff"><span class="fd-funnel-dropoff-count">−${fmt(dropped)}</span> dropped off at this step (${lostPct}% of previous stage)</div>`
-      : "";
-
-    return `
-      <div class="fd-funnel-row">
-        <div class="fd-funnel-row-header">
-          <span class="fd-funnel-stage-name">${stage.label}</span>
-          <span class="fd-funnel-row-meta">
-            <span class="fd-funnel-count">${fmt(cnt)}</span>
-            <span class="fd-funnel-pct">${stepPct}</span>
-          </span>
-        </div>
-        <div class="fd-bar-track">
-          <div class="fd-bar-fill" style="width:${widthPct}%; background:${stage.color};"></div>
-        </div>
-        ${dropLine}
+  $list.innerHTML = STAGES.map(stage => {
+    const count = totals[stage.key] || 0;
+    const widthPct = (count / maxCount * 100).toFixed(1);
+    return `<div class="fd-funnel-row">
+      <div class="fd-funnel-row-header">
+        <span class="fd-funnel-stage-name">${stage.label}</span>
+        <span class="fd-funnel-count">${fmt(count)}</span>
       </div>
-    `;
+      <div class="fd-bar-track">
+        <div class="fd-bar-fill" style="width:${widthPct}%; background:${stage.color};"></div>
+      </div>
+    </div>`;
   }).join("");
 }
 
@@ -342,7 +240,7 @@ function renderEventsTable(pivot) {
     const installs = ev.stages["testflight_clicked"]         || 0;
     const sessions = ev.stages["guest_session_created"]      || 0;
     const opens    = ev.stages["app_deep_link_clicked"]      || 0;
-    const conv     = views > 0 ? ((sessions / views) * 100).toFixed(1) + "%" : "—";
+    const conv     = "—"; // Cannot attribute independent event counts to a cohort.
 
     return `
       <tr>
