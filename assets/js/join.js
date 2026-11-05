@@ -182,7 +182,7 @@ async function fetchPublicProfileBrief(profileId) {
 function renderEventMeta(event) {
   if (!els.joinEventMeta || !event) return;
 
-  const bits = [event.name, formatDateTime(event.starts_at), event.location].filter(Boolean);
+  const bits = [document.body.classList.contains("join-mode-personal-connect") ? event.name : null, formatDateTime(event.starts_at), event.location].filter(Boolean);
 
   if (!bits.length) {
     hide(els.joinEventMeta);
@@ -622,14 +622,7 @@ function renderGenericJoinUx(event, fallbackName, source) {
     );
   } else {
     setText(els.joinTitle, title);
-    if (event?.description) {
-      renderEventDescription(els.joinDescription, event.description);
-    } else {
-      setText(
-        els.joinDescription,
-        "Join as a guest and save people you meet by scanning their personal Nearify QR codes."
-      );
-    }
+    setText(els.joinDescription, "Join in your browser. Scan a Nearify QR to save someone you meet — no app or account required.");
   }
 
   renderEventMeta(event);
@@ -671,11 +664,11 @@ function renderGenericJoinUx(event, fallbackName, source) {
         </li>
         <li>
           <div class="join-step-label">Meet People</div>
-          <div class="join-step-detail">See who's here and find people worth talking to.</div>
+          <div class="join-step-detail">Ask someone you meet for their Nearify QR.</div>
         </li>
         <li>
           <div class="join-step-label">Claim Connections</div>
-          <div class="join-step-detail">Sign in after to keep the people you met.</div>
+          <div class="join-step-detail">Save a connection by scanning their QR. No app required.</div>
         </li>
       `;
     }
@@ -942,23 +935,69 @@ function renderClaimSuccessUx(event, claimResult) {
   });
 }
 
+function setGuestView(view) {
+  document.body.dataset.guestView = view;
+  for (const [id, stage] of [["guestConnectStage", "connect"], ["guestSaveConfirmation", "saved"], ["guestHistorySection", "history"]]) {
+    const element = document.getElementById(id);
+    if (element) element.hidden = view !== stage;
+  }
+  if (view !== "connect") {
+    stopGuestQrCamera();
+    const scanner = document.getElementById("guestQrScanner");
+    if (scanner) scanner.hidden = true;
+    document.getElementById("guestScanQrBtn")?.setAttribute("aria-expanded", "false");
+  }
+  const back = document.getElementById("guestBackBtn");
+  back?.setAttribute("aria-label", view === "saved" || view === "history" ? "Back to connecting" : "Back to event");
+}
+
+function wireGuestNavigation(eventId) {
+  const toolbar = document.querySelector(".guest-flow-toolbar");
+  if (toolbar) toolbar.hidden = false;
+  setText(document.getElementById("guestFlowEventName"), els.joinTitle?.textContent || "This event");
+  const back = document.getElementById("guestBackBtn");
+  if (back) back.onclick = () => {
+    if (["saved", "history"].includes(document.body.dataset.guestView)) {
+      setGuestView("connect");
+      document.getElementById("guestConnectHeading")?.focus();
+    } else {
+      window.location.href = `../events/event.html?id=${encodeURIComponent(eventId)}`;
+    }
+  };
+  const viewHistory = () => {
+    setGuestView("history");
+    document.getElementById("guestHistoryHeading")?.focus();
+  };
+  for (const id of ["guestViewConnectionsBtn", "guestSavedViewBtn"]) {
+    const button = document.getElementById(id);
+    if (button) button.onclick = viewHistory;
+  }
+}
+
 function showGuestJoinCta() {
-  const cta = document.getElementById("guestJoinCta");
-  show(cta);
+  document.body.classList.add("guest-flow");
   hide(els.joinPayloadCard);
   hide(els.joinBottomCta);
   hide(document.getElementById("joinActions"));
+  wireGuestNavigation(getQueryParams().eventId);
+  showGuestForm();
 }
 
 function showGuestForm() {
-  const section = document.getElementById("guestJoinSection");
-  const form = document.getElementById("guestForm");
-  const joined = document.getElementById("guestJoinedState");
-  show(section);
-  show(form);
-  hide(joined);
-  const input = document.getElementById("guestDisplayName");
-  if (input) input.focus();
+  show(document.getElementById("guestJoinSection"));
+  show(document.getElementById("guestForm"));
+  hide(document.getElementById("guestJoinCta"));
+  hide(document.getElementById("guestJoinedState"));
+  setGuestView("join");
+  try {
+    const saved = localStorage.getItem("intent_primary");
+    const goal = [...document.querySelectorAll('input[name="guestGoal"]')].find((input) => input.value === saved);
+    if (goal) {
+      goal.checked = true;
+      const extra = goal.closest("details");
+      if (extra) extra.open = true;
+    }
+  } catch (_) {}
 }
 
 function saveGhostFlatKeys(ghost) {
@@ -1014,6 +1053,8 @@ function renderGuestConnectionHistory(connections) {
     connections.map((r) => r?.to_profile_name).filter(Boolean)
   )];
 
+  const emptyStatus = document.getElementById("guestConnectStatus");
+  if (emptyStatus) emptyStatus.hidden = names.length > 0;
   if (!names.length) {
     historyEl.style.display = "none";
     return;
@@ -1028,6 +1069,8 @@ function renderGuestConnectionHistory(connections) {
 function updateClaimButtonCount(count) {
   const btn = document.getElementById("guestClaimSignInBtn");
   if (!btn) return;
+  const claimActions = btn.closest(".guest-joined-actions");
+  if (claimActions) claimActions.hidden = count === 0;
   if (count > 0) {
     btn.textContent = count === 1 ? "Claim My 1 Connection" : `Claim My ${count} Connections`;
   } else {
@@ -1229,6 +1272,45 @@ async function refreshAllGuestHistory(eventId) {
     ...guests.map((g) => ({ to_profile_name: g.guest_name + " (guest)" })),
   ]);
   updateClaimButtonCount(profiles.length + guests.length);
+  return { profiles, guests };
+}
+
+function showGuestSaveConfirmation(message, { name, kind = "member" } = {}) {
+  const scanner = document.getElementById("guestQrScanner");
+  if (scanner) scanner.hidden = true;
+  document.getElementById("guestScanQrBtn")?.setAttribute("aria-expanded", "false");
+  document.body.dataset.guestSaveKind = kind;
+  setText(document.getElementById("guestSaveMessage"), message);
+  const displayName = name || (kind === "guest" ? "Guest connection" : "Nearify member");
+  setText(document.getElementById("guestSavedName"), displayName);
+  setText(document.getElementById("guestSavedAvatar"), name ? getAttendeeInitials(name) : "✓");
+  setText(document.getElementById("guestSavedContext"), `Met at ${document.getElementById("guestFlowEventName")?.textContent || "this event"}`);
+  setGuestView("saved");
+  document.getElementById("guestSaveHeading")?.focus();
+  const keep = document.getElementById("guestKeepConnectingBtn");
+  if (keep) keep.onclick = () => {
+    setGuestView("connect");
+    document.getElementById("guestScanQrBtn")?.focus();
+  };
+}
+
+let guestQrSavePending = false;
+async function submitGuestQr(value, eventId) {
+  if (guestQrSavePending) return;
+  guestQrSavePending = true;
+  const save = document.getElementById("guestSaveQrLinkBtn");
+  const confirmation = document.getElementById("guestSaveConfirmation");
+  if (save) save.disabled = true;
+  if (confirmation) confirmation.hidden = true;
+  try {
+    await saveGuestQrCode(value, eventId);
+  } catch (_) {
+    const status = document.getElementById("guestQrStatus");
+    if (status) status.textContent = "Couldn't save this connection. Check your connection and try again.";
+  } finally {
+    guestQrSavePending = false;
+    if (save) save.disabled = false;
+  }
 }
 
 async function saveGuestQrCode(value, eventId) {
@@ -1242,7 +1324,7 @@ async function saveGuestQrCode(value, eventId) {
     return;
   }
   if (status) status.textContent = "Saving guest connection…";
-  const { error } = await supabase.rpc("save_guest_to_guest_connection", {
+  const { data, error } = await supabase.rpc("save_guest_to_guest_connection", {
     p_event_id: eventId, p_from_ghost_id: id,
     p_from_ghost_token: token, p_target_share_code: code,
   });
@@ -1255,7 +1337,9 @@ async function saveGuestQrCode(value, eventId) {
   const panel = document.getElementById("guestQrScanner");
   if (panel) panel.hidden = true;
   await refreshAllGuestHistory(eventId);
-  if (status) status.textContent = "Guest saved on this device. Account recovery for guest-to-guest connections is coming later.";
+  if (status) status.textContent = "";
+  const saved = Array.isArray(data) ? data[0] : data;
+  showGuestSaveConfirmation("Saved to your guest session. Sign in to keep this connection in your Nearify account.", { name: saved?.guest_name, kind: "guest" });
 }
 
 function wireGuestShowQr(eventId) {
@@ -1265,49 +1349,54 @@ function wireGuestShowQr(eventId) {
   const status = document.getElementById("guestMyQrStatus");
   const copy = document.getElementById("guestCopyQrBtn");
   const linkInput = document.getElementById("guestMyQrLink");
+  const linkDetails = document.getElementById("guestQrLinkDetails");
   if (!button || !panel || !qr || button.dataset.wired) return;
   button.dataset.wired = "true";
   let shareUrl = "";
-  button.addEventListener("click", async () => {
-    if (!panel.hidden) { panel.hidden = true; return; }
-    const id = localStorage.getItem("nearify_ghost_id");
-    const token = localStorage.getItem("nearify_ghost_token");
-    if (!id || !token || !eventId) {
-      if (status) status.textContent = "Guest session unavailable.";
-      panel.hidden = false;
-      return;
-    }
-    button.disabled = true;
-    const { data, error } = await supabase.rpc("get_my_guest_share_code", {
-      p_event_id: eventId, p_ghost_id: id, p_ghost_token: token,
-    });
-    button.disabled = false;
+  const loadQr = async () => {
+    if (button.disabled) return;
     panel.hidden = false;
-    if (error || !/^[0-9a-f]{64}$/.test(data || "")) {
-      if (status) status.textContent = "Couldn't create your guest QR. Please try again.";
-      return;
+    button.hidden = true;
+    button.disabled = true;
+    if (status) status.textContent = "Creating your QR…";
+    try {
+      const id = localStorage.getItem("nearify_ghost_id");
+      const token = localStorage.getItem("nearify_ghost_token");
+      if (!id || !token || !eventId) throw new Error("Guest session unavailable");
+      const { data, error } = await supabase.rpc("get_my_guest_share_code", {
+        p_event_id: eventId, p_ghost_id: id, p_ghost_token: token,
+      });
+      if (error || !/^[0-9a-f]{64}$/.test(data || "")) throw new Error("Guest QR unavailable");
+      shareUrl = "https://nearify.org/join/?event=" + encodeURIComponent(eventId) + "&guest=" + encodeURIComponent(data);
+      if (linkInput) linkInput.value = shareUrl;
+      qr.replaceChildren();
+      if (typeof window.QRCode === "function") {
+        new window.QRCode(qr, { text: shareUrl, width: 200, height: 200 });
+        if (status) status.textContent = "";
+      } else {
+        if (status) status.textContent = "QR display unavailable. Copy your guest link instead.";
+        if (linkDetails) linkDetails.open = true;
+      }
+    } catch (_) {
+      if (status) status.textContent = "Couldn't load your QR. Try again when you're connected.";
+      button.hidden = false;
+    } finally {
+      button.disabled = false;
     }
-    shareUrl = "https://nearify.org/join/?event=" + encodeURIComponent(eventId) + "&guest=" + encodeURIComponent(data);
-    if (linkInput) linkInput.value = shareUrl;
-    qr.replaceChildren();
-    if (typeof window.QRCode === "function") {
-      new window.QRCode(qr, { text: shareUrl, width: 200, height: 200 });
-      if (status) status.textContent = "Other guests can scan this code. It does not contain your private guest token.";
-    } else if (status) {
-      status.textContent = "QR display unavailable. Copy your guest link instead.";
-    }
-  });
+  };
+  button.addEventListener("click", loadQr);
   copy?.addEventListener("click", async () => {
     if (!shareUrl) return;
     try {
-      if (!navigator.clipboard?.writeText) throw new Error("Clipboard API unavailable");
+      if (!navigator.clipboard?.writeText) throw new Error("Clipboard unavailable");
       await navigator.clipboard.writeText(shareUrl);
       if (status) status.textContent = "Guest link copied.";
     } catch (_) {
       if (linkInput) { linkInput.focus(); linkInput.select(); }
-      if (status) status.textContent = "Clipboard unavailable. Select and copy the guest link above.";
+      if (status) status.textContent = "Select and copy your guest link below.";
     }
   });
+  loadQr();
 }
 
 async function saveGuestQrProfile(value, eventId) {
@@ -1324,10 +1413,10 @@ async function saveGuestQrProfile(value, eventId) {
     if (status) status.textContent = "Couldn't save this connection. Check the QR and try again.";
     return;
   }
-  const connections = await loadGuestConnectionHistory();
-  renderGuestConnectionHistory(connections);
-  updateClaimButtonCount(connections.length);
-  if (status) status.textContent = "Connection saved. Claim your connections when you're ready.";
+  const { profiles: connections } = await refreshAllGuestHistory(eventId);
+  if (status) status.textContent = "";
+  const matched = connections.find((connection) => connection.to_profile_id === profileId);
+  showGuestSaveConfirmation("Saved to your guest session. Sign in to keep this member connection across devices.", { name: matched?.to_profile_name || result?.to_profile_name });
   const panel = document.getElementById("guestQrScanner");
   if (panel) panel.hidden = true;
 }
@@ -1343,9 +1432,12 @@ function wireGuestQrScanner(eventId) {
   if (!open || !panel || open.dataset.wired) return;
   open.dataset.wired = "true";
   stop?.addEventListener("click", () => { stopGuestQrCamera(); if (video) video.hidden = true; if (stop) stop.hidden = true; if (status) status.textContent = "Camera stopped. Paste their Nearify link below."; input?.focus(); });
-  save?.addEventListener("click", () => saveGuestQrCode(input?.value || "", eventId));
+  save?.addEventListener("click", () => submitGuestQr(input?.value || "", eventId));
   open.addEventListener("click", async () => {
     panel.hidden = false;
+    open.setAttribute("aria-expanded", "true");
+    const confirmation = document.getElementById("guestSaveConfirmation");
+    if (confirmation) confirmation.hidden = true;
     if (guestQrStream) return;
     if (video) video.hidden = false;
     if (stop) stop.hidden = false;
@@ -1358,6 +1450,10 @@ function wireGuestQrScanner(eventId) {
     try {
       const detector = new BarcodeDetector({ formats: ["qr_code"] });
       guestQrStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" }, audio: false });
+      if (panel.hidden || document.body.dataset.guestView !== "connect") {
+        stopGuestQrCamera();
+        return;
+      }
       video.srcObject = guestQrStream;
       await video.play();
       guestQrScanActive = true;
@@ -1366,9 +1462,10 @@ function wireGuestQrScanner(eventId) {
         if (!guestQrScanActive) return;
         try {
           const codes = await detector.detect(video);
+          if (!guestQrScanActive) return;
           if (codes.length && codes[0].rawValue) {
-            await saveGuestQrCode(codes[0].rawValue, eventId);
-            return;
+            await submitGuestQr(codes[0].rawValue, eventId);
+            if (panel.hidden) return;
           }
         } catch (_) {}
         if (guestQrScanActive) setTimeout(scan, 250);
@@ -1376,6 +1473,8 @@ function wireGuestQrScanner(eventId) {
       scan();
     } catch (_) {
       stopGuestQrCamera();
+      if (video) video.hidden = true;
+      if (stop) stop.hidden = true;
       if (status) status.textContent = "Camera unavailable. Paste their Nearify link below instead.";
     }
   });
@@ -1389,6 +1488,10 @@ function showGuestJoinedState(ghost) {
   const nameEl = document.getElementById("guestJoinedName");
   const cta = document.getElementById("guestJoinCta");
 
+  document.body.classList.add("guest-flow", "guest-flow-joined");
+  hide(document.getElementById("joinActions"));
+  hide(els.joinPayloadCard);
+  hide(els.joinBottomCta);
   saveGhostFlatKeys(ghost);
 
   hide(form);
@@ -1396,11 +1499,14 @@ function showGuestJoinedState(ghost) {
   show(section);
   show(joined);
   if (nameEl) nameEl.textContent = ghost.displayName || "";
+  const goal = [...document.querySelectorAll('input[name="guestGoal"]')].find((input) => input.value === ghost.intentPrimary);
+  const goalLabel = goal?.dataset.label;
+  setText(document.getElementById("guestJoinedGoal"), goalLabel ? `Your goal: ${goalLabel}` : "");
 
   const joinedLabel = joined?.querySelector(".guest-joined-label");
-  if (joinedLabel && isMeetupSource) {
-    joinedLabel.textContent = "You're joining this event as a guest.";
-  }
+  if (joinedLabel) joinedLabel.textContent = "You’re in";
+  wireGuestNavigation(ghost.eventId || getQueryParams().eventId);
+  setGuestView("connect");
 
   wireGuestConnectSection();
   wireGuestQrScanner(ghost.eventId || localStorage.getItem("nearify_ghost_event_id") || new URLSearchParams(window.location.search).get("event"));
@@ -1411,7 +1517,7 @@ function showGuestJoinedState(ghost) {
   const resolvedEventId = ghost.eventId || localStorage.getItem("nearify_ghost_event_id") || scannedEvent;
   const scannedGuest = new URLSearchParams(window.location.search).get("guest");
   if (scannedGuest && scannedEvent === resolvedEventId) {
-    saveGuestQrCode(window.location.href, resolvedEventId).then(() => {
+    submitGuestQr(window.location.href, resolvedEventId).then(() => {
       const clean = new URL(window.location.href);
       clean.searchParams.delete("guest");
       history.replaceState(null, "", clean);
@@ -1419,7 +1525,7 @@ function showGuestJoinedState(ghost) {
   } else if (scannedProfile && scannedEvent === resolvedEventId) {
     // A personal QR opened before guest registration. Record it once the
     // guest session exists; no anonymous attendee directory is queried.
-    saveGuestQrProfile(window.location.href, scannedEvent).then(() => {
+    submitGuestQr(window.location.href, scannedEvent).then(() => {
       const clean = new URL(window.location.href);
       clean.searchParams.delete("profile");
       history.replaceState(null, "", clean);
@@ -1439,7 +1545,7 @@ function showGuestJoinedState(ghost) {
   hide(document.getElementById("ghostRecommendations"));
   hide(document.getElementById("ghostIntentStep"));
   const connectStatus = document.getElementById("guestConnectStatus");
-  if (connectStatus) connectStatus.textContent = "To save someone you met, scan their personal Nearify QR code. Your saved people will appear here.";
+  if (connectStatus) connectStatus.textContent = "Your saved connections will appear here.";
 
   // Wire the claim sign-in button every time the joined state is shown
   // (runs for both new-join and restored-session paths)
@@ -1586,13 +1692,16 @@ async function handleGuestSubmit(eventId) {
   const statusEl = document.getElementById("guestJoinStatus");
   const submitBtn = document.getElementById("guestSubmitBtn");
 
+  if (submitBtn?.disabled) return;
   const name = input?.value?.trim();
 
   if (errorEl) errorEl.style.display = "none";
+  input?.removeAttribute("aria-invalid");
   if (statusEl) statusEl.textContent = "";
 
   if (!name) {
     if (errorEl) errorEl.style.display = "";
+    input?.setAttribute("aria-invalid", "true");
     if (input) input.focus();
     return;
   }
@@ -1610,17 +1719,18 @@ async function handleGuestSubmit(eventId) {
       source:        isMeetupSource ? "meetup" : null,
       sourceEventId: isMeetupSource ? meetupSourceEventId : null,
     });
-    // Default intent — user can refine below recommendations without being gated
-    ghostIntentPrimary = "meet_people";
-    saveGhostSession(eventId, { ghostId: ghost.ghostId, ghostToken: ghost.ghostToken, eventId, displayName: name, intentPrimary: "meet_people" });
+    // Optional goal is a local reminder; it does not authorize roster access.
+    ghostIntentPrimary = document.querySelector('input[name="guestGoal"]:checked')?.value || "meet_people";
+    ghost.intentPrimary = ghostIntentPrimary;
+    saveGhostSession(eventId, ghost);
     showGuestJoinedState(ghost);
-    logger.log("[Guest] Joined as guest", ghost);
+    document.getElementById("guestConnectHeading")?.focus();
   } catch (err) {
     logger.error("[Guest] Failed to create ghost session", err);
     if (statusEl) statusEl.textContent = "Something went wrong. Please try again.";
     if (submitBtn) {
       submitBtn.disabled = false;
-      submitBtn.textContent = "Join as Guest";
+      submitBtn.textContent = "Join as a guest";
     }
   }
 }
@@ -1778,6 +1888,12 @@ function wireGuestJoinFlow(eventId) {
   }
 
   if (nameInput) {
+    nameInput.addEventListener("input", () => {
+      if (nameInput.value.trim()) {
+        hide(document.getElementById("guestNameError"));
+        nameInput.removeAttribute("aria-invalid");
+      }
+    });
     nameInput.addEventListener("keydown", (e) => {
       if (e.key === "Enter") {
         e.preventDefault();
@@ -1786,16 +1902,9 @@ function wireGuestJoinFlow(eventId) {
     });
   }
 
-  if (cancelBtn) {
-    cancelBtn.addEventListener("click", () => {
-      const form = document.getElementById("guestForm");
-      const cta = document.getElementById("guestJoinCta");
-      const section = document.getElementById("guestJoinSection");
-      hide(form);
-      hide(section);
-      show(cta);
-    });
-  }
+  if (cancelBtn) cancelBtn.addEventListener("click", () => {
+    window.location.href = `../events/event.html?id=${encodeURIComponent(eventId)}`;
+  });
   // guestClaimSignInBtn is wired inside showGuestJoinedState, not here,
   // so it fires for both new-join and restored-session paths.
 }

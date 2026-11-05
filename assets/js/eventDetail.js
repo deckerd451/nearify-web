@@ -186,11 +186,10 @@ function renderMetaGrid(event, isPast) {
   if (!grid) return;
 
   const cards = [];
-  if (event.location) cards.push({ label: "Location", value: event.location });
   if (event.starts_at) cards.push({ label: "Date & time", value: formatDateTime(event.starts_at) });
+  if (event.location) cards.push({ label: "Location", value: event.location });
   const organizerName = event.organizer_name || event.organizer || event.host || event.host_name;
   if (organizerName) cards.push({ label: "Organizer", value: organizerName });
-  if (!isPast) cards.push({ label: "Experience", value: "Live attendee discovery" });
 
   grid.innerHTML = cards.map((c) =>
     `<div class="event-meta-card">
@@ -481,7 +480,7 @@ function wirePlanControls() {
   // event has a start time. Calendar options: Google Calendar (opens a tab)
   // and Apple/Outlook (.ics).
   if (prepareCta && prepareBtn && currentEvent?.starts_at) {
-    prepareCta.style.display = "";
+    prepareCta.style.display = currentUser ? "" : "none";
 
     const googleLink = document.getElementById("eventCalendarGoogle");
     const icsBtn = document.getElementById("eventCalendarIcs");
@@ -580,7 +579,7 @@ function wireJoinActions() {
   if (continueBtn) {
     continueBtn.addEventListener("click", (e) => {
       e.preventDefault();
-      beginJoinFlow("continue_without_sign_in");
+      if (currentEvent?.id) window.location.href = getWebJoinUrl(currentEvent.id);
     });
   }
 
@@ -1225,7 +1224,11 @@ async function loadAttendeeDiscovery(eventId, isPast = false) {
   const gate = document.getElementById("attendeeDiscoveryGate");
   if (grid) grid.replaceChildren();
   if (gate) gate.style.display = "none";
+  const peopleCopy = document.getElementById("eventPlanPeopleCopy");
   if (!isFullAccess) {
+    if (peopleCopy) peopleCopy.textContent = currentUser
+      ? "Attend this event to discover people who choose to be visible."
+      : "Guests connect by QR. To discover attendees who choose to be visible, sign in and attend this event.";
     if (gate) {
       const msg = gate.querySelector(".attendee-gate-message");
       if (msg) msg.textContent = currentUser
@@ -1235,7 +1238,10 @@ async function loadAttendeeDiscovery(eventId, isPast = false) {
     }
     return;
   }
-  if (!attendees.length) return;
+  if (!attendees.some((attendee) => attendee.profileId !== myProfileId)) {
+    if (peopleCopy) peopleCopy.textContent = "No other attendees have opted into discovery yet. You can still connect in person using Nearify QR codes.";
+    return;
+  }
   const stateMap = buildConnectionStateMap(connections);
   renderAttendeeDiscovery(attendees, myProfileId, true, stateMap, eventId);
 }
@@ -1585,9 +1591,10 @@ async function populatePage(event) {
     // The full description expands inline from the summary "Read more" control.
     subheadEl.textContent = isPast
       ? "This event has ended."
-      : "Discover the event and prepare on the web — use the Nearify iPhone app at the event.";
+      : "Meet in person. Save the connections you want to keep.";
   }
 
+  document.body.classList.toggle("event-guest", !currentUser && !isPast);
   renderMetaGrid(event, isPast);
   renderSummaryPreview(event);
   setCurrentEventId(event.id);
