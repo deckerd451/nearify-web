@@ -192,8 +192,16 @@ function renderSuccessState(ev, newEventId, joinUrl) {
 }
 
 function getFilteredEvents() {
-  if (!activeSourceFilter) return allExternalEvents;
-  return allExternalEvents.filter(ev => ev.source === activeSourceFilter);
+  const now = Date.now();
+  return allExternalEvents.filter(ev => {
+    // Keep only events that have not ended. When no end time is available,
+    // use the start time; unknown/invalid dates are not activation candidates.
+    const end = ev.end_time ? Date.parse(ev.end_time) : NaN;
+    const start = Date.parse(ev.start_time);
+    const cutoff = Number.isFinite(end) ? end : start;
+    return Number.isFinite(cutoff) && cutoff >= now &&
+      (!activeSourceFilter || ev.source === activeSourceFilter);
+  });
 }
 
 function renderLists() {
