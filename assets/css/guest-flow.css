@@ -140,3 +140,6 @@
 .web-browser-flow #joinPayloadCard,.web-browser-flow #authHandoffSection,
 .web-browser-flow #claimSuccessState a[href*='testflight.apple.com'] {display:none!important}
 .web-browser-flow .join-explainer,.web-browser-flow #intentStep {display:none!important}
+/* Programmatic status-heading focus should not look like a selected control. */
+.guest-flow :is(#guestSaveHeading,#guestConnectHeading,#guestHistoryHeading):focus {outline:none}
+.web-browser-flow #scanAnotherQr,.web-browser-flow #webScanRetryBtn {margin:12px 12px 0 0}

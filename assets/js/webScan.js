@@ -19,8 +19,10 @@ function stopCamera() {
   video.hidden = true;
   stop.hidden = true;
   start.disabled = false;
+  start.hidden = false;
+  document.getElementById('scanCameraShell').hidden = false;
   start.textContent = 'Start camera';
-  placeholder.hidden = false;
+  placeholder.toggleAttribute('hidden',false);
 }
 function showResult(value) {
   const target = resolveWebQr(value);
@@ -31,6 +33,8 @@ function showResult(value) {
   stopCamera();
   document.getElementById('scanContinueLink').href = target;
   result.hidden = false;
+  start.hidden = true;
+  document.getElementById('scanCameraShell').hidden = true;
   status.textContent = '';
   document.getElementById('scanResultHeading').focus();
   return true;
@@ -53,7 +57,7 @@ start.addEventListener('click', async () => {
     video.srcObject = camera;
     video.hidden = false;
     stop.hidden = false;
-    placeholder.hidden = true;
+    placeholder.toggleAttribute('hidden',true);
     await video.play();
     if (attempt !== generation) return;
     start.textContent = 'Scanning…';
@@ -87,13 +91,19 @@ start.addEventListener('click', async () => {
     document.getElementById('scanPasteDetails').open = true;
   }
 });
+document.getElementById('scanAgainBtn').addEventListener('click',()=>{
+  stopCamera();
+  result.hidden = true;
+  status.textContent = '';
+  start.focus();
+});
 stop.addEventListener('click', () => { stopCamera(); status.textContent = 'Camera stopped.'; });
 document.getElementById('scanLinkBtn').addEventListener('click', () => {
   stopCamera();
   result.hidden = true;
   showResult(document.getElementById('scanLinkInput').value);
 });
-window.addEventListener('pagehide',stopCamera);
+window.addEventListener('pagehide',()=>{ if(stream || start.disabled) stopCamera(); });
 document.addEventListener('visibilitychange',()=>{
-  if (document.hidden) { stopCamera(); status.textContent = 'Camera paused. Tap Start camera to resume.'; }
+  if (document.hidden && (stream || start.disabled)) { stopCamera(); status.textContent = 'Camera paused. Tap Start camera to resume.'; }
 });

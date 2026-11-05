@@ -30,6 +30,7 @@ import { escapeHtml, copyText } from "./utils.js";
 import { logger } from "./logger.js";
 import { pollingCoordinator } from "./pollingCoordinator.js";
 import { createQrDecoder } from "./qrScanner.js";
+import { saveAccountConnection } from "./accountConnection.js";
 import { trackGuestFunnel } from "./guestFunnel.js";
 
 const els = {
@@ -931,7 +932,7 @@ function renderClaimSuccessUx(event, claimResult) {
 
   show(section);
   logger.log("[GuestClaim] Claim success UX rendered", { count, names });
-  trackFunnelEvent("ghost_claim_success_shown", {
+  if (!claimResult?.accountSave) trackFunnelEvent("ghost_claim_success_shown", {
     eventId: event?.id || null,
     count,
     source:  isMeetupSource ? "meetup" : null,
@@ -2323,16 +2324,24 @@ async function maybeAutoClaimGhostForAuthenticatedUser(eventId) {
   try { localStorage.removeItem(`nearify_ghost:${ghostEventId}`); } catch (_) {}
 }
 
-function renderWebScanFailure(message) {
+function renderWebScanFailure(message, { title = "Connection needs another try", retry = true } = {}) {
   document.body.classList.add("web-browser-flow");
   renderInvalidState(message);
-  setText(els.joinTitle, "Connection needs another try");
-  const retry = document.createElement("button");
-  retry.id = "webScanRetryBtn";
-  retry.className = "btn primary";
-  retry.textContent = "Try again";
-  retry.addEventListener("click", () => window.location.reload());
-  els.joinDescription?.after(retry);
+  setText(els.joinTitle, title);
+  if (retry) {
+    const button = document.createElement("button");
+    button.id = "webScanRetryBtn";
+    button.className = "btn primary";
+    button.textContent = "Try again";
+    button.addEventListener("click", () => window.location.reload());
+    els.joinDescription?.after(button);
+  }
+  const scan = document.createElement("a");
+  scan.id = "scanAnotherQr";
+  scan.href = "/scan/?web=1";
+  scan.className = retry ? "btn secondary" : "btn primary";
+  scan.textContent = "Scan someone else's QR";
+  els.joinDescription?.after(scan);
 }
 
 async function saveSignedInGuestQr(event, code) {
@@ -2425,44 +2434,29 @@ async function initJoinPage() {
       return;
     }
     if (profileId && hasSession) {
-      // ── Personal connect flow: authenticated visitor scanned someone's QR ─
-      logger.log("[Join] Authenticated profile detected; rendering personal connect");
-
-      let connectResult = null;
-      const ghost = await ensureGhostForEvent(event.id);
-      renderGhostState(ghost);
-      connectResult = await maybeConnectGhostToProfile(event.id, profileId);
-      if (!connectResult) {
-        renderWebScanFailure("Could not save this connection. Check that the QR belongs to someone at this event and try again.");
+      const saved = await saveAccountConnection(supabase, event.id, profileId);
+      if (!saved.ok) {
+        renderWebScanFailure(saved.reason === "self"
+          ? "You're signed in as the person on this QR. Scan someone else's QR to save a connection."
+          : saved.reason === "profile_missing"
+            ? "We couldn't find your Nearify profile. Finish setting up your account, then try again."
+            : "We couldn't save this connection to your account. Please try again.",
+          { title: saved.reason === "self" ? "This is your QR" : "Connection needs another try", retry: saved.reason !== "self" });
         return;
       }
-
-      let historyRows = await fetchGhostConnectionHistory(ghost, event.id);
-      let isClaimed = historyRows.some((row) => row?.claimed_profile_id);
-
-      if (!isClaimed) {
-        const claimed = await maybeClaimGhostActivity(ghost, isClaimed);
-        if (claimed) {
-          historyRows = await fetchGhostConnectionHistory(ghost, event.id);
-          isClaimed = historyRows.some((row) => row?.claimed_profile_id);
-        }
-      }
-
-      wireClaimButtons(ghost, isClaimed);
-
-      renderPersonalConnectUx(event, targetProfile);
-      const uniqueNames = [...new Set((historyRows || []).map((row) => row?.to_profile_name).filter(Boolean))];
-      const hasHistory = uniqueNames.length > 1;
-      const state = getJoinState({ session: hasSession, hasHistory, isClaimed });
-      renderGhostJourneyCard({
-        state,
-        personName: targetProfile?.name || "this person",
-        historyRows,
-      });
-
-      if (connectResult) {
-        logger.log("[Join] Personal connect UX rendered after successful connection");
-      }
+      renderClaimSuccessUx(event, {count:1,names:targetProfile?.name ? [targetProfile.name] : [],profileId:saved.profileId,accountSave:true});
+      setText(document.getElementById("claimSuccessCount"), `Saved at ${event.name || "this event"}.`);
+      setText(document.getElementById("claimSuccessNoNames"), "This person is saved to your Nearify account.");
+      setText(document.querySelector(".claim-success-title"), saved.status === "confirmed" ? "You're connected" : "Connection saved");
+      setText(document.querySelector(".claim-success-profile-msg"), saved.status === "confirmed"
+        ? "You have both saved this connection."
+        : "Saved to your Nearify account. This becomes a mutual connection if they save you back.");
+      const actions = document.querySelector(".claim-success-actions");
+      const scan = document.createElement("a");
+      scan.href = "/scan/?web=1";
+      scan.className = "btn secondary";
+      scan.textContent = "Keep connecting";
+      actions?.appendChild(scan);
 
     } else if (hasSession && isPendingClaim) {
       // ── Post-claim return: user just authenticated to save ghost activity ─

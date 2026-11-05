@@ -14,7 +14,7 @@ const event = ${JSON.stringify(event)};
 window.smokeCalls = [];
 window.smokeAnalytics = [];
 function query(table) {
- const result = { data: table === 'events' ? event : table === 'profiles' ? {id:'33333333-3333-4333-8333-333333333333'} : [], error: null };
+ const result = { data: table === 'events' ? event : table === 'profiles' ? {id:'33333333-3333-4333-8333-333333333333',name:'A Very Long Signed In Account Name'} : [], error: null };
  const chain = new Proxy({}, { get(_, key) {
   if(table === 'analytics_events' && key === 'insert') return payload => {
    window.smokeAnalytics.push(payload);
@@ -28,13 +28,16 @@ function query(table) {
 export const getSessionCached = async () => ({data:{session:localStorage.getItem('smoke_auth') ? {user:{id:'fixture-user'},access_token:'fixture-access',refresh_token:'fixture-refresh'} : null},error:null});
 export const supabase = {
  from: query,
- auth: {getSession:getSessionCached, onAuthStateChange:()=>({data:{subscription:{unsubscribe(){}}}})},
+ auth: {getSession:getSessionCached, onAuthStateChange:callback=>{getSessionCached().then(({data})=>callback('INITIAL_SESSION',data.session));return {data:{subscription:{unsubscribe(){}}}};}},
  async rpc(name, args) {
   window.smokeCalls.push({name,args});
   if (name==='create_ghost_participant') {
    if(window.failJoin) return {error:{message:'Simulated join failure'}};
    return {data:{ghost_id:'test-guest',ghost_token:'test-only-token',event_id:event.id,display_name:args.p_display_name},error:null};
   }
+  if(name==='get_public_profile_brief') return {data:{id:args.p_profile_id,name:'Taylor Chen'},error:null};
+  if(name==='current_profile_id') return {data:'33333333-3333-4333-8333-333333333333',error:null};
+  if(name==='confirm_relationship') return {data:{status:'proposed',relationship_id:'fixture-relationship'},error:null};
   if(name==='claim_guest_network') return {data:{profile_id:'33333333-3333-4333-8333-333333333333'},error:null};
   if(name==='get_my_guest_share_code') {
    if(window.failQr) throw new Error('Simulated QR failure');
@@ -50,6 +53,16 @@ export const supabase = {
   if(name==='get_ghost_connection_history') return {data:window.memberSaved?[{to_profile_name:'Taylor Chen',to_profile_id:'22222222-2222-4222-8222-222222222222'}]:[],error:null};
   return {data:[],error:null};
  }
+};
+// Supabase RPCs are awaitable filter builders, including maybeSingle().
+const rpc = supabase.rpc.bind(supabase);
+supabase.rpc = (name,args) => {
+ const request = rpc(name,args);
+ request.maybeSingle = async () => {
+  const result = await request;
+  return {...result,data:Array.isArray(result.data) ? result.data[0] ?? null : result.data};
+ };
+ return request;
 };
 export const createScopedSupabaseClient = () => supabase;
 `;
@@ -117,6 +130,8 @@ try {
  },eventId);
  await page.locator('#scanStartBtn').click();
  await page.locator('#scanResult').waitFor({state:'visible'});
+ assert.equal(await page.locator('#scanCameraShell').isVisible(),false);
+ assert.equal(await page.locator('#scanStartBtn').isVisible(),false);
  assert.ok(await page.evaluate(()=>window.webCameraStops>0));
  const scanTarget=new URL(await page.locator('#scanContinueLink').getAttribute('href'),base);
  assert.equal(scanTarget.searchParams.get('web'),'1');
@@ -327,6 +342,25 @@ try {
  assert.equal(await page.locator('.nav-scan-link').isVisible(),true);
  await page.locator('#eventHeroCopy').waitFor({state:'visible'});
  assert.equal(await page.evaluate(()=>localStorage.getItem('nearify_attendee_join_pending')),null,'web sign-in return must not attempt a native app handoff');
+ const personalUrl=`${base}/join/?event=${eventId}&profile=22222222-2222-4222-8222-222222222222&web=1`;
+ for(let repeat=0;repeat<2;repeat++){
+  await page.goto(personalUrl);
+  await page.locator('#claimSuccessState').waitFor({state:'visible'});
+  assert.equal(await page.locator('.claim-success-title').innerText(),'Connection saved');
+  assert.match(await page.locator('.claim-success-profile-msg').innerText(),/mutual connection if they save you back/);
+  assert.ok(await page.evaluate(()=>window.smokeCalls.some(call=>call.name==='confirm_relationship')));
+  assert.equal(await page.evaluate(()=>window.smokeCalls.some(call=>['create_ghost_participant','record_ghost_connection'].includes(call.name))),false,'account save must not use guest credentials');
+ }
+ await page.locator('.nav-user').waitFor({state:'visible'});
+ await checkWidths('signed-in header');
+ if(process.env.SMOKE_SCREENSHOT) await page.locator('.nav').screenshot({path:'/tmp/nearify-account-header.png'});
+ await page.goto(`${base}/join/?event=${eventId}&profile=33333333-3333-4333-8333-333333333333&web=1`);
+ await page.waitForFunction(()=>document.querySelector('#joinTitle').textContent==='This is your QR');
+ assert.equal(await page.locator('#webScanRetryBtn').count(),0);
+ assert.equal(await page.locator('#scanAnotherQr').isVisible(),true);
+ assert.equal(await page.evaluate(()=>window.smokeCalls.some(call=>['confirm_relationship','record_ghost_connection','create_ghost_participant'].includes(call.name))),false,'self scans must not write');
+ await checkWidths('self-scan');
+ await capture('self-scan');
  assert.deepEqual(errors,[]);
  console.log('Guest flow passed (including real software QR decoding, synthetic camera-to-save, late camera cleanup, and analytics failure isolation): join validation/retry, local goal, automatic QR/retry/link fallback, dedicated connect/saved/history views, invalid/failed/successful saves, member save, returning session, responsive widths, event-to-guest navigation. No live backend requests.');
 } finally {
