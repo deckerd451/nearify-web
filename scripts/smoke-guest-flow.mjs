@@ -12,15 +12,20 @@ const event = { id: eventId, slug: 'smoke-event', name: 'Networking Happy Hour',
 const fixture = `
 const event = ${JSON.stringify(event)};
 window.smokeCalls = [];
+window.smokeAnalytics = [];
 function query(table) {
- const result = { data: table === 'events' ? event : [], error: null };
+ const result = { data: table === 'events' ? event : table === 'profiles' ? {id:'33333333-3333-4333-8333-333333333333'} : [], error: null };
  const chain = new Proxy({}, { get(_, key) {
+  if(table === 'analytics_events' && key === 'insert') return payload => {
+   window.smokeAnalytics.push(payload);
+   return window.failAnalytics ? Promise.reject(new Error('Simulated analytics failure')) : Promise.resolve({error:null});
+  };
   if (key === 'then') return Promise.resolve(result).then.bind(Promise.resolve(result));
   return () => chain;
  }});
  return chain;
 }
-export const getSessionCached = async () => ({data:{session:null},error:null});
+export const getSessionCached = async () => ({data:{session:localStorage.getItem('smoke_auth') ? {user:{id:'fixture-user'},access_token:'fixture-access',refresh_token:'fixture-refresh'} : null},error:null});
 export const supabase = {
  from: query,
  auth: {getSession:getSessionCached, onAuthStateChange:()=>({data:{subscription:{unsubscribe(){}}}})},
@@ -30,6 +35,7 @@ export const supabase = {
    if(window.failJoin) return {error:{message:'Simulated join failure'}};
    return {data:{ghost_id:'test-guest',ghost_token:'test-only-token',event_id:event.id,display_name:args.p_display_name},error:null};
   }
+  if(name==='claim_guest_network') return {data:{profile_id:'33333333-3333-4333-8333-333333333333'},error:null};
   if(name==='get_my_guest_share_code') {
    if(window.failQr) throw new Error('Simulated QR failure');
    return {data:'a'.repeat(64),error:null};
@@ -63,6 +69,7 @@ try {
   if(url.origin !== base) return route.abort();
   return route.continue();
  });
+ context.setDefaultTimeout(15000);
  const page = await context.newPage();
  const errors=[]; page.on('pageerror', e=>errors.push(e.message));
  const checkWidths = async stage => {
@@ -106,7 +113,12 @@ try {
  await page.waitForFunction(()=>document.querySelector('#guestMyQrLink').value.includes('guest='));
  assert.ok((await page.locator('#guestMyQrLink').inputValue()).endsWith('a'.repeat(64)));
  assert.equal(await page.locator('#guestMyQrStatus').innerText(),'');
+ await page.evaluate(()=>{
+  Object.defineProperty(window,'BarcodeDetector',{configurable:true,writable:true,value:undefined});
+  Object.defineProperty(navigator.mediaDevices,'getUserMedia',{configurable:true,writable:true,value:async()=>{throw new DOMException('Denied','NotAllowedError');}});
+ });
  await page.locator('#guestScanQrBtn').click();
+ await page.waitForFunction(()=>document.querySelector('#guestQrStatus').textContent.includes('Camera access was denied'));
  await page.locator('#guestQrLink').fill('https://example.com/not-a-nearify-link');
  await page.locator('#guestSaveQrLinkBtn').click();
  assert.equal(await page.locator('#guestSaveConfirmation').isVisible(),false);
@@ -151,6 +163,83 @@ try {
  assert.equal(await page.locator('#guestSavedName').innerText(),'Taylor Chen');
  assert.equal(await page.locator('.guest-joined-actions').isVisible(),true);
  await capture('saved-member');
+ // Decode a real generated QR with native detection absent, then with broken native detection.
+ await page.evaluate(async ({eventId})=>{
+  const text='https://nearify.org/join/?event='+eventId+'&guest='+'c'.repeat(64);
+  const host=document.createElement('div');
+  new window.QRCode(host,{text,width:300,height:300});
+  const frame=document.createElement('canvas'); frame.width=332;frame.height=332;
+  const context=frame.getContext('2d');context.fillStyle='white';context.fillRect(0,0,332,332);
+  context.drawImage(host.querySelector('canvas'),16,16);
+  window.smokeQrFrame=frame;
+  const {createQrDecoder}=await import('/assets/js/qrScanner.js');
+  const software=await createQrDecoder();
+  if(software.kind!=='jsqr'||(await software.detect(frame))[0]?.rawValue!==text) throw Error('Software QR decode failed');
+  window.BarcodeDetector=class { static async getSupportedFormats(){return ['qr_code'];} async detect(){throw Error('Partial native implementation');} };
+  const partial=await createQrDecoder();
+  if((await partial.detect(frame))[0]?.rawValue!==text||partial.kind!=='jsqr') throw Error('Native runtime fallback failed');
+  window.BarcodeDetector=undefined;
+  window.cameraStops=0;
+  navigator.mediaDevices.getUserMedia=async()=>{
+   const stream=frame.captureStream(10);
+   window.smokeCameraPaint=setInterval(()=>context.drawImage(host.querySelector('canvas'),16,16),100);
+   for(const track of stream.getTracks()){
+    const stop=track.stop.bind(track);track.stop=()=>{window.cameraStops++;clearInterval(window.smokeCameraPaint);stop();};
+   }
+   return stream;
+  };
+ },{eventId});
+ await page.locator('#guestKeepConnectingBtn').click();
+ const beforeCamera=await page.evaluate(()=>window.smokeCalls.filter(c=>c.name==='save_guest_to_guest_connection').length);
+ await page.locator('#guestScanQrBtn').click();
+ await page.locator('#guestSaveConfirmation').waitFor({state:'visible'}).catch(async error=>{
+  console.log(await page.evaluate(()=>({status:document.querySelector('#guestQrStatus').textContent,ready:document.querySelector('#guestQrVideo').readyState,width:document.querySelector('#guestQrVideo').videoWidth,stops:window.cameraStops,events:window.smokeAnalytics.map(e=>[e.event_name,e.properties])})));
+  throw error;
+ });
+ assert.equal(await page.evaluate(()=>window.smokeCalls.filter(c=>c.name==='save_guest_to_guest_connection').length),beforeCamera+1,'one detected QR produces one save');
+ assert.ok(await page.evaluate(()=>window.cameraStops>0),'camera tracks are released after detection');
+ assert.ok(await page.evaluate(()=>window.smokeAnalytics.some(e=>e.event_name==='guest_scan_started'&&e.properties.decoder==='jsqr')));
+ assert.ok(await page.evaluate(()=>window.smokeAnalytics.some(e=>e.event_name==='guest_connection_saved'&&e.properties.method==='camera')));
+ // Leaving the connect view while permission is pending must release a late stream.
+ await page.locator('#guestKeepConnectingBtn').click();
+ await page.evaluate(()=>{
+  navigator.mediaDevices.getUserMedia=()=>new Promise(resolve=>{
+   window.resolveCamera=()=>{
+    const stream=window.smokeQrFrame.captureStream(10);
+    for(const track of stream.getTracks()){
+     const stop=track.stop.bind(track);track.stop=()=>{window.cameraStops++;stop();};
+    }
+    resolve(stream);
+   };
+  });
+ });
+ const stopsBeforeNavigation=await page.evaluate(()=>window.cameraStops);
+ await page.locator('#guestScanQrBtn').click();
+ await page.waitForFunction(()=>typeof window.resolveCamera==='function');
+ await page.locator('#guestViewConnectionsBtn').click();
+ await page.evaluate(()=>window.resolveCamera());
+ await page.waitForFunction(before=>window.cameraStops>before,stopsBeforeNavigation);
+ assert.equal(await page.locator('#guestHistorySection').isVisible(),true);
+ assert.equal(await page.locator('#guestQrVideo').evaluate(video=>video.srcObject),null);
+ await page.locator('#guestBackBtn').click();
+ // Telemetry rejection must not change a successful connection save.
+ await page.evaluate(()=>{window.failAnalytics=true;navigator.mediaDevices.getUserMedia=async()=>{throw new DOMException('Denied','NotAllowedError');};});
+ await page.locator('#guestScanQrBtn').click();
+ await page.waitForFunction(()=>document.querySelector('#guestQrStatus').textContent.includes('Camera access was denied'));
+ await page.locator('#guestQrLink').fill(valid);
+ await page.locator('#guestSaveQrLinkBtn').click();
+ await page.locator('#guestSaveConfirmation').waitFor({state:'visible'});
+ await page.waitForFunction(()=>window.smokeAnalytics.some(e=>e.event_name==='guest_connection_saved'&&e.properties.method==='link'));
+ const metrics=await page.evaluate(()=>window.smokeAnalytics);
+ assert.ok(metrics.some(e=>e.event_name==='guest_connection_save_failed'&&e.properties.reason==='invalid_qr'));
+ assert.ok(metrics.some(e=>e.event_name==='guest_connection_save_failed'&&e.properties.reason==='request_failed'));
+ for(const metric of metrics.filter(e=>e.event_name.startsWith('guest_'))){
+  assert.equal(metric.referrer,'');
+  assert.deepEqual(Object.keys(metric.properties).filter(k=>!['journey_id','method','reason','decoder','connection_kind','source'].includes(k)),[]);
+  assert.ok(!JSON.stringify(metric).includes('test-only-token'));
+  assert.ok(!JSON.stringify(metric).includes('guest='));
+ }
+
  await page.reload();
  await page.locator('#guestJoinedState').waitFor({state:'visible'});
  for (const width of [320,390,768,1280]) {
@@ -173,8 +262,16 @@ try {
  await page.waitForFunction(()=>document.querySelector('#guestMyQrStatus').textContent.includes('Copy your guest link'));
  assert.equal(await page.locator('#guestQrLinkDetails').evaluate(el=>el.open),true);
  assert.ok(await page.locator('#guestMyQrLink').inputValue());
+ // The same tab's post-sign-in claim keeps the journey correlation and records actual RPC success.
+ const expectedJourney=metrics.find(e=>e.event_name==='guest_session_created').properties.journey_id;
+ await page.evaluate(()=>{localStorage.setItem('nearify_pending_ghost_claim','true');localStorage.setItem('smoke_auth','true');});
+ await page.reload();
+ await page.locator('#claimSuccessState').waitFor({state:'visible'});
+ await page.waitForFunction(()=>window.smokeAnalytics.some(e=>e.event_name==='guest_account_claimed'));
+ assert.equal(await page.evaluate(()=>window.smokeAnalytics.find(e=>e.event_name==='guest_account_claimed').properties.journey_id),expectedJourney);
+ assert.ok(await page.evaluate(()=>window.smokeCalls.some(call=>call.name==='claim_guest_network')));
  assert.deepEqual(errors,[]);
- console.log('Guest flow passed: join validation/retry, local goal, automatic QR/retry/link fallback, dedicated connect/saved/history views, invalid/failed/successful saves, member save, returning session, responsive widths, event-to-guest navigation. No live backend requests.');
+ console.log('Guest flow passed (including real software QR decoding, synthetic camera-to-save, late camera cleanup, and analytics failure isolation): join validation/retry, local goal, automatic QR/retry/link fallback, dedicated connect/saved/history views, invalid/failed/successful saves, member save, returning session, responsive widths, event-to-guest navigation. No live backend requests.');
 } finally {
  await browser?.close();
  server.kill();

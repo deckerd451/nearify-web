@@ -28,7 +28,8 @@ import {
   getMyProfileId,
   renderPersonalConnectQr
 } from "./personalConnect.js";
-import { trackPageView, wireAppCtaTracking } from "./analytics.js";
+import { trackPageView, wireAppCtaTracking } from "./analytics.js?v=20261105-funnel1";
+import { trackGuestFunnel } from "./guestFunnel.js";
 import { patchAppStoreLinks } from "./config.js";
 import { escapeHtml } from "./utils.js";
 import { logger } from "./logger.js";
@@ -1745,6 +1746,7 @@ async function init() {
 
     patchAppStoreLinks();
     trackPageView({ eventId: currentEvent.id });
+    if (!currentUser) trackGuestFunnel("guest_event_opened", currentEvent.id, {}, { once: true });
     wireAppCtaTracking();
   } catch (err) {
     logger.error("[EventDetail] load error:", err);

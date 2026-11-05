@@ -25,10 +25,12 @@ import { cachedRead, dedupeRequest, logHiddenPollPause, withRetry } from "./supa
 import { loadGhostSession, saveGhostSession, createGhostSession } from "./ghostSession.js";
 import { computeIntentAlignment } from "./intelligence-algo.js";
 import { connectGhostToProfile } from "./ghostConnection.js";
-import { trackAppCtaClick, trackFunnelEvent } from "./analytics.js";
+import { trackAppCtaClick, trackFunnelEvent } from "./analytics.js?v=20261105-funnel1";
 import { escapeHtml, copyText } from "./utils.js";
 import { logger } from "./logger.js";
 import { pollingCoordinator } from "./pollingCoordinator.js";
+import { createQrDecoder } from "./qrScanner.js";
+import { trackGuestFunnel } from "./guestFunnel.js";
 
 const els = {
   joinKicker: document.getElementById("joinKicker"),
@@ -1217,8 +1219,15 @@ function wireGuestConnectSection() {
 
 let guestQrStream = null;
 let guestQrScanActive = false;
+let guestQrStarting = false;
+let guestQrAttempt = 0;
+let guestQrTimer = null;
 
 function stopGuestQrCamera() {
+  guestQrAttempt += 1;
+  guestQrStarting = false;
+  clearTimeout(guestQrTimer);
+  guestQrTimer = null;
   guestQrScanActive = false;
   if (guestQrStream) guestQrStream.getTracks().forEach((track) => track.stop());
   guestQrStream = null;
@@ -1295,16 +1304,21 @@ function showGuestSaveConfirmation(message, { name, kind = "member" } = {}) {
 }
 
 let guestQrSavePending = false;
-async function submitGuestQr(value, eventId) {
+async function submitGuestQr(value, eventId, method = "link") {
   if (guestQrSavePending) return;
   guestQrSavePending = true;
   const save = document.getElementById("guestSaveQrLinkBtn");
   const confirmation = document.getElementById("guestSaveConfirmation");
   if (save) save.disabled = true;
   if (confirmation) confirmation.hidden = true;
+  trackGuestFunnel("guest_connection_save_requested", eventId, { method });
   try {
-    await saveGuestQrCode(value, eventId);
+    const outcome = await saveGuestQrCode(value, eventId);
+    trackGuestFunnel(outcome?.ok ? "guest_connection_saved" : "guest_connection_save_failed", eventId,
+      { method, connection_kind: outcome?.kind, reason: outcome?.reason || (outcome?.ok ? undefined : "request_failed") });
+    return outcome?.ok === true;
   } catch (_) {
+    trackGuestFunnel("guest_connection_save_failed", eventId, { method, reason: "request_failed" });
     const status = document.getElementById("guestQrStatus");
     if (status) status.textContent = "Couldn't save this connection. Check your connection and try again.";
   } finally {
@@ -1321,7 +1335,7 @@ async function saveGuestQrCode(value, eventId) {
   const token = localStorage.getItem("nearify_ghost_token");
   if (!id || !token) {
     if (status) status.textContent = "Guest session missing. Join the event again.";
-    return;
+    return { ok: false, reason: "session_missing" };
   }
   if (status) status.textContent = "Saving guest connection…";
   const { data, error } = await supabase.rpc("save_guest_to_guest_connection", {
@@ -1331,15 +1345,16 @@ async function saveGuestQrCode(value, eventId) {
   if (error) {
     logger.warn("[GuestQR] Save failed", { code: error.code, message: error.message, details: error.details });
     if (status) status.textContent = /Guest session not found/i.test(error.message || "") ? "Your guest session could not be verified for this event." : /Guest QR unavailable/i.test(error.message || "") ? "This QR belongs to an unavailable guest, yourself, or a different event." : "Couldn't save this guest (error " + (error.code || "unknown") + "). Please report this code.";
-    return;
+    return { ok: false, reason: "request_failed" };
   }
   stopGuestQrCamera();
   const panel = document.getElementById("guestQrScanner");
   if (panel) panel.hidden = true;
-  await refreshAllGuestHistory(eventId);
+  try { await refreshAllGuestHistory(eventId); } catch (_) { /* A history refresh cannot undo a successful save. */ }
   if (status) status.textContent = "";
   const saved = Array.isArray(data) ? data[0] : data;
   showGuestSaveConfirmation("Saved to your guest session. Sign in to keep this connection in your Nearify account.", { name: saved?.guest_name, kind: "guest" });
+  return { ok: true, kind: "guest" };
 }
 
 function wireGuestShowQr(eventId) {
@@ -1404,21 +1419,23 @@ async function saveGuestQrProfile(value, eventId) {
   const profileId = guestProfileFromQr(value, eventId);
   if (!profileId) {
     if (status) status.textContent = "Use a Nearify personal QR link for this event. Other QR codes cannot be saved here.";
-    return;
+    return { ok: false, reason: "invalid_qr" };
   }
   stopGuestQrCamera();
   if (status) status.textContent = "Saving your connection…";
   const result = await maybeConnectGhostToProfile(eventId, profileId);
   if (!result) {
     if (status) status.textContent = "Couldn't save this connection. Check the QR and try again.";
-    return;
+    return { ok: false, reason: "request_failed" };
   }
-  const { profiles: connections } = await refreshAllGuestHistory(eventId);
+  let connections = [];
+  try { ({ profiles: connections } = await refreshAllGuestHistory(eventId)); } catch (_) { /* Save already succeeded. */ }
   if (status) status.textContent = "";
   const matched = connections.find((connection) => connection.to_profile_id === profileId);
   showGuestSaveConfirmation("Saved to your guest session. Sign in to keep this member connection across devices.", { name: matched?.to_profile_name || result?.to_profile_name });
   const panel = document.getElementById("guestQrScanner");
   if (panel) panel.hidden = true;
+  return { ok: true, kind: "member" };
 }
 
 function wireGuestQrScanner(eventId) {
@@ -1431,54 +1448,92 @@ function wireGuestQrScanner(eventId) {
   const input = document.getElementById("guestQrLink");
   if (!open || !panel || open.dataset.wired) return;
   open.dataset.wired = "true";
-  stop?.addEventListener("click", () => { stopGuestQrCamera(); if (video) video.hidden = true; if (stop) stop.hidden = true; if (status) status.textContent = "Camera stopped. Paste their Nearify link below."; input?.focus(); });
-  save?.addEventListener("click", () => submitGuestQr(input?.value || "", eventId));
+  const linkFallback = message => {
+    if (video) video.hidden = true;
+    if (stop) stop.hidden = true;
+    if (status) status.textContent = message;
+  };
+  stop?.addEventListener("click", () => {
+    stopGuestQrCamera();
+    linkFallback("Camera stopped. Paste their Nearify link below.");
+    input?.focus();
+  });
+  save?.addEventListener("click", () => submitGuestQr(input?.value || "", eventId, "link"));
   open.addEventListener("click", async () => {
+    if (guestQrStream || guestQrStarting) return;
     panel.hidden = false;
     open.setAttribute("aria-expanded", "true");
-    const confirmation = document.getElementById("guestSaveConfirmation");
-    if (confirmation) confirmation.hidden = true;
-    if (guestQrStream) return;
-    if (video) video.hidden = false;
-    if (stop) stop.hidden = false;
-    if (!navigator.mediaDevices?.getUserMedia || typeof BarcodeDetector === "undefined") {
-      if (video) video.hidden = true;
-      if (stop) stop.hidden = true;
-      if (status) status.textContent = "Camera QR scanning isn't supported in this browser. Paste the person's Nearify link below.";
+    guestQrStarting = true;
+    const attempt = ++guestQrAttempt;
+    trackGuestFunnel("guest_scan_requested", eventId);
+    if (status) status.textContent = "Preparing your camera…";
+    if (!navigator.mediaDevices?.getUserMedia) {
+      guestQrStarting = false;
+      trackGuestFunnel("guest_scan_failed", eventId, { reason: "camera_unavailable" });
+      linkFallback("Camera unavailable in this browser. Paste their Nearify link below instead.");
       return;
     }
+    let phase = "decoder";
     try {
-      const detector = new BarcodeDetector({ formats: ["qr_code"] });
-      guestQrStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" }, audio: false });
-      if (panel.hidden || document.body.dataset.guestView !== "connect") {
-        stopGuestQrCamera();
+      const decoder = await createQrDecoder();
+      if (attempt !== guestQrAttempt) return;
+      phase = "camera";
+      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: "environment" } }, audio: false });
+      if (attempt !== guestQrAttempt || panel.hidden || document.body.dataset.guestView !== "connect") {
+        stream.getTracks().forEach(track => track.stop());
         return;
       }
-      video.srcObject = guestQrStream;
+      guestQrStream = stream;
+      if (video) video.hidden = false;
+      if (stop) stop.hidden = false;
+      video.srcObject = stream;
       await video.play();
+      if (attempt !== guestQrAttempt) return;
       guestQrScanActive = true;
-      if (status) status.textContent = "Point your camera at their personal Nearify QR.";
+      trackGuestFunnel("guest_scan_started", eventId, { decoder: decoder.kind });
+      if (status) status.textContent = "Point your camera at their guest or personal Nearify QR.";
       const scan = async () => {
-        if (!guestQrScanActive) return;
+        if (!guestQrScanActive || attempt !== guestQrAttempt) return;
         try {
-          const codes = await detector.detect(video);
-          if (!guestQrScanActive) return;
-          if (codes.length && codes[0].rawValue) {
-            await submitGuestQr(codes[0].rawValue, eventId);
-            if (panel.hidden) return;
+          const codes = await decoder.detect(video);
+          if (!guestQrScanActive || attempt !== guestQrAttempt) return;
+          if (codes[0]?.rawValue) {
+            // Stop before saving: one detected code must not trigger repeated writes.
+            stopGuestQrCamera();
+            linkFallback("QR read. Saving your connection…");
+            await submitGuestQr(codes[0].rawValue, eventId, "camera");
+            return;
           }
-        } catch (_) {}
-        if (guestQrScanActive) setTimeout(scan, 250);
+        } catch (_) {
+          if (attempt !== guestQrAttempt) return;
+          stopGuestQrCamera();
+          trackGuestFunnel("guest_scan_failed", eventId, { reason: "decode_failed" });
+          linkFallback("Couldn't read the camera image. Try scanning again or paste their Nearify link below.");
+          return;
+        }
+        guestQrTimer = setTimeout(scan, 250);
       };
       scan();
-    } catch (_) {
+    } catch (error) {
+      if (attempt !== guestQrAttempt) return;
+      const reason = phase === "decoder" ? "decoder_unavailable"
+        : error?.name === "NotAllowedError" ? "permission_denied" : "camera_unavailable";
       stopGuestQrCamera();
-      if (video) video.hidden = true;
-      if (stop) stop.hidden = true;
-      if (status) status.textContent = "Camera unavailable. Paste their Nearify link below instead.";
+      trackGuestFunnel("guest_scan_failed", eventId, { reason });
+      linkFallback(reason === "permission_denied"
+        ? "Camera access was denied. Allow camera access in your browser settings and try again, or paste their Nearify link below."
+        : "Camera unavailable. Try again or paste their Nearify link below instead.");
+    } finally {
+      if (attempt === guestQrAttempt) guestQrStarting = false;
     }
   });
-  window.addEventListener("pagehide", stopGuestQrCamera, { once: true });
+  document.addEventListener("visibilitychange", () => {
+    if (document.hidden && (guestQrStream || guestQrStarting)) {
+      stopGuestQrCamera();
+      linkFallback("Camera paused. Tap Scan someone's QR to resume, or paste their Nearify link below.");
+    }
+  });
+  window.addEventListener("pagehide", stopGuestQrCamera);
 }
 
 function showGuestJoinedState(ghost) {
@@ -1517,7 +1572,7 @@ function showGuestJoinedState(ghost) {
   const resolvedEventId = ghost.eventId || localStorage.getItem("nearify_ghost_event_id") || scannedEvent;
   const scannedGuest = new URLSearchParams(window.location.search).get("guest");
   if (scannedGuest && scannedEvent === resolvedEventId) {
-    submitGuestQr(window.location.href, resolvedEventId).then(() => {
+    submitGuestQr(window.location.href, resolvedEventId, "handoff").then(() => {
       const clean = new URL(window.location.href);
       clean.searchParams.delete("guest");
       history.replaceState(null, "", clean);
@@ -1525,7 +1580,7 @@ function showGuestJoinedState(ghost) {
   } else if (scannedProfile && scannedEvent === resolvedEventId) {
     // A personal QR opened before guest registration. Record it once the
     // guest session exists; no anonymous attendee directory is queried.
-    submitGuestQr(window.location.href, scannedEvent).then(() => {
+    submitGuestQr(window.location.href, scannedEvent, "handoff").then(() => {
       const clean = new URL(window.location.href);
       clean.searchParams.delete("profile");
       history.replaceState(null, "", clean);
@@ -1561,6 +1616,7 @@ function showGuestJoinedState(ghost) {
         return;
       }
 
+      trackGuestFunnel("guest_claim_started", getQueryParams().eventId);
       logger.log("[GuestClaim] Starting sign-in to claim guest session");
       localStorage.setItem("nearify_pending_ghost_claim", "true");
 
@@ -1573,6 +1629,7 @@ function showGuestJoinedState(ghost) {
       });
 
       if (error) {
+        trackGuestFunnel("guest_claim_failed", getQueryParams().eventId, { reason: "request_failed" });
         logger.error("[GuestClaim] OAuth start failed", error);
         localStorage.removeItem("nearify_pending_ghost_claim");
         claimBtn.disabled = false;
@@ -1621,6 +1678,7 @@ async function maybeClaimPendingGhostSession() {
     .maybeSingle();
 
   if (profileError || !profileData?.id) {
+    trackGuestFunnel("guest_claim_failed", ghostEventId, { reason: "profile_missing" });
     logger.warn("[GuestClaim] Could not resolve profile id", profileError);
     if (statusEl) statusEl.textContent = "We couldn't find your Nearify profile after sign-in. Your guest session is still saved.";
     return null;
@@ -1635,6 +1693,7 @@ async function maybeClaimPendingGhostSession() {
     p_event_id: ghostEventId, p_ghost_id: ghostId, p_ghost_token: ghostToken,
   });
   if (guestHistoryError) {
+    trackGuestFunnel("guest_claim_failed", ghostEventId, { reason: "history_unavailable" });
     logger.warn("[GuestClaim] Could not load guest history; preserving credentials", guestHistoryError);
     if (statusEl) statusEl.textContent = "Could not verify saved guests. Please try again.";
     return null;
@@ -1649,6 +1708,7 @@ async function maybeClaimPendingGhostSession() {
   });
 
   if (error) {
+    trackGuestFunnel("guest_claim_failed", ghostEventId, { reason: "request_failed" });
     console.error("[GuestClaim] Claim failed", {
       message: error?.message,
       details: error?.details,
@@ -1661,6 +1721,7 @@ async function maybeClaimPendingGhostSession() {
     return null;
   }
 
+  trackGuestFunnel("guest_account_claimed", ghostEventId, {}, { once: true });
   logger.log("[GuestClaim] Claim successful", claimData);
 
   // Clear flat keys then scoped key.
@@ -1714,11 +1775,7 @@ async function handleGuestSubmit(eventId) {
   try {
     const ghost = await createGhostSession(eventId, name);
     if (!ghost) throw new Error("create_ghost_participant returned null");
-    trackFunnelEvent("guest_session_created", {
-      eventId,
-      source:        isMeetupSource ? "meetup" : null,
-      sourceEventId: isMeetupSource ? meetupSourceEventId : null,
-    });
+    trackGuestFunnel("guest_session_created", eventId, { source: isMeetupSource ? "meetup" : undefined }, { once: true });
     // Optional goal is a local reminder; it does not authorize roster access.
     ghostIntentPrimary = document.querySelector('input[name="guestGoal"]:checked')?.value || "meet_people";
     ghost.intentPrimary = ghostIntentPrimary;
@@ -1726,6 +1783,7 @@ async function handleGuestSubmit(eventId) {
     showGuestJoinedState(ghost);
     document.getElementById("guestConnectHeading")?.focus();
   } catch (err) {
+    trackGuestFunnel("guest_join_failed", eventId, { reason: "request_failed" });
     logger.error("[Guest] Failed to create ghost session", err);
     if (statusEl) statusEl.textContent = "Something went wrong. Please try again.";
     if (submitBtn) {
@@ -2257,6 +2315,7 @@ async function maybeAutoClaimGhostForAuthenticatedUser(eventId) {
     return;
   }
 
+  trackGuestFunnel("guest_account_claimed", eventId, {}, { once: true });
   logger.log("[Ghost] Auto-claim succeeded");
   const ghostEventId = localStorage.getItem("nearify_ghost_event_id") || eventId;
   clearGhostSession();
@@ -2396,6 +2455,7 @@ async function initJoinPage() {
         });
       }
 
+      trackGuestFunnel("guest_join_viewed", event.id, { source: isMeetupSource ? "meetup" : undefined }, { once: true });
       await initGuestJoinSection(event.id);
       await maybeClaimPendingGhostSession();
 
