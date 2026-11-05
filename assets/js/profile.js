@@ -61,6 +61,25 @@ function renderConfirmRelationshipButton(profileId, eventId) {
   return btn;
 }
 
+function renderEncounterEvents(events) {
+  const el = document.getElementById("profileRelContext");
+  if (!el || !Array.isArray(events) || !events.length) return;
+  const heading = document.createElement("h3");
+  heading.textContent = "Events you shared";
+  heading.style.marginTop = "1.5rem";
+  const list = document.createElement("ul");
+  list.style.paddingLeft = "1.3rem";
+  for (const event of events) {
+    const item = document.createElement("li");
+    item.style.marginBottom = ".65rem";
+    const date = event.event_at ? new Date(event.event_at).toLocaleDateString(undefined, {year:"numeric",month:"short",day:"numeric"}) : "";
+    item.textContent = (event.event_name || "Event") + (date ? " · " + date : "") +
+      (event.recovered_guest_connection ? " · Saved as guests" : "");
+    list.appendChild(item);
+  }
+  el.append(heading, list);
+}
+
 function renderRelationshipContext(ctx, options = {}) {
   const el = document.getElementById("profileRelContext");
   if (!el) return;
@@ -255,7 +274,27 @@ async function init() {
     const { data: ctx, error: ctxErr } = await supabase.rpc("get_relationship_context", {
       p_other_profile_id: profileId,
     });
-    if (!ctxErr && ctx) renderRelationshipContext(ctx, { relationshipMode: fromConnections, profileId, eventId });
+    if (!ctxErr && ctx) {
+      let events = [];
+      if (fromConnections) {
+        const { data, error } = await supabase.rpc("get_relationship_event_history", {
+          p_other_profile_id: profileId,
+        });
+        if (!error && Array.isArray(data)) events = data;
+        else if (error) logger.warn("[Profile] Event history unavailable", error);
+      }
+      // Preserve existing summary if the new event-history RPC is unavailable.
+      const merged = events.length ? {
+        ...ctx,
+        encounter_count: events.length,
+        first_encounter_event_name: events[events.length - 1].event_name,
+        first_encounter_at: events[events.length - 1].event_at,
+        last_encounter_event_name: events[0].event_name,
+        last_encounter_at: events[0].event_at,
+      } : ctx;
+      renderRelationshipContext(merged, { relationshipMode: fromConnections, profileId, eventId });
+      if (fromConnections) renderEncounterEvents(events);
+    }
 
     if (fromConnections) {
       // Swap app-install CTAs for a back link when arriving from the connections list.
