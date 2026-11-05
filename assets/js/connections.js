@@ -199,6 +199,32 @@ function renderConnection(conn) {
   return li;
 }
 
+// Claimed guest saves remain visible even before the other guest signs up.
+// Only account-linked targets can open a profile; unclaimed guests are cards.
+function renderRecoveredGuest(conn) {
+  const li = document.createElement("li");
+  li.setAttribute("role", "listitem");
+  const target = conn.target_profile_id;
+  const row = document.createElement(target ? "a" : "div");
+  row.className = "connection-row";
+  if (target) row.href = "/profile/" + encodeURIComponent(target) + "?from=connections";
+  row.appendChild(buildAvatarNode(conn.guest_name, null));
+  const body = document.createElement("div");
+  body.className = "connection-row-body";
+  const name = document.createElement("div");
+  name.className = "connection-row-name";
+  name.textContent = conn.guest_name || "Guest";
+  body.appendChild(name);
+  const meta = document.createElement("div");
+  meta.className = "connection-row-meta";
+  meta.textContent = (conn.event_name ? "Met at " + conn.event_name + " · " : "") +
+    (target ? "Joined Nearify" : "Saved guest connection");
+  body.appendChild(meta);
+  row.appendChild(body);
+  li.appendChild(row);
+  return li;
+}
+
 async function loadConnections() {
   const loadingEl = document.getElementById("connectionsLoadingState");
   const authEl    = document.getElementById("connectionsAuthState");
@@ -217,23 +243,39 @@ async function loadConnections() {
     return;
   }
 
-  const { data, error } = await supabase.rpc("get_my_connections", { p_status: "all" });
+  const [regular, recovered] = await Promise.all([
+    supabase.rpc("get_my_connections", { p_status: "all" }),
+    supabase.rpc("get_my_claimed_guest_connections"),
+  ]);
+  const { data, error } = regular;
 
-  if (error) {
-    logger.warn("[Connections] RPC error:", error.message);
+  if (error || recovered.error) {
+    logger.warn("[Connections] RPC error:", error?.message || recovered.error?.message);
     showOnly(emptyEl);
     return;
   }
 
   const connections = Array.isArray(data) ? data : [];
 
-  if (connections.length === 0) {
+  const recoveredGuests = Array.isArray(recovered.data) ? recovered.data : [];
+  const regularProfileIds = new Set(connections.map(conn => conn.profile_id));
+  const seenTargets = new Set();
+  const distinctGuests = recoveredGuests.filter(conn => {
+    if (conn.target_profile_id) {
+      if (regularProfileIds.has(conn.target_profile_id) || seenTargets.has(conn.target_profile_id)) return false;
+      seenTargets.add(conn.target_profile_id);
+    }
+    return true;
+  });
+
+  if (connections.length === 0 && distinctGuests.length === 0) {
     showOnly(emptyEl);
     return;
   }
 
   listEl.innerHTML = "";
   connections.forEach((conn) => listEl.appendChild(renderConnection(conn)));
+  distinctGuests.forEach((conn) => listEl.appendChild(renderRecoveredGuest(conn)));
   showOnly(listEl);
 }
 
