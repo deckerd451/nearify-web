@@ -3,6 +3,37 @@
     "apps": [],
     "details": [
       {
+        "appIDs": [
+          "PTL2479GGC.com.douglashamilton.beacon2"
+        ],
+        "components": [
+          {
+            "/": "/join/*",
+            "?": {
+              "web": "1"
+            },
+            "exclude": true,
+            "comment": "Keep explicitly requested guest web joins in the browser"
+          },
+          {
+            "/": "/events/*",
+            "?": {
+              "web": "1"
+            },
+            "exclude": true,
+            "comment": "Keep explicitly requested event web pages in the browser"
+          },
+          {
+            "/": "/join/*",
+            "comment": "Default join URLs may open Nearify iOS"
+          },
+          {
+            "/": "/events/*",
+            "comment": "Default event URLs may open Nearify iOS"
+          }
+        ]
+      },
+      {
         "appID": "PTL2479GGC.com.douglashamilton.beacon2",
         "paths": [
           "/join/*",
