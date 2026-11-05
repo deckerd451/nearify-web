@@ -115,7 +115,7 @@ function fallbackCopy(text) {
  */
 export function buildEventShareUrl(event) {
   const slug = event.slug || event.id;
-  return `https://nearify.org/events/event.html?slug=${encodeURIComponent(slug)}`;
+  return `https://nearify.org/events/event.html?slug=${encodeURIComponent(slug)}&web=1`;
 }
 
 /**

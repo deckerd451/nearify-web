@@ -38,6 +38,7 @@
   </script>
 
   <link rel="stylesheet" href="../assets/css/styles.css?v=20261101-events-mobile1" />
+  <link rel="stylesheet" href="/assets/css/scan-entry.css?v=20261105-entry1" />
 </head>
 <body>
   <a href="#main-content" class="skip-link">Skip to main content</a>
@@ -48,6 +49,7 @@
       <a href="index.html" aria-current="page">Events</a>
       <a href="../vision.html">Vision</a>
     </div>
+    <a href="/scan/?web=1" class="nav-scan-link"><svg viewBox="0 0 20 20" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M2 7V2h5M13 2h5v5M18 13v5h-5M7 18H2v-5"/><path d="M6 6h3v3H6zM12 6h2v3h-2zM6 12h3v2H6zM12 12h2v2h-2z"/></svg><span>Scan QR</span></a>
     <button class="nav-hamburger" id="navHamburger" aria-label="Open menu" aria-expanded="false">
       <span></span><span></span><span></span>
     </button>
@@ -299,8 +301,8 @@
         ? '<p class="event-list-desc">' + escapeHtml(ev.description.replace(/\*\*([^*]+)\*\*/g, '$1').replace(/\[([^\]]+)\]\([^)]+\)/g, '$1').replace(/\s+/g, ' ').trim()) + '</p>'
         : "";
       const detailUrl = ev.slug
-        ? "event.html?slug=" + encodeURIComponent(ev.slug)
-        : "event.html?id="   + encodeURIComponent(ev.id);
+        ? "event.html?slug=" + encodeURIComponent(ev.slug) + "&web=1"
+        : "event.html?id="   + encodeURIComponent(ev.id) + "&web=1";
       const nameHtml = '<a href="' + detailUrl + '" class="event-list-name-link">' + escapeHtml(ev.name) + '</a>';
       const cardClass = "event-list-card" + (featured ? " featured" : "") + (past ? " event-card-past" : "");
       const badge = featured

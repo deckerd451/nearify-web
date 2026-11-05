@@ -83,7 +83,7 @@ function getJoinSource(sourceKey) {
 function buildJoinUrl(eventId, sourceKey, sourceEventId) {
   const src = getJoinSource(sourceKey);
   return (
-    `${NEARIFY_BASE}/join/?event=${encodeURIComponent(eventId)}` +
+    `${NEARIFY_BASE}/join/?event=${encodeURIComponent(eventId)}&web=1` +
     `&source=${encodeURIComponent(src)}` +
     `&source_event_id=${encodeURIComponent(sourceEventId || "")}`
   );
