@@ -9,3 +9,10 @@ sha384-3zSEDfvllQohrq0PHL1fOXJuC/jSOO34H46t6UQfobFOmxE5BpjjaIJY5F2/bMnU
 ```
 
 Served locally so guest QR rendering does not depend on a third-party CDN.
+
+# jsQR
+
+`jsQR.js` is the unchanged browser distribution of jsQR 1.4.0 from
+https://www.npmjs.com/package/jsqr/v/1.4.0, licensed under Apache-2.0
+(see `jsQR.LICENSE`). It is loaded on demand when native QR detection is
+unavailable or fails. Camera frames are decoded in the browser and are not uploaded.

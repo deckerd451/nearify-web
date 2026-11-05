@@ -15,6 +15,14 @@ import { logger } from "./logger.js";
 //   guest_session_created       — ghost session created successfully
 //   app_deep_link_clicked       — auth-handoff "Open in App" tapped
 
+function referrerOrigin(value) {
+  if (!value) return null;
+  try {
+    const url = new URL(value);
+    return ["https:", "http:"].includes(url.protocol) ? url.origin : null;
+  } catch (_) { return null; }
+}
+
 export function trackFunnelEvent(eventName, props = {}) {
   const {
     eventId       = null,
@@ -34,19 +42,22 @@ export function trackFunnelEvent(eventName, props = {}) {
   const payload = {
     event_name: eventName,
     page:       page     ?? window.location.pathname,
-    referrer:   referrer ?? (document.referrer || null),
+    referrer:   referrer === "" ? "" : referrerOrigin(referrer ?? document.referrer),
     event_id:   eventId  || null,
     properties,
   };
 
   logger.log("[Analytics:funnel]", eventName, payload);
 
-  supabase
-    .from("analytics_events")
-    .insert(payload)
-    .then(({ error }) => {
-      if (error) logger.warn("[Analytics:funnel] insert failed:", error.message);
-    });
+  try {
+    Promise.resolve(supabase.from("analytics_events").insert(payload))
+      .then(({ error }) => {
+        if (error) logger.warn("[Analytics:funnel] insert failed");
+      })
+      .catch(() => logger.warn("[Analytics:funnel] unavailable"));
+  } catch (_) {
+    logger.warn("[Analytics:funnel] unavailable");
+  }
 }
 
 // ── Existing stubs — preserved for callers on other pages ──────────────────
