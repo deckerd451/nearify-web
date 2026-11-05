@@ -57,6 +57,7 @@ function buildPill(profile, email) {
 
   const btn = document.createElement("button");
   btn.className = "nav-user";
+  btn.setAttribute("aria-label", `Account: ${name}`);
   btn.type = "button";
   btn.setAttribute("aria-haspopup", "true");
   btn.setAttribute("aria-expanded", "false");

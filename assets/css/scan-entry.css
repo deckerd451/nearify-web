@@ -7,3 +7,14 @@
  .nav .nav-scan-link {margin-left:auto;padding:8px 10px;font-size:13px}
  .nav .nav-hamburger {flex-shrink:0}
 }
+@media(max-width:720px) {
+ .nav .nav-user-name,.nav .nav-user-chevron {display:none}
+ .nav .nav-user-wrapper {margin-left:0;align-self:center}
+ .nav .nav-user {min-width:44px;min-height:44px;box-sizing:border-box;justify-content:center;padding:5px}
+ .nav .nav-links {gap:0;flex-shrink:0}
+ .nav .nav-dropdown {position:fixed;left:16px;right:16px;top:76px;min-width:0;width:auto}
+}
+@media(max-width:380px) {
+ .nav .logo-text {display:none}
+ .nav {gap:8px}
+}

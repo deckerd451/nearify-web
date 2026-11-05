@@ -6,7 +6,7 @@
   <title>Scan a QR | Nearify</title>
   <meta name="description" content="Scan an event or personal Nearify QR in your browser. No app required." />
   <link rel="stylesheet" href="/assets/css/styles.css?v=20261101-events-mobile1" />
-  <link rel="stylesheet" href="/assets/css/scan.css?v=20261105-entry1" />
+  <link rel="stylesheet" href="/assets/css/scan.css?v=20261105-accountfix1" />
 </head>
 <body>
   <a href="#main-content" class="skip-link">Skip to main content</a>
@@ -32,6 +32,7 @@
       <h2 id="scanResultHeading" tabindex="-1">Nearify QR found</h2>
       <p>Continue to this event or connection in your browser.</p>
       <a id="scanContinueLink" class="btn primary" href="#">Continue in browser</a>
+      <button id="scanAgainBtn" class="btn secondary" type="button">Scan another QR</button>
     </section>
     <details id="scanPasteDetails" class="scan-paste">
       <summary>Have a link instead?</summary>
@@ -41,6 +42,6 @@
     </details>
     <p class="scan-note">No app or sign-in needed to scan. An event or connection may ask you to join or sign in before saving.</p>
   </main>
-  <script type="module" src="/assets/js/webScan.js?v=20261105-entry1"></script>
+  <script type="module" src="/assets/js/webScan.js?v=20261105-accountfix1"></script>
 </body>
 </html>

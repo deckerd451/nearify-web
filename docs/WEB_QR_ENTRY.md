@@ -25,8 +25,11 @@ JavaScript can intercept a URL after iOS has already chosen to open the app.
 
 Signed-in browser event scans open the event page. A signed-in guest-QR scan
 uses the existing token-verified guest-save RPC followed by `claim_guest_network`
-to save into the account; credentials are retained when recovery fails. Member
-personal scans retain the existing personal-connect flow. Failed writes do not
+to save into the account; credentials are retained when recovery fails. Signed-in member
+personal scans use the authenticated `confirm_relationship` RPC directly,
+without creating or reusing a guest session. Self scans are identified before
+any write. Repeated saves use the RPC’s existing idempotent behavior; a one-sided
+save is not presented as a mutual connection. Failed writes do not
 render a successful connection message. No new database permissions or migrations
 are introduced.
 
