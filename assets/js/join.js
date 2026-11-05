@@ -1456,6 +1456,12 @@ function showGuestJoinedState(ghost) {
         return;
       }
 
+      const eventId = localStorage.getItem("nearify_ghost_event_id");
+      if (await hasUnrecoverableGuestConnections(eventId, ghostId, ghostToken)) {
+        if (statusEl) statusEl.textContent = "Your guest-to-guest connections are not yet recoverable to an account. Keep using this guest session for now; your saved people are still here.";
+        return;
+      }
+
       logger.log("[GuestClaim] Starting sign-in to claim guest session");
       localStorage.setItem("nearify_pending_ghost_claim", "true");
 
@@ -1479,6 +1485,23 @@ function showGuestJoinedState(ghost) {
   }
 }
 
+// Guest-to-guest edges are not included in claim_ghost_activity. Never mark a
+// guest claim complete (or erase its recovery credentials) while those edges
+// exist. Fail closed on lookup errors so temporary outages cannot lose data.
+async function hasUnrecoverableGuestConnections(eventId, ghostId, ghostToken) {
+  if (!eventId || !ghostId || !ghostToken) return true;
+  const { data, error } = await supabase.rpc("get_my_guest_to_guest_connections", {
+    p_event_id: eventId,
+    p_ghost_id: ghostId,
+    p_ghost_token: ghostToken,
+  });
+  if (error) {
+    logger.warn("[GuestClaim] Cannot verify guest-to-guest history; preserving session", error);
+    return true;
+  }
+  return Array.isArray(data) && data.length > 0;
+}
+
 async function maybeClaimPendingGhostSession() {
   if (localStorage.getItem("nearify_pending_ghost_claim") !== "true") return null;
 
@@ -1492,6 +1515,11 @@ async function maybeClaimPendingGhostSession() {
   if (!ghostId || !ghostToken) {
     localStorage.removeItem("nearify_pending_ghost_claim");
     logger.warn("[GuestClaim] Pending claim found but ghost keys missing");
+    return null;
+  }
+
+  if (await hasUnrecoverableGuestConnections(ghostEventId, ghostId, ghostToken)) {
+    if (statusEl) statusEl.textContent = "Guest-to-guest connections cannot be claimed yet. Your guest session is preserved on this device.";
     return null;
   }
 
@@ -2118,6 +2146,12 @@ async function maybeAutoClaimGhostForAuthenticatedUser(eventId) {
   const ghostId    = localStorage.getItem("nearify_ghost_id");
   const ghostToken = localStorage.getItem("nearify_ghost_token");
   if (!ghostId || !ghostToken) return;
+
+  const ghostEventId = localStorage.getItem("nearify_ghost_event_id") || eventId;
+  if (await hasUnrecoverableGuestConnections(ghostEventId, ghostId, ghostToken)) {
+    logger.warn("[Ghost] Auto-claim skipped to preserve guest-to-guest connections");
+    return;
+  }
 
   logger.log("[Ghost] Authenticated user has ghost session — attempting auto-claim");
 
