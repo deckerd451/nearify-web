@@ -32,13 +32,6 @@
             "comment": "Default event URLs may open Nearify iOS"
           }
         ]
-      },
-      {
-        "appID": "PTL2479GGC.com.douglashamilton.beacon2",
-        "paths": [
-          "/join/*",
-          "/events/*"
-        ]
       }
     ]
   }
