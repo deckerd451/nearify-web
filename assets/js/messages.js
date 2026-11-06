@@ -1,4 +1,4 @@
-import {appendPrivateContext} from './privateContext.js?v=20261106-ambient1';
+import {appendPrivateContext} from './privateContext.js?v=20261106-intentions1';
 import {supabase} from './supabaseClient.js';
 import {getCurrentUser} from './appState.js';
 import {followUpRpc} from './followUpService.js?v=20261106-permissions2';
