@@ -20,6 +20,7 @@
 
   <link rel="stylesheet" href="assets/css/styles.css?v=20261101-mobile1" />
   <link rel="stylesheet" href="/assets/css/scan-entry.css?v=20261105-accountfix1" />
+  <link rel="stylesheet" href="assets/css/follow-up.css?v=20261106-followup1" />
 </head>
 <body>
   <a href="#main-content" class="skip-link">Skip to main content</a>
@@ -58,8 +59,12 @@
         <h1 id="profileName" class="profile-name"></h1>
         <p  id="profileContext" class="profile-context"></p>
 
-        <div id="profileRelContext" class="profile-rel-context" hidden></div>
-        <p id="profileRelNarrative" class="profile-rel-narrative" hidden></p>
+        <section id="profileFollowUp" class="followup-panel" aria-label="Follow up" hidden></section>
+        <details id="profileHistory" class="profile-events-details" hidden>
+          <summary id="profileHistorySummary">Connection history</summary>
+          <div id="profileRelContext" class="profile-rel-context" hidden></div>
+          <p id="profileRelNarrative" class="profile-rel-narrative" hidden></p>
+        </details>
 
         <div class="profile-actions">
           <a id="profileBackBtn" href="connections/" class="btn secondary" hidden>← My Connections</a>
@@ -119,7 +124,7 @@
     <p>© 2026 Nearify</p>
   </footer>
 
-  <script type="module" src="assets/js/profile.js?v=20261106-eventhistory1"></script>
-  <script type="module" src="assets/js/navAuth.js?v=20261105-accountfix1"></script>
+  <script type="module" src="assets/js/profile.js?v=20261106-followup1"></script>
+  <script type="module" src="assets/js/navAuth.js?v=20261106-followup1"></script>
 </body>
 </html>
