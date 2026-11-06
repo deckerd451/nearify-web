@@ -54,6 +54,9 @@ start.addEventListener('click', async () => {
     const camera = await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'}},audio:false});
     if (attempt !== generation) { camera.getTracks().forEach(track => track.stop()); return; }
     stream = camera;
+    video.muted = true;
+    video.playsInline = true;
+    video.autoplay = true;
     video.srcObject = camera;
     video.hidden = false;
     stop.hidden = false;

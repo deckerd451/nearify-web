@@ -44,3 +44,17 @@ backend. Check a physical iPhone after deployment for the visible header action,
 permission behavior, and universal-link handling. Existing iOS-generated QR
 formats other than the supported formats above require an example before adding
 another parser.
+
+## Guest camera visibility
+
+The guest **Scan someone's QR** button opens a native camera dialog before
+requesting permission. It keeps the live preview in view rather than appending
+it below the visitor's large personal QR. The dialog provides Close, Stop camera,
+and a paste-link fallback, and closes on Escape or a successful save. Closing
+releases active tracks and discards any late permission result. Browsers without
+native dialog support are routed to the standalone web scanner.
+
+Playback is explicitly muted, inline, and autoplay-enabled. Browser validation
+asserts that the video has a visible size inside the phone viewport before a
+synthetic QR frame is released for decoding. This is not a physical Safari camera
+test. Neither web scanner uses MediaRecorder or records video.

@@ -237,8 +237,14 @@ try {
   window.BarcodeDetector=undefined;
   window.cameraStops=0;
   navigator.mediaDevices.getUserMedia=async()=>{
-   const stream=frame.captureStream(10);
-   window.smokeCameraPaint=setInterval(()=>context.drawImage(host.querySelector('canvas'),16,16),100);
+   const cameraFrame=document.createElement('canvas');cameraFrame.width=332;cameraFrame.height=332;
+   const cameraContext=cameraFrame.getContext('2d');cameraContext.fillStyle='white';cameraContext.fillRect(0,0,332,332);
+   const stream=cameraFrame.captureStream(10);
+   window.releaseQr=false;
+   window.smokeCameraPaint=setInterval(()=>{
+    cameraContext.fillStyle='white';cameraContext.fillRect(0,0,332,332);
+    if(window.releaseQr) cameraContext.drawImage(host.querySelector('canvas'),16,16);
+   },100);
    for(const track of stream.getTracks()){
     const stop=track.stop.bind(track);track.stop=()=>{window.cameraStops++;clearInterval(window.smokeCameraPaint);stop();};
    }
@@ -248,6 +254,18 @@ try {
  await page.locator('#guestKeepConnectingBtn').click();
  const beforeCamera=await page.evaluate(()=>window.smokeCalls.filter(c=>c.name==='save_guest_to_guest_connection').length);
  await page.locator('#guestScanQrBtn').click();
+ await page.waitForFunction(()=>document.querySelector('#guestQrVideo').videoWidth>0);
+ const cameraViewport=await page.locator('#guestQrVideo').evaluate(video=>{
+  const rect=video.getBoundingClientRect();
+  return {top:rect.top,bottom:rect.bottom,height:rect.height,viewport:innerHeight,inline:video.playsInline,muted:video.muted};
+ });
+ assert.ok(cameraViewport.top>=0&&cameraViewport.bottom<=cameraViewport.viewport,'camera preview must be inside the viewport');
+ assert.ok(cameraViewport.height>=180,'camera preview must have a visible height');
+ assert.equal(cameraViewport.inline,true);
+ assert.equal(cameraViewport.muted,true);
+ assert.equal(await page.locator('#guestQrScanner').evaluate(dialog=>dialog.matches(':modal')),true);
+ if(process.env.SMOKE_SCREENSHOT) await page.screenshot({path:'/tmp/nearify-visible-camera-dialog.png'});
+ await page.evaluate(()=>window.releaseQr=true);
  await page.locator('#guestSaveConfirmation').waitFor({state:'visible'}).catch(async error=>{
   console.log(await page.evaluate(()=>({status:document.querySelector('#guestQrStatus').textContent,ready:document.querySelector('#guestQrVideo').readyState,width:document.querySelector('#guestQrVideo').videoWidth,stops:window.cameraStops,events:window.smokeAnalytics.map(e=>[e.event_name,e.properties])})));
   throw error;
@@ -272,12 +290,11 @@ try {
  const stopsBeforeNavigation=await page.evaluate(()=>window.cameraStops);
  await page.locator('#guestScanQrBtn').click();
  await page.waitForFunction(()=>typeof window.resolveCamera==='function');
- await page.locator('#guestViewConnectionsBtn').click();
+ await page.locator('#guestCloseQrBtn').click();
  await page.evaluate(()=>window.resolveCamera());
  await page.waitForFunction(before=>window.cameraStops>before,stopsBeforeNavigation);
- assert.equal(await page.locator('#guestHistorySection').isVisible(),true);
+ assert.equal(await page.locator('#guestQrScanner').isVisible(),false);
  assert.equal(await page.locator('#guestQrVideo').evaluate(video=>video.srcObject),null);
- await page.locator('#guestBackBtn').click();
  // Telemetry rejection must not change a successful connection save.
  await page.evaluate(()=>{window.failAnalytics=true;navigator.mediaDevices.getUserMedia=async()=>{throw new DOMException('Denied','NotAllowedError');};});
  await page.locator('#guestScanQrBtn').click();

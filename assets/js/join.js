@@ -946,10 +946,7 @@ function setGuestView(view) {
     if (element) element.hidden = view !== stage;
   }
   if (view !== "connect") {
-    stopGuestQrCamera();
-    const scanner = document.getElementById("guestQrScanner");
-    if (scanner) scanner.hidden = true;
-    document.getElementById("guestScanQrBtn")?.setAttribute("aria-expanded", "false");
+    closeGuestQrScanner();
   }
   const back = document.getElementById("guestBackBtn");
   back?.setAttribute("aria-label", view === "saved" || view === "history" ? "Back to connecting" : "Back to event");
@@ -1225,6 +1222,15 @@ let guestQrStarting = false;
 let guestQrAttempt = 0;
 let guestQrTimer = null;
 
+function closeGuestQrScanner() {
+  stopGuestQrCamera();
+  const dialog = document.getElementById("guestQrScanner");
+  if (dialog?.open) dialog.close();
+  if (dialog) dialog.hidden = true;
+  document.body.classList.remove("guest-scanning");
+  document.getElementById("guestScanQrBtn")?.setAttribute("aria-expanded", "false");
+}
+
 function stopGuestQrCamera() {
   guestQrAttempt += 1;
   guestQrStarting = false;
@@ -1287,9 +1293,7 @@ async function refreshAllGuestHistory(eventId) {
 }
 
 function showGuestSaveConfirmation(message, { name, kind = "member" } = {}) {
-  const scanner = document.getElementById("guestQrScanner");
-  if (scanner) scanner.hidden = true;
-  document.getElementById("guestScanQrBtn")?.setAttribute("aria-expanded", "false");
+  closeGuestQrScanner();
   document.body.dataset.guestSaveKind = kind;
   setText(document.getElementById("guestSaveMessage"), message);
   const displayName = name || (kind === "guest" ? "Guest connection" : "Nearify member");
@@ -1350,8 +1354,7 @@ async function saveGuestQrCode(value, eventId) {
     return { ok: false, reason: "request_failed" };
   }
   stopGuestQrCamera();
-  const panel = document.getElementById("guestQrScanner");
-  if (panel) panel.hidden = true;
+  closeGuestQrScanner();
   try { await refreshAllGuestHistory(eventId); } catch (_) { /* A history refresh cannot undo a successful save. */ }
   if (status) status.textContent = "";
   const saved = Array.isArray(data) ? data[0] : data;
@@ -1435,8 +1438,7 @@ async function saveGuestQrProfile(value, eventId) {
   if (status) status.textContent = "";
   const matched = connections.find((connection) => connection.to_profile_id === profileId);
   showGuestSaveConfirmation("Saved to your guest session. Sign in to keep this member connection across devices.", { name: matched?.to_profile_name || result?.to_profile_name });
-  const panel = document.getElementById("guestQrScanner");
-  if (panel) panel.hidden = true;
+  closeGuestQrScanner();
   return { ok: true, kind: "member" };
 }
 
@@ -1448,13 +1450,24 @@ function wireGuestQrScanner(eventId) {
   const stop = document.getElementById("guestStopQrBtn");
   const save = document.getElementById("guestSaveQrLinkBtn");
   const input = document.getElementById("guestQrLink");
+  const fallback = document.getElementById("guestQrLinkFallback");
   if (!open || !panel || open.dataset.wired) return;
   open.dataset.wired = "true";
   const linkFallback = message => {
     if (video) video.hidden = true;
     if (stop) stop.hidden = true;
     if (status) status.textContent = message;
+    if (fallback) fallback.open = true;
   };
+  document.getElementById("guestCloseQrBtn")?.addEventListener("click", closeGuestQrScanner);
+  panel.addEventListener("cancel", event => { event.preventDefault(); closeGuestQrScanner(); });
+  panel.addEventListener("close", () => {
+    if (panel.open) return;
+    stopGuestQrCamera();
+    panel.hidden = true;
+    document.body.classList.remove("guest-scanning");
+    open.setAttribute("aria-expanded", "false");
+  });
   stop?.addEventListener("click", () => {
     stopGuestQrCamera();
     linkFallback("Camera stopped. Paste their Nearify link below.");
@@ -1463,7 +1476,14 @@ function wireGuestQrScanner(eventId) {
   save?.addEventListener("click", () => submitGuestQr(input?.value || "", eventId, "link"));
   open.addEventListener("click", async () => {
     if (guestQrStream || guestQrStarting) return;
+    if (typeof panel.showModal !== "function") {
+      window.location.href = "/scan/?web=1";
+      return;
+    }
     panel.hidden = false;
+    if (!panel.open) panel.showModal();
+    document.body.classList.add("guest-scanning");
+    if (fallback) fallback.open = false;
     open.setAttribute("aria-expanded", "true");
     guestQrStarting = true;
     const attempt = ++guestQrAttempt;
@@ -1488,6 +1508,9 @@ function wireGuestQrScanner(eventId) {
       guestQrStream = stream;
       if (video) video.hidden = false;
       if (stop) stop.hidden = false;
+      video.muted = true;
+      video.playsInline = true;
+      video.autoplay = true;
       video.srcObject = stream;
       await video.play();
       if (attempt !== guestQrAttempt) return;
@@ -1535,7 +1558,7 @@ function wireGuestQrScanner(eventId) {
       linkFallback("Camera paused. Tap Scan someone's QR to resume, or paste their Nearify link below.");
     }
   });
-  window.addEventListener("pagehide", stopGuestQrCamera);
+  window.addEventListener("pagehide", closeGuestQrScanner);
 }
 
 function showGuestJoinedState(ghost) {
