@@ -22,7 +22,7 @@
   <meta name="twitter:image"      content="https://nearify.org/assets/images/og-default.png" />
 
   <link rel="stylesheet" href="../assets/css/styles.css?v=20261101-events-mobile1" />
-  <link rel="stylesheet" href="../assets/css/guest-flow.css?v=20261105-accountfix1" />
+  <link rel="stylesheet" href="../assets/css/guest-flow.css?v=20261105-cameradialog1" />
   <link rel="stylesheet" href="/assets/css/scan-entry.css?v=20261105-accountfix1" />
 </head>
 <body>
@@ -278,14 +278,21 @@
               <button id="guestScanQrBtn" class="btn primary" type="button" aria-expanded="false" aria-controls="guestQrScanner">Scan someone's QR</button>
               <button id="guestViewConnectionsBtn" class="guest-text-action" type="button">Your saved connections</button>
               <p class="guest-connect-tip"><span aria-hidden="true">◎</span> Just met someone? Save the connection before you leave.</p>
-              <div id="guestQrScanner" hidden>
-                <video id="guestQrVideo" autoplay muted playsinline style="width:100%;max-height:300px;border-radius:12px;background:#111;"></video>
-                <button id="guestStopQrBtn" class="btn secondary" type="button">Stop camera</button>
-                <label for="guestQrLink" class="guest-connect-subtitle">Paste their guest or personal Nearify link</label>
-                <input id="guestQrLink" class="guest-join-input" type="url" inputmode="url" placeholder="https://nearify.org/join/?event=...&amp;guest=..." autocomplete="off" />
-                <button id="guestSaveQrLinkBtn" class="btn secondary" type="button">Save from link</button>
-              </div>
-              <p id="guestQrStatus" class="intent-status" aria-live="polite"></p>
+              <dialog id="guestQrScanner" hidden aria-labelledby="guestScannerHeading">
+                <div class="guest-scanner-header">
+                  <h2 id="guestScannerHeading">Scan someone's QR</h2>
+                  <button id="guestCloseQrBtn" class="guest-scanner-close" type="button" aria-label="Close scanner">✕</button>
+                </div>
+                <video id="guestQrVideo" autoplay muted playsinline hidden aria-label="Live camera preview"></video>
+                <p id="guestQrStatus" class="intent-status" role="status" aria-live="polite"></p>
+                <button id="guestStopQrBtn" class="btn secondary" type="button" hidden>Stop camera</button>
+                <details id="guestQrLinkFallback">
+                  <summary>Paste a Nearify link instead</summary>
+                  <label for="guestQrLink" class="guest-connect-subtitle">Their guest or personal Nearify link</label>
+                  <input id="guestQrLink" class="guest-join-input" type="url" inputmode="url" placeholder="https://nearify.org/join/?event=...&amp;guest=..." autocomplete="off" />
+                  <button id="guestSaveQrLinkBtn" class="btn secondary" type="button">Save from link</button>
+                </details>
+              </dialog>
             </div>
 
             </div><!-- /guestConnectStage -->
@@ -555,7 +562,7 @@
       });
     }
   </script>
-  <script type="module" src="../assets/js/join.js?v=20261105-accountfix1"></script>
+  <script type="module" src="../assets/js/join.js?v=20261105-cameradialog1"></script>
   <script type="module" src="../assets/js/navAuth.js?v=20261105-accountfix1"></script>
   <script type="module">
     import { trackPageView, wireAppCtaTracking } from "../assets/js/analytics.js?v=20260909";
