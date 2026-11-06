@@ -41,3 +41,8 @@
 .contact-sharing-form label {display:block;margin:12px 0;overflow-wrap:anywhere;}
 .contact-sharing-form input:not([type=checkbox]) {box-sizing:border-box;width:100%;padding:10px;border:1px solid #74748d;border-radius:8px;background:#111628;color:white;font:inherit;}
 .contact-sharing-form button {margin:8px 8px 0 0;}
+
+.private-context { margin-block: 1rem; padding: 1rem; border: 1px solid var(--border, #35334f); border-radius: 1rem; }
+.private-context summary { cursor: pointer; min-height: 44px; }
+.private-context textarea { display: block; box-sizing: border-box; width: 100%; margin-block: .75rem; padding: .75rem; font: inherit; color: inherit; background: transparent; border: 1px solid #77738f; border-radius: .75rem; }
+.private-context p { white-space: pre-wrap; overflow-wrap: anywhere; }

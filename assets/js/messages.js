@@ -1,3 +1,4 @@
+import {appendPrivateContext} from './privateContext.js?v=20261106-ambient1';
 import {supabase} from './supabaseClient.js';
 import {getCurrentUser} from './appState.js';
 import {followUpRpc} from './followUpService.js?v=20261106-permissions2';
@@ -56,6 +57,17 @@ async function loadThread(){
   $('threadProfile').href='/profile.html?id='+encodeURIComponent(data.profile_id)+'&from=connections';
   $('blockContact').textContent=data.blocked_by_you?'Unblock contact':'Block contact';
   $('messageComposer').hidden=!data.can_message;$('threadGate').hidden=!!data.can_message;
+  const previousContext=$('threadPrivateContext');
+  if(!data.can_message)previousContext?.remove();
+  else if(!previousContext){
+    const context=node('div');context.id='threadPrivateContext';
+    $('messageComposer').before(context);
+    appendPrivateContext(context,data.profile_id,()=>active&&!!currentThread?.can_message,{
+      useOpener:text=>{
+        if(!$('messageText').value.trim()){$('messageText').value=text;$('messageText').focus();}
+      }
+    });
+  }
   if(firstLoad)hasOlder=data.messages.length===50;
   for(const row of data.messages)rows.set(row.id,row);
   if(signature!==threadSignature||firstLoad){threadSignature=signature;renderMessages(atBottom);}
@@ -151,12 +163,12 @@ $('blockContact').onclick=async()=>{
 $('messageList').addEventListener('scroll',markRead);
 document.addEventListener('visibilitychange',refresh);
 window.addEventListener('focus',refresh);
-window.addEventListener('pagehide',()=>{active=false;clearInterval(timer);rows.clear();$('messagesContent').hidden=true;$('messageList').replaceChildren();$('messageText').value='';},{once:true});
+window.addEventListener('pagehide',()=>{active=false;clearInterval(timer);rows.clear();$('threadPrivateContext')?.remove();$('messagesContent').hidden=true;$('messageList').replaceChildren();$('messageText').value='';},{once:true});
 window.addEventListener('pageshow',event=>{if(event.persisted)location.reload();});
 supabase.auth.onAuthStateChange((event,session)=>{
  const switched=identity&&session?.user&&session.user.id!==identity;
  if(event==='SIGNED_OUT'||switched){
-  active=false;clearInterval(timer);rows.clear();$('messageList').replaceChildren();$('threadList').replaceChildren();$('requestList').replaceChildren();$('detailRequestList').replaceChildren();$('messageText').value='';
+  active=false;clearInterval(timer);rows.clear();$('threadPrivateContext')?.remove();$('messageList').replaceChildren();$('threadList').replaceChildren();$('requestList').replaceChildren();$('detailRequestList').replaceChildren();$('messageText').value='';
   $('messagesContent').hidden=true;$('messagesAuth').hidden=false;status('Sign in to view your messages.');
   if(switched)location.reload();
  }

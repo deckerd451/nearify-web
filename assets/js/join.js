@@ -2560,6 +2560,10 @@ async function initJoinPage() {
       connect.className = "btn primary";
       connect.textContent = "Connect on Nearify";
       actions?.prepend(connect);
+      const note = document.createElement("a");
+      note.href = "/profile.html?id=" + encodeURIComponent(profileId) + "&from=connections#profileFollowUp";
+      note.textContent = "Optional: add a private conversation note";
+      actions?.after(note);
       const scan = document.createElement("a");
       scan.href = "/scan/?web=1";
       scan.className = "btn secondary";
