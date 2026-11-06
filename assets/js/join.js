@@ -30,7 +30,7 @@ import { escapeHtml, copyText } from "./utils.js";
 import { logger } from "./logger.js";
 import { pollingCoordinator } from "./pollingCoordinator.js";
 import { createQrDecoder } from "./qrScanner.js";
-import { saveAccountConnection } from "./accountConnection.js";
+import { saveAccountConnection } from "./accountConnection.js?v=20261106-eventhistory1";
 import { guestSaveDiagnostic, guestSaveFailureMessage } from "./guestSaveDiagnostic.js";
 import { classifyWebQr } from "./webQr.js?v=20261106-eventscope1";
 import { trackGuestFunnel } from "./guestFunnel.js";
