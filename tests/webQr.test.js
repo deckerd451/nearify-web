@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { resolveWebQr } from '../assets/js/webQr.js';
+import { resolveWebQr, classifyWebQr } from '../assets/js/webQr.js';
 import fs from 'node:fs';
 const event='11111111-1111-4111-8111-111111111111';
 const profile='22222222-2222-4222-8222-222222222222';
@@ -43,5 +43,30 @@ describe('browser QR routing',()=>{
    expect(exclusion).toBeLessThan(app);
    expect(rules[exclusion]['?']).toEqual({web:'1'});
   }
+ });
+});
+
+
+describe('event-bound guest scanning',()=>{
+ const otherEvent='44444444-4444-4444-8444-444444444444';
+ it('recognizes a personal QR for another event without rewriting its event',()=>{
+  const result=classifyWebQr(`https://nearify.org/join/?event=${otherEvent}&profile=${profile}`,event);
+  expect(result.kind).toBe('different_event');
+  const target=new URL(result.route,'https://nearify.org');
+  expect(target.searchParams.get('event')).toBe(otherEvent);
+  expect(target.searchParams.get('profile')).toBe(profile);
+  expect(target.searchParams.get('web')).toBe('1');
+ });
+ it('recognizes guest QRs for another event',()=>{
+  expect(classifyWebQr(`https://nearify.org/join/?event=${otherEvent}&guest=${'a'.repeat(64)}`,event).kind).toBe('different_event');
+ });
+ it('accepts the same personal QR formats as the standalone scanner',()=>{
+  expect(classifyWebQr(`https://nearify.org/join/index.html?event=${event}&profile=${profile}`,event)).toMatchObject({kind:'member',value:profile});
+ });
+ it('distinguishes event-only codes from personal codes',()=>{
+  expect(classifyWebQr(`beacon://event/${event}`,event).kind).toBe('event');
+ });
+ it('still rejects unrelated hosts',()=>{
+  expect(classifyWebQr(`https://evil.example/join/?event=${event}&profile=${profile}`,event)).toEqual({kind:'invalid'});
  });
 });

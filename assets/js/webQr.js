@@ -28,3 +28,17 @@ export function resolveWebQr(value) {
   } catch (_) { /* Invalid QR data is displayed as an error, never evaluated. */ }
   return null;
 }
+
+// Sharing a person and sharing an event are different actions. Event-bound
+// connections must never be silently recorded against the caller's current event.
+export function classifyWebQr(value, currentEventId) {
+  const route = resolveWebQr(value);
+  if (!route) return {kind:'invalid'};
+  const url = new URL(route, 'https://nearify.org');
+  const eventId = url.searchParams.get('event');
+  const guest = url.searchParams.get('guest');
+  const profile = url.searchParams.get('profile');
+  if (!guest && !profile) return {kind:'event',route};
+  if (eventId.toLowerCase() !== String(currentEventId).toLowerCase()) return {kind:'different_event',route};
+  return {kind:guest ? 'guest' : 'member',value:guest || profile,route};
+}

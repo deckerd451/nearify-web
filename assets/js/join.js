@@ -31,6 +31,7 @@ import { logger } from "./logger.js";
 import { pollingCoordinator } from "./pollingCoordinator.js";
 import { createQrDecoder } from "./qrScanner.js";
 import { saveAccountConnection } from "./accountConnection.js";
+import { classifyWebQr } from "./webQr.js?v=20261106-eventscope1";
 import { trackGuestFunnel } from "./guestFunnel.js";
 
 const els = {
@@ -1245,26 +1246,13 @@ function stopGuestQrCamera() {
 }
 
 function guestProfileFromQr(value, eventId) {
-  try {
-    const url = new URL(String(value).trim());
-    if (url.protocol !== "https:" || url.hostname !== "nearify.org") return null;
-    if (url.pathname !== "/join/" && url.pathname !== "/join") return null;
-    const profile = url.searchParams.get("profile");
-    const linkedEvent = url.searchParams.get("event");
-    return UUID_RE.test(profile || "") && linkedEvent === eventId ? profile : null;
-  } catch (_) {
-    return null;
-  }
+  const target = classifyWebQr(value, eventId);
+  return target.kind === "member" ? target.value : null;
 }
 
 function guestQrShareCode(value, eventId) {
-  try {
-    const url = new URL(String(value).trim());
-    if (url.protocol !== "https:" || url.hostname !== "nearify.org") return null;
-    if (url.pathname !== "/join/" && url.pathname !== "/join") return null;
-    const code = url.searchParams.get("guest");
-    return url.searchParams.get("event") === eventId && /^[0-9a-f]{64}$/.test(code || "") ? code : null;
-  } catch (_) { return null; }
+  const target = classifyWebQr(value, eventId);
+  return target.kind === "guest" ? target.value : null;
 }
 
 async function loadGuestToGuestHistory(eventId) {
@@ -1317,14 +1305,19 @@ function clearGuestQrTarget() {
   history.replaceState(null, "", clean);
 }
 
-function showGuestHandoffError(reason, message) {
-  setText(document.getElementById("guestHandoffErrorTitle"), reason === "self_qr" ? "This is your guest QR" : "Connection wasn't saved");
+function showGuestHandoffError(reason, message, route) {
+  setText(document.getElementById("guestHandoffErrorTitle"), reason === "self_qr" ? "This is your guest QR" : reason === "different_event" ? "This QR is for another event" : reason === "event_qr" ? "This is an event QR" : "Connection wasn't saved");
   setText(document.getElementById("guestHandoffErrorMessage"), message || "We couldn't save this connection. Try again or scan another person's QR.");
+  const eventLink = document.getElementById("guestHandoffOpenEvent");
+  if (eventLink) {
+    eventLink.hidden = !route;
+    if (route) eventLink.href = route;
+  }
   const another = document.getElementById("guestHandoffScanAnother");
   if (another) another.className = reason === "self_qr" ? "btn primary" : "btn secondary";
   const retry = document.getElementById("guestHandoffRetryBtn");
   if (retry) {
-    retry.hidden = reason === "self_qr";
+    retry.hidden = ["self_qr", "different_event", "event_qr"].includes(reason);
     retry.onclick = () => submitGuestQr(window.location.href, getQueryParams().eventId, "handoff").then(saved => { if (saved) clearGuestQrTarget(); });
   }
   const back = document.getElementById("guestHandoffBackBtn");
@@ -1363,6 +1356,20 @@ async function submitGuestQr(value, eventId, method = "link") {
   if (confirmation) confirmation.hidden = true;
   trackGuestFunnel("guest_connection_save_requested", eventId, { method });
   try {
+    const eventLink = document.getElementById("guestQrOpenEventBtn");
+    if (eventLink) eventLink.hidden = true;
+    const target = classifyWebQr(value, eventId);
+    if (["different_event", "event"].includes(target.kind)) {
+      const reason = target.kind === "different_event" ? "different_event" : "event_qr";
+      const message = target.kind === "different_event"
+        ? "This person's QR is for a different event. Open that event to save the connection there. Your current guest session will stay saved."
+        : "This QR identifies an event, not a person. Open the event to join or view it.";
+      if (eventLink) { eventLink.href = target.route; eventLink.hidden = false; }
+      setText(document.getElementById("guestQrStatus"), message);
+      trackGuestFunnel("guest_connection_save_failed", eventId, {method,reason});
+      if (method === "handoff") showGuestHandoffError(reason, message, target.route);
+      return false;
+    }
     const outcome = await saveGuestQrCode(value, eventId);
     trackGuestFunnel(outcome?.ok ? "guest_connection_saved" : "guest_connection_save_failed", eventId,
       { method, connection_kind: outcome?.kind, reason: outcome?.reason || (outcome?.ok ? undefined : "request_failed") });
@@ -1538,6 +1545,8 @@ function wireGuestQrScanner(eventId) {
     if (!panel.open) panel.showModal();
     document.body.classList.add("guest-scanning");
     if (fallback) fallback.open = false;
+    const eventLink = document.getElementById("guestQrOpenEventBtn");
+    if (eventLink) eventLink.hidden = true;
     open.setAttribute("aria-expanded", "true");
     guestQrStarting = true;
     const attempt = ++guestQrAttempt;

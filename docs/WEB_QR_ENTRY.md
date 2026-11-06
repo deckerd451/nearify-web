@@ -77,3 +77,13 @@ The browser smoke check uses the canonical HTTPS origin for route validation,
 while serving all static responses from a local server and simulating every
 backend request. It covers self, pending, failed, retried and successful guest
 handoffs, plus failed/retried personal QR handoffs.
+
+## Personal QR from another event
+
+Personal and guest QRs are event-bound. The in-event scanner uses the same
+validated URL parser as the standalone scanner. A valid person QR for a different
+event is distinguished from unsupported data and provides **Open QR’s event**.
+The destination preserves the QR's event and person/guest target with `web=1`;
+it never rewrites the target to the visitor's current event. No connection RPC
+is called for a mismatched event. The existing event-scoped guest session is
+retained. Event-only codes are also explained separately and can open their event.

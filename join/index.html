@@ -246,6 +246,7 @@
             <section id="guestHandoffError" class="guest-handoff-state" hidden aria-labelledby="guestHandoffErrorTitle">
               <h2 id="guestHandoffErrorTitle" tabindex="-1">Connection wasn't saved</h2>
               <p id="guestHandoffErrorMessage" role="alert"></p>
+              <a id="guestHandoffOpenEvent" class="btn primary" href="#" hidden>Open QR’s event</a>
               <button id="guestHandoffRetryBtn" class="btn primary" type="button">Try saving again</button>
               <a id="guestHandoffScanAnother" href="/scan/?web=1" class="btn secondary">Scan another QR</a>
               <button id="guestHandoffBackBtn" class="guest-text-action" type="button">Back to my QR</button>
@@ -296,6 +297,7 @@
                 </div>
                 <video id="guestQrVideo" autoplay muted playsinline hidden aria-label="Live camera preview"></video>
                 <p id="guestQrStatus" class="intent-status" role="status" aria-live="polite"></p>
+                <a id="guestQrOpenEventBtn" class="btn primary" href="#" hidden>Open QR’s event</a>
                 <button id="guestStopQrBtn" class="btn secondary" type="button" hidden>Stop camera</button>
                 <details id="guestQrLinkFallback">
                   <summary>Paste a Nearify link instead</summary>
@@ -573,7 +575,7 @@
       });
     }
   </script>
-  <script type="module" src="../assets/js/join.js?v=20261106-handoff1"></script>
+  <script type="module" src="../assets/js/join.js?v=20261106-eventscope1"></script>
   <script type="module" src="../assets/js/navAuth.js?v=20261105-accountfix1"></script>
   <script type="module">
     import { trackPageView, wireAppCtaTracking } from "../assets/js/analytics.js?v=20260909";
