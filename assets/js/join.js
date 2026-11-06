@@ -24,13 +24,14 @@ import { supabase, createScopedSupabaseClient, getSessionCached } from "./supaba
 import { cachedRead, dedupeRequest, logHiddenPollPause, withRetry } from "./supabaseLoad.js";
 import { loadGhostSession, saveGhostSession, createGhostSession } from "./ghostSession.js";
 import { computeIntentAlignment } from "./intelligence-algo.js";
-import { connectGhostToProfile } from "./ghostConnection.js";
+import { connectGhostToProfile } from "./ghostConnection.js?v=20261106-save2";
 import { trackAppCtaClick, trackFunnelEvent } from "./analytics.js?v=20261105-funnel1";
 import { escapeHtml, copyText } from "./utils.js";
 import { logger } from "./logger.js";
 import { pollingCoordinator } from "./pollingCoordinator.js";
 import { createQrDecoder } from "./qrScanner.js";
 import { saveAccountConnection } from "./accountConnection.js";
+import { guestSaveDiagnostic, guestSaveFailureMessage } from "./guestSaveDiagnostic.js";
 import { classifyWebQr } from "./webQr.js?v=20261106-eventscope1";
 import { trackGuestFunnel } from "./guestFunnel.js";
 
@@ -252,18 +253,6 @@ async function ensureGhostForEvent(eventId, displayName = "Guest") {
   return created;
 }
 
-async function maybeConnectGhostToProfile(eventId, profileId) {
-  if (!eventId || !profileId) return null;
-
-  try {
-    const result = await connectGhostToProfile(eventId, profileId);
-    logger.log("[Ghost] Auto-connected to profile", result);
-    return result;
-  } catch (error) {
-    logger.error("[Ghost] Auto-connect failed", error);
-    return null;
-  }
-}
 
 function renderGhostState(ghost) {
   if (!ghost) return;
@@ -1298,6 +1287,35 @@ function showGuestSaveConfirmation(message, { name, kind = "member" } = {}) {
   };
 }
 
+let lastGuestSaveDiagnostic = null;
+function showGuestSaveDiagnostic(error) {
+  lastGuestSaveDiagnostic = error ? guestSaveDiagnostic(error) : null;
+  for (const id of ["guestQrSupportDetails", "guestHandoffSupportDetails"]) {
+    const details = document.getElementById(id);
+    if (!details) continue;
+    details.hidden = !lastGuestSaveDiagnostic;
+    const code = details.querySelector("code");
+    if (code) code.textContent = lastGuestSaveDiagnostic ? JSON.stringify(lastGuestSaveDiagnostic) : "";
+    const button = details.querySelector("button");
+    if (button) button.textContent = "Copy support details";
+    if (button) button.onclick = async () => {
+      try {
+        await navigator.clipboard.writeText(JSON.stringify(lastGuestSaveDiagnostic));
+        button.textContent = "Support details copied";
+      } catch (_) {
+        if (code) {
+          const selection = window.getSelection();
+          const range = document.createRange();
+          range.selectNodeContents(code);
+          selection?.removeAllRanges();
+          selection?.addRange(range);
+        }
+        button.textContent = "Select and copy the reference above";
+      }
+    };
+  }
+}
+
 function clearGuestQrTarget() {
   const clean = new URL(window.location.href);
   clean.searchParams.delete("guest");
@@ -1349,6 +1367,7 @@ let guestQrSavePending = false;
 async function submitGuestQr(value, eventId, method = "link") {
   if (guestQrSavePending) return;
   guestQrSavePending = true;
+  showGuestSaveDiagnostic(null);
   if (method === "handoff") setGuestView("saving");
   const save = document.getElementById("guestSaveQrLinkBtn");
   const confirmation = document.getElementById("guestSaveConfirmation");
@@ -1489,10 +1508,14 @@ async function saveGuestQrProfile(value, eventId) {
   }
   stopGuestQrCamera();
   if (status) status.textContent = "Saving your connection…";
-  const result = await maybeConnectGhostToProfile(eventId, profileId);
-  if (!result) {
-    if (status) status.textContent = "Couldn't save this connection. Check the QR and try again.";
-    return { ok: false, reason: "request_failed" };
+  let result;
+  try {
+    result = await connectGhostToProfile(eventId, profileId);
+    if (!result) throw Object.assign(new Error("Missing save response"), {code:"EMPTY_SAVE_RESPONSE"});
+  } catch (error) {
+    if (status) status.textContent = guestSaveFailureMessage(error);
+    showGuestSaveDiagnostic(error);
+    return {ok:false,reason:"request_failed"};
   }
   let connections = [];
   try { ({ profiles: connections } = await refreshAllGuestHistory(eventId)); } catch (_) { /* Save already succeeded. */ }

@@ -22,7 +22,7 @@
   <meta name="twitter:image"      content="https://nearify.org/assets/images/og-default.png" />
 
   <link rel="stylesheet" href="../assets/css/styles.css?v=20261101-events-mobile1" />
-  <link rel="stylesheet" href="../assets/css/guest-flow.css?v=20261106-handoff1" />
+  <link rel="stylesheet" href="../assets/css/guest-flow.css?v=20261106-save2" />
   <link rel="stylesheet" href="/assets/css/scan-entry.css?v=20261105-accountfix1" />
 </head>
 <body>
@@ -247,7 +247,12 @@
               <h2 id="guestHandoffErrorTitle" tabindex="-1">Connection wasn't saved</h2>
               <p id="guestHandoffErrorMessage" role="alert"></p>
               <a id="guestHandoffOpenEvent" class="btn primary" href="#" hidden>Open QR’s event</a>
-              <button id="guestHandoffRetryBtn" class="btn primary" type="button">Try saving again</button>
+              <details id="guestHandoffSupportDetails" class="guest-support-details" hidden>
+                  <summary>Details for support</summary>
+                  <code></code>
+                  <button class="btn secondary" type="button">Copy support details</button>
+                </details>
+                <button id="guestHandoffRetryBtn" class="btn primary" type="button">Try saving again</button>
               <a id="guestHandoffScanAnother" href="/scan/?web=1" class="btn secondary">Scan another QR</a>
               <button id="guestHandoffBackBtn" class="guest-text-action" type="button">Back to my QR</button>
             </section>
@@ -298,6 +303,11 @@
                 <video id="guestQrVideo" autoplay muted playsinline hidden aria-label="Live camera preview"></video>
                 <p id="guestQrStatus" class="intent-status" role="status" aria-live="polite"></p>
                 <a id="guestQrOpenEventBtn" class="btn primary" href="#" hidden>Open QR’s event</a>
+                <details id="guestQrSupportDetails" class="guest-support-details" hidden>
+                  <summary>Details for support</summary>
+                  <code></code>
+                  <button class="btn secondary" type="button">Copy support details</button>
+                </details>
                 <button id="guestStopQrBtn" class="btn secondary" type="button" hidden>Stop camera</button>
                 <details id="guestQrLinkFallback">
                   <summary>Paste a Nearify link instead</summary>
@@ -575,7 +585,7 @@
       });
     }
   </script>
-  <script type="module" src="../assets/js/join.js?v=20261106-eventscope1"></script>
+  <script type="module" src="../assets/js/join.js?v=20261106-save2"></script>
   <script type="module" src="../assets/js/navAuth.js?v=20261105-accountfix1"></script>
   <script type="module">
     import { trackPageView, wireAppCtaTracking } from "../assets/js/analytics.js?v=20260909";
