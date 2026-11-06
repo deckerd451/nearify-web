@@ -1,3 +1,4 @@
+import {appendPrivateContext} from './privateContext.js?v=20261106-ambient1';
 import {appendContactSharing} from './contactSharing.js?v=20261106-permissions2';
 import {supabase} from './supabaseClient.js';
 import {followUpRpc,safeContactLinks,downloadContact,FOLLOW_UP_COPY} from './followUpService.js?v=20261106-permissions2';
@@ -35,6 +36,7 @@ export function mountProfileFollowUp(profileId,userId) {
   function render(state){
     if(!active)return;
     if(!state||state.status==='self'){root.hidden=true;return;}
+    const preservedContext=root.querySelector('.private-context[data-contact-editing]');
     root.hidden=false;root.replaceChildren(el('h2','Follow up'),el('p',FOLLOW_UP_COPY[state.status]||FOLLOW_UP_COPY.none));
     const actions=el('div',null,'followup-actions');
     if(state.can_message) actions.append(button(state.conversation_id?'Message':'Say hello',()=>action('web_open_conversation',{p_other:profileId}),true));
@@ -62,6 +64,7 @@ export function mountProfileFollowUp(profileId,userId) {
       root.append(contactActions);
     }
     appendContactSharing(root,state,profileId,render);
+    if(preservedContext)root.append(preservedContext);else appendPrivateContext(root,profileId,()=>active);
     status.textContent='';root.append(status);
   }
   async function refresh(){
