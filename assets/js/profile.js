@@ -2,6 +2,7 @@ import { supabase } from "./supabaseClient.js";
 import { APP_STORE_URL, patchAppStoreLinks } from "./config.js";
 import { trackPageView, trackAppCtaClick } from "./analytics.js";
 import { getCurrentUser } from "./appState.js";
+import { mountProfileFollowUp } from "./profileFollowUp.js?v=20261106-followup1";
 import { logger } from "./logger.js";
 import { summarizeRelationshipEvents, relationshipEventLabel } from "./relationshipEventHistory.js";
 import { INTENT_LABELS, buildRelationshipNarrative } from "./profileNarrative.js";
@@ -197,14 +198,14 @@ function renderProfile(profile, eventId, eventName, options = {}) {
 
   const nameEl = document.getElementById("profileName");
   if (nameEl) {
-    nameEl.textContent = relationshipMode ? `How You Know ${name}` : name;
+    nameEl.textContent = name;
     nameEl.classList.toggle("profile-name-relationship", relationshipMode);
   }
 
   const contextEl = document.getElementById("profileContext");
   if (contextEl) {
     contextEl.textContent = relationshipMode
-      ? "A relationship-history page built from the moments you already shared on Nearify."
+      ? "Stay in touch and keep the context of how you know each other."
       : eventName ? `Attending ${eventName}` : "Nearify member — save people you meet and remember why they matter";
   }
 
@@ -275,6 +276,7 @@ async function init() {
 
   // Load relationship context for authenticated viewers (non-blocking)
   const user = await getCurrentUser();
+  mountProfileFollowUp(profileId,user?.id);
   if (user) {
     const { data: ctx, error: ctxErr } = await supabase.rpc("get_relationship_context", {
       p_other_profile_id: profileId,
@@ -292,6 +294,10 @@ async function init() {
       const merged = events.length ? {...ctx,...summarizeRelationshipEvents(events)} : ctx;
       renderRelationshipContext(merged, { relationshipMode: fromConnections, profileId, eventId, eventRecords:events.length>0 });
       if (fromConnections) renderEncounterEvents(events);
+      const history = document.getElementById("profileHistory");
+      if (history) history.hidden = document.getElementById("profileRelContext").hidden;
+      const summary = document.getElementById("profileHistorySummary");
+      if (summary && events.length) summary.textContent = `Connection history · ${events.length} event ${events.length === 1 ? "record" : "records"}`;
     }
 
     if (fromConnections) {

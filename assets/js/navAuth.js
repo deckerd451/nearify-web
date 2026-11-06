@@ -95,6 +95,13 @@ function buildPill(profile, email) {
   emailEl.textContent = email || "";
   dropdown.appendChild(emailEl);
 
+  const messagesLink = document.createElement("a");
+  messagesLink.href = "/messages/";
+  messagesLink.textContent = "Messages";
+  messagesLink.className = "nav-dropdown-delete nav-messages-link";
+  messagesLink.setAttribute("role", "menuitem");
+  dropdown.appendChild(messagesLink);
+
   // Account management (signed-in only). Uses the existing destination; the
   // deletion workflow itself is unchanged.
   const deleteLink = document.createElement("a");
@@ -226,9 +233,17 @@ function injectSignedIn(profile, email, user) {
     drawerSignal.className = "nav-auth-link";
     drawer.appendChild(drawerSignal);
 
+    const messagesLink = document.createElement("a");
+    messagesLink.href = "/messages/";
+    messagesLink.textContent = "Messages";
+    messagesLink.className = "nav-auth-link nav-messages-link";
+    drawer.appendChild(messagesLink);
+
     drawer.appendChild(buildDrawerDeleteAccount());
     drawer.appendChild(buildDrawerSignOut());
   }
+
+  refreshInboxBadge();
 
   // Admin link is added only after the SERVER confirms admin membership, so it
   // never flashes for non-admins. Cache is keyed by user id; we also re-check
@@ -301,3 +316,26 @@ function initNavAuth() {
 let _currentUserId = null;
 
 initNavAuth();
+
+// Count server-backed unread threads and incoming requests without fetching text.
+let inboxRefreshBusy = false;
+async function refreshInboxBadge() {
+  if (!_currentUserId || inboxRefreshBusy || document.hidden) return;
+  const forUser = _currentUserId;
+  inboxRefreshBusy = true;
+  try {
+    const {data,error} = await supabase.rpc('web_inbox_badge');
+    if (!error && forUser === _currentUserId) setInboxBadge(Number(data)||0);
+  } catch { /* Navigation remains usable if messaging is unavailable. */ }
+  finally { inboxRefreshBusy = false; }
+}
+function updateInboxBadge(data) {
+  const count=(data?.threads||[]).filter(thread=>thread.unread).length+(data?.requests||[]).length;
+  setInboxBadge(count);
+}
+function setInboxBadge(count) {
+  document.querySelectorAll('.nav-messages-link').forEach(link=>{link.textContent=count ? `Messages (${count})` : 'Messages';});
+}
+document.addEventListener('nearify:inbox',event=>updateInboxBadge(event.detail));
+document.addEventListener('visibilitychange',refreshInboxBadge);
+setInterval(refreshInboxBadge,30000);

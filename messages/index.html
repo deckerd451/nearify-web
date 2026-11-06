@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+ <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+ <title>Messages | Nearify</title><meta name="robots" content="noindex">
+ <link rel="stylesheet" href="../assets/css/styles.css?v=20261101-mobile1">
+ <link rel="stylesheet" href="../assets/css/scan-entry.css">
+ <link rel="stylesheet" href="../assets/css/follow-up.css?v=20261106-followup1">
+</head>
+<body>
+ <a href="#main-content" class="skip-link">Skip to content</a>
+ <div class="nav-container"><header class="nav">
+  <div class="logo"><a href="/" aria-label="Nearify Home"><img class="logo-img" src="../assets/images/nearify-logo.png" alt=""><span class="logo-text">Nearify</span></a></div>
+  <div class="nav-links"><a href="../events/">Events</a></div>
+  <a href="/scan/?web=1" class="nav-scan-link">Scan QR</a>
+  <button class="nav-hamburger" id="navHamburger" aria-label="Open menu" aria-expanded="false"><span></span><span></span><span></span></button>
+ </header><nav class="nav-drawer" id="navDrawer" aria-label="Site navigation"><a href="../events/">Events</a></nav></div>
+ <main id="main-content" class="messages-page">
+  <h1>Messages</h1><p class="muted">Continue your conversations on the web or in the Nearify iPhone app.</p>
+  <p id="messagesStatus" class="messages-status" role="status" aria-live="polite">Loading messages…</p>
+  <button id="messagesRetry" class="btn secondary" hidden>Try again</button>
+  <section id="messagesAuth" class="messages-card" hidden><h2>Sign in to follow up</h2><p>Your conversations are shared with your Nearify account.</p><button id="messagesSignIn" type="button" class="btn primary">Sign in with Google</button></section>
+  <div id="messagesContent" class="messages-layout" hidden>
+   <aside id="inboxPanel" class="messages-card" aria-label="Inbox">
+    <h2>Contact requests</h2><ul id="requestList" class="request-list"></ul>
+    <h2 style="margin-top:24px">Conversations</h2><ul id="threadList" class="thread-list"></ul>
+    <p><a href="../connections/">My Connections</a></p>
+   </aside>
+   <section id="threadPlaceholder" class="messages-card"><h2>Keep the conversation going</h2><p class="muted">Choose a conversation, or open a saved person and select Exchange contact.</p></section>
+   <section id="threadPanel" class="messages-card" hidden aria-label="Conversation">
+    <div class="thread-header"><h2 id="threadName"></h2><a href="./">← Inbox</a></div>
+    <p><a id="threadProfile" href="../connections/">View connection</a></p>
+    <button id="loadOlder" class="btn secondary" hidden>Load earlier messages</button>
+    <ol id="messageList" class="message-list" aria-label="Messages"></ol>
+    <p id="threadGate" class="muted" hidden>Contact exchange is required before sending new messages.</p>
+    <form id="messageComposer" class="message-composer">
+     <label for="messageText">Your message</label><textarea id="messageText" maxlength="4000" required placeholder="Continue the conversation…"></textarea>
+     <button id="sendMessage" class="btn primary" type="submit">Send message</button>
+    </form>
+    <p id="threadStatus" class="messages-status" role="status" aria-live="polite"></p>
+    <details><summary>Conversation options</summary><button id="blockContact" class="btn secondary" type="button">Block contact</button><p class="muted">Blocking prevents new messages and contact exchange. Previous messages remain in your history.</p></details>
+   </section>
+  </div>
+ </main>
+ <script type="module" src="../assets/js/navAuth.js?v=20261106-followup1"></script>
+ <script type="module" src="../assets/js/messages.js?v=20261106-followup1"></script>
+</body>
+</html>

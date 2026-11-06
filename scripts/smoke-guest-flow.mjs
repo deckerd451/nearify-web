@@ -455,6 +455,7 @@ try {
  await capture('self-scan');
  await page.goto(`${base}/profile.html?id=22222222-2222-4222-8222-222222222222&from=connections`);
  await page.waitForFunction(()=>document.querySelector('#profileRelContext').textContent.includes('You saved via QR'));
+ await page.locator('#profileHistory summary').click();
  assert.match(await page.locator('#profileRelContext').innerText(),/Upcoming event/);
  assert.match(await page.locator('#profileRelContext').innerText(),/Events linked to this connection/);
  assert.doesNotMatch(await page.locator('#profileRelContext').innerText(),/Events together|First meeting/);
