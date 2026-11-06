@@ -4,7 +4,7 @@ import path from 'node:path';
 import assert from 'node:assert/strict';
 import {chromium} from 'playwright';
 const root=process.cwd();
-const mock=`export const supabase={rpc:async(name,args)=>{window.calls.push({name,args});if(name==='ambient_context')return {data:{note:window.note,intention:window.intention||'',intention_completed:!!window.completed},error:null};if(window.fail)return {data:null,error:{message:'Unavailable'}};if(name==='ambient_intention_complete'){window.completed=true;return {data:{note:window.note,intention:window.intention,intention_completed:true},error:null};}window.note=args.p_note.trim();window.intention=args.p_intention||'';return {data:{note:window.note,intention:window.intention||'',intention_completed:!!window.completed},error:null};}};`;
+const mock=`export const supabase={rpc:async(name,args)=>{window.calls.push({name,args});if(name==='ambient_context')return {data:{note:window.note,intention:window.intention||'',intention_completed:!!window.completed,suggestions_dismissed:!!window.dismissed},error:null};if(window.fail)return {data:null,error:{message:'Unavailable'}};if(name==='ambient_person_dismiss'){window.dismissed=args.p_dismissed;return {data:null,error:null};}if(name==='ambient_intention_complete'){window.completed=true;return {data:{note:window.note,intention:window.intention,intention_completed:true},error:null};}window.note=args.p_note.trim();window.intention=args.p_intention||'';return {data:{note:window.note,intention:window.intention||'',intention_completed:!!window.completed,suggestions_dismissed:!!window.dismissed},error:null};}};`;
 const html=`<!doctype html><html><body><main id="root"></main><script type="module">
 window.note='<img src=x onerror="window.injected=true"> Private project';window.calls=[];window.fail=false;
 const {appendPrivateContext}=await import('/assets/js/privateContext.js');
@@ -47,6 +47,13 @@ try{
  await page.getByRole('button',{name:'Mark intention done'}).click();
  await page.getByRole('status').filter({hasText:'Intention completed.'}).waitFor();
  assert.equal(await page.evaluate(()=>window.completed),true);
+ await page.getByRole('button',{name:'Not relevant — hide automatic suggestions'}).click();
+ await page.getByRole('button',{name:'Restore automatic suggestions'}).waitFor();
+ assert.equal(await page.evaluate(()=>window.dismissed),true);
+ await page.getByRole('button',{name:'Restore automatic suggestions'}).click();
+ await page.getByRole('button',{name:'Not relevant — hide automatic suggestions'}).waitFor();
+ assert.equal(await page.evaluate(()=>window.dismissed),false);
+ assert.equal(await page.getByRole('textbox',{name:'Private conversation note',exact:true}).inputValue(),'Discussed community tools');
  await page.evaluate(()=>window.compose());
  await page.getByText('Your private conversation note',{exact:true}).click();
  await page.getByRole('button',{name:'Use an editable opener'}).click();
@@ -54,5 +61,5 @@ try{
  assert.ok(draft.includes('follow up'));assert.ok(!draft.includes('community tools'));
  assert.ok(!(await page.evaluate(()=>window.calls)).some(call=>call.name.includes('send_message')));
  assert.deepEqual(errors,[]);
- console.log('PASS: private note text is safe; failed saves retain draft; retry succeeds; intention saves/completes; opener excludes private context and never sends.');
+ console.log('PASS: private note text is safe; failed saves retain draft; retry succeeds; intention saves/completes; suggestions hide/restore without note loss; opener excludes private context and never sends.');
 }finally{await browser.close();await new Promise(resolve=>server.close(resolve));}
