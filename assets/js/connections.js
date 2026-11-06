@@ -1,3 +1,4 @@
+import {mountPostEventReview} from './postEventReview.js?v=20261106-review1';
 import { supabase, getSessionCached } from "./supabaseClient.js";
 import { logger } from "./logger.js";
 import {
@@ -287,4 +288,5 @@ async function loadConnections() {
   showOnly(listEl);
 }
 
+mountPostEventReview();
 loadConnections();

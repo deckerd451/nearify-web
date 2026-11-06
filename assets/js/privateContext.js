@@ -14,11 +14,11 @@ export function appendPrivateContext(root,profileId,isActive,{useOpener}={}) {
     busy=true;content.replaceChildren(el('p','Loading private note…'));
     try{
       const result=await followUpRpc(supabase,'ambient_context',{p_other:profileId});
-      if(!valid())return;loaded=true;render(result.note||'',result.intention||'',!!result.intention_completed);
+      if(!valid())return;loaded=true;render(result.note||'',result.intention||'',!!result.intention_completed,!!result.suggestions_dismissed);
     }catch{if(valid())content.replaceChildren(el('p','Private notes aren’t available right now. Close and reopen to retry.'));}
     finally{busy=false;}
   });
-  function render(note,intention,completed){
+  function render(note,intention,completed,dismissed){
     if(!valid())return;
     delete panel.dataset.contactEditing;
     content.replaceChildren(el('p','Only you can read this. It is never automatically included in messages or shared contact details.'));
@@ -47,12 +47,20 @@ export function appendPrivateContext(root,profileId,isActive,{useOpener}={}) {
         if(!valid())return;
         // Preserve edits made while the save was in flight.
         if(input.value===submitted&&intentionInput.value===submittedIntention){
-          render(result.note||'',result.intention||'',!!result.intention_completed);
+          render(result.note||'',result.intention||'',!!result.intention_completed,!!result.suggestions_dismissed);
           content.querySelector('[role=status]').textContent=result.note||result.intention?'Saved privately.':'Private context deleted.';
         }else status.textContent='Saved. You have additional unsaved edits.';
       }catch{if(valid())status.textContent='Couldn’t save. Save this person first, then try again. Your text is kept here.';}
       finally{busy=false;if(valid())save.disabled=false;}
     };
+    const feedback=el('button',dismissed?'Restore automatic suggestions':'Not relevant — hide automatic suggestions');feedback.type='button';feedback.className='btn secondary';
+    feedback.onclick=async()=>{
+      if(busy||!valid())return;busy=true;feedback.disabled=true;
+      try{await followUpRpc(supabase,'ambient_person_dismiss',{p_other:profileId,p_dismissed:!dismissed});if(valid()){dismissed=!dismissed;feedback.textContent=dismissed?'Restore automatic suggestions':'Not relevant — hide automatic suggestions';status.textContent=dismissed?'Automatic suggestions hidden. Saved profile and messages remain accessible.':'Suggestions restored when relevant.';}}
+      catch{if(valid())status.textContent='Couldn’t save that preference. Please try again.';}
+      finally{busy=false;if(valid())feedback.disabled=false;}
+    };
+    content.append(feedback);
     content.append(label,intentionLabel,el('p','Example: Send the demo. Clear both fields and save to delete private context.'),save,status);
     if(intention){
       const done=el('button',completed?'Intention completed':'Mark intention done');done.type='button';done.className='btn secondary';done.disabled=completed;

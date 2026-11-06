@@ -2,7 +2,7 @@ import { supabase } from "./supabaseClient.js";
 import { APP_STORE_URL, patchAppStoreLinks } from "./config.js";
 import { trackPageView, trackAppCtaClick } from "./analytics.js";
 import { getCurrentUser } from "./appState.js";
-import { mountProfileFollowUp } from "./profileFollowUp.js?v=20261106-intentions1";
+import { mountProfileFollowUp } from "./profileFollowUp.js?v=20261106-review1";
 import { logger } from "./logger.js";
 import { summarizeRelationshipEvents, relationshipEventLabel } from "./relationshipEventHistory.js";
 import { INTENT_LABELS, buildRelationshipNarrative } from "./profileNarrative.js";
