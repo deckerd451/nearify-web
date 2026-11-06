@@ -51,7 +51,7 @@ export const supabase = {
   }
   if(name==='get_my_guest_to_guest_connections') return {data:window.guestSaved?[{guest_name:'Jordan Lee'}]:[],error:null};
   if(name==='record_ghost_connection') {if(localStorage.getItem('smoke_member_fail')) return {data:null,error:{code:'TEST'}};window.memberSaved=true;return {data:{to_profile_name:'Taylor Chen'},error:null};}
-  if(name==='get_ghost_connection_history') return {data:window.memberSaved?[{to_profile_name:'Taylor Chen',to_profile_id:'22222222-2222-4222-8222-222222222222'}]:[],error:null};
+  if(name==='get_ghost_connection_history') return {data:window.memberSaved?[{event_id:args.p_event_id,to_profile_name:'Taylor Chen',to_profile_id:'22222222-2222-4222-8222-222222222222'}]:[],error:null};
   return {data:[],error:null};
  }
 };
@@ -236,6 +236,15 @@ try {
  assert.equal(await page.locator('#guestSavedName').innerText(),'Taylor Chen');
  assert.equal(await page.locator('.guest-joined-actions').isVisible(),true);
  await capture('saved-member');
+ // Guest rescans of an already verified member do not repeat the write.
+ const guestMemberWrites=await page.evaluate(()=>window.smokeCalls.filter(call=>call.name==='record_ghost_connection').length);
+ await page.locator('#guestKeepConnectingBtn').click();
+ await page.locator('#guestScanQrBtn').click();
+ await page.waitForFunction(()=>document.querySelector('#guestQrStatus').textContent.includes('Camera access was denied'));
+ await page.locator('#guestQrLink').fill(`https://nearify.org/join/?event=${eventId}&profile=22222222-2222-4222-8222-222222222222`);
+ await page.locator('#guestSaveQrLinkBtn').click();
+ await page.locator('#guestSaveConfirmation').waitFor({state:'visible'});
+ assert.equal(await page.evaluate(()=>window.smokeCalls.filter(call=>call.name==='record_ghost_connection').length),guestMemberWrites);
  // Decode a real generated QR with native detection absent, then with broken native detection.
  await page.evaluate(async ({eventId})=>{
   const text='https://nearify.org/join/?event='+eventId+'&guest='+'c'.repeat(64);
@@ -388,6 +397,12 @@ try {
  await page.goto(`${base}/join/?event=${eventId}&profile=22222222-2222-4222-8222-222222222222&web=1`);
  await page.locator('#guestHandoffError').waitFor({state:'visible'});
  assert.equal(new URL(page.url()).searchParams.get('profile'),'22222222-2222-4222-8222-222222222222');
+ assert.equal(await page.locator('#guestHandoffSupportDetails').isVisible(),true);
+ const supportReference=JSON.parse(await page.locator('#guestHandoffSupportDetails code').textContent());
+ assert.equal(supportReference.code,'TEST');
+ assert.equal(supportReference.operation,'record_ghost_connection');
+ assert.ok(!JSON.stringify(supportReference).includes('private'));
+ assert.ok(!JSON.stringify(supportReference).includes('test-only-token'));
  await page.evaluate(()=>localStorage.removeItem('smoke_member_fail'));
  await page.locator('#guestHandoffRetryBtn').click();
  await page.locator('#guestSaveConfirmation').waitFor({state:'visible'});

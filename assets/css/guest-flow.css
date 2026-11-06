@@ -160,3 +160,6 @@ body.guest-scanning {overflow:hidden}
 .guest-handoff-state .btn {width:100%;margin-bottom:12px}
 #guestHandoffErrorTitle:focus {outline:none}
 .guest-flow:is([data-guest-view='saving'],[data-guest-view='scan-error']) .guest-joined-actions {display:none!important}
+.guest-support-details {margin:16px 0;color:#b9c6de;font-size:13px}
+.guest-support-details summary {cursor:pointer;min-height:40px}
+.guest-support-details code {display:block;white-space:pre-wrap;overflow-wrap:anywhere;font-size:12px;line-height:1.5;margin:8px 0}
