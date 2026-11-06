@@ -2,6 +2,8 @@ import { supabase } from "./supabaseClient.js";
 import { APP_STORE_URL, patchAppStoreLinks } from "./config.js";
 import { trackPageView, trackAppCtaClick } from "./analytics.js";
 import { getCurrentUser } from "./appState.js";
+import { logger } from "./logger.js";
+import { summarizeRelationshipEvents, relationshipEventLabel } from "./relationshipEventHistory.js";
 import { INTENT_LABELS, buildRelationshipNarrative } from "./profileNarrative.js";
 
 function getInitials(name) {
@@ -65,16 +67,14 @@ function renderEncounterEvents(events) {
   const el = document.getElementById("profileRelContext");
   if (!el || !Array.isArray(events) || !events.length) return;
   const heading = document.createElement("h3");
-  heading.textContent = "Events you shared";
+  heading.textContent = "Events linked to this connection";
   heading.style.marginTop = "1.5rem";
   const list = document.createElement("ul");
   list.style.paddingLeft = "1.3rem";
   for (const event of events) {
     const item = document.createElement("li");
     item.style.marginBottom = ".65rem";
-    const date = event.event_at ? new Date(event.event_at).toLocaleDateString(undefined, {year:"numeric",month:"short",day:"numeric"}) : "";
-    item.textContent = (event.event_name || "Event") + (date ? " · " + date : "") +
-      (event.recovered_guest_connection ? " · Saved as guests" : "");
+    item.textContent = relationshipEventLabel(event);
     list.appendChild(item);
   }
   el.append(heading, list);
@@ -103,7 +103,10 @@ function renderRelationshipContext(ctx, options = {}) {
   const statusText = statusLabels[status] ?? null;
 
   const details = [];
-  if (count === 1 && first) {
+  if (options.eventRecords && count > 0) {
+    details.push(`${count} linked event ${count === 1 ? "record" : "records"}`);
+    if (last) details.push(`Latest recorded activity: ${last}`);
+  } else if (count === 1 && first) {
     details.push(`Met at ${first}`);
   } else if (count > 1) {
     details.push(`${count} events together`);
@@ -140,9 +143,9 @@ function renderRelationshipContext(ctx, options = {}) {
     };
 
     addHistoryItem("Connection", statusText);
-    addHistoryItem("First meeting", first || (count > 0 ? "Recorded in your Nearify history" : null));
-    addHistoryItem("Last encounter", last || (count > 0 ? first : null));
-    addHistoryItem("Events together", count > 0 ? `${count} ${count === 1 ? "event" : "events"}` : null);
+    addHistoryItem(options.eventRecords ? "Earliest recorded activity" : "First meeting", first || (count > 0 ? "Recorded in your Nearify history" : null));
+    addHistoryItem(options.eventRecords ? "Latest recorded activity" : "Last encounter", last || (count > 0 ? first : null));
+    addHistoryItem(options.eventRecords ? "Event records" : "Events together", count > 0 ? `${count} ${count === 1 ? "event" : "events"}` : null);
     addHistoryItem("Shared intent", ctx.shared_intent && INTENT_LABELS[ctx.shared_intent] ? INTENT_LABELS[ctx.shared_intent] : null);
 
     if (list.children.length) el.appendChild(list);
@@ -167,7 +170,9 @@ function renderRelationshipContext(ctx, options = {}) {
 
   const narrativeEl = document.getElementById("profileRelNarrative");
   if (narrativeEl) {
-    const sentences = buildRelationshipNarrative(ctx);
+    const sentences = options.eventRecords
+      ? [`This connection is linked to ${count} event ${count === 1 ? "record" : "records"}. QR saves record a saved connection, not attendance together.`]
+      : buildRelationshipNarrative(ctx);
     if (sentences.length) {
       narrativeEl.textContent = sentences.join(" ");
       narrativeEl.hidden = false;
@@ -284,15 +289,8 @@ async function init() {
         else if (error) logger.warn("[Profile] Event history unavailable", error);
       }
       // Preserve existing summary if the new event-history RPC is unavailable.
-      const merged = events.length ? {
-        ...ctx,
-        encounter_count: events.length,
-        first_encounter_event_name: events[events.length - 1].event_name,
-        first_encounter_at: events[events.length - 1].event_at,
-        last_encounter_event_name: events[0].event_name,
-        last_encounter_at: events[0].event_at,
-      } : ctx;
-      renderRelationshipContext(merged, { relationshipMode: fromConnections, profileId, eventId });
+      const merged = events.length ? {...ctx,...summarizeRelationshipEvents(events)} : ctx;
+      renderRelationshipContext(merged, { relationshipMode: fromConnections, profileId, eventId, eventRecords:events.length>0 });
       if (fromConnections) renderEncounterEvents(events);
     }
 
