@@ -2552,11 +2552,14 @@ async function initJoinPage() {
       renderClaimSuccessUx(event, {count:1,names:targetProfile?.name ? [targetProfile.name] : [],profileId:saved.profileId,accountSave:true});
       setText(document.getElementById("claimSuccessCount"), `Saved at ${event.name || "this event"}.`);
       setText(document.getElementById("claimSuccessNoNames"), "This person is saved to your Nearify account.");
-      setText(document.querySelector(".claim-success-title"), saved.status === "confirmed" ? "You're connected" : "Connection saved");
-      setText(document.querySelector(".claim-success-profile-msg"), saved.status === "confirmed"
-        ? "You have both saved this connection."
-        : "Saved to your Nearify account. This becomes a mutual connection if they save you back.");
+      setText(document.querySelector(".claim-success-title"), "Person saved");
+      setText(document.querySelector(".claim-success-profile-msg"), "Saved to your Nearify account. Connect on Nearify to message. Personal contact details are shared separately.");
       const actions = document.querySelector(".claim-success-actions");
+      const connect = document.createElement("a");
+      connect.href = "/profile.html?id=" + encodeURIComponent(profileId) + "&from=connections";
+      connect.className = "btn primary";
+      connect.textContent = "Connect on Nearify";
+      actions?.prepend(connect);
       const scan = document.createElement("a");
       scan.href = "/scan/?web=1";
       scan.className = "btn secondary";

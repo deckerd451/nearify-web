@@ -1,5 +1,6 @@
+import {appendContactSharing} from './contactSharing.js?v=20261106-permissions2';
 import {supabase} from './supabaseClient.js';
-import {followUpRpc,safeContactLinks,downloadContact,FOLLOW_UP_COPY} from './followUpService.js';
+import {followUpRpc,safeContactLinks,downloadContact,FOLLOW_UP_COPY} from './followUpService.js?v=20261106-permissions2';
 function el(tag,text,className){const node=document.createElement(tag);if(text)node.textContent=text;if(className)node.className=className;return node;}
 export function mountProfileFollowUp(profileId,userId) {
   const root=document.getElementById('profileFollowUp');
@@ -13,7 +14,7 @@ export function mountProfileFollowUp(profileId,userId) {
       try{const {error}=await supabase.auth.signInWithOAuth({provider:'google',options:{redirectTo:location.href}});if(error)throw error;}
       catch{status.textContent='Sign-in could not start. Please try again.';signIn.disabled=false;}
     };
-    root.replaceChildren(el('h2','Follow up'),el('p','Sign in to exchange contact and message on the web. No iPhone app required.'),signIn,status);
+    root.replaceChildren(el('h2','Follow up'),el('p','Sign in to connect and message on the web. No iPhone app required.'),signIn,status);
     return;
   }
   let busy=false,active=true,version=0;
@@ -32,15 +33,17 @@ export function mountProfileFollowUp(profileId,userId) {
   }
   function button(label,fn,primary=false){const b=el('button',label,'btn '+(primary?'primary':'secondary'));b.type='button';b.onclick=fn;return b;}
   function render(state){
+    if(!active)return;
     if(!state||state.status==='self'){root.hidden=true;return;}
     root.hidden=false;root.replaceChildren(el('h2','Follow up'),el('p',FOLLOW_UP_COPY[state.status]||FOLLOW_UP_COPY.none));
     const actions=el('div',null,'followup-actions');
     if(state.can_message) actions.append(button(state.conversation_id?'Message':'Say hello',()=>action('web_open_conversation',{p_other:profileId}),true));
-    if(state.status==='none') actions.append(button('Exchange contact',()=>action('web_contact_action',{p_other:profileId,p_action:'request'}),true));
+    if(state.status==='none') actions.append(button('Connect on Nearify',()=>action('web_contact_action',{p_other:profileId,p_action:'request'}),true));
     if(state.status==='incoming'){
-      actions.append(button('Approve exchange',()=>action('web_contact_action',{p_other:profileId,p_action:'approve'}),true));
+      actions.append(button('Accept connection',()=>action('web_contact_action',{p_other:profileId,p_action:'approve'}),true));
       actions.append(button('Ignore',()=>action('web_contact_action',{p_other:profileId,p_action:'ignore'})));
     }
+    if(!state.can_message&&Object.keys(state.shared_by_you||{}).some(key=>['email','phone','linkedin','website'].includes(key)))actions.append(button('Stop sharing my details',()=>action('contact_details_action',{p_other:profileId,p_action:'revoke',p_fields:[]})));
     if(state.blocked_by_you)actions.append(button('Unblock contact',()=>action('web_contact_action',{p_other:profileId,p_action:'unblock'})));
     if(state.status==='pending') actions.append(el('span','Request pending','followup-pending'));
     if(state.conversation_id&&!state.can_message){const a=el('a','View conversation','btn secondary');a.href='/messages/?conversation='+encodeURIComponent(state.conversation_id);actions.append(a);}
@@ -48,14 +51,21 @@ export function mountProfileFollowUp(profileId,userId) {
     if(state.contact){
       const links=safeContactLinks(state.contact);const contactActions=el('div',null,'followup-actions');
       for(const link of links){const a=el('a',link.label,'btn secondary');a.href=link.href;if(['website','linkedin'].includes(link.kind)){a.target='_blank';a.rel='noopener noreferrer';}contactActions.append(a);}
-      if(links.length)contactActions.append(button('Download contact',()=>downloadContact(state.contact)));
+      if(links.length)contactActions.append(button('Download contact',async()=>{
+        if(busy||!active)return;busy=true;
+        try{const latest=await followUpRpc(supabase,'web_followup_state',{p_other:profileId});if(!active)return;
+          if(latest.can_message&&latest.contact&&safeContactLinks(latest.contact).length)downloadContact(latest.contact);
+          else{render(latest);status.textContent='These contact details are no longer shared with you.';}
+        }catch{status.textContent='Could not verify contact access. Please try again.';}finally{busy=false;}
+      }));
       else root.append(el('p','This person hasn’t shared an email, phone number, or profile link. You can still message them here.'));
       root.append(contactActions);
     }
+    appendContactSharing(root,state,profileId,render);
     status.textContent='';root.append(status);
   }
   async function refresh(){
-    if(!active||busy||refreshPending||document.hidden)return;refreshPending=true;
+    if(!active||busy||refreshPending||root.querySelector('[data-contact-editing]')||document.hidden)return;refreshPending=true;
     const requestVersion=version;
     try {const state=await followUpRpc(supabase,'web_followup_state',{p_other:profileId});if(active&&version===requestVersion)render(state);}
     catch {if(active&&!root.children.length){root.hidden=false;root.append(el('h2','Follow up'),el('p','Follow-up is temporarily unavailable.'),button('Try again',refresh));}}

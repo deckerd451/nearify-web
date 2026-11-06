@@ -330,7 +330,7 @@ async function refreshInboxBadge() {
   finally { inboxRefreshBusy = false; }
 }
 function updateInboxBadge(data) {
-  const count=(data?.threads||[]).filter(thread=>thread.unread).length+(data?.requests||[]).length;
+  const count=(data?.threads||[]).filter(thread=>thread.unread).length+(data?.requests||[]).length+(data?.detail_requests||[]).length;
   setInboxBadge(count);
 }
 function setInboxBadge(count) {
