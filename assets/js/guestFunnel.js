@@ -10,7 +10,7 @@ const allowed = {
   method: new Set(['camera', 'link', 'handoff']),
   decoder: new Set(['native', 'jsqr']),
   connection_kind: new Set(['guest', 'member']),
-  reason: new Set(['invalid_qr', 'session_missing', 'request_failed', 'permission_denied', 'camera_unavailable', 'decoder_unavailable', 'decode_failed', 'profile_missing', 'history_unavailable']),
+  reason: new Set(['self_qr', 'invalid_qr', 'session_missing', 'request_failed', 'permission_denied', 'camera_unavailable', 'decoder_unavailable', 'decode_failed', 'profile_missing', 'history_unavailable']),
   source: new Set(['meetup']),
 };
 const journeys = new Map();

@@ -58,3 +58,22 @@ Playback is explicitly muted, inline, and autoplay-enabled. Browser validation
 asserts that the video has a visible size inside the phone viewport before a
 synthetic QR frame is released for decoding. This is not a physical Safari camera
 test. Neither web scanner uses MediaRecorder or records video.
+
+## Guest QR handoff outcomes
+
+Following **Continue in browser** with a guest or personal target enters an
+explicit saving stage. A successful RPC shows the saved confirmation and then
+removes the target from the address bar. Failed handoffs retain their target
+and show a visible error with retry and scan-another actions; errors are not
+left inside the closed camera dialog. Back to my QR explicitly dismisses the
+pending target.
+
+The caller's token-authorized share-code RPC identifies their own guest QR.
+Self scans do not attempt a connection write. This comparison uses the actual
+share code, never a display name. Event-only QRs are labeled as event QRs on the
+scanner result page so joining an event is not mistaken for saving a person.
+
+The browser smoke check uses the canonical HTTPS origin for route validation,
+while serving all static responses from a local server and simulating every
+backend request. It covers self, pending, failed, retried and successful guest
+handoffs, plus failed/retried personal QR handoffs.

@@ -45,11 +45,12 @@ export const supabase = {
   }
   if(name==='save_guest_to_guest_connection') {
    if(window.throwSave) throw new Error('Simulated network failure');
-   if(window.failSave) return {error:{code:'TEST',message:'Simulated save failure'}};
+   if(localStorage.getItem('smoke_slow_handoff')) await new Promise(resolve=>window.releaseGuestHandoff=resolve);
+   if(window.failSave || localStorage.getItem('smoke_handoff_fail')) return {error:{code:'TEST',message:'Simulated save failure'}};
    window.guestSaved=true; return {data:{guest_name:'Jordan Lee'},error:null};
   }
   if(name==='get_my_guest_to_guest_connections') return {data:window.guestSaved?[{guest_name:'Jordan Lee'}]:[],error:null};
-  if(name==='record_ghost_connection') {window.memberSaved=true;return {data:{to_profile_name:'Taylor Chen'},error:null};}
+  if(name==='record_ghost_connection') {if(localStorage.getItem('smoke_member_fail')) return {data:null,error:{code:'TEST'}};window.memberSaved=true;return {data:{to_profile_name:'Taylor Chen'},error:null};}
   if(name==='get_ghost_connection_history') return {data:window.memberSaved?[{to_profile_name:'Taylor Chen',to_profile_id:'22222222-2222-4222-8222-222222222222'}]:[],error:null};
   return {data:[],error:null};
  }
@@ -72,15 +73,18 @@ try {
  const [output] = await once(server.stdout, 'data');
  const port = String(output).match(/port (\d+)/)?.[1];
  assert.ok(port, 'static server started');
- const base = `http://127.0.0.1:${port}`;
+ const serverBase = `http://127.0.0.1:${port}`;
+ // Exercise production-origin validation while serving every page from the local fixture.
+ const base = "https://nearify.org";
  browser = await chromium.launch({executablePath:process.env.CHROMIUM_PATH || '/usr/bin/chromium',headless:true,args:['--no-sandbox']});
  const context = await browser.newContext({viewport:{width:390,height:844}});
- await context.route('**/*', route => {
+ await context.route('**/*', async route => {
   const url = new URL(route.request().url());
   if(url.pathname === '/assets/js/supabaseClient.js') return route.fulfill({contentType:'text/javascript',body:fixture});
   // External assets are intentionally unavailable: link fallback must still work.
   if(url.origin !== base) return route.abort();
-  return route.continue();
+  const response=await route.fetch({url:serverBase+url.pathname+url.search});
+  return route.fulfill({response});
  });
  context.setDefaultTimeout(15000);
  const page = await context.newPage();
@@ -182,7 +186,7 @@ try {
  await page.locator('#guestQrLink').fill(valid);
  await page.evaluate(()=>window.failSave=true);
  await page.locator('#guestSaveQrLinkBtn').click();
- await page.waitForFunction(()=>document.querySelector('#guestQrStatus').textContent.includes('TEST'));
+ await page.waitForFunction(()=>document.querySelector('#guestQrStatus').textContent.includes("Couldn't save this guest."));
  assert.equal(await page.locator('#guestSaveConfirmation').isVisible(),false);
  await page.evaluate(()=>{window.failSave=false;window.throwSave=true;});
  await page.locator('#guestSaveQrLinkBtn').click();
@@ -335,6 +339,46 @@ try {
  await page.waitForFunction(()=>document.querySelector('#guestMyQrStatus').textContent.includes('Copy your guest link'));
  assert.equal(await page.locator('#guestQrLinkDetails').evaluate(el=>el.open),true);
  assert.ok(await page.locator('#guestMyQrLink').inputValue());
+ // A guest handoff must show either success or a visible failure, retaining failed QR targets.
+ await page.goto(`${base}/join/?event=${eventId}&guest=${'a'.repeat(64)}&web=1`);
+ await page.locator('#guestHandoffError').waitFor({state:'visible'});
+ assert.equal(await page.locator('#guestHandoffErrorTitle').innerText(),'This is your guest QR');
+ assert.equal(await page.locator('#guestHandoffRetryBtn').isVisible(),false);
+ assert.equal(await page.evaluate(()=>window.smokeCalls.some(call=>call.name==='save_guest_to_guest_connection')),false);
+ assert.equal(new URL(page.url()).searchParams.get('guest'),'a'.repeat(64));
+ await capture('guest-self-handoff');
+ await page.locator('#guestHandoffBackBtn').click();
+ assert.equal(await page.locator('#guestConnectStage').isVisible(),true);
+ assert.equal(new URL(page.url()).searchParams.has('guest'),false);
+ await page.evaluate(()=>localStorage.setItem('smoke_handoff_fail','1'));
+ await page.goto(`${base}/join/?event=${eventId}&guest=${'b'.repeat(64)}&web=1`);
+ await page.locator('#guestHandoffError').waitFor({state:'visible'});
+ assert.equal(await page.locator('#guestSaveConfirmation').isVisible(),false);
+ assert.equal(await page.locator('#guestConnectStage').isVisible(),false);
+ assert.equal(new URL(page.url()).searchParams.get('guest'),'b'.repeat(64));
+ await capture('handoff-error');
+ await page.evaluate(()=>localStorage.removeItem('smoke_handoff_fail'));
+ await page.locator('#guestHandoffRetryBtn').click();
+ await page.locator('#guestSaveConfirmation').waitFor({state:'visible'});
+ await page.waitForFunction(()=>!new URLSearchParams(location.search).has('guest'));
+ assert.ok(await page.evaluate(()=>window.smokeCalls.some(call=>call.name==='save_guest_to_guest_connection')));
+ // A pending handoff must show a saving stage instead of the visitor's own QR.
+ await page.evaluate(()=>localStorage.setItem('smoke_slow_handoff','1'));
+ await page.goto(`${base}/join/?event=${eventId}&guest=${'c'.repeat(64)}&web=1`);
+ await page.locator('#guestHandoffPending').waitFor({state:'visible'});
+ assert.equal(await page.locator('#guestConnectStage').isVisible(),false);
+ await page.waitForFunction(()=>typeof window.releaseGuestHandoff==='function');
+ await page.evaluate(()=>{localStorage.removeItem('smoke_slow_handoff');window.releaseGuestHandoff();});
+ await page.locator('#guestSaveConfirmation').waitFor({state:'visible'});
+ await page.waitForFunction(()=>!new URLSearchParams(location.search).has('guest'));
+ await page.evaluate(()=>localStorage.setItem('smoke_member_fail','1'));
+ await page.goto(`${base}/join/?event=${eventId}&profile=22222222-2222-4222-8222-222222222222&web=1`);
+ await page.locator('#guestHandoffError').waitFor({state:'visible'});
+ assert.equal(new URL(page.url()).searchParams.get('profile'),'22222222-2222-4222-8222-222222222222');
+ await page.evaluate(()=>localStorage.removeItem('smoke_member_fail'));
+ await page.locator('#guestHandoffRetryBtn').click();
+ await page.locator('#guestSaveConfirmation').waitFor({state:'visible'});
+ await page.waitForFunction(()=>!new URLSearchParams(location.search).has('profile'));
  // The same tab's post-sign-in claim keeps the journey correlation and records actual RPC success.
  const expectedJourney=metrics.find(e=>e.event_name==='guest_session_created').properties.journey_id;
  await page.evaluate(()=>{localStorage.setItem('nearify_pending_ghost_claim','true');localStorage.setItem('smoke_auth','true');});
