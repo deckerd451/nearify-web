@@ -38,9 +38,9 @@ export function downloadContact(contact) {
   setTimeout(()=>URL.revokeObjectURL(url),1000);
 }
 export const FOLLOW_UP_COPY={
-  none:'Saving keeps this person in your history. Exchange contact to message and use the details they choose to share.',
-  pending:'Your contact request is pending. They can approve it on Nearify web or iPhone.',
-  incoming:'They would like to exchange contact with you. Approval lets you message each other and access the contact details each person chooses to share.',
-  accepted:'You can message here or in the Nearify iPhone app. Both use the same conversation.',
-  blocked:'Contact exchange and new messages are unavailable for this connection.',
+  none:'Saving keeps this person in your history. Connect on Nearify to message. Personal contact details are a separate choice.',
+  pending:'Your connection invitation is pending. They can approve it on Nearify web or iPhone.',
+  incoming:'They would like to connect on Nearify. Accepting enables messaging; it does not share your personal contact details.',
+  accepted:'You can message here or in the Nearify iPhone app. Your personal details stay private unless you choose to share them.',
+  blocked:'Connection invitations, detail sharing, and new messages are unavailable for this connection.',
 };

@@ -438,8 +438,8 @@ try {
  for(let repeat=0;repeat<2;repeat++){
   await page.goto(personalUrl);
   await page.locator('#claimSuccessState').waitFor({state:'visible'});
-  assert.equal(await page.locator('.claim-success-title').innerText(),'Connection saved');
-  assert.match(await page.locator('.claim-success-profile-msg').innerText(),/mutual connection if they save you back/);
+  assert.equal(await page.locator('.claim-success-title').innerText(),'Person saved');
+  assert.match(await page.locator('.claim-success-profile-msg').innerText(),/Connect on Nearify to message/);
   assert.ok(await page.evaluate(()=>window.smokeCalls.some(call=>call.name==='save_account_qr_connection' && call.args.p_event_id==='11111111-1111-4111-8111-111111111111')));
   assert.equal(await page.evaluate(()=>window.smokeCalls.some(call=>['create_ghost_participant','record_ghost_connection'].includes(call.name))),false,'account save must not use guest credentials');
  }

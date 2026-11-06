@@ -34,3 +34,10 @@
 @media(max-width:700px){.messages-layout{grid-template-columns:minmax(0,1fr);}.messages-page{padding:0 16px 40px;}.messages-card{padding:16px;}.followup-panel{padding:18px;}.followup-actions .btn{flex:1;text-align:center;}.message-bubble{max-width:95%;}.messages-page:has(#threadPanel:not([hidden])) #inboxPanel{display:none;}}
 
 .followup-inbox-link,.messages-page a:not(.btn) {color:#c9b3ff;}
+
+.contact-sharing {border-top:1px solid #393f59;margin-top:22px;padding-top:18px;}
+.contact-sharing h3 {font-size:1.1rem;margin:0;}
+.contact-sharing-form {border-top:1px solid #393f59;padding-top:14px;margin-top:16px;}
+.contact-sharing-form label {display:block;margin:12px 0;overflow-wrap:anywhere;}
+.contact-sharing-form input:not([type=checkbox]) {box-sizing:border-box;width:100%;padding:10px;border:1px solid #74748d;border-radius:8px;background:#111628;color:white;font:inherit;}
+.contact-sharing-form button {margin:8px 8px 0 0;}

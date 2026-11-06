@@ -5,7 +5,7 @@
  <title>Messages | Nearify</title><meta name="robots" content="noindex">
  <link rel="stylesheet" href="../assets/css/styles.css?v=20261101-mobile1">
  <link rel="stylesheet" href="../assets/css/scan-entry.css">
- <link rel="stylesheet" href="../assets/css/follow-up.css?v=20261106-followup1">
+ <link rel="stylesheet" href="../assets/css/follow-up.css?v=20261106-permissions2">
 </head>
 <body>
  <a href="#main-content" class="skip-link">Skip to content</a>
@@ -22,17 +22,18 @@
   <section id="messagesAuth" class="messages-card" hidden><h2>Sign in to follow up</h2><p>Your conversations are shared with your Nearify account.</p><button id="messagesSignIn" type="button" class="btn primary">Sign in with Google</button></section>
   <div id="messagesContent" class="messages-layout" hidden>
    <aside id="inboxPanel" class="messages-card" aria-label="Inbox">
-    <h2>Contact requests</h2><ul id="requestList" class="request-list"></ul>
+    <h2>Connection invitations</h2><ul id="requestList" class="request-list"></ul>
+    <h2 style="margin-top:24px">Contact detail requests</h2><ul id="detailRequestList" class="request-list"></ul>
     <h2 style="margin-top:24px">Conversations</h2><ul id="threadList" class="thread-list"></ul>
     <p><a href="../connections/">My Connections</a></p>
    </aside>
-   <section id="threadPlaceholder" class="messages-card"><h2>Keep the conversation going</h2><p class="muted">Choose a conversation, or open a saved person and select Exchange contact.</p></section>
+   <section id="threadPlaceholder" class="messages-card"><h2>Keep the conversation going</h2><p class="muted">Choose a conversation, or open a saved person and select Connect on Nearify.</p></section>
    <section id="threadPanel" class="messages-card" hidden aria-label="Conversation">
     <div class="thread-header"><h2 id="threadName"></h2><a href="./">← Inbox</a></div>
     <p><a id="threadProfile" href="../connections/">View connection</a></p>
     <button id="loadOlder" class="btn secondary" hidden>Load earlier messages</button>
     <ol id="messageList" class="message-list" aria-label="Messages"></ol>
-    <p id="threadGate" class="muted" hidden>Contact exchange is required before sending new messages.</p>
+    <p id="threadGate" class="muted" hidden>Connection approval is required before sending new messages.</p>
     <form id="messageComposer" class="message-composer">
      <label for="messageText">Your message</label><textarea id="messageText" maxlength="4000" required placeholder="Continue the conversation…"></textarea>
      <button id="sendMessage" class="btn primary" type="submit">Send message</button>
@@ -42,7 +43,7 @@
    </section>
   </div>
  </main>
- <script type="module" src="../assets/js/navAuth.js?v=20261106-followup1"></script>
- <script type="module" src="../assets/js/messages.js?v=20261106-followup1"></script>
+ <script type="module" src="../assets/js/navAuth.js?v=20261106-permissions2"></script>
+ <script type="module" src="../assets/js/messages.js?v=20261106-permissions2"></script>
 </body>
 </html>

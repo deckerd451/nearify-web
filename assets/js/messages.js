@@ -1,6 +1,6 @@
 import {supabase} from './supabaseClient.js';
 import {getCurrentUser} from './appState.js';
-import {followUpRpc} from './followUpService.js';
+import {followUpRpc} from './followUpService.js?v=20261106-permissions2';
 const $=id=>document.getElementById(id);
 const uuid=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const rawConversation=new URLSearchParams(location.search).get('conversation');
@@ -77,6 +77,12 @@ function renderInbox(data){
     item.append(actions);requests.append(item);
   }
   if(!requests.children.length)requests.append(node('li','No pending requests.','muted'));
+  const detailRequests=$('detailRequestList');detailRequests.replaceChildren();
+  for(const request of data.detail_requests||[]){
+    const item=node('li',(request.name||'Nearify member')+' requested your contact details.');
+    const link=node('a','Choose what to share');link.href='/profile.html?id='+encodeURIComponent(request.profile_id)+'&from=connections';item.append(document.createElement('br'),link);detailRequests.append(item);
+  }
+  if(!detailRequests.children.length)detailRequests.append(node('li','No contact detail requests.','muted'));
   const list=$('threadList');list.replaceChildren();
   for(const thread of data.threads||[]){
     const item=node('li');const link=node('a',null,'thread-link');link.href='./?conversation='+encodeURIComponent(thread.id);
@@ -85,7 +91,7 @@ function renderInbox(data){
     if(thread.unread)link.append(node('span','Unread','thread-unread'));
     link.append(node('span',thread.preview||'Start a conversation','thread-preview'));item.append(link);list.append(item);
   }
-  if(!list.children.length)list.append(node('li','No conversations yet. Open a saved person to exchange contact.','muted'));
+  if(!list.children.length)list.append(node('li','No conversations yet. Open a saved person to connect on Nearify.','muted'));
   document.dispatchEvent(new CustomEvent('nearify:inbox',{detail:data}));
 }
 async function refresh(){
@@ -150,7 +156,7 @@ window.addEventListener('pageshow',event=>{if(event.persisted)location.reload();
 supabase.auth.onAuthStateChange((event,session)=>{
  const switched=identity&&session?.user&&session.user.id!==identity;
  if(event==='SIGNED_OUT'||switched){
-  active=false;clearInterval(timer);rows.clear();$('messageList').replaceChildren();$('threadList').replaceChildren();$('requestList').replaceChildren();$('messageText').value='';
+  active=false;clearInterval(timer);rows.clear();$('messageList').replaceChildren();$('threadList').replaceChildren();$('requestList').replaceChildren();$('detailRequestList').replaceChildren();$('messageText').value='';
   $('messagesContent').hidden=true;$('messagesAuth').hidden=false;status('Sign in to view your messages.');
   if(switched)location.reload();
  }

@@ -31,7 +31,7 @@ function formatDate(iso) {
 
 function stateLabelText(state) {
   switch (state) {
-    case CONNECTION_STATE.CONNECTED: return "Connected";
+    case CONNECTION_STATE.CONNECTED: return "Saved each other";
     case CONNECTION_STATE.SAVE_BACK: return "Saved you";
     // A passive "Saved" badge adds no information on a page already titled
     // "My Connections", so we don't show a chip for the plain SAVED state.
@@ -180,7 +180,7 @@ function renderConnection(conn) {
 
   li.appendChild(link);
 
-  const labelText = stateLabelText(state);
+  const labelText = conn.messaging_approved ? "Connected on Nearify" : stateLabelText(state);
   if (labelText) {
     const aside = document.createElement("div");
     aside.className = "connection-row-aside";
@@ -243,9 +243,10 @@ async function loadConnections() {
     return;
   }
 
-  const [regular, recovered] = await Promise.all([
+  const [regular, recovered, saved] = await Promise.all([
     supabase.rpc("get_my_connections", { p_status: "all" }),
     supabase.rpc("get_my_claimed_guest_connections"),
+    supabase.rpc("get_saved_people"),
   ]);
   const { data, error } = regular;
 
@@ -256,6 +257,13 @@ async function loadConnections() {
   }
 
   const connections = Array.isArray(data) ? data : [];
+  const savedRows=Array.isArray(saved.data)?saved.data:[];
+  const approvals=new Map(savedRows.map(person=>[person.profile_id,person.messaging_approved]));
+  connections.forEach(person=>person.messaging_approved=!!approvals.get(person.profile_id));
+  const known = new Set(connections.map(person=>person.profile_id));
+  for(const person of savedRows){
+    if(!known.has(person.profile_id)){connections.push({...person,relationship_label:'proposed_by_me'});known.add(person.profile_id);}
+  }
 
   const recoveredGuests = Array.isArray(recovered.data) ? recovered.data : [];
   const regularProfileIds = new Set(connections.map(conn => conn.profile_id));

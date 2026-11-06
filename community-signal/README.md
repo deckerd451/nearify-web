@@ -52,3 +52,9 @@ The authenticated `live.html` page now detects two-way acknowledgements among th
 3. Repeating an acknowledgement does not create a second signal.
 4. Non-participating recipients cannot be acknowledged.
 5. No messages or notifications are sent automatically.
+
+## Connection and personal-detail permissions
+
+The `codex/connection-permissions` integration uses `community_signal_discover_v2` for public bio context and `community_signal_connection` to map auth user IDs to canonical profile IDs server-side. Mutual acknowledgements offer an explicit invitation; they never accept a connection or disclose contact data. Accepted connections permit Nearify messaging. Contact-detail requests and selected, directional disclosures are separate controls on the person's profile. Blocks suppress new acknowledgements, and opting out prevents new invitations from this surface.
+
+This requires SQL 010 and a coordinated iOS/web release. Read `event-discovery/010-connection-permissions-release-notes.md` before applying it; do not deploy it independently of the updated iOS build.
