@@ -1,3 +1,4 @@
+import {mountEventPreparation} from './eventPreparation.js?v=20261106-intentions1';
 // Render the limited Markdown used in imported event descriptions without HTML injection.
 // Text stays textContent; only **bold** markers and line breaks become DOM nodes.
 function renderEventDescription(target, value) {
@@ -1546,6 +1547,7 @@ function renderMomentumIndicator(attendees, isPast) {
 }
 
 async function populatePage(event) {
+  mountEventPreparation(event.id);
   const isPast = !!(event.starts_at && new Date(event.starts_at) < new Date());
 
   // SEO

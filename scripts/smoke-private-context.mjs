@@ -4,7 +4,7 @@ import path from 'node:path';
 import assert from 'node:assert/strict';
 import {chromium} from 'playwright';
 const root=process.cwd();
-const mock=`export const supabase={rpc:async(name,args)=>{window.calls.push({name,args});if(name==='ambient_context')return {data:{note:window.note},error:null};if(window.fail)return {data:null,error:{message:'Unavailable'}};window.note=args.p_note.trim();return {data:{note:window.note},error:null};}};`;
+const mock=`export const supabase={rpc:async(name,args)=>{window.calls.push({name,args});if(name==='ambient_context')return {data:{note:window.note,intention:window.intention||'',intention_completed:!!window.completed},error:null};if(window.fail)return {data:null,error:{message:'Unavailable'}};if(name==='ambient_intention_complete'){window.completed=true;return {data:{note:window.note,intention:window.intention,intention_completed:true},error:null};}window.note=args.p_note.trim();window.intention=args.p_intention||'';return {data:{note:window.note,intention:window.intention||'',intention_completed:!!window.completed},error:null};}};`;
 const html=`<!doctype html><html><body><main id="root"></main><script type="module">
 window.note='<img src=x onerror="window.injected=true"> Private project';window.calls=[];window.fail=false;
 const {appendPrivateContext}=await import('/assets/js/privateContext.js');
@@ -29,17 +29,24 @@ try{
  const errors=[];page.on('pageerror',e=>errors.push(e.message));
  await page.goto('http://127.0.0.1:'+server.address().port);
  await page.getByText('Your private conversation note',{exact:true}).click();
- await page.locator('textarea').waitFor();
- assert.equal(await page.locator('textarea').inputValue(),'<img src=x onerror="window.injected=true"> Private project');
+ await page.getByRole('textbox',{name:'Private conversation note',exact:true}).waitFor();
+ assert.equal(await page.getByRole('textbox',{name:'Private conversation note',exact:true}).inputValue(),'<img src=x onerror="window.injected=true"> Private project');
  assert.equal(await page.evaluate(()=>window.injected),undefined);
- await page.locator('textarea').fill('Discussed community tools');
+ await page.getByRole('textbox',{name:'Private conversation note',exact:true}).fill('Discussed community tools');
  await page.evaluate(()=>window.fail=true);
  await page.getByRole('button',{name:'Save private note'}).click();
  await page.getByRole('status').filter({hasText:'Couldn’t save'}).waitFor();
- assert.equal(await page.locator('textarea').inputValue(),'Discussed community tools');
+ assert.equal(await page.getByRole('textbox',{name:'Private conversation note',exact:true}).inputValue(),'Discussed community tools');
  await page.evaluate(()=>window.fail=false);
  await page.getByRole('button',{name:'Save private note'}).click();
  await page.getByRole('status').filter({hasText:'Saved privately.'}).waitFor();
+ await page.getByRole('textbox',{name:'Private follow-up intention',exact:true}).fill('Send the demo');
+ await page.getByRole('button',{name:'Save private note'}).click();
+ await page.getByRole('status').filter({hasText:'Saved privately.'}).waitFor();
+ assert.equal(await page.evaluate(()=>window.intention),'Send the demo');
+ await page.getByRole('button',{name:'Mark intention done'}).click();
+ await page.getByRole('status').filter({hasText:'Intention completed.'}).waitFor();
+ assert.equal(await page.evaluate(()=>window.completed),true);
  await page.evaluate(()=>window.compose());
  await page.getByText('Your private conversation note',{exact:true}).click();
  await page.getByRole('button',{name:'Use an editable opener'}).click();
@@ -47,5 +54,5 @@ try{
  assert.ok(draft.includes('follow up'));assert.ok(!draft.includes('community tools'));
  assert.ok(!(await page.evaluate(()=>window.calls)).some(call=>call.name.includes('send_message')));
  assert.deepEqual(errors,[]);
- console.log('PASS: private note text is safe; failed saves retain draft; retry succeeds; opener excludes note and never sends.');
+ console.log('PASS: private note text is safe; failed saves retain draft; retry succeeds; intention saves/completes; opener excludes private context and never sends.');
 }finally{await browser.close();await new Promise(resolve=>server.close(resolve));}
