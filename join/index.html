@@ -22,7 +22,7 @@
   <meta name="twitter:image"      content="https://nearify.org/assets/images/og-default.png" />
 
   <link rel="stylesheet" href="../assets/css/styles.css?v=20261101-events-mobile1" />
-  <link rel="stylesheet" href="../assets/css/guest-flow.css?v=20261105-cameradialog1" />
+  <link rel="stylesheet" href="../assets/css/guest-flow.css?v=20261106-handoff1" />
   <link rel="stylesheet" href="/assets/css/scan-entry.css?v=20261105-accountfix1" />
 </head>
 <body>
@@ -239,6 +239,17 @@
                 </div>
               </div>
             </div>
+            <section id="guestHandoffPending" class="guest-handoff-state" hidden aria-live="polite" role="status">
+              <h2>Saving your connection…</h2>
+              <p>Keep this page open while we save the scanned QR.</p>
+            </section>
+            <section id="guestHandoffError" class="guest-handoff-state" hidden aria-labelledby="guestHandoffErrorTitle">
+              <h2 id="guestHandoffErrorTitle" tabindex="-1">Connection wasn't saved</h2>
+              <p id="guestHandoffErrorMessage" role="alert"></p>
+              <button id="guestHandoffRetryBtn" class="btn primary" type="button">Try saving again</button>
+              <a id="guestHandoffScanAnother" href="/scan/?web=1" class="btn secondary">Scan another QR</a>
+              <button id="guestHandoffBackBtn" class="guest-text-action" type="button">Back to my QR</button>
+            </section>
             <section id="guestSaveConfirmation" class="guest-save-confirmation" hidden aria-labelledby="guestSaveHeading">
               <span class="guest-save-check" aria-hidden="true">✓</span>
               <h2 id="guestSaveHeading" tabindex="-1">Connection saved</h2>
@@ -562,7 +573,7 @@
       });
     }
   </script>
-  <script type="module" src="../assets/js/join.js?v=20261105-cameradialog1"></script>
+  <script type="module" src="../assets/js/join.js?v=20261106-handoff1"></script>
   <script type="module" src="../assets/js/navAuth.js?v=20261105-accountfix1"></script>
   <script type="module">
     import { trackPageView, wireAppCtaTracking } from "../assets/js/analytics.js?v=20260909";

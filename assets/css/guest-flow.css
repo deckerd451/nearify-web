@@ -155,3 +155,8 @@ body.guest-scanning {overflow:hidden}
 #guestQrLinkFallback {margin-top:16px}
 #guestQrLinkFallback summary {min-height:44px;color:#c4aaff;cursor:pointer;font-size:14px}
 .guest-flow #guestQrStatus {color:#c9d3e9}
+.guest-handoff-state h2 {font-size:28px;line-height:1.2;margin:8px 0 18px}
+.guest-handoff-state p {font-size:15px;line-height:1.65;color:#c5cde0;margin-bottom:24px}
+.guest-handoff-state .btn {width:100%;margin-bottom:12px}
+#guestHandoffErrorTitle:focus {outline:none}
+.guest-flow:is([data-guest-view='saving'],[data-guest-view='scan-error']) .guest-joined-actions {display:none!important}

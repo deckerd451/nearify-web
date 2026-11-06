@@ -941,7 +941,7 @@ function renderClaimSuccessUx(event, claimResult) {
 
 function setGuestView(view) {
   document.body.dataset.guestView = view;
-  for (const [id, stage] of [["guestConnectStage", "connect"], ["guestSaveConfirmation", "saved"], ["guestHistorySection", "history"]]) {
+  for (const [id, stage] of [["guestConnectStage", "connect"], ["guestSaveConfirmation", "saved"], ["guestHistorySection", "history"], ["guestHandoffPending", "saving"], ["guestHandoffError", "scan-error"]]) {
     const element = document.getElementById(id);
     if (element) element.hidden = view !== stage;
   }
@@ -958,7 +958,8 @@ function wireGuestNavigation(eventId) {
   setText(document.getElementById("guestFlowEventName"), els.joinTitle?.textContent || "This event");
   const back = document.getElementById("guestBackBtn");
   if (back) back.onclick = () => {
-    if (["saved", "history"].includes(document.body.dataset.guestView)) {
+    if (["saved", "history", "scan-error"].includes(document.body.dataset.guestView)) {
+      if (document.body.dataset.guestView === "scan-error") clearGuestQrTarget();
       setGuestView("connect");
       document.getElementById("guestConnectHeading")?.focus();
     } else {
@@ -1309,10 +1310,53 @@ function showGuestSaveConfirmation(message, { name, kind = "member" } = {}) {
   };
 }
 
+function clearGuestQrTarget() {
+  const clean = new URL(window.location.href);
+  clean.searchParams.delete("guest");
+  clean.searchParams.delete("profile");
+  history.replaceState(null, "", clean);
+}
+
+function showGuestHandoffError(reason, message) {
+  setText(document.getElementById("guestHandoffErrorTitle"), reason === "self_qr" ? "This is your guest QR" : "Connection wasn't saved");
+  setText(document.getElementById("guestHandoffErrorMessage"), message || "We couldn't save this connection. Try again or scan another person's QR.");
+  const another = document.getElementById("guestHandoffScanAnother");
+  if (another) another.className = reason === "self_qr" ? "btn primary" : "btn secondary";
+  const retry = document.getElementById("guestHandoffRetryBtn");
+  if (retry) {
+    retry.hidden = reason === "self_qr";
+    retry.onclick = () => submitGuestQr(window.location.href, getQueryParams().eventId, "handoff").then(saved => { if (saved) clearGuestQrTarget(); });
+  }
+  const back = document.getElementById("guestHandoffBackBtn");
+  if (back) back.onclick = () => {
+    clearGuestQrTarget();
+    setGuestView("connect");
+    document.getElementById("guestConnectHeading")?.focus();
+  };
+  setGuestView("scan-error");
+  document.getElementById("guestHandoffErrorTitle")?.focus();
+}
+
+const ownGuestShareCodes = new Map();
+async function loadOwnGuestShareCode(eventId, id, token) {
+  const key = `${eventId}:${id}`;
+  const cached = ownGuestShareCodes.get(key);
+  if (cached?.token === token) return cached.promise;
+  const promise = Promise.resolve().then(() => supabase.rpc("get_my_guest_share_code", {
+    p_event_id: eventId, p_ghost_id: id, p_ghost_token: token,
+  })).then(result => {
+    if (result.error || !/^[0-9a-f]{64}$/.test(result.data || "")) ownGuestShareCodes.delete(key);
+    return result;
+  }).catch(error => { ownGuestShareCodes.delete(key); throw error; });
+  ownGuestShareCodes.set(key, {token,promise});
+  return promise;
+}
+
 let guestQrSavePending = false;
 async function submitGuestQr(value, eventId, method = "link") {
   if (guestQrSavePending) return;
   guestQrSavePending = true;
+  if (method === "handoff") setGuestView("saving");
   const save = document.getElementById("guestSaveQrLinkBtn");
   const confirmation = document.getElementById("guestSaveConfirmation");
   if (save) save.disabled = true;
@@ -1322,11 +1366,16 @@ async function submitGuestQr(value, eventId, method = "link") {
     const outcome = await saveGuestQrCode(value, eventId);
     trackGuestFunnel(outcome?.ok ? "guest_connection_saved" : "guest_connection_save_failed", eventId,
       { method, connection_kind: outcome?.kind, reason: outcome?.reason || (outcome?.ok ? undefined : "request_failed") });
+    if (!outcome?.ok && method === "handoff") {
+      showGuestHandoffError(outcome?.reason, document.getElementById("guestQrStatus")?.textContent);
+    }
     return outcome?.ok === true;
   } catch (_) {
     trackGuestFunnel("guest_connection_save_failed", eventId, { method, reason: "request_failed" });
     const status = document.getElementById("guestQrStatus");
     if (status) status.textContent = "Couldn't save this connection. Check your connection and try again.";
+    if (method === "handoff") showGuestHandoffError("request_failed", status?.textContent);
+    return false;
   } finally {
     guestQrSavePending = false;
     if (save) save.disabled = false;
@@ -1343,6 +1392,13 @@ async function saveGuestQrCode(value, eventId) {
     if (status) status.textContent = "Guest session missing. Join the event again.";
     return { ok: false, reason: "session_missing" };
   }
+  try {
+    const own = await loadOwnGuestShareCode(eventId, id, token);
+    if (!own.error && own.data === code) {
+      if (status) status.textContent = "This QR belongs to your current guest session. Scan another person's QR to save a connection.";
+      return {ok:false,reason:"self_qr"};
+    }
+  } catch (_) { /* The save RPC still validates the session and target. */ }
   if (status) status.textContent = "Saving guest connection…";
   const { data, error } = await supabase.rpc("save_guest_to_guest_connection", {
     p_event_id: eventId, p_from_ghost_id: id,
@@ -1350,7 +1406,7 @@ async function saveGuestQrCode(value, eventId) {
   });
   if (error) {
     logger.warn("[GuestQR] Save failed", { code: error.code, message: error.message, details: error.details });
-    if (status) status.textContent = /Guest session not found/i.test(error.message || "") ? "Your guest session could not be verified for this event." : /Guest QR unavailable/i.test(error.message || "") ? "This QR belongs to an unavailable guest, yourself, or a different event." : "Couldn't save this guest (error " + (error.code || "unknown") + "). Please report this code.";
+    if (status) status.textContent = /Guest session not found/i.test(error.message || "") ? "Your guest session could not be verified for this event." : /Guest QR unavailable/i.test(error.message || "") ? "This QR belongs to an unavailable guest, yourself, or a different event." : "Couldn't save this guest. Check your connection and try again.";
     return { ok: false, reason: "request_failed" };
   }
   stopGuestQrCamera();
@@ -1383,9 +1439,7 @@ function wireGuestShowQr(eventId) {
       const id = localStorage.getItem("nearify_ghost_id");
       const token = localStorage.getItem("nearify_ghost_token");
       if (!id || !token || !eventId) throw new Error("Guest session unavailable");
-      const { data, error } = await supabase.rpc("get_my_guest_share_code", {
-        p_event_id: eventId, p_ghost_id: id, p_ghost_token: token,
-      });
+      const { data, error } = await loadOwnGuestShareCode(eventId, id, token);
       if (error || !/^[0-9a-f]{64}$/.test(data || "")) throw new Error("Guest QR unavailable");
       shareUrl = "https://nearify.org/join/?event=" + encodeURIComponent(eventId) + "&guest=" + encodeURIComponent(data) + "&web=1";
       if (linkInput) linkInput.value = shareUrl;
@@ -1597,18 +1651,14 @@ function showGuestJoinedState(ghost) {
   const resolvedEventId = ghost.eventId || localStorage.getItem("nearify_ghost_event_id") || scannedEvent;
   const scannedGuest = new URLSearchParams(window.location.search).get("guest");
   if (scannedGuest && scannedEvent === resolvedEventId) {
-    submitGuestQr(window.location.href, resolvedEventId, "handoff").then(() => {
-      const clean = new URL(window.location.href);
-      clean.searchParams.delete("guest");
-      history.replaceState(null, "", clean);
+    submitGuestQr(window.location.href, resolvedEventId, "handoff").then(saved => {
+      if (saved) clearGuestQrTarget();
     });
   } else if (scannedProfile && scannedEvent === resolvedEventId) {
     // A personal QR opened before guest registration. Record it once the
     // guest session exists; no anonymous attendee directory is queried.
-    submitGuestQr(window.location.href, scannedEvent, "handoff").then(() => {
-      const clean = new URL(window.location.href);
-      clean.searchParams.delete("profile");
-      history.replaceState(null, "", clean);
+    submitGuestQr(window.location.href, scannedEvent, "handoff").then(saved => {
+      if (saved) clearGuestQrTarget();
     });
   } else {
     refreshAllGuestHistory(ghost.eventId || localStorage.getItem("nearify_ghost_event_id") || scannedEvent);

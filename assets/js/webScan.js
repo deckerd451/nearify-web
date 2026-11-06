@@ -32,6 +32,12 @@ function showResult(value) {
   }
   stopCamera();
   document.getElementById('scanContinueLink').href = target;
+  const query = new URL(target, window.location.origin).searchParams;
+  const kind = query.has('guest') ? 'Guest' : query.has('profile') ? 'Personal' : 'Event';
+  document.getElementById('scanResultHeading').textContent = kind + ' QR found';
+  document.getElementById('scanResultDescription').textContent = kind === 'Event'
+    ? 'This QR identifies an event. Continue to join or view it in your browser.'
+    : 'Continue to save this person as a connection. You may need to join the event first.';
   result.hidden = false;
   start.hidden = true;
   document.getElementById('scanCameraShell').hidden = true;
