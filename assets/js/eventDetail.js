@@ -735,12 +735,15 @@ function getTagArray(value, limit = 3) {
 
 // The RPC enforces membership and event-specific opt-in on the server.
 // Never query the unfiltered event_attendees/profiles roster in this path.
+let attendeeDiscoveryUnavailable = false;
 async function fetchEventAttendees(eventId) {
+  attendeeDiscoveryUnavailable = false;
   if (!currentUser?.id) return [];
-  const { data, error } = await supabase.rpc("get_consented_event_attendees", {
-    p_event_id: eventId,
+  const { data, error } = await supabase.rpc("get_event_connection_people", {
+    p_event: eventId,
   });
   if (error) {
+    attendeeDiscoveryUnavailable = true;
     logger.error("[EventDetail] consented discovery unavailable:", error);
     return [];
   }
@@ -1068,9 +1071,13 @@ function buildAttendeeCard(attendee, showDetails, cardState = CONNECTION_STATE.S
   card.appendChild(avatarEl);
   card.appendChild(infoEl);
 
-  // Save control — only for signed-in attendees (full access) with a valid event.
+  // Opening a profile does not send an invitation or exchange personal details.
   if (showDetails && eventId && attendee.profileId) {
-    card.appendChild(buildAttendeeSaveControl(attendee.profileId, cardState, eventId));
+    const connect = document.createElement("a");
+    connect.className = "btn secondary";
+    connect.textContent = "View profile & connect";
+    connect.href = "/profile.html?id=" + encodeURIComponent(attendee.profileId);
+    card.appendChild(connect);
   }
 
   return card;
@@ -1222,6 +1229,7 @@ async function loadAttendeeDiscovery(eventId, isPast = false) {
     renderPeopleYouKnowHere([]);
   }
 
+  document.getElementById("eventPeopleSearch")?.remove();
   const grid = document.getElementById("attendeeDiscoveryGrid");
   const gate = document.getElementById("attendeeDiscoveryGate");
   if (grid) grid.replaceChildren();
@@ -1240,9 +1248,35 @@ async function loadAttendeeDiscovery(eventId, isPast = false) {
     }
     return;
   }
+  if (attendeeDiscoveryUnavailable) {
+    if (peopleCopy) peopleCopy.textContent = "People couldn't load. Please try again.";
+    if (grid) {
+      const retry = document.createElement("button"); retry.type = "button";
+      retry.className = "btn secondary"; retry.textContent = "Try again";
+      retry.onclick = () => { retry.disabled = true; loadAttendeeDiscovery(eventId, isPast); };
+      grid.appendChild(retry);
+    }
+    return;
+  }
   if (!attendees.some((attendee) => attendee.profileId !== myProfileId)) {
     if (peopleCopy) peopleCopy.textContent = "No other attendees have opted into discovery yet. You can still connect in person using Nearify QR codes.";
     return;
+  }
+  if (grid) {
+    let search = document.getElementById("eventPeopleSearch");
+    if (!search) {
+      search = document.createElement("input"); search.id = "eventPeopleSearch";
+      search.type = "search"; search.placeholder = "Find a name";
+      search.setAttribute("aria-label", "Find a person at this event");
+      search.addEventListener("input", () => {
+        const query = search.value.trim().toLocaleLowerCase();
+        grid.querySelectorAll(".attendee-card").forEach(card => {
+          card.hidden = !card.querySelector(".attendee-name")?.textContent.toLocaleLowerCase().includes(query);
+        });
+      });
+      grid.before(search);
+    }
+    search.value = "";
   }
   const stateMap = buildConnectionStateMap(connections);
   renderAttendeeDiscovery(attendees, myProfileId, true, stateMap, eventId);

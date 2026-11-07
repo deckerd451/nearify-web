@@ -50,7 +50,7 @@ try{
  assert.equal(await page.locator('#ambientHome').textContent(),'');assert.deepEqual(errors,[]);
  if(process.env.NEARIFY_REVIEW_ARTIFACT_DIR){
   await page.goto('http://127.0.0.1:'+server.address().port+'/landing');
-  await page.getByRole('heading',{name:'Meet people. Keep the connection.'}).waitFor();
+  await page.getByRole('heading',{name:'Meet people. Keep in touch.'}).waitFor();
   await page.screenshot({path:path.join(process.env.NEARIFY_REVIEW_ARTIFACT_DIR,'landing-mobile.png'),fullPage:true});
  }
  console.log('PASS: one primary action, review singular/plural, unread priority, honest read failure, known event and sign-out clearing.');
