@@ -1,4 +1,4 @@
-import {mountEventPreparation} from './eventPreparation.js?v=20261106-intentions1';
+import {mountEventPreparation} from './eventPreparation.js?v=20261107-flow1';
 // Render the limited Markdown used in imported event descriptions without HTML injection.
 // Text stays textContent; only **bold** markers and line breaks become DOM nodes.
 function renderEventDescription(target, value) {

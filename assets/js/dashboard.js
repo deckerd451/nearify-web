@@ -1,3 +1,4 @@
+import {mountAmbientHome} from './ambientHome.js?v=20261107-flow1';
 /**
  * dashboard.js — Event Control Center
  *
@@ -19,6 +20,9 @@ import { logger } from "./logger.js";
 import { buildEventDecisionReasons, buildKnownAttendeeReason, computeEventDecisionScore } from "./attendanceReasons.js";
 import { pollingCoordinator } from "./pollingCoordinator.js";
 logger.log("[Dashboard] dashboard.js loaded");
+const ambientHome = mountAmbientHome();
+let dashboardRevision = 0;
+let dashboardActor = null;
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -1154,12 +1158,16 @@ function renderRecommendedForYouWidget(recommendations) {
 // ─── Refresh ──────────────────────────────────────────────────────────────────
 
 async function refreshDashboard() {
-  if (refreshDashboard._inFlight) return refreshDashboard._inFlight;
+  const revision = dashboardRevision;
+  if (refreshDashboard._inFlight && refreshDashboard._revision === revision) return refreshDashboard._inFlight;
+  refreshDashboard._revision = revision;
   refreshDashboard._inFlight = (async () => {
   // Homepage: recommendations + connections only (no organizer events).
   const connections = await fetchMyConnections();
   const currentProfileId = await fetchCurrentProfileId();
   const attending = await fetchMyAttendingEvents(currentProfileId);
+  if(revision !== dashboardRevision)return;
+  ambientHome.setEvents(attending, currentProfileId);
   const attendingIds = new Set(attending.map((a) => a.event?.id).filter(Boolean));
   // Privacy gate: neither network attendance nor relationship-based event
   // recommendations may read other users' event_attendees until a consent-
@@ -1170,7 +1178,7 @@ async function refreshDashboard() {
   renderNetworkMemoryWidget(connections, []);
   renderRecommendedForYouWidget(recommendations);
   renderSeeAgainWidget(seeAgainOpportunities, attendingIds);
-  })().finally(() => { refreshDashboard._inFlight = null; });
+  })().finally(() => { if(refreshDashboard._revision === revision)refreshDashboard._inFlight = null; });
   return refreshDashboard._inFlight;
 }
 
@@ -1366,6 +1374,13 @@ function initDashboard() {
   // thrown error would be silently swallowed and leave the page blank.
   supabase.auth.onAuthStateChange((event, session) => {
     logger.log("[Dashboard] auth change:", event, !!session?.user);
+    const actor = session?.user?.id ?? null;
+    if(actor !== dashboardActor || event === "SIGNED_OUT") {
+      dashboardActor = actor; dashboardRevision++;
+      for(const id of ["attendingWidget","networkMemoryWidget","recommendedForYouWidget","seeAgainWidget"]){
+        const node=document.getElementById(id);if(node){node.replaceChildren();node.hidden=true;}
+      }
+    }
 
     if (event === "SIGNED_OUT" || (event === "INITIAL_SESSION" && !session?.user)) {
       pollingCoordinator.stop(DASHBOARD_EVENTS_POLL_KEY);
@@ -1381,7 +1396,9 @@ function initDashboard() {
 }
 
 async function loadDashboard() {
-  if (loadDashboard._inFlight) return loadDashboard._inFlight;
+  const revision = dashboardRevision;
+  if (loadDashboard._inFlight && loadDashboard._revision === revision) return loadDashboard._inFlight;
+  loadDashboard._revision = revision;
   loadDashboard._inFlight = (async () => {
   showLoading();
 
@@ -1392,6 +1409,8 @@ async function loadDashboard() {
     const connections = await fetchMyConnections();
     const currentProfileId = await fetchCurrentProfileId();
     const attending = await fetchMyAttendingEvents(currentProfileId);
+    if(revision !== dashboardRevision)return;
+    ambientHome.setEvents(attending, currentProfileId);
     const attendingIds = new Set(attending.map((a) => a.event?.id).filter(Boolean));
     // Privacy gate: no direct reads of other people's attendance.
     const seeAgainOpportunities = [];
@@ -1402,10 +1421,11 @@ async function loadDashboard() {
     renderRecommendedForYouWidget(recommendations);
     renderSeeAgainWidget(seeAgainOpportunities, attendingIds);
   } catch (err) {
+    if(revision !== dashboardRevision)return;
     logger.error("[Dashboard] failed to load dashboard:", err);
     renderDashboardError(err);
   }
-  })().finally(() => { loadDashboard._inFlight = null; });
+  })().finally(() => { if(loadDashboard._revision === revision)loadDashboard._inFlight = null; });
   return loadDashboard._inFlight;
 }
 

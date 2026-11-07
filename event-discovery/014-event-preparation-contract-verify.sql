@@ -1,0 +1,3 @@
+select 'Preparation API authenticated-only and scoped' as check_name,count(*)=1 and bool_and(p.prosecdef and p.proconfig @> array['search_path=""']::text[] and has_function_privilege('authenticated',p.oid,'EXECUTE') and not has_function_privilege('anon',p.oid,'EXECUTE')) as passed
+from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='public' and p.proname='get_event_preparation_people'
+union all select 'Consent roster and feedback dependencies installed',to_regprocedure('public.get_consented_event_attendees(uuid)') is not null and to_regclass('public.ambient_person_feedback') is not null;
