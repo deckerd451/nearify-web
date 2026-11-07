@@ -4,7 +4,7 @@ const el=(tag,text)=>{const n=document.createElement(tag);if(text)n.textContent=
 export function mountPostEventReview(){
  const parent=document.querySelector('.connections-page');if(!parent)return;
  const root=el('section');root.className='private-context';root.hidden=true;const header=parent.querySelector('.connections-page-header');if(header)header.after(root);else parent.prepend(root);
- let active=true,busy=false,epoch=0,expanded=false,reviewId=null;
+ let active=true,busy=false,epoch=0,expanded=new URLSearchParams(location.search).get('review')==='1',reviewId=null;
  const valid=version=>active&&epoch===version;
  async function refresh(){
   if(!active||busy||document.hidden)return;busy=true;const version=epoch;
@@ -14,7 +14,7 @@ export function mountPostEventReview(){
    const extras=await followUpRpc(supabase,'ambient_home_extras');if(!valid(version))return;
    const review=extras?.review;root.replaceChildren();root.hidden=!review;
    if(!review)return;
-   if(reviewId!==review.event_id){expanded=false;reviewId=review.event_id;}
+   if(reviewId!==review.event_id){if(reviewId!==null)expanded=false;reviewId=review.event_id;}
    root.append(el('h2','Keep the context from '+review.event_name),el('p',review.count+' saved people linked to this event. Notes are optional; QR saves do not confirm attendance.'));
    const list=el('ul');list.hidden=!expanded;
    for(const person of review.people){

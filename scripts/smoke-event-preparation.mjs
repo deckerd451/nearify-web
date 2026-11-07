@@ -5,7 +5,7 @@ import assert from 'node:assert/strict';
 import {chromium} from 'playwright';
 const root=process.cwd();
 const mock=`export async function getSessionCached(){return {data:{session:window.signedOut?null:{user:{id:'owner'}}}};}
-export const supabase={auth:{onAuthStateChange(fn){window.authChanged=fn;return {data:{subscription:{unsubscribe(){}}}};}},rpc:async()=>({data:{eligible:true,people:window.hideListing?[]:[{profile_id:'11111111-1111-4111-8111-111111111111',name:'<img src=x onerror=window.injected=true>',note:'Private context',intention:'Ask about the prototype',opted_in_listing:true,saved_for_event:false,previous_event_name:'Earlier workshop'}]},error:null})};`;
+export const supabase={auth:{onAuthStateChange(fn){window.authChanged=fn;return {data:{subscription:{unsubscribe(){}}}};}},rpc:async(name)=>name==='get_event_preparation_people'?({data:window.discoveryOnly?[{profile_id:'11111111-1111-4111-8111-111111111111',name:'Shared profile',avatar_url:null}]:[],error:null}):({data:{eligible:true,people:window.hideListing||window.discoveryOnly?[]:[{profile_id:'11111111-1111-4111-8111-111111111111',name:'<img src=x onerror=window.injected=true>',note:'Private context',intention:'Ask about the prototype',opted_in_listing:true,saved_for_event:false,previous_event_name:'Earlier workshop'}]},error:null})};`;
 const html=`<!doctype html><html><body><div id="eventSections"></div><script type="module">import {mountEventPreparation} from '/assets/js/eventPreparation.js';mountEventPreparation('44444444-4444-4444-8444-444444444444');</script></body></html>`;
 const server=http.createServer(async(req,res)=>{
  try{
@@ -33,6 +33,10 @@ try{
  assert.equal(await page.locator('#eventSections').textContent(),'');
  await page.evaluate(()=>{window.hideListing=false;document.dispatchEvent(new Event('visibilitychange'));});
  await page.getByText('A little preparation',{exact:true}).waitFor();
+ await page.evaluate(()=>{window.discoveryOnly=true;document.dispatchEvent(new Event('visibilitychange'));});
+ await page.getByRole('heading',{name:'People to explore'}).waitFor();
+ assert.ok(await page.getByRole('heading',{name:'Shared profile'}).isVisible());
+ assert.ok(await page.getByText('Opted-in listing for this event',{exact:true}).isVisible());
  await page.evaluate(()=>{window.signedOut=true;window.authChanged('SIGNED_OUT',null);});
  assert.equal(await page.locator('#eventSections').textContent(),'');assert.deepEqual(errors,[]);
  console.log('PASS: factual preparation labels, private intention, safe text, roster removal and auth clearing.');

@@ -8,12 +8,13 @@ export function resolveWebQr(value) {
       const event = url.pathname.slice(1);
       return UUID.test(event) ? `/join/?event=${encodeURIComponent(event)}&web=1` : null;
     }
-    if (url.protocol !== 'https:' || url.hostname !== 'nearify.org' || url.port) return null;
+    if (url.protocol !== 'https:' || !['nearify.org','www.nearify.org'].includes(url.hostname) || url.port) return null;
     if (['/join/', '/join', '/join/index.html'].includes(url.pathname)) {
+      for(const key of ['event','profile','guest'])if(url.searchParams.getAll(key).length>1)return null;
       const event = url.searchParams.get('event');
       const guest = url.searchParams.get('guest');
       const profile = url.searchParams.get('profile');
-      if (!UUID.test(event || '') || (guest && !/^[a-f0-9]{64}$/.test(guest)) || (profile && !UUID.test(profile)) || (guest && profile)) return null;
+      if (!UUID.test(event || '') || (url.searchParams.has('guest') && !/^[a-f0-9]{64}$/.test(guest||'')) || (url.searchParams.has('profile') && !UUID.test(profile||'')) || (url.searchParams.has('guest') && url.searchParams.has('profile'))) return null;
       const clean = new URLSearchParams({event,web:'1'});
       if (guest) clean.set('guest',guest);
       if (profile) clean.set('profile',profile);

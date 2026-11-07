@@ -18,7 +18,8 @@
   <meta name="twitter:description" content="Nearify helps you know who to meet, save who you met, and remember why each connection matters." />
   <meta name="twitter:image"      content="https://nearify.org/assets/images/og-default.png" />
 
-  <link rel="stylesheet" href="assets/css/styles.css?v=20261101-home4" />
+  <link rel="stylesheet" href="assets/css/styles.css?v=20261107-flow1" />
+  <link rel="stylesheet" href="/assets/css/follow-up.css?v=20261107-flow1" />
   <link rel="stylesheet" href="/assets/css/scan-entry.css?v=20261105-accountfix1" />
 </head>
 <body class="cc-page">
@@ -55,11 +56,11 @@
     <section id="landingView" class="cc-landing" aria-label="Nearify events for organizers and attendees" style="display:none;">
       <div class="cc-landing-inner">
         <div class="cc-landing-hero">
-          <h1>Know who to meet. Save who you met. Remember why they matter.</h1>
-          <p>Nearify shows you the right people before an event, lets you save who you meet, and keeps the context for follow-up.</p>
+          <h1>Meet people. Keep the connection.</h1>
+          <p>Find an event, save someone’s QR, and pick up the conversation later.</p>
           <div class="hero-actions cc-landing-hero-actions" aria-label="Homepage actions">
             <a href="/events/index.html" class="btn primary">Find an Event</a>
-            <button id="landingSignInBtn" type="button" class="btn secondary cc-google-btn">
+            <button id="landingSignInBtn" type="button" class="cc-landing-link cc-google-btn">
               <svg class="cc-google-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
                 <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
                 <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
@@ -71,29 +72,8 @@
           </div>
         </div>
 
-        <div class="cc-landing-features" aria-label="How Nearify works">
-          <div class="cc-landing-feature">
-            <div class="cc-landing-feature-icon">
-              <svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M10 2L3 11h6l-1 7 8-10h-6l1-8z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-            </div>
-            <div class="cc-landing-feature-label">Before the event</div>
-            <div class="cc-landing-feature-desc">Set your goal and see the people worth finding.</div>
-          </div>
-          <div class="cc-landing-feature">
-            <div class="cc-landing-feature-icon">
-              <svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><circle cx="10" cy="10" r="2.5" stroke="currentColor" stroke-width="1.5"/><path d="M5.5 14.5a6.5 6.5 0 0 1 0-9M14.5 5.5a6.5 6.5 0 0 1 0 9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M2.5 17.5a10.5 10.5 0 0 1 0-15M17.5 2.5a10.5 10.5 0 0 1 0 15" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
-            </div>
-            <div class="cc-landing-feature-label">During the event</div>
-            <div class="cc-landing-feature-desc">Meet the right people in the room, then save them.</div>
-          </div>
-          <div class="cc-landing-feature">
-            <div class="cc-landing-feature-icon">
-              <svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M8.5 11.5a3 3 0 0 0 4.24 0l3-3a3 3 0 0 0-4.24-4.24l-1.5 1.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M11.5 8.5a3 3 0 0 0-4.24 0l-3 3a3 3 0 0 0 4.24 4.24l1.5-1.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
-            </div>
-            <div class="cc-landing-feature-label">After the event</div>
-            <div class="cc-landing-feature-desc">Keep the why: where you met, what mattered, and what to do next.</div>
-          </div>
-        </div>
+        <p>Already meeting someone? <a href="/scan/?web=1">Scan their QR</a>.</p>
+        <p class="cc-landing-feature-desc">Browse and scan on the web. Sign in when you want to keep your connections across devices.</p>
 
         <div class="cc-landing-vision-link">
           <a href="/vision.html" class="cc-landing-link">Read the full vision &rarr;</a>
@@ -105,6 +85,11 @@
     <div id="dashboardView" style="display:none;">
 
       <div class="cc-dashboard">
+        <nav class="cc-home-quicklinks" aria-label="Your Nearify shortcuts">
+          <a href="/scan/?web=1">Scan QR</a><a href="/connections/">People</a><a href="/messages/">Messages</a>
+        </nav>
+        <div id="ambientHome" hidden aria-label="Your next step"></div>
+        <details><summary>Events and saved people</summary>
         <!-- ─── EVENTS YOU'RE ATTENDING (top) ──────────────────────────── -->
         <section id="attendingSection" class="cc-dashboard-section cc-dashboard-primary" aria-labelledby="attendingHeading" hidden>
           <div class="cc-dashboard-header">
@@ -132,11 +117,7 @@
         <!-- Keep network attendance hidden until consent-scoped server access exists. -->
         <section id="seeAgainWidget" class="cc-network-widget cc-see-again-widget" aria-label="See them again soon" hidden></section>
 
-        <nav class="cc-home-quicklinks" aria-label="Your Nearify shortcuts">
-          <a href="/connections/index.html">My Connections</a>
-          <a href="/events/index.html">Explore events</a>
-          <a href="/community-signal/live.html">Community Signal</a>
-        </nav>
+        </details>
 
       </div>
     </div>
@@ -169,7 +150,7 @@
   <!-- QR code library (must load before dashboard.js) -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" integrity="sha384-3zSEDfvllQohrq0PHL1fOXJuC/jSOO34H46t6UQfobFOmxE5BpjjaIJY5F2/bMnU" crossorigin="anonymous"></script>
 
-  <script type="module" src="/assets/js/dashboard.js?v=20261105-webentry1"></script>
+  <script type="module" src="/assets/js/dashboard.js?v=20261107-flow1"></script>
   <script type="module" src="/assets/js/navAuth.js?v=20261106-permissions2"></script>
 
 </body>
