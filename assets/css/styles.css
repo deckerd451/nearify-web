@@ -4427,11 +4427,11 @@ code {
 
 /* ── Landing (logged-out) ── */
 .cc-landing {
-  min-height: calc(100vh - 120px);
+  min-height: auto;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 60px 24px;
+  padding: 40px 24px;
   text-align: center;
 }
 
@@ -4456,6 +4456,27 @@ code {
   max-width: 540px;
   margin-left: auto;
   margin-right: auto;
+}
+
+.cc-landing-inner > .cc-landing-scan {
+  margin-bottom: 16px;
+  font-size: 16px;
+}
+.cc-landing-scan a,
+.cc-landing-scan a:visited {
+  color: #c4b5fd;
+  text-underline-offset: 3px;
+}
+.cc-landing-scan a:hover { color: #ede9fe; }
+.cc-landing-scan a:focus-visible {
+  outline: 2px solid #c4b5fd;
+  outline-offset: 4px;
+  border-radius: 2px;
+}
+.cc-landing-inner > .cc-landing-feature-desc {
+  font-size: 14px;
+  line-height: 1.5;
+  margin-bottom: 0;
 }
 
 .cc-landing-features {
@@ -4524,7 +4545,7 @@ code {
 
 
 .cc-landing-hero {
-  margin: 0 auto 48px;
+  margin: 0 auto 24px;
   max-width: 720px;
 }
 
