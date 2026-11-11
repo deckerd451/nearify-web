@@ -1450,6 +1450,7 @@ function wireGuestShowQr(eventId) {
   const qr = document.getElementById("guestMyQrCode");
   const status = document.getElementById("guestMyQrStatus");
   const copy = document.getElementById("guestCopyQrBtn");
+  const share = document.getElementById("guestSharePassBtn");
   const linkInput = document.getElementById("guestMyQrLink");
   const linkDetails = document.getElementById("guestQrLinkDetails");
   if (!button || !panel || !qr || button.dataset.wired) return;
@@ -1461,6 +1462,7 @@ function wireGuestShowQr(eventId) {
     button.hidden = true;
     button.disabled = true;
     if (status) status.textContent = "Creating your QR…";
+    if (share) share.hidden = true;
     try {
       const id = localStorage.getItem("nearify_ghost_id");
       const token = localStorage.getItem("nearify_ghost_token");
@@ -1469,6 +1471,7 @@ function wireGuestShowQr(eventId) {
       if (error || !/^[0-9a-f]{64}$/.test(data || "")) throw new Error("Guest QR unavailable");
       shareUrl = "https://nearify.org/join/?event=" + encodeURIComponent(eventId) + "&guest=" + encodeURIComponent(data) + "&web=1";
       if (linkInput) linkInput.value = shareUrl;
+      if (share) share.hidden = false;
       qr.replaceChildren();
       if (typeof window.QRCode === "function") {
         new window.QRCode(qr, { text: shareUrl, width: 200, height: 200 });
@@ -1478,6 +1481,8 @@ function wireGuestShowQr(eventId) {
         if (linkDetails) linkDetails.open = true;
       }
     } catch (_) {
+      shareUrl = "";
+      if (share) share.hidden = true;
       if (status) status.textContent = "Couldn't load your QR. Try again when you're connected.";
       button.hidden = false;
     } finally {
@@ -1485,6 +1490,27 @@ function wireGuestShowQr(eventId) {
     }
   };
   button.addEventListener("click", loadQr);
+  share?.addEventListener("click", async () => {
+    if (!shareUrl) return;
+    if (typeof navigator.share === "function") {
+      try {
+        await navigator.share({
+          title: "My Nearify connection pass",
+          text: "Here's my Nearify pass for this event.",
+          url: shareUrl,
+        });
+        if (status) status.textContent = "Pass shared.";
+        return;
+      } catch (error) {
+        // A cancelled share is not a failure and should not copy anything.
+        if (error?.name === "AbortError") return;
+      }
+    }
+    // Browsers without Web Share keep the existing manual-copy path.
+    if (linkDetails) linkDetails.open = true;
+    if (linkInput) { linkInput.focus(); linkInput.select(); }
+    if (status) status.textContent = "Copy your guest link below to share it.";
+  });
   copy?.addEventListener("click", async () => {
     if (!shareUrl) return;
     try {
