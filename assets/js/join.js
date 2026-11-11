@@ -1053,7 +1053,7 @@ function renderGuestConnectionHistory(connections) {
   }
 
   listEl.innerHTML = names
-    .map((name) => `<li>Met ${escapeHtml(name)}</li>`)
+    .map((name) => `<li>Saved ${escapeHtml(name)}</li>`)
     .join("");
   historyEl.style.display = "";
 }
@@ -1277,7 +1277,7 @@ function showGuestSaveConfirmation(message, { name, kind = "member" } = {}) {
   const displayName = name || (kind === "guest" ? "Guest connection" : "Nearify member");
   setText(document.getElementById("guestSavedName"), displayName);
   setText(document.getElementById("guestSavedAvatar"), name ? getAttendeeInitials(name) : "✓");
-  setText(document.getElementById("guestSavedContext"), `Met at ${document.getElementById("guestFlowEventName")?.textContent || "this event"}`);
+  setText(document.getElementById("guestSavedContext"), `Saved at ${document.getElementById("guestFlowEventName")?.textContent || "this event"}`);
   setGuestView("saved");
   document.getElementById("guestSaveHeading")?.focus();
   const keep = document.getElementById("guestKeepConnectingBtn");
