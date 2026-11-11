@@ -1036,25 +1036,70 @@ async function loadGuestConnectionHistory() {
   return Array.isArray(data) ? data : [];
 }
 
+function guestSavedEntries(connections) {
+  const seen = new Set();
+  return connections.flatMap((row) => {
+    const name = typeof row?.to_profile_name === "string" ? row.to_profile_name.trim() : "";
+    if (!name || seen.has(name)) return [];
+    seen.add(name);
+    const date = row?.connected_at ? new Date(row.connected_at) : null;
+    const savedOn = date && !Number.isNaN(date.getTime())
+      ? date.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })
+      : "";
+    return [{ name, savedOn }];
+  });
+}
+
 function renderGuestConnectionHistory(connections) {
   const historyEl = document.getElementById("guestConnectionHistory");
-  const listEl    = document.getElementById("guestConnectionList");
+  const listEl = document.getElementById("guestConnectionList");
+  const recap = document.getElementById("guestHistoryRecap");
+  const copy = document.getElementById("guestCopyHistoryBtn");
+  const copyStatus = document.getElementById("guestCopyHistoryStatus");
   if (!historyEl || !listEl) return;
 
-  const names = [...new Set(
-    connections.map((r) => r?.to_profile_name).filter(Boolean)
-  )];
-
+  const entries = guestSavedEntries(connections);
   const emptyStatus = document.getElementById("guestConnectStatus");
-  if (emptyStatus) emptyStatus.hidden = names.length > 0;
-  if (!names.length) {
+  if (emptyStatus) emptyStatus.hidden = entries.length > 0;
+  if (recap) recap.textContent = entries.length === 1
+    ? "1 person saved at this event"
+    : `${entries.length} people saved at this event`;
+  if (copy) copy.hidden = entries.length === 0;
+  if (copyStatus) copyStatus.textContent = "";
+  if (!entries.length) {
+    listEl.replaceChildren();
     historyEl.style.display = "none";
     return;
   }
 
-  listEl.innerHTML = names
-    .map((name) => `<li>Saved ${escapeHtml(name)}</li>`)
-    .join("");
+  // Names come from the authorized guest history RPC, not a public roster.
+  // Build DOM nodes rather than inserting attendee names as HTML.
+  listEl.replaceChildren(...entries.map(({ name, savedOn }) => {
+    const item = document.createElement("li");
+    item.className = "guest-history-person";
+    const title = document.createElement("strong");
+    title.textContent = name;
+    item.appendChild(title);
+    if (savedOn) {
+      const detail = document.createElement("span");
+      detail.textContent = `Saved ${savedOn}`;
+      item.appendChild(detail);
+    }
+    return item;
+  }));
+  if (copy) copy.onclick = async () => {
+    const eventName = document.getElementById("guestFlowEventName")?.textContent?.trim() || "My event";
+    const summary = [`Nearify — ${eventName}`, ...entries.map(({ name, savedOn }) =>
+      `• ${name}${savedOn ? ` — saved ${savedOn}` : ""}`
+    ), "Saved contacts are not confirmed conversations."].join("\n");
+    try {
+      if (!navigator.clipboard?.writeText) throw new Error("Clipboard unavailable");
+      await navigator.clipboard.writeText(summary);
+      if (copyStatus) copyStatus.textContent = "List copied. Paste it into your notes to keep a personal recap.";
+    } catch (_) {
+      if (copyStatus) copyStatus.textContent = "Copy isn't available in this browser. Your saved list is still here.";
+    }
+  };
   historyEl.style.display = "";
 }
 
@@ -1264,7 +1309,7 @@ async function refreshAllGuestHistory(eventId) {
   ]);
   renderGuestConnectionHistory([
     ...profiles,
-    ...guests.map((g) => ({ to_profile_name: g.guest_name + " (guest)" })),
+    ...guests.map((g) => ({ to_profile_name: g.guest_name + " (guest)", connected_at: g.connected_at })),
   ]);
   updateClaimButtonCount(profiles.length + guests.length);
   return { profiles, guests };
