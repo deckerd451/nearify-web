@@ -1038,23 +1038,76 @@ async function loadGuestConnectionHistory() {
 
 function renderGuestConnectionHistory(connections) {
   const historyEl = document.getElementById("guestConnectionHistory");
-  const listEl    = document.getElementById("guestConnectionList");
+  const listEl = document.getElementById("guestConnectionList");
   if (!historyEl || !listEl) return;
 
-  const names = [...new Set(
-    connections.map((r) => r?.to_profile_name).filter(Boolean)
-  )];
-
+  const seen = new Set();
+  const rows = connections.filter((r) => {
+    const id = r?.memoryTargetId;
+    const name = r?.to_profile_name;
+    if (!id || !name || seen.has(r.memoryKind + ":" + id)) return false;
+    seen.add(r.memoryKind + ":" + id);
+    return true;
+  });
   const emptyStatus = document.getElementById("guestConnectStatus");
-  if (emptyStatus) emptyStatus.hidden = names.length > 0;
-  if (!names.length) {
+  if (emptyStatus) emptyStatus.hidden = rows.length > 0;
+  listEl.replaceChildren();
+  if (!rows.length) {
     historyEl.style.display = "none";
     return;
   }
 
-  listEl.innerHTML = names
-    .map((name) => `<li>Saved ${escapeHtml(name)}</li>`)
-    .join("");
+  for (const row of rows) {
+    const item = document.createElement("li");
+    item.className = "guest-memory-history-item";
+    const details = document.createElement("details");
+    const summary = document.createElement("summary");
+    const name = document.createElement("strong");
+    name.textContent = row.to_profile_name;
+    const hint = document.createElement("span");
+    hint.textContent = "View or add memory";
+    summary.append(name, hint);
+    details.appendChild(summary);
+
+    const key = guestMemoryStorageKey(row.memoryTargetId, row.memoryKind);
+    const input = document.createElement("textarea");
+    input.rows = 3;
+    input.maxLength = 500;
+    input.placeholder = "What should you remember? You can use iPhone keyboard dictation.";
+    input.setAttribute("aria-label", "Private memory for " + row.to_profile_name);
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "btn secondary";
+    button.textContent = "Save private memory";
+    const status = document.createElement("p");
+    status.className = "guest-memory-history-status";
+    status.setAttribute("role", "status");
+    status.setAttribute("aria-live", "polite");
+    if (!key) {
+      button.disabled = true;
+      status.textContent = "Memory isn't available for this connection.";
+    } else {
+      try { input.value = localStorage.getItem(key) || ""; }
+      catch (_) {
+        button.disabled = true;
+        status.textContent = "Private storage isn't available in this browser.";
+      }
+    }
+    button.addEventListener("click", () => {
+      if (!key) return;
+      try {
+        const note = input.value.trim();
+        if (note) localStorage.setItem(key, note);
+        else localStorage.removeItem(key);
+        status.textContent = note ? "Private memory saved on this device." : "Private memory cleared.";
+      } catch (_) {
+        status.textContent = "Couldn't save on this device. You can still copy your note.";
+      }
+    });
+    details.append(input, button, status);
+    item.appendChild(details);
+    listEl.appendChild(item);
+  }
   historyEl.style.display = "";
 }
 
@@ -1263,8 +1316,12 @@ async function refreshAllGuestHistory(eventId) {
     loadGuestConnectionHistory(), loadGuestToGuestHistory(eventId),
   ]);
   renderGuestConnectionHistory([
-    ...profiles,
-    ...guests.map((g) => ({ to_profile_name: g.guest_name + " (guest)" })),
+    ...profiles.map((p) => ({ ...p, memoryTargetId: p.to_profile_id, memoryKind: "member" })),
+    ...guests.map((g) => ({
+      to_profile_name: g.guest_name + " (guest)",
+      memoryTargetId: g.connection_id,
+      memoryKind: "guest",
+    })),
   ]);
   updateClaimButtonCount(profiles.length + guests.length);
   return { profiles, guests };
