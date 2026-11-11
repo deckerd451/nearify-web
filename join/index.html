@@ -264,6 +264,7 @@
                 <div><strong id="guestSavedName">Your new connection</strong><p id="guestSavedContext"></p></div>
               </div>
               <p id="guestSaveMessage" role="status"></p>
+              <p class="guest-connect-note">Saved to this guest session. A saved contact is not a confirmed conversation.</p>
               <button id="guestKeepConnectingBtn" class="btn primary" type="button">Keep connecting</button>
               <button id="guestSavedViewBtn" class="guest-text-action" type="button">View saved connections</button>
             </section>
@@ -326,7 +327,7 @@
             <!-- Connection capture -->
             <div id="guestHistorySection" class="guest-connect-section" hidden>
               <h2 id="guestHistoryHeading" class="guest-connect-title" tabindex="-1">Your saved connections</h2>
-              <p class="guest-connect-subtitle">People you saved in this guest session.</p>
+              <p class="guest-connect-subtitle">People you saved at this event. Saving a contact does not confirm a conversation.</p>
               <div class="guest-search-wrap">
                 <input
                   id="guestAttendeeSearch"
@@ -356,7 +357,7 @@
 
             <div class="guest-joined-actions" style="margin-top:18px;" hidden>
               <h3>Keep your connections across devices</h3>
-              <p class="guest-connect-subtitle">Sign in to claim your saved connections, including people you met as guests, and return to them from your Nearify account.</p>
+              <p class="guest-connect-subtitle">Optional: sign in to bring these saved connections into your Nearify account and access them across devices.</p>
               <button id="guestClaimSignInBtn" class="btn secondary" type="button">Claim My Connections</button>
             </div>
             <p id="guestClaimStatus" class="intent-status" aria-live="polite" style="margin-top:8px;"></p>
