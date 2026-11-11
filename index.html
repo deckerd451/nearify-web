@@ -60,6 +60,7 @@
           <p>Find each other at an event, choose to connect, and continue the conversation in Nearify. No contact exchange needed.</p>
           <div class="hero-actions cc-landing-hero-actions" aria-label="Homepage actions">
             <a href="/events/index.html" class="btn primary">Find an Event</a>
+            <a id="guestConnectionsShortcut" href="#" class="cc-landing-link" hidden>My saved connections</a>
             <button id="landingSignInBtn" type="button" class="cc-landing-link cc-google-btn">
               <svg class="cc-google-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
                 <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
@@ -146,6 +147,23 @@
 
   <!-- QR code library (must load before dashboard.js) -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" integrity="sha384-3zSEDfvllQohrq0PHL1fOXJuC/jSOO34H46t6UQfobFOmxE5BpjjaIJY5F2/bMnU" crossorigin="anonymous"></script>
+
+  <script>
+    // Only offer a shortcut for an existing guest session in this browser.
+    // The event remains the authorization scope; no roster or private note is exposed here.
+    (() => {
+      try {
+        const eventId = localStorage.getItem("nearify_ghost_event_id");
+        const guestId = localStorage.getItem("nearify_ghost_id");
+        const token = localStorage.getItem("nearify_ghost_token");
+        if (!guestId || !token || !eventId || !/^[0-9a-f]{8}-[0-9a-f-]{27,}$/i.test(eventId)) return;
+        const link = document.getElementById("guestConnectionsShortcut");
+        if (!link) return;
+        link.href = "/join/?event=" + encodeURIComponent(eventId) + "&view=history";
+        link.hidden = false;
+      } catch (_) { /* Storage unavailable: leave shortcut hidden. */ }
+    })();
+  </script>
 
   <script type="module" src="/assets/js/dashboard.js?v=20261107-flow1"></script>
   <script type="module" src="/assets/js/navAuth.js?v=20261106-permissions2"></script>

@@ -1813,7 +1813,14 @@ function showGuestJoinedState(ghost) {
       if (saved) clearGuestQrTarget();
     });
   } else {
-    refreshAllGuestHistory(ghost.eventId || localStorage.getItem("nearify_ghost_event_id") || scannedEvent);
+    const historyRequested = new URLSearchParams(window.location.search).get("view") === "history";
+    const historyEventId = ghost.eventId || localStorage.getItem("nearify_ghost_event_id") || scannedEvent;
+    if (historyRequested) {
+      // Reuse the existing authenticated guest history and memory UI; no second list.
+      setGuestView("history");
+      document.getElementById("guestHistoryHeading")?.focus();
+    }
+    refreshAllGuestHistory(historyEventId);
   }
 
   const connectEventId = ghost.eventId
