@@ -262,3 +262,14 @@ body.guest-flow {background:radial-gradient(ellipse 460px 290px at 50% 185px,#48
 .guest-flow .guest-memory-history-item textarea {display:block;box-sizing:border-box;width:calc(100% - 28px);margin:14px;min-height:88px;padding:12px;border:1px solid #81749c;border-radius:10px;background:#141327;color:white;font:inherit;font-size:16px;line-height:1.5;resize:vertical}
 .guest-flow .guest-memory-history-item button {display:block;box-sizing:border-box;width:calc(100% - 28px);margin:0 14px;min-height:44px;background:#3b2a5e;color:#f4eaff;border:1px solid #9977d4}
 .guest-flow .guest-memory-history-status {margin:9px 14px 14px;font-size:13px;color:#a6e8d7}
+
+/* Quiet, scannable memory rows: one clear affordance and distinct destructive action. */
+.guest-flow .guest-memory-history-item summary {position:relative;padding:17px 38px 17px 17px;flex-wrap:wrap}
+.guest-flow .guest-memory-history-item summary::after {content:"⌄";position:absolute;right:16px;top:50%;transform:translateY(-50%);font-size:22px;color:#c7b6ed}
+.guest-flow .guest-memory-history-item details[open] summary::after {content:"⌃"}
+.guest-flow .guest-memory-history-item summary span {font-size:12px;white-space:nowrap}
+.guest-flow .guest-memory-actions {display:flex;align-items:center;gap:12px;margin:0 14px;flex-wrap:wrap}
+.guest-flow .guest-memory-history-item .guest-memory-actions .btn {width:auto;flex:1;margin:0;min-width:150px}
+.guest-flow .guest-memory-history-item .guest-memory-delete {width:auto;margin:0;padding:10px 2px;min-height:44px;border:0;background:transparent;color:#e4bac9;font-size:13px;text-decoration:underline}
+.guest-flow .guest-memory-history-item .guest-memory-delete[hidden] {display:none}
+.guest-flow .guest-memory-history-item .btn:disabled {opacity:.45;cursor:default}
