@@ -171,3 +171,27 @@ body.guest-scanning {overflow:hidden}
 .guest-flow .guest-connect-intro {max-width:370px;margin:0 auto 24px;font-size:15px;line-height:1.6;color:#c7cce0}
 .guest-flow .guest-personal-qr {border:1px solid #f0ecff;box-shadow:0 18px 52px #0006}
 @media(max-width:350px){.guest-flow .guest-connect-heading {font-size:27px}.guest-flow .guest-connect-intro {font-size:14px}}
+
+/* Compact guest success: keep QR and scan action closer together on mobile. */
+.guest-flow .guest-connect-note {font-size:12px;line-height:1.45;color:#aeb5cc;margin:0 auto 4px;max-width:320px;text-align:center}
+@media(max-width:600px) {
+ .guest-flow .nav {padding-block:10px}
+ .guest-flow .guest-flow-toolbar {padding-block:0 8px}
+ .guest-flow .join-hero {padding-top:0;padding-bottom:20px}
+ .guest-flow .guest-joined-header {padding:5px 12px;font-size:13px}
+ .guest-flow .guest-connect-heading {font-size:clamp(24px,6vw,30px);line-height:1.13;margin:12px auto 8px;max-width:340px}
+ .guest-flow .guest-connect-intro {font-size:13px;line-height:1.45;margin:0 auto 14px;max-width:310px}
+ .guest-flow .guest-qr-actions {gap:9px}
+ .guest-flow .guest-personal-qr {width:238px;padding:12px 12px 9px;border-radius:14px;margin-bottom:0}
+ .guest-personal-qr #guestMyQrCode {min-height:0}
+ .guest-flow .guest-joined-name {font-size:17px;margin:7px 0 2px}
+ .guest-flow .guest-qr-caption {font-size:11px;line-height:1.3}
+ .guest-flow .guest-link-details {margin-top:5px}
+ .guest-flow #guestScanQrBtn {min-height:48px}
+ .guest-flow .guest-connect-note {margin-top:0}
+}
+@media(max-height:740px) and (max-width:600px) {
+ .guest-flow .guest-personal-qr {width:218px}
+ .guest-flow .guest-connect-heading {font-size:24px}
+ .guest-flow .guest-connect-intro {margin-bottom:10px}
+}
