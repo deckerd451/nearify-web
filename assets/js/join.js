@@ -1270,7 +1270,43 @@ async function refreshAllGuestHistory(eventId) {
   return { profiles, guests };
 }
 
-function showGuestSaveConfirmation(message, { name, kind = "member" } = {}) {
+// Device-local MVP: no microphone permissions, audio upload, or account sync.
+// The stable identifier is the saved target's profile ID or guest connection ID.
+function guestMemoryStorageKey(targetId, kind) {
+  const eventId = localStorage.getItem("nearify_ghost_event_id");
+  const guestId = localStorage.getItem("nearify_ghost_id");
+  if (!eventId || !guestId || !targetId) return null;
+  return `nearify_guest_memory_v1:${eventId}:${guestId}:${kind}:${targetId}`;
+}
+
+function wireGuestMemory(targetId, kind) {
+  const input = document.getElementById("guestMemoryNote");
+  const button = document.getElementById("guestMemorySaveBtn");
+  const status = document.getElementById("guestMemoryStatus");
+  const key = guestMemoryStorageKey(targetId, kind);
+  if (!input || !button || !status) return;
+  input.value = "";
+  status.textContent = "";
+  button.disabled = !key;
+  if (!key) {
+    status.textContent = "Private memory isn't available for this connection yet.";
+    return;
+  }
+  try { input.value = localStorage.getItem(key) || ""; }
+  catch (_) { status.textContent = "Private storage isn't available in this browser."; button.disabled = true; return; }
+  button.onclick = () => {
+    try {
+      const note = input.value.trim();
+      if (note) localStorage.setItem(key, note);
+      else localStorage.removeItem(key);
+      status.textContent = note ? "Private memory saved on this device." : "Private memory cleared.";
+    } catch (_) {
+      status.textContent = "Couldn't save on this device. You can still copy your note.";
+    }
+  };
+}
+
+function showGuestSaveConfirmation(message, { name, kind = "member", targetId = null } = {}) {
   closeGuestQrScanner();
   document.body.dataset.guestSaveKind = kind;
   setText(document.getElementById("guestSaveMessage"), message);
@@ -1440,7 +1476,7 @@ async function saveGuestQrCode(value, eventId) {
   try { await refreshAllGuestHistory(eventId); } catch (_) { /* A history refresh cannot undo a successful save. */ }
   if (status) status.textContent = "";
   const saved = Array.isArray(data) ? data[0] : data;
-  showGuestSaveConfirmation("Saved to your guest session. Sign in to keep this connection in your Nearify account.", { name: saved?.guest_name, kind: "guest" });
+  showGuestSaveConfirmation("Saved to your guest session. Sign in to keep this connection in your Nearify account.", { name: saved?.guest_name, kind: "guest", targetId: guestConnections.find(g => g.guest_name === saved?.guest_name)?.connection_id || null });
   return { ok: true, kind: "guest" };
 }
 
@@ -1547,7 +1583,7 @@ async function saveGuestQrProfile(value, eventId) {
   try { ({ profiles: connections } = await refreshAllGuestHistory(eventId)); } catch (_) { /* Save already succeeded. */ }
   if (status) status.textContent = "";
   const matched = connections.find((connection) => connection.to_profile_id === profileId);
-  showGuestSaveConfirmation("Saved to your guest session. Sign in to keep this member connection across devices.", { name: matched?.to_profile_name || result?.to_profile_name });
+  showGuestSaveConfirmation("Saved to your guest session. Sign in to keep this member connection across devices.", { name: matched?.to_profile_name || result?.to_profile_name, targetId: profileId });
   closeGuestQrScanner();
   return { ok: true, kind: "member" };
 }
