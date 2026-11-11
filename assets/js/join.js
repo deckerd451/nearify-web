@@ -1065,7 +1065,6 @@ function renderGuestConnectionHistory(connections) {
     const name = document.createElement("strong");
     name.textContent = row.to_profile_name;
     const hint = document.createElement("span");
-    hint.textContent = "View or add memory";
     summary.append(name, hint);
     details.appendChild(summary);
 
@@ -1073,38 +1072,69 @@ function renderGuestConnectionHistory(connections) {
     const input = document.createElement("textarea");
     input.rows = 3;
     input.maxLength = 500;
-    input.placeholder = "What should you remember? You can use iPhone keyboard dictation.";
+    input.placeholder = "What would you like to remember?";
     input.setAttribute("aria-label", "Private memory for " + row.to_profile_name);
-    const button = document.createElement("button");
-    button.type = "button";
-    button.className = "btn secondary";
-    button.textContent = "Save private memory";
+    const save = document.createElement("button");
+    save.type = "button";
+    save.className = "btn secondary";
+    save.textContent = "Save memory";
+    const remove = document.createElement("button");
+    remove.type = "button";
+    remove.className = "guest-memory-delete";
+    remove.textContent = "Delete memory";
+    const actions = document.createElement("div");
+    actions.className = "guest-memory-actions";
+    actions.append(save, remove);
     const status = document.createElement("p");
     status.className = "guest-memory-history-status";
     status.setAttribute("role", "status");
     status.setAttribute("aria-live", "polite");
-    if (!key) {
-      button.disabled = true;
-      status.textContent = "Memory isn't available for this connection.";
-    } else {
-      try { input.value = localStorage.getItem(key) || ""; }
-      catch (_) {
-        button.disabled = true;
-        status.textContent = "Private storage isn't available in this browser.";
-      }
+
+    let stored = "";
+    let available = Boolean(key);
+    try {
+      if (key) stored = localStorage.getItem(key) || "";
+    } catch (_) { available = false; }
+    input.value = stored;
+    const update = () => {
+      hint.textContent = stored ? "Memory saved" : "Add memory";
+      remove.hidden = !stored;
+      save.disabled = !available || !input.value.trim() || input.value.trim() === stored;
+    };
+    if (!available) {
+      input.disabled = true;
+      status.textContent = "Private memory storage isn't available on this device.";
     }
-    button.addEventListener("click", () => {
-      if (!key) return;
+    input.addEventListener("input", () => {
+      status.textContent = "";
+      update();
+    });
+    save.addEventListener("click", () => {
+      const note = input.value.trim();
+      if (!key || !note) return;
       try {
-        const note = input.value.trim();
-        if (note) localStorage.setItem(key, note);
-        else localStorage.removeItem(key);
-        status.textContent = note ? "Private memory saved on this device." : "Private memory cleared.";
+        localStorage.setItem(key, note);
+        stored = note;
+        status.textContent = "Saved on this device.";
+        update();
       } catch (_) {
-        status.textContent = "Couldn't save on this device. You can still copy your note.";
+        status.textContent = "Couldn't save. You can still copy your note.";
       }
     });
-    details.append(input, button, status);
+    remove.addEventListener("click", () => {
+      if (!key || !stored || !window.confirm("Delete this private memory from this device?")) return;
+      try {
+        localStorage.removeItem(key);
+        stored = "";
+        input.value = "";
+        status.textContent = "Memory deleted from this device.";
+        update();
+      } catch (_) {
+        status.textContent = "Couldn't delete this memory.";
+      }
+    });
+    update();
+    details.append(input, actions, status);
     item.appendChild(details);
     listEl.appendChild(item);
   }
