@@ -251,3 +251,14 @@ body.guest-flow {background:radial-gradient(ellipse 460px 290px at 50% 185px,#48
 .guest-flow #guestMemorySaveBtn:disabled {opacity:.55}
 .guest-flow #guestMemoryStatus {font-size:13px;color:#a6e8d7}
 .guest-flow .guest-memory-disclosure {font-size:11px;line-height:1.5;color:#b8b0cc;margin:9px 0 0}
+
+/* Existing saved connections now opens each person's device-local memory inline. */
+.guest-flow .ghost-connections-list {list-style:none;padding:0;margin:12px 0 18px}
+.guest-flow .guest-memory-history-item {margin:0 0 10px;border:1px solid #55496e;border-radius:12px;background:#211c35;overflow:hidden}
+.guest-flow .guest-memory-history-item summary {display:flex;align-items:center;justify-content:space-between;gap:10px;cursor:pointer;padding:15px;color:#f5efff}
+.guest-flow .guest-memory-history-item summary strong {font-size:16px;overflow-wrap:anywhere}
+.guest-flow .guest-memory-history-item summary span {font-size:12px;color:#c6b8e1;text-align:right}
+.guest-flow .guest-memory-history-item details[open] summary {border-bottom:1px solid #55496e}
+.guest-flow .guest-memory-history-item textarea {display:block;box-sizing:border-box;width:calc(100% - 28px);margin:14px;min-height:88px;padding:12px;border:1px solid #81749c;border-radius:10px;background:#141327;color:white;font:inherit;font-size:16px;line-height:1.5;resize:vertical}
+.guest-flow .guest-memory-history-item button {display:block;box-sizing:border-box;width:calc(100% - 28px);margin:0 14px;min-height:44px;background:#3b2a5e;color:#f4eaff;border:1px solid #9977d4}
+.guest-flow .guest-memory-history-status {margin:9px 14px 14px;font-size:13px;color:#a6e8d7}
