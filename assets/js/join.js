@@ -1315,6 +1315,7 @@ function showGuestSaveConfirmation(message, { name, kind = "member", targetId = 
   setText(document.getElementById("guestSavedAvatar"), name ? getAttendeeInitials(name) : "✓");
   setText(document.getElementById("guestSavedContext"), `Saved at ${document.getElementById("guestFlowEventName")?.textContent || "this event"}`);
   setGuestView("saved");
+  wireGuestMemory(targetId, kind);
   document.getElementById("guestSaveHeading")?.focus();
   const keep = document.getElementById("guestKeepConnectingBtn");
   if (keep) keep.onclick = () => {
