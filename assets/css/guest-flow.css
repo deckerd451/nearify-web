@@ -195,3 +195,45 @@ body.guest-scanning {overflow:hidden}
  .guest-flow .guest-connect-heading {font-size:24px}
  .guest-flow .guest-connect-intro {margin-bottom:10px}
 }
+
+/* Guest ticket experience: visual redesign without changing QR/session behavior. */
+body.guest-flow {background:radial-gradient(ellipse 460px 290px at 50% 185px,#48277b55,transparent 80%),radial-gradient(ellipse 320px 230px at 90% 420px,#135b6950,transparent 85%),#090d1c;color:#f7f5ff}
+.guest-flow .nav-container {background:transparent;border-bottom:1px solid #ffffff12}
+.guest-flow .nav {max-width:560px}
+.guest-flow .nav-scan-link {display:none}
+.guest-flow .guest-flow-toolbar {max-width:460px;gap:14px;padding-top:16px;padding-bottom:18px;border-bottom:1px solid #b8a0f325}
+.guest-flow .guest-event-context {display:flex;flex-direction:column;gap:3px;min-width:0;flex:1}
+.guest-flow .guest-event-eyebrow {font-size:9px;letter-spacing:.18em;font-weight:800;color:#a897dc}
+.guest-flow #guestFlowEventName {display:block;font-size:16px;line-height:1.25;color:#fff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.guest-flow .guest-browser-label {border:1px solid #6c5b9d;background:#30214b88;border-radius:100px;padding:7px 10px;font-size:11px;color:#e4d9ff}
+.guest-flow #guestConnectStage {position:relative;padding:22px 12px 12px;border:1px solid #a88dff3d;border-radius:24px;background:linear-gradient(158deg,#30204d80 0%,#171b35bb 39%,#101c2cb8 100%);box-shadow:0 25px 70px #0006, inset 0 1px #d1baff20;isolation:isolate}
+.guest-flow #guestConnectStage::before {content:'';position:absolute;top:-1px;left:22%;right:22%;height:2px;background:linear-gradient(90deg,transparent,#b89aff,transparent)}
+.guest-flow .guest-ticket-topline {display:flex;align-items:center;gap:12px;margin:0 8px 16px;color:#c3b4ef;font-size:10px;font-weight:800;letter-spacing:.19em}
+.guest-flow .guest-ticket-line {height:1px;flex:1;background:#a58bc74d}
+.guest-flow .guest-joined-header {background:#113c3c;border:1px solid #4ca99b;color:#a5ffde;border-radius:100px;padding:7px 15px;font-size:13px}
+.guest-flow .guest-connect-heading {max-width:300px;margin:14px auto 9px;font-size:clamp(26px,6.5vw,33px);line-height:1.09;letter-spacing:-.04em}
+.guest-flow .guest-connect-intro {max-width:295px;margin:0 auto 16px;font-size:13px;line-height:1.45;color:#d3cce5}
+.guest-flow .guest-qr-actions {gap:10px}
+.guest-flow .guest-personal-qr {width:min(256px,100%);padding:13px 14px 10px;margin-bottom:2px;border-radius:16px;background:#fff;border:1px solid #fff;box-shadow:0 10px 36px #0005}
+.guest-flow .guest-ticket-qr-label {display:block;color:#635a75;font-size:9px;letter-spacing:.15em;font-weight:800;margin:0 0 8px}
+.guest-flow .guest-joined-name {margin:7px 0 3px;font-size:18px}
+.guest-flow .guest-qr-caption {font-size:11px;line-height:1.35}
+.guest-flow .guest-link-details {margin-top:5px}
+.guest-flow #guestScanQrBtn {min-height:50px;background:linear-gradient(110deg,#8151ff,#a34dff);box-shadow:0 8px 28px #8249ff4d;font-weight:750}
+.guest-flow #guestViewConnectionsBtn {min-height:38px;padding:5px}
+.guest-flow .guest-connect-note {margin:0 auto 4px;max-width:300px;font-size:11px;color:#c6c1d5}
+@media(max-width:600px) {
+ .guest-flow .nav {padding-block:8px}
+ .guest-flow .guest-flow-toolbar {padding:7px 20px 12px}
+ .guest-flow .join-hero {padding:12px 12px 30px}
+ .guest-flow #guestConnectStage {padding:17px 12px 12px}
+ .guest-flow .guest-ticket-topline {margin-bottom:12px}
+ .guest-flow .guest-connect-heading {font-size:clamp(25px,6.6vw,30px)}
+ .guest-flow .guest-connect-intro {margin-bottom:13px}
+ .guest-flow .guest-personal-qr {width:min(244px,100%);padding:11px 13px 9px}
+}
+@media(max-height:740px) and (max-width:600px) {
+ .guest-flow .guest-personal-qr {width:min(222px,100%)}
+ .guest-flow #guestConnectStage {padding-top:12px}
+ .guest-flow .guest-connect-heading {font-size:25px}
+}
