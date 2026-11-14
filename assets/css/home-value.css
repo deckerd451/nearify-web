@@ -1,0 +1,60 @@
+/* Home leads with useful context; utility navigation follows the next step. */
+#ambientHome[hidden] { display: none; }
+#ambientHome { margin: 0 0 24px; }
+#ambientHome .home-value-card {
+  box-sizing: border-box;
+  margin: 0;
+  padding: clamp(22px, 4vw, 36px);
+  border: 1px solid rgba(165, 137, 255, .35);
+  border-radius: 24px;
+  background: linear-gradient(135deg, #241b3e, #14182c);
+  text-align: left;
+  min-width: 0;
+}
+#ambientHome .home-value-eyebrow,
+.cc-landing-hero .home-value-eyebrow {
+  margin: 0 0 12px;
+  color: #c4afff;
+  font-size: 12px;
+  line-height: 1.5;
+  font-weight: 700;
+  letter-spacing: .09em;
+  text-transform: uppercase;
+}
+#ambientHome h1 {
+  margin: 0 0 12px;
+  max-width: 24ch;
+  font-size: clamp(26px, 4vw, 38px);
+  line-height: 1.15;
+  letter-spacing: -.025em;
+  overflow-wrap: anywhere;
+  color: #faf8ff;
+}
+#ambientHome .home-value-detail {
+  margin: 0 0 12px;
+  max-width: 54ch;
+  color: #e2daef;
+  font-size: 18px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+}
+#ambientHome .home-value-support {
+  margin: 0 0 16px;
+  color: #bcb5cf;
+  font-size: 14px;
+  line-height: 1.55;
+}
+#ambientHome .home-value-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 16px; margin-top: 20px; }
+#ambientHome .btn { margin: 0; min-height: 48px; display: inline-flex; align-items: center; justify-content: center; }
+#ambientHome .home-value-secondary { color: #cdbbff; text-underline-offset: 4px; min-height: 44px; display: inline-flex; align-items: center; }
+#ambientHome button.home-value-secondary { background: transparent; border: 0; padding: 0; font: inherit; text-decoration: underline; cursor: pointer; }
+#dashboardView .cc-home-quicklinks { margin: 0 0 20px; }
+#ambientHome a:focus-visible, #ambientHome button:focus-visible { outline: 3px solid #d6c8ff; outline-offset: 4px; }
+.cc-landing-hero .home-value-eyebrow { margin-bottom: 14px; }
+.cc-landing-hero .home-first-step { margin: 20px 0 0; font-size: 14px; color: #c6bfd7; }
+@media (max-width: 600px) {
+  #ambientHome .home-value-card { padding: 22px 20px; border-radius: 20px; }
+  #ambientHome .home-value-detail { font-size: 17px; }
+  #ambientHome .home-value-actions > .btn { width: 100%; box-sizing: border-box; }
+  .cc-landing-hero .home-value-eyebrow { font-size: 11px; }
+}

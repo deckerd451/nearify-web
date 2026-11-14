@@ -20,6 +20,7 @@
 
   <link rel="stylesheet" href="assets/css/styles.css?v=20261107-landing2" />
   <link rel="stylesheet" href="/assets/css/follow-up.css?v=20261107-flow1" />
+  <link rel="stylesheet" href="/assets/css/home-value.css?v=20261114-value1" />
   <link rel="stylesheet" href="/assets/css/scan-entry.css?v=20261105-accountfix1" />
 </head>
 <body class="cc-page">
@@ -56,10 +57,12 @@
     <section id="landingView" class="cc-landing" aria-label="Nearify events for organizers and attendees" style="display:none;">
       <div class="cc-landing-inner">
         <div class="cc-landing-hero">
-          <h1>Meet people. Keep in touch.</h1>
-          <p>Find each other at an event, choose to connect, and continue the conversation in Nearify. No contact exchange needed.</p>
+          <p class="home-value-eyebrow">A useful detail for your next hello</p>
+          <h1>Remember who you met.</h1>
+          <p>Scan a Nearify QR, save the person, and keep a detail you can pick up next time.</p>
           <div class="hero-actions cc-landing-hero-actions" aria-label="Homepage actions">
-            <a href="/events/index.html" class="btn primary">Find an Event</a>
+            <a href="/scan/?web=1" class="btn primary">Scan someone’s QR</a>
+            <a href="/events/index.html" class="cc-landing-link">Find an event</a>
             <a id="guestConnectionsShortcut" href="#" class="cc-landing-link" hidden>My saved connections</a>
             <button id="landingSignInBtn" type="button" class="cc-landing-link cc-google-btn">
               <svg class="cc-google-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
@@ -73,7 +76,7 @@
           </div>
         </div>
 
-        <p class="cc-landing-scan">Already meeting someone? <a href="/scan/?web=1">Scan their QR</a>.</p>
+        <p class="cc-landing-scan">Already saved someone? <a href="/connections/">Pick up where you left off</a>.</p>
         <p class="cc-landing-feature-desc">No app needed. Sign in to access your saved connections across devices.</p>
 
       </div>
@@ -83,10 +86,10 @@
     <div id="dashboardView" style="display:none;">
 
       <div class="cc-dashboard">
+        <div id="ambientHome" hidden aria-label="Your next step"></div>
         <nav class="cc-home-quicklinks" aria-label="Your Nearify shortcuts">
           <a href="/scan/?web=1">Scan QR</a><a href="/connections/">People</a><a href="/messages/">Messages</a>
         </nav>
-        <div id="ambientHome" hidden aria-label="Your next step"></div>
         <details><summary>Events and saved people</summary>
         <!-- ─── EVENTS YOU'RE ATTENDING (top) ──────────────────────────── -->
         <section id="attendingSection" class="cc-dashboard-section cc-dashboard-primary" aria-labelledby="attendingHeading" hidden>
@@ -165,7 +168,7 @@
     })();
   </script>
 
-  <script type="module" src="/assets/js/dashboard.js?v=20261107-flow1"></script>
+  <script type="module" src="/assets/js/dashboard.js?v=20261114-value1"></script>
   <script type="module" src="/assets/js/navAuth.js?v=20261106-permissions2"></script>
 
 </body>
