@@ -1,7 +1,7 @@
 import {describe,it,expect} from 'vitest';
 import fs from 'node:fs';
 import {resolveWebQr} from '../assets/js/webQr.js';
-import {chooseAmbientHome} from '../assets/js/ambientHomePolicy.js';
+import {chooseAmbientHome,previewHomeContext} from '../assets/js/ambientHomePolicy.js';
 const routes=JSON.parse(fs.readFileSync(new URL('./fixtures/nearify-qr-contract.json',import.meta.url),'utf8'));
 describe('shared web/iOS QR route contract',()=>{
  for(const row of routes)it('classifies '+row.kind+' '+row.url.slice(-30),()=>{
@@ -21,7 +21,8 @@ describe('one useful Home action',()=>{
   expect(chooseAmbientHome({...ready,inbox:{requests:[{profile_id:id}]},extras:{review:{event_id:'event'}}}).kind).toBe('invitation');
   expect(chooseAmbientHome({...ready,inbox:{detail_requests:[{profile_id:id}]},extras:{review:{}}}).kind).toBe('details');
  });
- it('chooses a review instead of a generic clear state or another suggestion',()=>expect(chooseAmbientHome({...ready,contexts:[context],extras:{review:{event_id:'event'}}}).kind).toBe('review'));
+ it('leads with a specific saved reminder before a generic review prompt',()=>expect(chooseAmbientHome({...ready,contexts:[context],extras:{review:{event_id:'event'}}}).kind).toBe('context'));
+ it('keeps review reachable when no relevant private reminder exists',()=>expect(chooseAmbientHome({...ready,extras:{review:{event_id:'event'}}}).kind).toBe('review'));
  it('does not manufacture an all-clear on failed optional reads',()=>expect(chooseAmbientHome({...ready,ready:false,event:{id:'event'}}).kind).toBe('unavailable'));
  it('uses context before an event, and suppresses sent/snoozed/hidden/completed context',()=>{
   expect(chooseAmbientHome({...ready,contexts:[context],event:{id:'event'}}).kind).toBe('context');
@@ -30,4 +31,9 @@ describe('one useful Home action',()=>{
  });
  it('uses a known event when no follow-up is pending',()=>expect(chooseAmbientHome({...ready,event:{id:'event'}}).kind).toBe('event'));
  it('keeps a verified empty state quiet',()=>expect(chooseAmbientHome(ready)).toEqual({kind:'idle'}));
+});
+
+describe('a readable first-screen reminder',()=>{
+ it('preserves a short real detail',()=>expect(previewHomeContext('  Ask about the project.  ')).toBe('Ask about the project.'));
+ it('bounds long notes without fabricating a summary',()=>{const note='Remember the conversation about a community project. '.repeat(20);const preview=previewHomeContext(note);expect(preview.length).toBeLessThanOrEqual(181);expect(preview.endsWith('…')).toBe(true);expect(note.startsWith(preview.slice(0,-1))).toBe(true);});
 });
