@@ -61,6 +61,7 @@ try{
  assert.equal(await page.getByRole('button',{name:'Try again'}).count(),1);
  await page.evaluate(()=>{window.mode='event';window.home.setEvents([{event:{id:'event',name:'Upcoming workshop',starts_at:new Date(Date.now()+3600000).toISOString()}}],'owner-profile');document.dispatchEvent(new Event('visibilitychange'));window.home.setEvents([{event:{id:'event',name:'Upcoming workshop',starts_at:new Date(Date.now()+3600000).toISOString()}}],'owner-profile');});
  await page.getByRole('heading',{name:'Get ready for Upcoming workshop'}).waitFor();
+ assert.equal(await page.locator('#ambientHome .btn.primary').getAttribute('href'),'/events/event.html?id=event#prepare');
  assert.equal(await page.locator('#ambientHome .btn.primary').count(),1);
  await page.evaluate(()=>{window.mode='idle';window.home.setEvents([],'owner-profile');document.dispatchEvent(new Event('visibilitychange'));});
  await page.getByRole('heading',{name:'Make your next hello easier'}).waitFor();

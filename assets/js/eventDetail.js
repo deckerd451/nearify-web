@@ -1,3 +1,4 @@
+import {focusEventPreparation} from './eventPreparationEntry.js?v=20261114-prepare1';
 import {mountEventPreparation} from './eventPreparation.js?v=20261107-flow1';
 // Render the limited Markdown used in imported event descriptions without HTML injection.
 // Text stays textContent; only **bold** markers and line breaks become DOM nodes.
@@ -38,7 +39,7 @@ import { canManageEvent } from "./events.js";
 import { fetchIsAdmin } from "./adminAccess.js";
 import { loadOrganizerInsights } from "./organizerInsights.js";
 import { renderShareButton, buildEventShareUrl, buildEventShareText } from "./share.js?v=20261105-web1";
-import { VALID_INTENTS, INTENT_LABELS } from "./constants/intents.js";
+import { VALID_INTENTS, INTENT_LABELS } from "./constants/intents.js?v=20261114-prepare1";
 import { buildEventDecisionReasons } from "./attendanceReasons.js";
 import {
   CONNECTION_STATE,
@@ -1774,6 +1775,7 @@ async function init() {
 
     currentUser = await fetchCurrentUser();
     await populatePage(currentEvent);
+    requestAnimationFrame(()=>focusEventPreparation());
     await renderPersonalConnectSection(currentEvent.id);
     await maybeShowOrganizerSection(currentEvent);
 
@@ -1792,3 +1794,5 @@ async function init() {
 
 init();
 window.__EVENT_DETAIL_BOOTED__ = true;
+
+window.addEventListener('hashchange',()=>focusEventPreparation());
