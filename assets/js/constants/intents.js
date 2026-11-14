@@ -21,6 +21,9 @@ export const VALID_INTENTS = [
  * "demo" and "demo_something" intentionally share a label — they are aliases.
  */
 export const INTENT_LABELS = {
+  // Readable labels for existing iPhone values; not new writable web intents.
+  find_help:     "Find help",
+  explore:       "Explore ideas",
   meet_people:    "Meet people",
   find_cofounder: "Find a cofounder",
   hire:           "Hire",

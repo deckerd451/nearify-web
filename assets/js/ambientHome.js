@@ -62,9 +62,9 @@ export function mountAmbientHome(){
    }else actions(card,link('Review connection',profileHref(person.profile_id)));
   }else if(action.kind==='event'){
    card=makeCard('event','Your next event','Get ready for '+(event.name||'your event'));
-   detail(card,new Date(event.starts_at).toLocaleString());
+   detail(card,new Date(event.starts_at).toLocaleString(undefined,{weekday:'short',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}));
    detail(card,'Choose what would make this event useful before you arrive.',true);
-   actions(card,link('Prepare for event','/events/event.html?id='+encodeURIComponent(event.id)));
+   actions(card,link('Prepare for event','/events/event.html?id='+encodeURIComponent(event.id)+'#prepare'));
   }else if(action.kind==='idle'){
    card=makeCard('idle','Start a conversation','Make your next hello easier');
    detail(card,'Meeting someone? Scan their Nearify QR and save a detail to remember.');

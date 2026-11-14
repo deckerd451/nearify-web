@@ -1,0 +1,31 @@
+/* Make the Home preparation handoff a short, usable goal choice. */
+.event-page #eventPlanSection { scroll-margin-top: 20px; }
+.event-page #eventPlanSection.event-plan--preparing { padding-top: 16px; }
+.event-page #eventPlanHeading { outline-offset: 6px; }
+.event-page .event-plan .intent-section { max-width: none; }
+.event-page .event-plan .intent-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  max-width: none;
+  gap: 10px;
+  margin: 14px 0;
+}
+.event-page .event-plan .intent-chip { min-height: 78px; padding: 12px 14px; }
+.event-page .event-plan .intent-chip.active .intent-chip-label { color: #ddd0ff; }
+.event-page .event-plan .intent-chip.active .intent-chip-sub { color: #c7bcdf; }
+.event-page #eventSignedInNote {
+  text-align: left; background: none; border: 0; margin: 0;
+  padding: 0; color: #bcb5cf; font-size: 14px; line-height: 1.5;
+}
+.event-page #eventPeopleSearch {
+  box-sizing: border-box; width: 100%; max-width: 400px; min-height: 44px;
+  margin: 12px 0; padding: 10px 12px; border: 1px solid #665c83;
+  border-radius: 10px; color: #f6f3ff; background: #111527; font: inherit;
+}
+@media(max-width:700px) {
+  .event-page #eventPlanSection { scroll-margin-top: 12px; }
+  .event-page .event-plan .intent-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+  .event-page .event-plan .intent-chip { min-height: 76px; padding: 10px; }
+  .event-page .event-plan .intent-chip-label { font-size: 14px; }
+  .event-page .event-plan .intent-chip-sub { font-size: 12px; line-height: 1.4; }
+}

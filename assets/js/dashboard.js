@@ -1,4 +1,4 @@
-import {mountAmbientHome} from './ambientHome.js?v=20261114-value1';
+import {mountAmbientHome} from './ambientHome.js?v=20261114-prepare1';
 /**
  * dashboard.js — Event Control Center
  *
