@@ -56,7 +56,7 @@ export function mountEventPreparation(eventId){
    if(choice.source==='context')root.append(el('p','From your private context. Only you can see this reminder.'));
    root.append(el('p',choice.listed?'Opted-in listing for this event. Plans and attendance can change.':'You saved their QR for this event. This does not confirm attendance.'));
    if(choice.source==='context'&&choice.previousEventName)root.append(el('p','Your earlier QR save: '+choice.previousEventName));
-   const link=el('a','Review profile');link.className='btn primary';link.href='/profile.html?id='+encodeURIComponent(choice.person.profile_id)+'&from=connections';root.append(link);
+   const link=el('a','Review profile');link.className='btn primary';link.href='/profile.html?id='+encodeURIComponent(choice.person.profile_id)+'&from=connections&event='+encodeURIComponent(eventId);root.append(link);
   }catch{if(active&&version===epoch)unavailable();}
   finally{
    busy=false;

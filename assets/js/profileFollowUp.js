@@ -36,8 +36,9 @@ export function mountProfileFollowUp(profileId,userId) {
   function render(state){
     if(!active)return;
     if(!state||state.status==='self'){root.hidden=true;return;}
-    const preservedContext=root.querySelector('.private-context[data-contact-editing]');
-    root.hidden=false;root.replaceChildren(el('h2','Follow up'),el('p',FOLLOW_UP_COPY[state.status]||FOLLOW_UP_COPY.none));
+    const preservedContext=root.querySelector('.private-context[data-contact-editing],.private-context[open]');
+    const contactsOpen=!!root.querySelector('.profile-contact-options')?.open;
+    root.hidden=false;root.replaceChildren(el('h2','Follow up'),el('p',state.can_message?'Continue here, or keep a private reminder for next time.':FOLLOW_UP_COPY[state.status]||FOLLOW_UP_COPY.none));
     const actions=el('div',null,'followup-actions');
     if(state.can_message) actions.append(button(state.conversation_id?'Message':'Say hello',()=>action('web_open_conversation',{p_other:profileId}),true));
     if(state.status==='none') actions.append(button('Connect on Nearify',()=>action('web_contact_action',{p_other:profileId,p_action:'request'}),true));
@@ -50,6 +51,14 @@ export function mountProfileFollowUp(profileId,userId) {
     if(state.status==='pending') actions.append(el('span','Request pending','followup-pending'));
     if(state.conversation_id&&!state.can_message){const a=el('a','View conversation','btn secondary');a.href='/messages/?conversation='+encodeURIComponent(state.conversation_id);actions.append(a);}
     const inbox=el('a','Messages','followup-inbox-link');inbox.href='/messages/';actions.append(inbox);root.append(actions);
+    const privatePanel=preservedContext||appendPrivateContext(root,profileId,()=>active);
+    if(preservedContext)root.append(preservedContext);
+    if(privatePanel&&state.status!=='none'&&state.status!=='blocked'){
+      const reminder=button('Save a reminder',()=>{privatePanel.open=true;privatePanel.scrollIntoView({block:'nearest'});});
+      actions.append(reminder);
+    }
+    const contactOptions=el('details',null,'profile-contact-options');contactOptions.open=contactsOpen;
+    contactOptions.append(el('summary','Contact options and sharing'));
     if(state.contact){
       const links=safeContactLinks(state.contact);const contactActions=el('div',null,'followup-actions');
       for(const link of links){const a=el('a',link.label,'btn secondary');a.href=link.href;if(['website','linkedin'].includes(link.kind)){a.target='_blank';a.rel='noopener noreferrer';}contactActions.append(a);}
@@ -60,11 +69,11 @@ export function mountProfileFollowUp(profileId,userId) {
           else{render(latest);status.textContent='These contact details are no longer shared with you.';}
         }catch{status.textContent='Could not verify contact access. Please try again.';}finally{busy=false;}
       }));
-      else root.append(el('p','This person hasn’t shared an email, phone number, or profile link. You can still message them here.'));
-      root.append(contactActions);
+      else contactOptions.append(el('p','This person hasn’t shared an email, phone number, or profile link. You can still message them here.'));
+      contactOptions.append(contactActions);
     }
-    appendContactSharing(root,state,profileId,render);
-    if(preservedContext)root.append(preservedContext);else appendPrivateContext(root,profileId,()=>active);
+    appendContactSharing(contactOptions,state,profileId,render);
+    if(contactOptions.children.length>1)root.append(contactOptions);
     status.textContent='';root.append(status);
   }
   async function refresh(){

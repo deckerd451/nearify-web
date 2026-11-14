@@ -1,8 +1,9 @@
+import {mountProfileEventContext} from './profileEventContext.js?v=20261114-context1';
 import { supabase } from "./supabaseClient.js";
 import { APP_STORE_URL, patchAppStoreLinks } from "./config.js";
 import { trackPageView, trackAppCtaClick } from "./analytics.js";
 import { getCurrentUser } from "./appState.js";
-import { mountProfileFollowUp } from "./profileFollowUp.js?v=20261106-review1";
+import { mountProfileFollowUp } from "./profileFollowUp.js?v=20261114-context1";
 import { logger } from "./logger.js";
 import { summarizeRelationshipEvents, relationshipEventLabel } from "./relationshipEventHistory.js";
 import { INTENT_LABELS, buildRelationshipNarrative } from "./profileNarrative.js";
@@ -277,6 +278,7 @@ async function init() {
   // Load relationship context for authenticated viewers (non-blocking)
   const user = await getCurrentUser();
   mountProfileFollowUp(profileId,user?.id);
+  mountProfileEventContext(profileId,user?.id,{eventId,eventName});
   if (user) {
     const { data: ctx, error: ctxErr } = await supabase.rpc("get_relationship_context", {
       p_other_profile_id: profileId,
