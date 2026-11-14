@@ -21,6 +21,7 @@ export function mountEventPreparation(eventId){
    const {data}=await getSessionCached();if(!active||version!==epoch)return;
    const owner=data?.session?.user?.id;
    if(expectedOwner!==undefined&&owner!==expectedOwner)return;
+   if(expectedOwner===undefined)expectedOwner=owner||null;
    if(!owner){root.hidden=true;root.replaceChildren();return;}
    if(root.hidden){
     root.replaceChildren(el('h3','Checking for a useful introduction'),el('p','Looking for shared interests and your saved reminders. You can still browse profiles below.'));
@@ -31,7 +32,7 @@ export function mountEventPreparation(eventId){
     followUpRpc(supabase,'ambient_event_prep',{p_event:eventId}),
     followUpRpc(supabase,'get_event_connection_people',{p_event:eventId}),selfRead
    ]);
-   if(!active||version!==epoch)return;
+   if(!active||version!==epoch||owner!==expectedOwner)return;
    const contexts=reads[0].status==='fulfilled'&&reads[0].value?.eligible?reads[0].value.people||[]:[];
    const people=reads[1].status==='fulfilled'&&Array.isArray(reads[1].value)?reads[1].value:[];
    const self=reads[2].status==='fulfilled'&&!reads[2].value.error?reads[2].value.data:null;
