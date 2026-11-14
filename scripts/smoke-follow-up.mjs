@@ -1,5 +1,6 @@
 /** Local browser UI regression. Supabase responses are fixtures; no live writes. */
 import assert from 'node:assert/strict';
+import fs from 'node:fs/promises';
 import {spawn} from 'node:child_process';
 import {once} from 'node:events';
 import {chromium} from 'playwright';
@@ -8,10 +9,14 @@ const fixture=`
 const me='${me}',other='${other}',thread='${thread}';
 window.calls=[];window.authCallbacks=[];
 export const getSessionCached=async()=>({data:{session:localStorage.getItem('signedout')?null:{user:{id:'fixture-user'}}},error:null});
-export const supabase={auth:{getSession:getSessionCached,getUser:async()=>({data:{user:{id:'fixture-user'}},error:null}),onAuthStateChange:fn=>{window.authCallbacks.push(fn);getSessionCached().then(({data})=>fn('INITIAL_SESSION',data.session));return {data:{subscription:{unsubscribe(){}}}};}},from(table){const data=table==='community_signal_preferences'?{discoverable:true,receive_signals:true}:table==='community_signals'?[{sender_id:'fixture-user',recipient_id:'other-user',created_at:'2026-11-06'},{sender_id:'other-user',recipient_id:'fixture-user',created_at:'2026-11-06'}]:{id:me,name:'Alex'};const chain=new Proxy({},{get(_,key){if(key==='then')return Promise.resolve({data,error:null}).then.bind(Promise.resolve({data,error:null}));return ()=>chain;}});return chain;},async rpc(name,args){
+export const supabase={auth:{getSession:getSessionCached,getUser:async()=>({data:{user:{id:'fixture-user'}},error:null}),onAuthStateChange:fn=>{window.authCallbacks.push(fn);getSessionCached().then(({data})=>fn('INITIAL_SESSION',data.session));return {data:{subscription:{unsubscribe(){}}}};}},from(table){const data=table==='community_signal_preferences'?{discoverable:true,receive_signals:true}:table==='community_signals'?[{sender_id:'fixture-user',recipient_id:'other-user',created_at:'2026-11-06'},{sender_id:'other-user',recipient_id:'fixture-user',created_at:'2026-11-06'}]:table==='events'?{name:'Show & Tell'}:{id:me,name:'Alex',skills:['AI']};const chain=new Proxy({},{get(_,key){if(key==='then')return Promise.resolve({data,error:null}).then.bind(Promise.resolve({data,error:null}));return ()=>chain;}});return chain;},async rpc(name,args){
  window.calls.push({name,args});
  const status=localStorage.getItem('followup_status')||'none';
  const state=()=>({permission_version:2,shared_by_you:JSON.parse(localStorage.getItem('shared_by_me')||'{}'),detail_request_pending:!!localStorage.getItem('details_pending'),detail_request_incoming:false,status:localStorage.getItem('followup_status')||'none',can_message:localStorage.getItem('followup_status')==='accepted',conversation_id:localStorage.getItem('thread_open')?thread:null,contact:localStorage.getItem('followup_status')==='accepted'?JSON.parse(localStorage.getItem('received_details')||'null'):null});
+ if(name==='get_event_connection_people')return {data:window.hideEventContext?[]:[{profile_id:other,name:'Taylor Chen',skills:['AI']}],error:null};
+ if(name==='ambient_event_prep')return {data:{eligible:true,people:[{profile_id:'55555555-5555-4555-8555-555555555555',note:'Another person private context',saved_for_event:true}]},error:null};
+ if(name==='ambient_context')return {data:{note:localStorage.getItem('private_note')||'',intention:''},error:null};
+ if(name==='ambient_context_save_v2'){localStorage.setItem('private_note',args.p_note);return {data:{note:args.p_note,intention:args.p_intention},error:null};}
  if(name==='get_public_profile_brief')return {data:[{id:other,name:'Taylor Chen'}],error:null};
  if(name==='get_relationship_context')return {data:{relationship_status:'proposed_by_me',encounter_count:1},error:null};
  if(name==='get_relationship_event_history')return {data:[{event_id:thread,event_name:'Show & Tell',event_at:'2099-11-17',qr_saved:true,qr_saved_by_you:true,qr_saved_at:'2026-11-06T17:00:00Z'}],error:null};
@@ -45,12 +50,12 @@ export const supabase={auth:{getSession:getSessionCached,getUser:async()=>({data
 }};
 `;
 const server=spawn('python3',['-u','-m','http.server','0','--bind','127.0.0.1'],{cwd:new URL('../',import.meta.url),stdio:['ignore','pipe','pipe']});
-let browser;
+let browser,context;
 try{
  const [output]=await once(server.stdout,'data');const port=String(output).match(/port (\d+)/)?.[1];assert.ok(port);
  const base='https://nearify.org';
  browser=await chromium.launch({executablePath:process.env.CHROMIUM_PATH||'/usr/bin/chromium',headless:true,args:['--no-sandbox']});
- const context=await browser.newContext({viewport:{width:390,height:844}});
+ context=await browser.newContext({viewport:{width:390,height:844}});
  await context.route('**/*',async route=>{
   const url=new URL(route.request().url());
   if(url.origin!==base)return route.abort();
@@ -73,6 +78,28 @@ try{
  await page.goto(profile);await page.getByRole('button',{name:'Say hello',exact:true}).waitFor();
  assert.equal(await page.locator('#profileFollowUp a[href^="mailto:"]').count(),0,'approval alone reveals no details');
  assert.equal(await page.getByRole('button',{name:'Download contact',exact:true}).count(),0);
+ await page.goto(profile+'&event=44444444-4444-4444-8444-444444444444');
+ await page.getByText('You both list AI as a skill.',{exact:true}).waitFor();
+ await page.getByRole('heading',{name:'From Show & Tell',exact:true}).waitFor();
+ assert.equal((await page.locator('#profileEventContext').textContent()).includes('Another person private context'),false,'profile context stays bound to the requested person');
+ assert.equal(await page.locator('.profile-contact-options').getAttribute('open'),null);
+ await widths('event profile context');
+ if(process.env.NEARIFY_REVIEW_ARTIFACT_DIR){
+  await fs.mkdir(process.env.NEARIFY_REVIEW_ARTIFACT_DIR,{recursive:true});
+  await page.setViewportSize({width:390,height:844});await page.screenshot({path:process.env.NEARIFY_REVIEW_ARTIFACT_DIR+'/profile-event-mobile.png',fullPage:true});
+ }
+
+ await page.evaluate(()=>{window.hideEventContext=true;document.dispatchEvent(new Event('visibilitychange'));});
+ await page.getByText('The earlier suggestion’s reason is no longer available to verify. You can still review this profile.',{exact:true}).waitFor();
+ await page.evaluate(()=>{window.hideEventContext=false;document.dispatchEvent(new Event('visibilitychange'));});
+ await page.getByText('You both list AI as a skill.',{exact:true}).waitFor();
+ await page.getByRole('button',{name:'Save a reminder',exact:true}).click();
+ await page.getByRole('textbox',{name:'Private conversation note',exact:true}).fill('Ask about the next workshop');
+ await page.getByRole('button',{name:'Save private note',exact:true}).click();
+ await page.getByText('Saved privately.',{exact:true}).waitFor();
+ assert.equal(await page.evaluate(()=>window.calls.some(call=>call.name==='web_send_message')),false,'private reminder does not send a message');
+ await page.locator('#profileFollowUp .private-context > summary').click();
+ await page.locator('.profile-contact-options > summary').click();
  await page.getByRole('button',{name:'Share my contact details',exact:true}).click();
  await page.getByRole('checkbox',{name:/Email: alex/}).check();
  await page.getByRole('button',{name:'Share selected details',exact:true}).click();
@@ -82,7 +109,7 @@ try{
  assert.deepEqual(share.args.p_fields,['email']);
  await page.getByRole('button',{name:'Request contact details',exact:true}).click();await page.getByText('Details request pending',{exact:true}).waitFor();
  await page.evaluate(()=>localStorage.setItem('received_details',JSON.stringify({name:'Taylor Chen',email:'taylor@example.com',website:'javascript:alert(1)'})));
- await page.reload();await page.getByRole('button',{name:'Download contact',exact:true}).waitFor();
+ await page.reload();await page.locator('.profile-contact-options > summary').click();await page.getByRole('button',{name:'Download contact',exact:true}).waitFor();
  await page.getByRole('button',{name:'Stop sharing my details',exact:true}).click();
  await page.waitForFunction(()=>!document.querySelector('#profileFollowUp').textContent.includes('You shared: Email'));
  assert.equal(await page.locator('#profileFollowUp a[href^="mailto:"]').count(),1,'revoking yours does not revoke theirs');
@@ -115,11 +142,16 @@ try{
  await page.goto(profile);await page.getByRole('button',{name:'Sign in with Google',exact:true}).waitFor();
  assert.equal(await page.evaluate(()=>window.calls.some(call=>call.name==='web_followup_state')),false,'signed-out profile does not request contact details');
  await page.evaluate(()=>{localStorage.removeItem('signedout');localStorage.setItem('followup_status','accepted');localStorage.setItem('received_details',JSON.stringify({name:'Taylor Chen',email:'taylor@example.com'}));});
- await page.goto(profile);await page.getByRole('button',{name:'Download contact',exact:true}).waitFor();
+ await page.goto(profile);await page.locator('.profile-contact-options > summary').click();await page.getByRole('button',{name:'Download contact',exact:true}).waitFor();
  let exportedAfterRevoke=false;page.on('download',()=>{exportedAfterRevoke=true;});
  await page.evaluate(()=>localStorage.removeItem('received_details'));
  await page.getByRole('button',{name:'Download contact',exact:true}).click();await page.getByText('These contact details are no longer shared with you.',{exact:true}).waitFor();
  assert.equal(exportedAfterRevoke,false,'export rechecks the current grant');
+ await page.goto(profile+'&event=44444444-4444-4444-8444-444444444444');
+ await page.getByText('You both list AI as a skill.',{exact:true}).waitFor();
+ await page.evaluate(()=>window.authCallbacks.forEach(fn=>fn('SIGNED_OUT',null)));
+ assert.equal(await page.locator('#profileEventContext').textContent(),'');
+ await page.waitForTimeout(100);assert.equal(await page.locator('#profileEventContext').textContent(),'');
  await page.evaluate(()=>localStorage.setItem('followup_status','none'));
  await page.goto(base+'/community-signal/live.html');
  await page.getByRole('button',{name:'Invite to connect',exact:true}).waitFor();
@@ -128,5 +160,5 @@ try{
  await page.getByRole('button',{name:'Invite to connect',exact:true}).click();await page.getByRole('button',{name:'Invitation pending',exact:true}).waitFor();
  assert.equal(await page.evaluate(()=>window.calls.some(call=>call.name==='community_signal_connection'&&call.args.p_invite)),true);
  assert.deepEqual(errors,[]);
- console.log('Follow-up browser checks passed: request/approval, hidden contact details, download, shared thread, failed-send draft/idempotent retry, safe text rendering, refresh persistence, block, sign-out cleanup, and mobile widths. Mock backend only.');
-}finally{await browser?.close();server.kill();}
+ console.log('Follow-up browser checks passed: verified event/profile context, target-person isolation, private reminder without sending, collapsed contact controls, request/approval, hidden contact details, download, shared thread, failed-send draft/idempotent retry, safe text rendering, refresh persistence, block, sign-out cleanup, and mobile widths. Mock backend only.');
+}finally{await context?.unrouteAll({behavior:'ignoreErrors'});await browser?.close();server.kill();}

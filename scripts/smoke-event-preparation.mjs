@@ -29,6 +29,7 @@ try{
  assert.ok(await page.getByText('You saved their QR for this event. This does not confirm attendance.',{exact:true}).isVisible());
  assert.ok(await page.getByText('Your earlier QR save: Earlier workshop',{exact:true}).isVisible());
  assert.ok(await page.getByText('Ask about the prototype',{exact:true}).isVisible());
+ assert.ok((await page.getByRole('link',{name:'Review profile',exact:true}).getAttribute('href')).endsWith('&event=44444444-4444-4444-8444-444444444444'));
  assert.equal(await page.evaluate(()=>window.injected),undefined);
  await page.evaluate(()=>{window.slowOnce=true;document.dispatchEvent(new Event('visibilitychange'));});
  await page.waitForFunction(()=>typeof window.releasePreparation==='function');

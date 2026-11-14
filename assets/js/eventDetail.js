@@ -1,6 +1,6 @@
 import {showEventGoalSummary,toggleEventGoalPicker} from './eventGoalSummary.js?v=20261114-compact1';
 import {focusEventPreparation} from './eventPreparationEntry.js?v=20261114-prepare1';
-import {mountEventPreparation} from './eventPreparation.js?v=20261114-refresh1';
+import {mountEventPreparation} from './eventPreparation.js?v=20261114-profile1';
 // Render the limited Markdown used in imported event descriptions without HTML injection.
 // Text stays textContent; only **bold** markers and line breaks become DOM nodes.
 function renderEventDescription(target, value) {

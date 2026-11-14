@@ -1,0 +1,13 @@
+.profile-event-context[hidden] {display:none!important}
+.profile-event-context {text-align:left;border-left:3px solid #a789ff;padding:4px 0 4px 16px;margin:20px 0 24px;}
+.profile-event-context h2 {font-size:15px;line-height:1.4;color:#c8b4ff;margin:0 0 10px;overflow-wrap:anywhere;}
+.profile-event-context p {font-size:18px;line-height:1.5;color:#f2edfc;margin:8px 0;overflow-wrap:anywhere;white-space:pre-wrap;}
+.profile-event-context .profile-event-source {font-size:13px;color:#b9b3cb;}
+.profile-event-context a {color:#cbb7ff;text-underline-offset:4px;display:inline-flex;align-items:center;min-height:44px;}
+.profile-contact-options {margin-top:20px;border-top:1px solid #393f59;padding-top:10px;}
+.profile-contact-options summary {min-height:44px;display:list-item;padding:12px 0;cursor:pointer;color:#cbb7ff;}
+.profile-page .profile-card {max-width:640px;}
+.profile-page .followup-panel {text-align:left;}
+.profile-page .followup-panel > h2 {margin-bottom:8px;}
+.profile-page .followup-panel > p {font-size:15px;line-height:1.5;}
+.profile-page .private-context {text-align:left;}
