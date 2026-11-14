@@ -7,6 +7,9 @@ const root=process.cwd();
 const source=(await fs.readFile('events/event.html','utf8')).replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi,'');
 const html=source.replace('</head>','<base href="/events/"></head>').replace('</body>',`<script type="module">
 import {focusEventPreparation} from '/assets/js/eventPreparationEntry.js';
+import {showEventGoalSummary,toggleEventGoalPicker} from '/assets/js/eventGoalSummary.js';
+window.showSummary=showEventGoalSummary;
+document.getElementById('eventIntentChangeBtn').addEventListener('click',()=>toggleEventGoalPicker());
 window.focusPreparation=focusEventPreparation;
 setTimeout(()=>{
  document.getElementById('eventSections').style.display='';
@@ -33,6 +36,7 @@ try{
  const url='http://127.0.0.1:'+server.address().port+'/events/event.html?id=test';
  for(const width of [320,390,768,1440]){
   await page.setViewportSize({width,height:844});
+  await page.goto('about:blank');
   await page.goto(url+'#prepare');await page.waitForFunction(()=>window.prepared);
   assert.equal(await page.evaluate(()=>document.activeElement.id),'eventPlanHeading');
   const heading=await page.locator('#eventPlanHeading').boundingBox();assert(heading.y>=0&&heading.y<200);
@@ -41,6 +45,15 @@ try{
    const box=await button.boundingBox();assert(box.y>=0&&box.y+box.height<844,`goal below fold at ${width}`);
   }
   assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),`overflow at ${width}`);
+  await page.evaluate(()=>window.showSummary('explore_ideas'));
+  assert.equal(await page.locator('#eventIntentPicker').isVisible(),false);
+  assert.equal(await page.locator('#eventIntentDisplayValue').textContent(),'Explore ideas');
+  assert.equal(await page.locator('.intent-display-badge').textContent(),'Selected in this browser');
+  await page.locator('#eventIntentChangeBtn').click();
+  assert.equal(await page.locator('#eventIntentPicker').isVisible(),true);
+  assert.equal(await page.locator('#eventIntentChangeBtn').getAttribute('aria-expanded'),'true');
+  await page.evaluate(()=>window.showSummary('hire',{saved:true}));
+  assert.equal(await page.locator('.intent-display-badge').textContent(),'Saved for this event');
  }
  await page.goto(url);await page.waitForFunction(()=>window.prepared);
  assert.equal(await page.evaluate(()=>scrollY),0,'ordinary event entry must keep overview');

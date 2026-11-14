@@ -1,3 +1,4 @@
+import {showEventGoalSummary,toggleEventGoalPicker} from './eventGoalSummary.js?v=20261114-compact1';
 import {focusEventPreparation} from './eventPreparationEntry.js?v=20261114-prepare1';
 import {mountEventPreparation} from './eventPreparation.js?v=20261114-suggestion1';
 // Render the limited Markdown used in imported event descriptions without HTML injection.
@@ -134,18 +135,7 @@ function updateIntentUI() {
     chip.classList.toggle("active", isActive);
     chip.setAttribute("aria-pressed", String(isActive));
   });
-}
-
-function renderIntentReadOnly(intent) {
-  const display  = document.getElementById("eventIntentDisplay");
-  const valueEl  = document.getElementById("eventIntentDisplayValue");
-  const picker   = document.getElementById("eventIntentPicker");
-  const heading  = document.getElementById("eventIntentHeading");
-
-  if (valueEl) valueEl.textContent = INTENT_LABELS[intent] || intent;
-  if (display) display.style.display = "";
-  if (picker)  picker.style.display  = "none";
-  if (heading) heading.textContent   = "Your event goal";
+  if(selectedIntent)showEventGoalSummary(selectedIntent);
 }
 
 function setIntentStatus(message = "") {
@@ -177,6 +167,7 @@ async function persistIntent(intent) {
     try { localStorage.setItem(INTENT_STORAGE_KEY, intent); } catch (_) {}
     setIntentStatus("Saved locally — sync will complete when you open the app.");
   } else {
+    if(selectedIntent===intent)showEventGoalSummary(intent,{saved:true});
     setIntentStatus("Saved — Nearify will use this in the app.");
   }
   setTimeout(() => setIntentStatus(""), 3000);
@@ -548,14 +539,12 @@ function wirePlanControls() {
 
   // Goal "Change" — reveal the existing picker; behavior of the picker itself
   // (persistence/selected-state) is unchanged. The picker is hidden by
-  // renderIntentReadOnly when a goal is already set; Change toggles it back on.
+  // the goal summary when a goal is already selected; Change toggles it back on.
   const changeBtn = document.getElementById("eventIntentChangeBtn");
   const picker = document.getElementById("eventIntentPicker");
   if (changeBtn && picker) {
     changeBtn.addEventListener("click", () => {
-      const showing = picker.style.display !== "none";
-      picker.style.display = showing ? "none" : "";
-      changeBtn.setAttribute("aria-expanded", String(!showing));
+      toggleEventGoalPicker();
     });
   }
 
@@ -635,7 +624,8 @@ async function hydrateIntent() {
   if (attendeeIntent && INTENT_OPTIONS.includes(attendeeIntent)) {
     // Intent already set (from iOS or a previous web session) — show read-only
     selectedIntent = attendeeIntent;
-    renderIntentReadOnly(attendeeIntent);
+    updateIntentUI();
+    showEventGoalSummary(attendeeIntent,{saved:true});
     return;
   }
 

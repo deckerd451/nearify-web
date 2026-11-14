@@ -35,3 +35,11 @@
 .event-page #eventSuggestion .event-suggestion-label { font-size: 12px; text-transform: uppercase; letter-spacing: .07em; color: #c6b1ff; }
 .event-page #eventSuggestion .btn { margin-top: 12px; min-height: 44px; }
 .event-page #attendeeDiscoverySection summary { min-height: 44px; padding: 12px 0; cursor: pointer; color: #d4c4ff; }
+.event-page #eventIntentDisplay .intent-display-row { display: flex; align-items: center; justify-content: flex-start; flex-wrap: wrap; gap: 10px; }
+.event-page #eventIntentDisplay .intent-display-hint { display: none; }
+.event-page #eventIntentDisplay .intent-display-badge { font-size: 12px; }
+.event-page #eventPlanGoalItem:has(#eventIntentDisplay:not([style*="none"])) { padding-bottom: 4px; }
+.event-page #eventIntentDisplay .intent-display-row { margin: 10px 0 0; max-width: none; }
+.event-page #eventIntentDisplay .intent-display-label { display: none; }
+.event-page #eventIntentDisplayValue { color: #e0d4ff; }
+.event-page #eventIntentStatus:empty { display: none; }
