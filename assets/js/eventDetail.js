@@ -1,5 +1,5 @@
 import {focusEventPreparation} from './eventPreparationEntry.js?v=20261114-prepare1';
-import {mountEventPreparation} from './eventPreparation.js?v=20261107-flow1';
+import {mountEventPreparation} from './eventPreparation.js?v=20261114-suggestion1';
 // Render the limited Markdown used in imported event descriptions without HTML injection.
 // Text stays textContent; only **bold** markers and line breaks become DOM nodes.
 function renderEventDescription(target, value) {
@@ -40,12 +40,10 @@ import { fetchIsAdmin } from "./adminAccess.js";
 import { loadOrganizerInsights } from "./organizerInsights.js";
 import { renderShareButton, buildEventShareUrl, buildEventShareText } from "./share.js?v=20261105-web1";
 import { VALID_INTENTS, INTENT_LABELS } from "./constants/intents.js?v=20261114-prepare1";
-import { buildEventDecisionReasons } from "./attendanceReasons.js";
 import {
   CONNECTION_STATE,
   performSave,
   buildConnectionStateMap,
-  confirmedOnly,
 } from "./connectionState.js";
 
 const INTENT_STORAGE_KEY = "intent_primary";
@@ -788,7 +786,8 @@ async function renderDiscoveryConsentControl(eventId, profileId, isAttendee, isP
     control = document.createElement("div");
     control.id = "eventDiscoveryConsentControl";
     control.className = "attendee-discovery-consent";
-    section.prepend(control);
+    const summary=section.querySelector('summary');
+    if(summary)summary.after(control);else section.prepend(control);
   }
   control.replaceChildren();
   if (!currentUser?.id || !profileId) {
@@ -871,19 +870,13 @@ async function renderDiscoveryConsentControl(eventId, profileId, isAttendee, isP
   });
 }
 
-function formatEncounterCount(count) {
-  const n = Number(count) || 0;
-  return n === 1 ? "Met 1 time" : `Met ${n} times`;
-}
-
 async function fetchMyConnections() {
   if (!currentUser) return [];
 
   // Fetch every relationship state (proposed_by_me, proposed_by_them,
-  // confirmed, ghost_claimed) so attendee cards can render a durable
-  // Save / Saved / Save back / Connected state. The confirmed-only subset
-  // for "People You Know Here" and recommendations is derived separately
-  // via confirmedOnly() — proposed/ghost states must NOT affect those.
+  // confirmed, ghost_claimed) so the optional full list can render a durable
+  // Save / Saved / Save back / Connected state. Suggestions use the separate
+  // server-authorized preparation and opted-in listing reads.
   const { data, error } = await supabase.rpc("get_my_connections", { p_status: "all" });
   if (error) {
     logger.warn("[PeopleYouKnow] get_my_connections failed", error);
@@ -891,27 +884,6 @@ async function fetchMyConnections() {
   }
 
   return Array.isArray(data) ? data : [];
-}
-
-function findKnownAttendees(attendees, connections, myProfileId) {
-  if (!currentUser || !attendees?.length || !connections?.length) return [];
-
-  const attendeeIds = new Set(
-    attendees
-      .map((a) => a.profileId)
-      .filter((id) => id && id !== myProfileId)
-  );
-
-  return connections
-    .filter((connection) => connection?.profile_id && attendeeIds.has(connection.profile_id))
-    .sort((a, b) => {
-      const encounterDelta = (Number(b.encounter_count) || 0) - (Number(a.encounter_count) || 0);
-      if (encounterDelta !== 0) return encounterDelta;
-
-      const bLast = b.last_encounter_at ? new Date(b.last_encounter_at).getTime() : 0;
-      const aLast = a.last_encounter_at ? new Date(a.last_encounter_at).getTime() : 0;
-      return bLast - aLast;
-    });
 }
 
 function renderWhyAttend(reasons = []) {
@@ -955,60 +927,6 @@ function renderWhyAttend(reasons = []) {
     item.appendChild(icon);
     item.appendChild(text);
     list.appendChild(item);
-  });
-
-  section.style.display = "";
-}
-
-function renderPeopleYouKnowHere(knownAttendees) {
-  const section = document.getElementById("peopleYouKnowSection");
-  const list = document.getElementById("peopleYouKnowList");
-  if (!section || !list) return;
-
-  if (!knownAttendees.length) {
-    section.style.display = "none";
-    list.innerHTML = "";
-    return;
-  }
-
-  list.innerHTML = "";
-  knownAttendees.slice(0, 6).forEach((person) => {
-    const card = document.createElement("div");
-    card.className = "attendee-card people-you-know-card";
-
-    const avatarEl = document.createElement("div");
-    avatarEl.className = "attendee-avatar";
-
-    if (person.avatar_url) {
-      const img = document.createElement("img");
-      img.className = "attendee-avatar-img";
-      img.src = person.avatar_url;
-      img.alt = getInitials(person.name);
-      img.loading = "lazy";
-      avatarEl.appendChild(img);
-    } else {
-      const placeholder = document.createElement("div");
-      placeholder.className = "attendee-avatar-placeholder";
-      placeholder.textContent = getInitials(person.name);
-      avatarEl.appendChild(placeholder);
-    }
-
-    const infoEl = document.createElement("div");
-    infoEl.className = "attendee-info";
-
-    const nameEl = document.createElement("div");
-    nameEl.className = "attendee-name";
-    nameEl.textContent = person.name || "Connection";
-
-    const countEl = document.createElement("div");
-    countEl.className = "attendee-goal";
-    countEl.textContent = formatEncounterCount(person.encounter_count);
-
-    infoEl.appendChild(nameEl);
-    infoEl.appendChild(countEl);
-    card.appendChild(avatarEl);
-    card.appendChild(infoEl);
-    list.appendChild(card);
   });
 
   section.style.display = "";
@@ -1216,19 +1134,7 @@ async function loadAttendeeDiscovery(eventId, isPast = false) {
   renderMomentumIndicator(attendees, isPast);
 
   const connections = (!isPast && isFullAccess) ? await fetchMyConnections() : [];
-  if (!isPast && isFullAccess && attendees.length) {
-    const confirmedConnections = confirmedOnly(connections);
-    const knownAttendees = findKnownAttendees(attendees, confirmedConnections, myProfileId);
-    renderWhyAttend(buildEventDecisionReasons({
-      connections: knownAttendees,
-      eventAttendees: attendees,
-      currentProfileId: myProfileId,
-    }));
-    renderPeopleYouKnowHere(knownAttendees);
-  } else {
-    renderWhyAttend([]);
-    renderPeopleYouKnowHere([]);
-  }
+  renderWhyAttend([]); // An opted-in listing does not establish future attendance.
 
   document.getElementById("eventPeopleSearch")?.remove();
   const grid = document.getElementById("attendeeDiscoveryGrid");
@@ -1236,6 +1142,8 @@ async function loadAttendeeDiscovery(eventId, isPast = false) {
   if (grid) grid.replaceChildren();
   if (gate) gate.style.display = "none";
   const peopleCopy = document.getElementById("eventPlanPeopleCopy");
+  const discoverySection=document.getElementById("attendeeDiscoverySection");
+  if(discoverySection)discoverySection.style.display="";
   if (!isFullAccess) {
     if (peopleCopy) peopleCopy.textContent = currentUser
       ? "Attend this event to discover people who choose to be visible."
@@ -1582,8 +1490,8 @@ function renderMomentumIndicator(attendees, isPast) {
 }
 
 async function populatePage(event) {
-  mountEventPreparation(event.id);
   const isPast = !!(event.starts_at && new Date(event.starts_at) < new Date());
+  if(!isPast)mountEventPreparation(event.id);
 
   // SEO
   injectJsonLd(event, isPast);
