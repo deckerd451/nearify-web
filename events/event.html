@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="../assets/css/guest-flow.css?v=20261105-accountfix1" />
   <link rel="stylesheet" href="/assets/css/scan-entry.css?v=20261105-accountfix1" />
 <link rel="stylesheet" href="../assets/css/follow-up.css?v=20261106-ambient1">
-  <link rel="stylesheet" href="/assets/css/event-preparation-entry.css?v=20261114-prepare1" />
+  <link rel="stylesheet" href="/assets/css/event-preparation-entry.css?v=20261114-suggestion1" />
 </head>
 <body>
   <a href="#main-content" class="skip-link">Skip to main content</a>
@@ -226,25 +226,18 @@
 
         <!-- People to meet -->
         <div class="event-plan-item" id="eventPlanPeopleItem">
-          <h3 class="event-plan-item-title" id="eventPlanPeopleTitle">People to meet</h3>
-          <p class="event-plan-item-copy" id="eventPlanPeopleCopy">People attending who may be relevant to your goal.</p>
-
-          <!-- People you know here — populated by JS for authenticated visitors -->
-          <div id="peopleYouKnowSection" class="people-you-know-section" style="display:none;">
-            <div id="peopleYouKnowList" class="people-you-know-list"></div>
-            <div class="people-you-know-actions">
-              <a href="../connections/" class="btn secondary">View Connections</a>
-            </div>
-          </div>
+          <h3 class="event-plan-item-title" id="eventPlanPeopleTitle">Explore all opted-in people</h3>
+          <p class="event-plan-item-copy" id="eventPlanPeopleCopy">Profiles shared for this event. Plans and attendance can change.</p>
 
           <!-- Attendee recommendations — reuses existing data + cards + gate. -->
-          <div id="attendeeDiscoverySection" style="display:none;">
+          <details id="attendeeDiscoverySection" style="display:none;">
+            <summary>Browse opted-in profiles</summary>
             <p id="attendeeDiscoverySubhead" class="visually-hidden">See who's coming and what they're here for.</p>
             <div id="attendeeDiscoveryGrid" class="attendee-discovery-grid"></div>
             <div id="attendeeDiscoveryGate" class="attendee-discovery-gate" style="display:none;">
               <p class="attendee-gate-message"></p>
             </div>
-          </div>
+          </details>
         </div>
 
         <!-- At the event -->
@@ -344,7 +337,7 @@
   </footer>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" integrity="sha384-3zSEDfvllQohrq0PHL1fOXJuC/jSOO34H46t6UQfobFOmxE5BpjjaIJY5F2/bMnU" crossorigin="anonymous"></script>
-  <script type="module" src="../assets/js/eventDetail.js?v=20261114-prepare1"></script>
+  <script type="module" src="../assets/js/eventDetail.js?v=20261114-suggestion1"></script>
   <script type="module" src="../assets/js/navAuth.js?v=20261106-permissions2"></script>
 </body>
 </html>

@@ -1,37 +1,54 @@
 import {supabase,getSessionCached} from './supabaseClient.js';
 import {followUpRpc} from './followUpService.js?v=20261106-permissions2';
+import {chooseEventSuggestion} from './eventSuggestionPolicy.js?v=20261114-suggestion1';
+import {previewHomeContext} from './ambientHomePolicy.js?v=20261114-value1';
 const el=(tag,text)=>{const node=document.createElement(tag);if(text)node.textContent=text;return node;};
 export function mountEventPreparation(eventId){
- const parent=document.getElementById('eventSections');
+ const parent=document.getElementById('eventPlanPeopleItem')||document.getElementById('eventSections');
  if(!parent)return;
- const root=el('section');root.className='private-context';root.hidden=true;parent.prepend(root);
+ const root=el('section');root.id='eventSuggestion';root.className='private-context event-suggestion';root.hidden=true;parent.prepend(root);
  let active=true,busy=false,epoch=0;
+ const clear=()=>{epoch++;root.hidden=true;root.replaceChildren();};
  async function refresh(){
   if(!active||busy||document.hidden)return;busy=true;const version=epoch;
   try{
    const {data}=await getSessionCached();if(!active||version!==epoch)return;
    if(!data?.session?.user){root.hidden=true;root.replaceChildren();return;}
-   const reads=await Promise.allSettled([followUpRpc(supabase,'ambient_event_prep',{p_event:eventId}),followUpRpc(supabase,'get_event_preparation_people',{p_event:eventId})]);
-   const result=reads[0].status==='fulfilled'?reads[0].value:null;
-   const discovery=reads[1].status==='fulfilled'&&Array.isArray(reads[1].value)?reads[1].value:[];
+   const selfRead=supabase.from('profiles').select('id,interests,skills').eq('user_id',data.session.user.id).maybeSingle();
+   const reads=await Promise.allSettled([
+    followUpRpc(supabase,'ambient_event_prep',{p_event:eventId}),
+    followUpRpc(supabase,'get_event_connection_people',{p_event:eventId}),selfRead
+   ]);
    if(!active||version!==epoch)return;
-   root.replaceChildren();root.hidden=!(result?.eligible&&result?.people?.length)&&!discovery.length;
-   if(root.hidden)return;
-   const known=result?.eligible&&result?.people?.length;
-   root.append(el('h2',known?'A little preparation':'People to explore'),el('p',known?'Your private context. Event listings and QR saves do not confirm someone will be there.':'Profiles shared for this event. Plans and attendance can change.'));
-   for(const person of (known?result.people:discovery)){
-    const article=el('article');article.append(el('h3',person.name||'Nearify member'));
-    article.append(el('p',(person.opted_in_listing||!known)?'Opted-in listing for this event':'You saved their QR for this event'));
-    if(person.previous_event_name)article.append(el('p','Your earlier QR save: '+person.previous_event_name));
-    if(person.intention)article.append(el('p','Next time: '+person.intention));else if(person.note)article.append(el('p',person.note));
-    const link=el('a','Review profile');link.className='btn secondary';link.href='/profile.html?id='+encodeURIComponent(person.profile_id)+'&from=connections';article.append(link);root.append(article);
+   const contexts=reads[0].status==='fulfilled'&&reads[0].value?.eligible?reads[0].value.people||[]:[];
+   const people=reads[1].status==='fulfilled'&&Array.isArray(reads[1].value)?reads[1].value:[];
+   const self=reads[2].status==='fulfilled'&&!reads[2].value.error?reads[2].value.data:null;
+   const choice=chooseEventSuggestion({people,contexts,self});
+   root.replaceChildren();root.hidden=false;
+   if(!choice){
+    root.append(el('h3',reads[0].status==='rejected'||reads[1].status==='rejected'?'Suggestions couldn’t load':'Explore people at your own pace'));
+    root.append(el('p',reads[0].status==='rejected'||reads[1].status==='rejected'?'Try again or browse the available opted-in profiles below.':(people.length?'There isn’t enough shared context to suggest a specific person. Browse the opted-in profiles below.':'No opted-in profiles are available to suggest. You can still meet people and exchange Nearify QR codes.')));
+    if(reads[0].status==='rejected'||reads[1].status==='rejected'){
+     const retry=el('button','Try again');retry.type='button';retry.className='btn primary';retry.onclick=refresh;root.append(retry);
+    }else if(people.length){
+     const browse=el('button','Browse opted-in people');browse.type='button';browse.className='btn primary';
+     browse.onclick=()=>{const list=document.getElementById('attendeeDiscoverySection');if(list){list.open=true;list.scrollIntoView({block:'start'});list.querySelector('summary')?.focus();}};root.append(browse);
+    }else{
+     const scan=el('a','Scan someone’s QR');scan.className='btn primary';scan.href='/scan/?web=1';root.append(scan);
+    }
+    return;
    }
+   const eyebrow=el('p',choice.source==='context'?'Your saved conversation reminder':'A conversation to explore');eyebrow.className='event-suggestion-label';
+   root.append(eyebrow,el('h3',choice.person.name||'Nearify member'),el('p',previewHomeContext(choice.reason)));
+   if(choice.source==='context')root.append(el('p','From your private context. Only you can see this reminder.'));
+   root.append(el('p',choice.listed?'Opted-in listing for this event. Plans and attendance can change.':'You saved their QR for this event. This does not confirm attendance.'));
+   if(choice.source==='context'&&choice.previousEventName)root.append(el('p','Your earlier QR save: '+choice.previousEventName));
+   const link=el('a','Review profile');link.className='btn primary';link.href='/profile.html?id='+encodeURIComponent(choice.person.profile_id)+'&from=connections';root.append(link);
   }catch{if(active&&version===epoch){root.hidden=true;root.replaceChildren();}}
   finally{busy=false;}
  }
  refresh();const timer=setInterval(refresh,30000);
- const visibility=()=>{epoch++;root.hidden=true;root.replaceChildren();if(!document.hidden)refresh();};
- document.addEventListener('visibilitychange',visibility);
- const auth=supabase.auth.onAuthStateChange(()=>{epoch++;root.hidden=true;root.replaceChildren();});
- window.addEventListener('pagehide',()=>{active=false;epoch++;clearInterval(timer);root.remove();auth.data.subscription.unsubscribe();document.removeEventListener('visibilitychange',visibility);},{once:true});
+ const visibility=()=>{clear();if(!document.hidden)refresh();};document.addEventListener('visibilitychange',visibility);
+ const auth=supabase.auth.onAuthStateChange(()=>{clear();setTimeout(refresh,0);});
+ window.addEventListener('pagehide',()=>{active=false;clear();clearInterval(timer);root.remove();auth.data.subscription.unsubscribe();document.removeEventListener('visibilitychange',visibility);},{once:true});
 }

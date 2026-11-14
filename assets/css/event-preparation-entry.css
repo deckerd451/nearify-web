@@ -29,3 +29,9 @@
   .event-page .event-plan .intent-chip-label { font-size: 14px; }
   .event-page .event-plan .intent-chip-sub { font-size: 12px; line-height: 1.4; }
 }
+.event-page #eventSuggestion { margin: 0 0 24px; padding: 20px; border-color: rgba(165,137,255,.4); background: #211a36; }
+.event-page #eventSuggestion h3 { margin: 8px 0 12px; font-size: 24px; color: #faf8ff; overflow-wrap: anywhere; }
+.event-page #eventSuggestion p { margin: 8px 0; color: #c9c2d9; line-height: 1.5; }
+.event-page #eventSuggestion .event-suggestion-label { font-size: 12px; text-transform: uppercase; letter-spacing: .07em; color: #c6b1ff; }
+.event-page #eventSuggestion .btn { margin-top: 12px; min-height: 44px; }
+.event-page #attendeeDiscoverySection summary { min-height: 44px; padding: 12px 0; cursor: pointer; color: #d4c4ff; }
