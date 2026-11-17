@@ -27,6 +27,12 @@
     .today-event-name{margin:0;font-size:22px;font-weight:700;color:#fff}
     .today-event-meta{margin:4px 0 0;font-size:15px;color:#c9c4e0}
     .today-event-join{display:flex;justify-content:center;margin-top:14px;width:100%}
+    /* Event day: the event card leads; everything else steps back. */
+    body.has-today-event .cc-landing-hero .home-value-eyebrow{display:none}
+    body.has-today-event .cc-landing-hero h1{font-size:clamp(26px,6vw,34px);margin-top:4px}
+    body.has-today-event .cc-landing-hero > p{font-size:16px}
+    body.has-today-event .cc-landing-hero-actions a.btn.primary[href^="/scan/"]{background:transparent;border:1px solid rgba(167,139,250,.6);color:#d9ccff;box-shadow:none}
+    body.has-today-event .cc-landing-feature-desc{display:none}
   </style>
   <link rel="stylesheet" href="/assets/css/follow-up.css?v=20261107-flow1" />
   <link rel="stylesheet" href="/assets/css/home-value.css?v=20261114-value1" />
@@ -180,7 +186,7 @@
 
   <script type="module" src="/assets/js/dashboard.js?v=20261114-prepare1"></script>
   <script type="module" src="/assets/js/navAuth.js?v=20261106-permissions2"></script>
-  <script type="module" src="/assets/js/todayEvent.js?v=20261117-1"></script>
+  <script type="module" src="/assets/js/todayEvent.js?v=20261117-2"></script>
 
 </body>
 </html>

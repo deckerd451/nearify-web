@@ -58,6 +58,9 @@ export async function showTodayEvents() {
     if (error || !data?.length) return;
     host.replaceChildren(...data.map(card));
     host.hidden = false;
+    document.body.classList.add("has-today-event");
+    const back = document.querySelector(".cc-landing-scan");
+    if (back) back.innerHTML = 'Already joined? <a href="/connections/">See your saved people</a>.';
   } catch (_) {
     // Optional enhancement: the homepage works without it.
   }
