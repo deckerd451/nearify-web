@@ -27,6 +27,7 @@ import { computeIntentAlignment } from "./intelligence-algo.js";
 import { connectGhostToProfile } from "./ghostConnection.js?v=20261106-save2";
 import { trackAppCtaClick, trackFunnelEvent } from "./analytics.js?v=20261105-funnel1";
 import { escapeHtml, copyText } from "./utils.js";
+import { withCleanDescription } from "./eventText.js?v=20261116-1";
 import { logger } from "./logger.js";
 import { pollingCoordinator } from "./pollingCoordinator.js";
 import { createQrDecoder } from "./qrScanner.js";
@@ -158,7 +159,7 @@ async function fetchEvent(eventId) {
     return null;
   }
 
-  return data;
+  return withCleanDescription(data);
 }
 
 async function fetchPublicProfileBrief(profileId) {
@@ -224,6 +225,7 @@ function renderQrCode(value) {
 
   // Ensure container is visible before QRCode renders (it needs dimensions)
   show(els.joinQrBox);
+  show(els.joinPayloadCard);
   els.joinQrCode.innerHTML = "";
 
   try {
@@ -725,6 +727,7 @@ function renderGenericJoinUx(event, fallbackName, source) {
   }
 
   show(els.joinQrBox);
+  show(els.joinPayloadCard);
   logger.log("[Join] Rendering generic event join UX");
 }
 
@@ -793,8 +796,19 @@ function renderInvalidState(message) {
   );
   setText(els.payloadText, "No valid event found.");
   hide(els.joinQrBox);
+  hide(els.joinPayloadCard);
   hide(els.intentStep);
   hide(els.joinEventMeta);
+  // Always give a way forward instead of a dead end.
+  if (els.joinDescription && !document.getElementById("joinBrowseEvents")) {
+    const browse = document.createElement("a");
+    browse.id = "joinBrowseEvents";
+    browse.className = "btn primary";
+    browse.href = "/events/";
+    browse.textContent = "Find an event";
+    browse.style.marginTop = "16px";
+    els.joinDescription.after(browse);
+  }
 }
 
 async function renderAuthHandoff(eventId) {
@@ -2653,7 +2667,8 @@ async function initJoinPage() {
   logger.log("[Join] raw URL:", window.location.href);
 
   if (!eventId) {
-    renderInvalidState("This link is missing an event id.");
+    renderInvalidState("Open an event first, then join as a guest in your browser.");
+    setText(els.joinTitle, "Choose an event to join");
     return;
   }
 

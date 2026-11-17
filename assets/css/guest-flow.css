@@ -280,3 +280,10 @@ body.guest-flow {background:radial-gradient(ellipse 460px 290px at 50% 185px,#48
 .guest-flow[data-guest-view='history'] .guest-joined-actions {background:#141b2b;border-color:#343c54}
 .guest-flow[data-guest-view='history'] .guest-joined-actions h3 {font-size:16px}
 .guest-flow[data-guest-view='history'] .guest-joined-actions .btn {min-height:46px}
+
+/* Saved connections: full-width rows (no flex shrink) and no leftover list icons,
+   so every card's arrow sits in the same place. */
+.guest-flow .ghost-connections-list li.guest-memory-history-item {display:block}
+.guest-flow .ghost-connections-list li.guest-memory-history-item::before {content:none;display:none}
+.guest-flow .guest-memory-history-item summary {list-style:none}
+.guest-flow .guest-memory-history-item summary::-webkit-details-marker {display:none}
