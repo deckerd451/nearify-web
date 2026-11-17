@@ -610,7 +610,8 @@ function renderGenericJoinUx(event, fallbackName, source) {
   setText(els.joinKicker, "Join Event");
 
   if (isMeetup) {
-    setText(els.joinTitle, "Save someone you meet at this event.");
+    // Use the real event name: the guest header and "Saved at …" read this title.
+    setText(els.joinTitle, title);
     setText(
       els.joinDescription,
       "Join as a guest in your browser, then scan a personal Nearify QR to save someone you met."
