@@ -1,4 +1,5 @@
 import {showEventGoalSummary,toggleEventGoalPicker} from './eventGoalSummary.js?v=20261114-compact1';
+import {withCleanDescription} from './eventText.js?v=20261116-1';
 import {focusEventPreparation} from './eventPreparationEntry.js?v=20261114-prepare1';
 import {mountEventPreparation} from './eventPreparation.js?v=20261114-profile1';
 // Render the limited Markdown used in imported event descriptions without HTML injection.
@@ -103,7 +104,7 @@ async function fetchEvent() {
 
   const { data, error } = await query.maybeSingle();
   if (error) throw error;
-  return data;
+  return withCleanDescription(data);
 }
 
 async function fetchCurrentUser() {

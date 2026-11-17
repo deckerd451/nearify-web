@@ -10,6 +10,7 @@
 import { supabase, getSessionCached } from "./supabaseClient.js";
 import { dedupeRequest } from "./supabaseLoad.js";
 import { logger } from "./logger.js";
+import { withCleanDescription } from "./eventText.js?v=20261116-1";
 
 // ---- Profile resolution (cached per session) ----
 
@@ -90,7 +91,7 @@ export async function fetchPublicEvents() {
     logger.error("[Events] fetchPublicEvents error:", error);
     return [];
   }
-  const events = data || [];
+  const events = (data || []).map(withCleanDescription);
   setEventCache(key, events);
   return events;
 }

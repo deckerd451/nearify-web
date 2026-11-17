@@ -22,7 +22,7 @@
   <meta name="twitter:image"      content="https://nearify.org/assets/images/og-default.png" />
 
   <link rel="stylesheet" href="../assets/css/styles.css?v=20261101-events-mobile1" />
-  <link rel="stylesheet" href="../assets/css/guest-flow.css?v=20261111-sharecontrast2" />
+  <link rel="stylesheet" href="../assets/css/guest-flow.css?v=20261116-guestfirst1" />
   <link rel="stylesheet" href="/assets/css/scan-entry.css?v=20261105-accountfix1" />
 </head>
 <body>
@@ -129,17 +129,24 @@
           </div>
         </section>
 
+        <!-- Guest join CTA — browser-first path shown after event validation -->
+        <div id="guestJoinCta" class="guest-join-cta" style="display:none;">
+          <div class="guest-join-divider" aria-hidden="true">Join in your browser</div>
+          <button id="joinAsGuestBtn" class="btn primary" type="button">Join as a guest</button>
+          <p class="join-hint">No app or account required. Your guest session stays on this device.</p>
+        </div>
+
         <div class="hero-actions" id="joinActions">
           <!-- Primary: install pathway -->
           <a
             id="getAppBtn"
             href="https://testflight.apple.com/join/ZayvEbAy"
-            class="btn primary"
+            class="btn secondary"
             target="_blank"
             rel="noopener noreferrer"
             data-track-cta="join_hero_get_app"
           >
-            Get Nearify on TestFlight
+            Get the iPhone app (optional)
           </a>
 
           <!-- Secondary: hint — updated by JS for Meetup source -->
@@ -160,13 +167,6 @@
               I installed Nearify — open this event
             </button>
           </div>
-        </div>
-
-        <!-- Guest join CTA — browser-first path shown after event validation -->
-        <div id="guestJoinCta" class="guest-join-cta" style="display:none;">
-          <div class="guest-join-divider" aria-hidden="true">01 · Join in your browser</div>
-          <button id="joinAsGuestBtn" class="btn primary" type="button">Join as a guest</button>
-          <p class="join-hint">No app or account required. Your guest session stays on this device.</p>
         </div>
 
         <!-- Guest join section — either form or success state, populated by JS -->
@@ -373,9 +373,8 @@
 
         </div>
 
-        <div class="join-payload-card" id="joinPayloadCard">
-          <div class="meta-label">Event link</div>
-          <div class="join-payload" id="payloadText">Waiting for event...</div>
+        <div class="join-payload-card" id="joinPayloadCard" style="display:none;">
+          <div class="join-payload" id="payloadText" hidden></div>
 
           <div id="joinQrBox" class="join-qr-box" style="display:none;">
             <div class="join-qr-label">Already in the app? Scan with the Nearify in-app scanner</div>
@@ -394,16 +393,16 @@
           <h2 id="joinPanelTitle">3 steps to join</h2>
           <ol class="join-steps-list" id="joinPanelList">
             <li>
-              <div class="join-step-label">Install Nearify on TestFlight</div>
-              <div class="join-step-detail">Get the app — takes about 2 minutes.</div>
+              <div class="join-step-label">Join in your browser</div>
+              <div class="join-step-detail">Tap Join as a guest. No app or account needed.</div>
             </li>
             <li>
-              <div class="join-step-label">Sign in and create your profile</div>
-              <div class="join-step-detail">Use Google or GitHub. Your profile is how people find you.</div>
+              <div class="join-step-label">Save people you meet</div>
+              <div class="join-step-detail">Show your QR, scan theirs, and add a private note to remember them.</div>
             </li>
             <li>
-              <div class="join-step-label">Check in when you arrive</div>
-              <div class="join-step-detail">Check in from the Nearify iOS app, or scan the venue QR to enter the live network.</div>
+              <div class="join-step-label">Keep them (optional)</div>
+              <div class="join-step-detail">Sign in to keep your connections, or get the iPhone app for live features.</div>
             </li>
           </ol>
           <!-- Populated by JS when attendee data is available (Meetup source) -->
@@ -597,7 +596,7 @@
       });
     }
   </script>
-  <script type="module" src="../assets/js/join.js?v=20261106-ambient1"></script>
+  <script type="module" src="../assets/js/join.js?v=20261116-guestfirst1"></script>
   <script type="module" src="../assets/js/navAuth.js?v=20261106-permissions2"></script>
   <script type="module">
     import { trackPageView, wireAppCtaTracking } from "../assets/js/analytics.js?v=20260909";
