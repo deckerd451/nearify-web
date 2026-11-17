@@ -22,7 +22,7 @@
   <meta name="twitter:image"      content="https://nearify.org/assets/images/og-default.png" />
 
   <link rel="stylesheet" href="../assets/css/styles.css?v=20261101-events-mobile1" />
-  <link rel="stylesheet" href="../assets/css/guest-flow.css?v=20261116-guestfirst1" />
+  <link rel="stylesheet" href="../assets/css/guest-flow.css?v=20261116-namefirst1" />
   <link rel="stylesheet" href="/assets/css/scan-entry.css?v=20261105-accountfix1" />
 </head>
 <body>
@@ -174,25 +174,15 @@
 
           <!-- Name form -->
           <div id="guestForm" class="guest-join-card" style="display:none;">
-            <h2 class="guest-join-title" id="guestFormHeading" tabindex="-1">What brings you here?</h2>
-            <p class="guest-join-sub">Choose a goal for this event.</p>
-            <fieldset class="guest-goal-field" aria-describedby="guestGoalHint">
-              <legend class="visually-hidden">Your goal for this event</legend>
-              <label class="guest-goal-card"><input type="radio" name="guestGoal" value="meet_people" data-label="Meet people" checked /><span class="guest-goal-icon" aria-hidden="true">◎</span><span>Meet people</span><span class="guest-goal-check" aria-hidden="true"></span></label>
-              <label class="guest-goal-card"><input type="radio" name="guestGoal" value="find_cofounder" data-label="Find a cofounder"  /><span class="guest-goal-icon" aria-hidden="true">◇</span><span>Find a cofounder</span><span class="guest-goal-check" aria-hidden="true"></span></label>
-              <label class="guest-goal-card"><input type="radio" name="guestGoal" value="explore_ideas" data-label="Explore ideas"  /><span class="guest-goal-icon" aria-hidden="true">✧</span><span>Explore ideas</span><span class="guest-goal-check" aria-hidden="true"></span></label>
-              <details class="guest-more-goals"><summary>More goals</summary>
-                <label class="guest-goal-card"><input type="radio" name="guestGoal" value="hire" data-label="Hire" /><span class="guest-goal-icon" aria-hidden="true">↗</span><span>Hire</span><span class="guest-goal-check" aria-hidden="true"></span></label>
-                <label class="guest-goal-card"><input type="radio" name="guestGoal" value="demo" data-label="Demo something" /><span class="guest-goal-icon" aria-hidden="true">▷</span><span>Demo something</span><span class="guest-goal-check" aria-hidden="true"></span></label>
-              </details>
-            </fieldset>
-            <div class="form-row" style="margin-bottom:0;">
+            <h2 class="guest-join-title" id="guestFormHeading" tabindex="-1">What should people call you?</h2>
+            <p class="guest-join-sub">You'll get a QR code to swap with people you meet.</p>
+            <div class="form-row" style="margin-bottom:12px;">
               <label for="guestDisplayName" class="guest-join-label">Your name</label>
               <input
                 id="guestDisplayName"
                 type="text"
                 class="guest-join-input"
-                placeholder="How should people know you?"
+                placeholder="e.g. Alex"
                 autocomplete="given-name"
                 autocorrect="off"
                 autocapitalize="words"
@@ -202,12 +192,25 @@
                 Please enter a display name to continue.
               </p>
             </div>
+            <details class="guest-goal-optional" id="guestGoalOptional">
+              <summary>Add a goal (optional)</summary>
+              <fieldset class="guest-goal-field" aria-describedby="guestGoalHint">
+                <legend class="visually-hidden">Your goal for this event</legend>
+                <label class="guest-goal-card"><input type="radio" name="guestGoal" value="meet_people" data-label="Meet people" checked /><span class="guest-goal-icon" aria-hidden="true">◎</span><span>Meet people</span><span class="guest-goal-check" aria-hidden="true"></span></label>
+                <label class="guest-goal-card"><input type="radio" name="guestGoal" value="find_cofounder" data-label="Find a cofounder"  /><span class="guest-goal-icon" aria-hidden="true">◇</span><span>Find a cofounder</span><span class="guest-goal-check" aria-hidden="true"></span></label>
+                <label class="guest-goal-card"><input type="radio" name="guestGoal" value="explore_ideas" data-label="Explore ideas"  /><span class="guest-goal-icon" aria-hidden="true">✧</span><span>Explore ideas</span><span class="guest-goal-check" aria-hidden="true"></span></label>
+                <details class="guest-more-goals"><summary>More goals</summary>
+                  <label class="guest-goal-card"><input type="radio" name="guestGoal" value="hire" data-label="Hire" /><span class="guest-goal-icon" aria-hidden="true">↗</span><span>Hire</span><span class="guest-goal-check" aria-hidden="true"></span></label>
+                  <label class="guest-goal-card"><input type="radio" name="guestGoal" value="demo" data-label="Demo something" /><span class="guest-goal-icon" aria-hidden="true">▷</span><span>Demo something</span><span class="guest-goal-check" aria-hidden="true"></span></label>
+                </details>
+              </fieldset>
+              <p id="guestGoalHint" class="guest-local-note">Your goal is a reminder saved on this device.</p>
+            </details>
             <div class="guest-join-actions">
               <button id="guestSubmitBtn" class="btn primary" type="button">Join as a guest</button>
               <button id="guestCancelBtn" class="btn-inline-link" type="button">Back to event</button>
             </div>
             <p class="guest-form-reassurance">No app or account required.</p>
-            <p id="guestGoalHint" class="guest-local-note">Your goal is a reminder saved on this device.</p>
             <p id="guestJoinStatus" class="intent-status" aria-live="polite"></p>
           </div>
 
@@ -596,7 +599,7 @@
       });
     }
   </script>
-  <script type="module" src="../assets/js/join.js?v=20261116-guestfirst1"></script>
+  <script type="module" src="../assets/js/join.js?v=20261116-namefirst1"></script>
   <script type="module" src="../assets/js/navAuth.js?v=20261106-permissions2"></script>
   <script type="module">
     import { trackPageView, wireAppCtaTracking } from "../assets/js/analytics.js?v=20260909";

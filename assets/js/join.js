@@ -1000,8 +1000,12 @@ function showGuestForm() {
     const goal = [...document.querySelectorAll('input[name="guestGoal"]')].find((input) => input.value === saved);
     if (goal) {
       goal.checked = true;
-      const extra = goal.closest("details");
+      const extra = goal.closest("details.guest-more-goals");
       if (extra) extra.open = true;
+      if (goal.value !== "meet_people") {
+        const optional = document.getElementById("guestGoalOptional");
+        if (optional) optional.open = true;
+      }
     }
   } catch (_) {}
 }
