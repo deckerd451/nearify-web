@@ -32,6 +32,8 @@ const $funnel    = document.getElementById("fdFunnelSection");
 const $events    = document.getElementById("fdEventsSection");
 const $activity  = document.getElementById("fdActivitySection");
 const $insight   = document.getElementById("fdInsight");
+const $landing   = document.getElementById("fdLandingSection");
+const $landingBody = document.getElementById("fdLandingBody");
 
 // ── Auth ───────────────────────────────────────────────────────────────────────
 
@@ -86,10 +88,14 @@ async function loadData() {
     ? new Date(0).toISOString()
     : new Date(Date.now() - activeRangeDays * 86400_000).toISOString();
 
-  const [funnelResult, activityResult] = await Promise.all([
+  const [funnelResult, activityResult, landingResult] = await Promise.all([
     supabase.rpc("get_meetup_funnel", { p_since: sinceTs }),
     supabase.rpc("get_meetup_activity_hourly", { p_hours: Math.max(activeRangeDays, 1) * 24 || 8760 }),
+    supabase.rpc("get_landing_demo_funnel", { p_since: sinceTs }),
   ]);
+
+  // Independent of the Meetup funnel: a missing function must not hide the rest.
+  renderLandingDemo(landingResult);
 
   setLoading(false);
 
@@ -185,6 +191,72 @@ function renderStats(totals) {
       <div class="fd-stat-sub">Tracked events · not unique users</div>
     </div>
   `).join("");
+}
+
+// ── Homepage demo ──────────────────────────────────────────────────────────────
+
+const LANDING_STEPS = [
+  { key: "landing_view",             label: "Homepage visits" },
+  { key: "landing_try_clicked",      label: "Tapped “Try it”" },
+  { key: "landing_demo_started",     label: "Saved Maya" },
+  { key: "landing_demo_completed",   label: "Saw the reminder" },
+  { key: "landing_demo_cta_clicked", label: "Tapped “Save a real person”" },
+];
+
+function el(tag, className, text) {
+  const node = document.createElement(tag);
+  if (className) node.className = className;
+  if (text !== undefined) node.textContent = text;
+  return node;
+}
+
+function renderLandingDemo(result) {
+  if (!$landing) return;
+  $landing.style.display = "block";
+  if (result.error) {
+    const note = el("p", "fd-section-subtitle", "Not available yet. Run ");
+    note.append(el("code", "", "supabase/migrations/20261118_landing_demo_funnel.sql"), " to turn on this report.");
+    $landingBody.replaceChildren(note);
+    return;
+  }
+  const rows = result.data ?? [];
+  const totals = {};
+  const sources = {};
+  for (const row of rows) {
+    totals[row.funnel_stage] = (totals[row.funnel_stage] || 0) + Number(row.cnt);
+    if (row.funnel_stage === "landing_view") {
+      sources[row.referrer_origin] = (sources[row.referrer_origin] || 0) + Number(row.cnt);
+    }
+  }
+  const views = totals.landing_view || 0;
+  const started = totals.landing_demo_started || 0;
+  const finished = totals.landing_demo_completed || 0;
+  const pct = (n, d) => (d ? Math.round((n / d) * 100) + "%" : "—");
+
+  const grid = el("div", "fd-stat-grid");
+  for (const step of LANDING_STEPS) {
+    const count = totals[step.key] || 0;
+    const card = el("div", "fd-stat-card");
+    card.append(
+      el("div", "fd-stat-label", step.label),
+      el("div", "fd-stat-value", fmt(count)),
+      el("div", "fd-stat-sub", step.key === "landing_view" ? "Page loads" : pct(count, views) + " of visits"),
+    );
+    grid.append(card);
+  }
+
+  const summary = el("p", "fd-section-subtitle", started
+    ? `${pct(finished, started)} of people who started the demo reached the reminder.`
+    : "No demo starts in this range yet.");
+
+  const nodes = [grid, summary];
+  const topSources = Object.entries(sources).sort((x, y) => y[1] - x[1]).slice(0, 5);
+  if (topSources.length) {
+    const list = el("ul", "fd-section-subtitle");
+    for (const [origin, n] of topSources) list.append(el("li", "", `${origin}: ${fmt(n)}`));
+    nodes.push(el("div", "fd-section-subtitle", "Where visits came from:"), list);
+  }
+  $landingBody.replaceChildren(...nodes);
 }
 
 // Independent event totals cannot support stage-to-stage drop-off claims.
