@@ -1,9 +1,10 @@
 /**
- * landingDemo.js — the signed-out homepage "Try it" demo.
+ * landingDemo.js — the signed-out homepage card demo.
  *
- * A visitor can see what Nearify does without an event, a QR code, or an
- * account. What they type stays in this page. Only anonymous step counts are
- * sent (see landingDemoTracking.js), never the note or who the visitor is.
+ * Save Maya → the card flips so you can jot one detail → it flips back and
+ * the "two weeks later" reminder appears. What the visitor types stays in
+ * this page. Only anonymous step counts are sent (see landingDemoTracking.js),
+ * never the note or who the visitor is.
  */
 
 import { LANDING_DEMO_EVENTS as EVENTS, analyticsTracker, createOnceTracker } from "./landingDemoTracking.js?v=20261118-count1";
@@ -16,69 +17,61 @@ function init() {
   const demo = document.getElementById("lxDemo");
   if (!demo) return;
 
-  const stages = demo.querySelectorAll(".lx-stage");
-  const dots = demo.querySelectorAll("[data-step-dot]");
+  const front = demo.querySelector('.lx-stage[data-step="1"]');
+  const back = demo.querySelector('.lx-stage[data-step="2"]');
+  const after = demo.querySelector('.lx-stage[data-step="3"]');
+  const reminder = document.getElementById("lxReminder");
   const note = document.getElementById("lxNote");
   const echo = document.getElementById("lxNoteEcho");
+  const chips = demo.querySelectorAll(".lx-chip");
+
+  // Both faces stay in the layout for the flip; the one facing away is inert.
+  function face(el, visible) {
+    el.hidden = false;
+    el.inert = !visible;
+    el.setAttribute("aria-hidden", String(!visible));
+  }
 
   function show(step, { focus = true } = {}) {
-    stages.forEach((stage) => { stage.hidden = stage.dataset.step !== String(step); });
-    dots.forEach((dot) => {
-      const n = Number(dot.dataset.stepDot);
-      dot.classList.toggle("is-current", n === step);
-      dot.classList.toggle("is-done", n < step);
-      if (n === step) dot.setAttribute("aria-current", "step");
-      else dot.removeAttribute("aria-current");
-    });
+    demo.dataset.state = String(step);
+    face(front, step !== 2);
+    face(back, step === 2);
+    after.hidden = step !== 3;
+    reminder.hidden = step !== 3;
+
     if (step === 2) trackOnce(EVENTS.started);
-    if (step === 3) trackOnce(EVENTS.completed);
-    if (step === 3) echo.textContent = "“" + (note.value.trim() || DEFAULT_NOTE) + "”";
-    if (!focus) return;
-    const active = demo.querySelector(`.lx-stage[data-step="${step}"]`);
-    active.classList.remove("is-entering");
-    void active.offsetWidth; // restart the entrance animation
-    active.classList.add("is-entering");
-    const target = step === 2 ? note : active.querySelector("p, h3");
-    if (target) {
-      if (!target.matches("textarea")) target.setAttribute("tabindex", "-1");
-      target.focus({ preventScroll: true });
+    if (step === 3) {
+      trackOnce(EVENTS.completed);
+      echo.textContent = "“" + (note.value.trim() || DEFAULT_NOTE) + "”";
     }
+    if (!focus) return;
+    if (step === 2) note.focus({ preventScroll: true });
+    if (step === 3) {
+      reminder.setAttribute("tabindex", "-1");
+      reminder.focus({ preventScroll: true });
+    }
+    if (step === 1) front.querySelector("button")?.focus({ preventScroll: true });
   }
 
   demo.querySelectorAll("[data-go]").forEach((button) => {
     button.addEventListener("click", () => show(Number(button.dataset.go)));
   });
 
-  demo.querySelectorAll(".lx-chip").forEach((chip) => {
+  chips.forEach((chip) => {
+    chip.setAttribute("aria-pressed", "false");
     chip.addEventListener("click", () => {
-      demo.querySelectorAll(".lx-chip").forEach((c) => c.setAttribute("aria-pressed", String(c === chip)));
+      chips.forEach((c) => c.setAttribute("aria-pressed", String(c === chip)));
       note.value = chip.textContent.trim();
     });
-    chip.setAttribute("aria-pressed", "false");
   });
+  note.addEventListener("input", () => chips.forEach((c) => c.setAttribute("aria-pressed", "false")));
 
-  note.addEventListener("input", () => {
-    demo.querySelectorAll(".lx-chip").forEach((c) => c.setAttribute("aria-pressed", "false"));
-  });
-
-  demo.querySelector('.lx-stage[data-step="3"] a.btn')?.addEventListener("click", () => trackOnce(EVENTS.ctaClicked));
+  after.querySelector("a.btn")?.addEventListener("click", () => trackOnce(EVENTS.ctaClicked));
 
   document.getElementById("lxReplay")?.addEventListener("click", () => {
     note.value = "";
-    demo.querySelectorAll(".lx-chip").forEach((c) => c.setAttribute("aria-pressed", "false"));
+    chips.forEach((c) => c.setAttribute("aria-pressed", "false"));
     show(1);
-  });
-
-  // The hero link jumps to the demo and puts focus on its first action.
-  document.getElementById("lxTryLink")?.addEventListener("click", (event) => {
-    const section = document.getElementById("try");
-    if (!section) return;
-    event.preventDefault();
-    trackOnce(EVENTS.tryClicked);
-    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    section.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "start" });
-    demo.querySelector('.lx-stage:not([hidden]) button')?.focus({ preventScroll: true });
-    history.replaceState(null, "", "#try");
   });
 
   show(1, { focus: false });
