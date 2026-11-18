@@ -5,8 +5,10 @@
  * Signed in: people are kept in the owner-only private_contacts table, and
  * anything saved on this device before signing in is moved there once.
  * If the table isn't available yet, the page keeps working on this device.
+ *
+ * Saving on this device must work the moment the page opens, so the Supabase
+ * client (loaded from a CDN) is imported lazily, only for account features.
  */
-import { supabase, getSessionCached } from "./supabaseClient.js";
 import { logger } from "./logger.js";
 import { buildGuestRecap } from "./guestRecap.js?v=20261118-recap1";
 import {
@@ -25,6 +27,8 @@ const errorEl = $("spError");
 const listEl = $("spList");
 
 const device = createLocalStore();
+let clientPromise = null;
+const loadClient = () => (clientPromise ||= import("./supabaseClient.js").catch((err) => { clientPromise = null; throw err; }));
 let store = device;
 let people = [];
 
@@ -174,6 +178,11 @@ $("spCopy").addEventListener("click", async () => {
 });
 
 $("spSignIn").addEventListener("click", async () => {
+  let supabase;
+  try { ({ supabase } = await loadClient()); } catch (_) {
+    status.textContent = "Sign-in isn’t available right now. Your people are still saved on this phone.";
+    return;
+  }
   const { error } = await supabase.auth.signInWithOAuth({
     provider: "google",
     options: { redirectTo: window.location.origin + "/save/" },
@@ -183,11 +192,16 @@ $("spSignIn").addEventListener("click", async () => {
 
 async function init() {
   updateSaveLabel();
+  await refresh(); // this device's list, right away
+
+  let supabase = null;
   let signedIn = false;
   try {
-    const { data } = await getSessionCached();
+    const client = await loadClient();
+    supabase = client.supabase;
+    const { data } = await client.getSessionCached();
     signedIn = Boolean(data?.session?.user);
-  } catch (_) { /* treat as signed out */ }
+  } catch (_) { /* offline or CDN unavailable: stay on this device */ }
 
   if (signedIn) {
     const account = createAccountStore(supabase);
