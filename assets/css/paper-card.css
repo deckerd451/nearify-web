@@ -143,6 +143,19 @@
 .connections-page .connection-row :focus-visible,
 .connections-page .connection-row:focus-visible { outline: 3px solid #d6c8ff; outline-offset: 3px; }
 
+/* People saved by hand, listed under connections */
+.connections-page .private-contacts { max-width: 860px; margin: 40px auto 60px; }
+.connections-page .private-contacts[hidden] { display: none; }
+.connections-page .private-contacts-head { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; margin-bottom: 16px; }
+.connections-page .private-contacts-head h2 { margin: 0; font-family: var(--nf-display); font-size: 24px; font-weight: 800; letter-spacing: -.02em; color: #f5f3ff; }
+.connections-page .private-contacts-add { color: #cdbbff; font-weight: 600; text-underline-offset: 3px; }
+.connections-page .private-contact { display: grid; gap: 6px; padding: 18px 20px; border-radius: 16px; background: var(--nf-paper); color: var(--nf-ink); box-shadow: 0 1px 0 rgba(255, 255, 255, .6) inset, 0 14px 34px rgba(4, 3, 20, .45); }
+.connections-page .private-contact-name { margin: 0; font-family: var(--nf-display); font-size: 20px; font-weight: 800; letter-spacing: -.015em; }
+.connections-page .private-contact-met { margin: 0; font-size: 14px; color: var(--nf-ink-soft); }
+.connections-page .private-contact-note { margin: 2px 0 0; font-family: var(--nf-hand); font-size: 22px; line-height: 1.25; color: var(--nf-pen); white-space: pre-wrap; overflow-wrap: anywhere; }
+.connections-page .connections-save-hint { margin-top: 16px; font-size: 14px; }
+.connections-page .connections-save-hint a { color: #cdbbff; }
+
 /* ── After saving someone at an event (/join/) ────────────────── */
 .guest-flow .guest-save-confirmation .guest-saved-person,
 .guest-saved-person {
