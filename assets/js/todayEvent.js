@@ -1,12 +1,14 @@
 /**
  * todayEvent.js — on the signed-out homepage, show events happening today
- * with a one-tap guest join. Shows nothing on days without an event.
+ * with a one-tap guest join, below the homepage's main story. Shows nothing on
+ * days without an event; the homepage never depends on one.
  */
 import { supabase } from "./supabaseClient.js";
 
 function formatTime(iso) {
   try {
-    return new Date(iso).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+    // Name the time zone so the time is unambiguous for every visitor.
+    return new Date(iso).toLocaleTimeString([], { hour: "numeric", minute: "2-digit", timeZoneName: "short" });
   } catch (_) {
     return "";
   }
@@ -59,8 +61,6 @@ export async function showTodayEvents() {
     host.replaceChildren(...data.map(card));
     host.hidden = false;
     document.body.classList.add("has-today-event");
-    const back = document.querySelector(".cc-landing-scan");
-    if (back) back.innerHTML = 'Already joined? <a href="/connections/">See your saved people</a>.';
   } catch (_) {
     // Optional enhancement: the homepage works without it.
   }
