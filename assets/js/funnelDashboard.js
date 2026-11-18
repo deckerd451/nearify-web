@@ -197,7 +197,6 @@ function renderStats(totals) {
 
 const LANDING_STEPS = [
   { key: "landing_view",             label: "Homepage visits" },
-  { key: "landing_try_clicked",      label: "Tapped “Try it”" },
   { key: "landing_demo_started",     label: "Saved Maya" },
   { key: "landing_demo_completed",   label: "Saw the reminder" },
   { key: "landing_demo_cta_clicked", label: "Tapped “Save a real person”" },

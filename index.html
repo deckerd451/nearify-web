@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Caveat:wght@500;600&display=swap" />
   <title>Nearify — Meet the Right People at Events</title>
   <meta name="description" content="Nearify helps you know who to meet, save who you met, and remember why each connection matters." />
 
@@ -31,7 +32,7 @@
   <link rel="stylesheet" href="/assets/css/follow-up.css?v=20261107-flow1" />
   <link rel="stylesheet" href="/assets/css/home-value.css?v=20261114-value1" />
   <link rel="stylesheet" href="/assets/css/scan-entry.css?v=20261105-accountfix1" />
-  <link rel="stylesheet" href="/assets/css/landing-explore.css?v=20261118-lx1" />
+  <link rel="stylesheet" href="/assets/css/landing-explore.css?v=20261118-nx1" />
 </head>
 <body class="cc-page">
 
@@ -64,17 +65,14 @@
     </div>
 
     <!-- ─── LOGGED-OUT LANDING ─────────────────────────────────────────── -->
-    <section id="landingView" class="cc-landing" aria-label="Nearify: remember who you met" style="display:none;">
-      <div class="cc-landing-inner lx">
-        <div class="cc-landing-hero">
-          <p class="home-value-eyebrow">For anyone who meets people</p>
-          <h1>Remember who you met.</h1>
-          <p>Save the people you meet, at a meetup, a conference or over coffee, with the one detail that makes your next hello easy.</p>
-          <div class="hero-actions cc-landing-hero-actions" aria-label="Homepage actions">
-            <a href="#try" class="btn primary" id="lxTryLink">Try it in 30 seconds</a>
-            <a href="/scan/?web=1" class="cc-landing-link">Scan someone’s QR</a>
-            <a id="guestConnectionsShortcut" href="#" class="cc-landing-link" hidden>My saved connections</a>
-            <button id="landingSignInBtn" type="button" class="cc-landing-link cc-google-btn">
+    <section id="landingView" class="cc-landing nx" aria-label="Nearify: remember who you met" style="display:none;">
+      <div class="nx-hero">
+        <div class="nx-copy">
+          <h1 class="nx-title"><span>Remember</span> <span>who you met.</span></h1>
+          <p class="nx-sub">Save someone with the one detail you’ll want next time.</p>
+          <div class="nx-actions" aria-label="Homepage actions">
+            <a href="/scan/?web=1" class="btn primary nx-primary">Scan someone’s QR</a>
+            <button id="landingSignInBtn" type="button" class="nx-link cc-google-btn">
               <svg class="cc-google-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
                 <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
                 <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
@@ -83,109 +81,63 @@
               </svg>
               Sign in
             </button>
+            <a id="guestConnectionsShortcut" href="#" class="nx-link" hidden>My saved connections</a>
           </div>
-          <p class="cc-landing-scan">Already saved someone? <a href="/connections/">Pick up where you left off</a>.</p>
+          <div id="todayEventSlot" class="today-event-slot nx-today" hidden aria-label="Happening today"></div>
         </div>
 
-        <!-- Try it: a self-contained demo. Nothing here is sent anywhere or stored. -->
-        <section id="try" class="lx-section lx-try" aria-labelledby="lxTryHeading">
-          <p class="lx-kicker">Try it</p>
-          <h2 id="lxTryHeading">You just met someone. Now what?</h2>
-          <p class="lx-lede">Here’s the whole idea in three taps, using a made-up person. Nothing you type here leaves this page.</p>
-
-          <div class="lx-demo" id="lxDemo">
-            <ol class="lx-steps" aria-label="Demo progress">
-              <li class="is-current" data-step-dot="1">Save</li>
-              <li data-step-dot="2">Add a detail</li>
-              <li data-step-dot="3">Later</li>
-            </ol>
-
-            <div class="lx-stage" data-step="1">
-              <article class="lx-person" aria-label="Example person">
-                <span class="lx-tag">Example person</span>
-                <div class="lx-person-head">
-                  <span class="lx-avatar" aria-hidden="true">MR</span>
+        <!-- The demo: one card, three taps. Nothing typed here leaves the page. -->
+        <div class="nx-demo" id="lxDemo" data-state="1">
+          <p class="nx-try" id="lxTryHint">Try it with Maya</p>
+          <div class="nx-reminder" id="lxReminder" aria-live="polite" hidden>
+            <div class="nx-reminder-head"><p class="nx-reminder-when">Two weeks later</p><button type="button" class="nx-link nx-replay" id="lxReplay">Replay</button></div>
+            <p class="nx-reminder-text">You met Maya Rivera at coffee. You wanted to: <span id="lxNoteEcho"></span></p>
+          </div>
+          <div class="nx-card-scene">
+            <div class="nx-card">
+              <article class="nx-face nx-front lx-stage" data-step="1" aria-label="Example person: Maya Rivera">
+                <div class="nx-person">
+                  <span class="nx-avatar" aria-hidden="true">MR</span>
                   <div>
-                    <h3>Maya Rivera</h3>
-                    <p class="lx-meta">Met today · coffee on King Street</p>
+                    <h2 class="nx-name">Maya Rivera</h2>
+                    <p class="nx-met">Met today at coffee on King Street</p>
                   </div>
                 </div>
-                <dl class="lx-facts">
-                  <div><dt>Building</dt><dd>A text alert for tidal flooding on her street</dd></div>
-                  <div><dt>Looking for</dt><dd>A designer who can make it look less scary</dd></div>
+                <dl class="nx-facts">
+                  <div><dt>Building</dt><dd>A text alert for tidal flooding</dd></div>
+                  <div><dt>Looking for</dt><dd>A designer</dd></div>
                 </dl>
+                <button type="button" class="nx-card-btn" data-go="2">Save Maya</button>
               </article>
-              <button type="button" class="btn primary lx-next" data-go="2">Save Maya</button>
-            </div>
-
-            <div class="lx-stage" data-step="2" hidden>
-              <p class="lx-saved" role="status">Maya is saved.</p>
-              <label class="lx-label" for="lxNote">What’s one thing you’ll want to remember?</label>
-              <p class="lx-hint" id="lxNoteHint">The kind of detail you’d forget by next week. Pick one or write your own.</p>
-              <div class="lx-chips" role="group" aria-label="Suggested details">
-                <button type="button" class="lx-chip">Ask how the flood alert launch went</button>
-                <button type="button" class="lx-chip">Intro her to my designer friend</button>
-                <button type="button" class="lx-chip">She also climbs at the bouldering gym</button>
-              </div>
-              <textarea id="lxNote" rows="2" maxlength="140" aria-describedby="lxNoteHint" placeholder="e.g. Send her the city flood map link"></textarea>
-              <button type="button" class="btn primary lx-next" data-go="3">Save detail</button>
-            </div>
-
-            <div class="lx-stage" data-step="3" hidden>
-              <p class="lx-later">Two weeks later…</p>
-              <article class="lx-reminder" aria-label="Example reminder">
-                <span class="lx-tag">What Nearify shows you</span>
-                <p class="lx-reminder-title">You met <strong>Maya Rivera</strong> two weeks ago.</p>
-                <p class="lx-reminder-note">Your note: <span id="lxNoteEcho"></span></p>
-                <p class="lx-reminder-sub">Only you can see this note. It’s never added to messages or shared.</p>
-              </article>
-              <p class="lx-payoff">That’s it: no business cards and no “sorry, what was your name again?”</p>
-              <div class="lx-end-actions">
-                <a href="/scan/?web=1" class="btn primary">Save a real person</a>
-                <a href="/card/" class="cc-landing-link">Make your own card</a>
-                <button type="button" class="cc-landing-link" id="lxReplay">Replay</button>
+              <div class="nx-face nx-back lx-stage" data-step="2" hidden>
+                <label class="nx-back-label" for="lxNote">One thing to remember</label>
+                <textarea id="lxNote" class="nx-note" rows="2" maxlength="90" placeholder="Ask how the flood alert launch went"></textarea>
+                <div class="nx-chips" role="group" aria-label="Suggestions">
+                  <button type="button" class="lx-chip">Ask about the launch</button>
+                  <button type="button" class="lx-chip">Intro her to Sam</button>
+                </div>
+                <button type="button" class="nx-card-btn" data-go="3">Save note</button>
               </div>
             </div>
           </div>
-          <noscript><p class="lx-lede">Turn on JavaScript to try the demo.</p></noscript>
-        </section>
-
-        <section class="lx-section" aria-labelledby="lxHowHeading">
-          <p class="lx-kicker">How it works</p>
-          <h2 id="lxHowHeading">Works wherever you meet people</h2>
-          <ol class="lx-how">
-            <li><span class="lx-num" aria-hidden="true">1</span><h3>Scan their QR</h3><p>From your phone’s browser. Nobody has to install an app.</p></li>
-            <li><span class="lx-num" aria-hidden="true">2</span><h3>Save one detail</h3><p>What they’re building, what they need, what you promised to send.</p></li>
-            <li><span class="lx-num" aria-hidden="true">3</span><h3>Pick up where you left off</h3><p>Next time, you start with “how did the launch go?” instead of “remind me your name?”</p></li>
-          </ol>
-          <ul class="lx-places" aria-label="Places people use Nearify">
-            <li>Meetups</li><li>Conferences</li><li>Coffee intros</li><li>Coworking</li><li>Job fairs</li><li>Hackathons</li>
-          </ul>
-        </section>
-
-        <section class="lx-section lx-privacy" aria-labelledby="lxPrivacyHeading">
-          <p class="lx-kicker">Your call</p>
-          <h2 id="lxPrivacyHeading">You stay in control</h2>
-          <ul class="lx-checks">
-            <li><strong>Your notes are yours.</strong> Only you can read them.</li>
-            <li><strong>No app needed.</strong> It runs in your browser. Sign in only when you want your people on every device.</li>
-            <li><strong>Leave anytime.</strong> <a href="/delete-account.html">Delete your account</a> and your data whenever you like.</li>
-          </ul>
-          <p class="lx-fine"><a href="/privacy.html">Read the privacy policy</a></p>
-        </section>
-
-        <div id="todayEventSlot" class="today-event-slot" hidden aria-label="Happening today"></div>
-
-        <section class="lx-section lx-final" aria-labelledby="lxFinalHeading">
-          <h2 id="lxFinalHeading">Meet someone this week?</h2>
-          <p class="lx-lede">Save them before the details fade.</p>
-          <div class="lx-end-actions">
-            <a href="/scan/?web=1" class="btn primary">Scan someone’s QR</a>
-            <a href="/events/index.html" class="cc-landing-link">Browse events</a>
+          <div class="nx-after lx-stage" data-step="3" hidden>
+            <a href="/scan/?web=1" class="btn primary">Save a real person</a>
+            <a href="/card/" class="nx-link">Make your own card</a>
           </div>
-          <p class="lx-fine">Running an event? <a href="mailto:hello@nearify.org?subject=Nearify%20for%20my%20event">Get Nearify for your attendees</a>.</p>
-        </section>
+        </div>
       </div>
+
+      <ol class="nx-steps" aria-label="How Nearify works">
+        <li><strong>Scan their QR.</strong> No app to install.</li>
+        <li><strong>Jot one detail.</strong> Only you can read it.</li>
+        <li><strong>Pick up next time.</strong> Skip “remind me your name?”</li>
+      </ol>
+
+      <p class="nx-fine">
+        <a href="/connections/">Your saved people</a>
+        <a href="/events/index.html">Events</a>
+        <a href="mailto:hello@nearify.org?subject=Nearify%20for%20my%20event">Nearify for organizers</a>
+      </p>
     </section>
 
     <!-- ─── LOGGED-IN DASHBOARD ───────────────────────────────────────── -->
@@ -277,7 +229,7 @@
   <script type="module" src="/assets/js/dashboard.js?v=20261114-prepare1"></script>
   <script type="module" src="/assets/js/navAuth.js?v=20261106-permissions2"></script>
   <script type="module" src="/assets/js/todayEvent.js?v=20261118-lx1"></script>
-  <script type="module" src="/assets/js/landingDemo.js?v=20261118-count1"></script>
+  <script type="module" src="/assets/js/landingDemo.js?v=20261118-nx1"></script>
 
 </body>
 </html>
