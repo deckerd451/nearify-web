@@ -1,5 +1,7 @@
 # CharlestonHacks × Nearify: single-event acquisition pilot
 
+> **Update 2026-11-18:** checked in production. Attendee discovery is no longer planned: Nearify won't show other people's attendance (see the product decision in the status doc). The legacy roster `get_public_event_attendees` can't be run by anyone, and signed-out visitors have no read policy on `event_attendees` or `profiles`. See [`docs/PRIVACY_STATUS.md`](../docs/PRIVACY_STATUS.md) for exactly what was and wasn't checked.
+
 **Status:** proposal for review; no outreach, event listing, deployment, or data collection has been initiated.
 
 ## Hypothesis

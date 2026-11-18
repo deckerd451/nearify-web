@@ -1,5 +1,7 @@
 # Nearify guest → saved connection: Show & Tell readiness gate
 
+> **Update 2026-11-18:** checked in production. The legacy roster `get_public_event_attendees` can't be run by anyone, and signed-out visitors have no read policy on `event_attendees` or `profiles`. See [`docs/PRIVACY_STATUS.md`](../docs/PRIVACY_STATUS.md) for exactly what was and wasn't checked.
+
 **Review only.** No production deployment, database mutation, or attendee invitation is authorized by this document. Based on code review, not an executed browser or iOS test.
 
 ## Core promise to validate

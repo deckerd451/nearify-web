@@ -1,5 +1,7 @@
 # Event discovery consent foundation: review and verification
 
+> **Update 2026-11-18:** checked in production. The legacy roster `get_public_event_attendees` can't be run by anyone, and signed-out visitors have no read policy on `event_attendees` or `profiles`. See [`docs/PRIVACY_STATUS.md`](../docs/PRIVACY_STATUS.md) for exactly what was and wasn't checked.
+
 **Not applied to production.** The SQL in `event-discovery/consent-foundation.sql` is additive only.
 
 ## Intended guarantees
