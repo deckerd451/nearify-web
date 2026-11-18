@@ -114,8 +114,9 @@ function fallbackCopy(text) {
  * @returns {string}
  */
 export function buildEventShareUrl(event) {
-  const slug = event.slug || event.id;
-  return `https://nearify.org/events/event.html?slug=${encodeURIComponent(slug)}&web=1`;
+  // The event page looks up ?slug= by slug and ?id= by id, so never send an id as a slug.
+  const query = event.slug ? `slug=${encodeURIComponent(event.slug)}` : `id=${encodeURIComponent(event.id)}`;
+  return `https://nearify.org/events/event.html?${query}&web=1`;
 }
 
 /**

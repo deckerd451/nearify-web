@@ -40,7 +40,7 @@ import { logger } from "./logger.js";
 import { canManageEvent } from "./events.js";
 import { fetchIsAdmin } from "./adminAccess.js";
 import { loadOrganizerInsights } from "./organizerInsights.js";
-import { renderShareButton, buildEventShareUrl, buildEventShareText } from "./share.js?v=20261105-web1";
+import { renderShareButton, buildEventShareUrl, buildEventShareText } from "./share.js?v=20261118-brief1";
 import { VALID_INTENTS, INTENT_LABELS } from "./constants/intents.js?v=20261114-prepare1";
 import {
   CONNECTION_STATE,
@@ -414,7 +414,9 @@ function buildEventIcs(event) {
     `DTEND:${toIcsUtc(end)}`,
     `SUMMARY:${escapeIcsText(event.name || "Nearify Event")}`,
   ];
-  if (event.description) lines.push(`DESCRIPTION:${escapeIcsText(event.description)}`);
+  const planLine = url ? `Before you go, see who you've met: ${planUrl(url)}` : "";
+  const description = [planLine, event.description].filter(Boolean).join("\n\n");
+  if (description) lines.push(`DESCRIPTION:${escapeIcsText(description)}`);
   if (event.location) lines.push(`LOCATION:${escapeIcsText(event.location)}`);
   if (url) lines.push(`URL:${escapeIcsText(url)}`);
   lines.push("END:VEVENT", "END:VCALENDAR");
@@ -438,6 +440,11 @@ function downloadEventIcs(event) {
   setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
 }
 
+// The event page's plan section, where "People you might see" appears.
+function planUrl(url) {
+  try { const u = new URL(url, window.location.href); u.hash = "prepare"; return u.toString(); } catch (_) { return url; }
+}
+
 // Build a Google Calendar "add event" URL from existing event fields. Uses the
 // same 2-hour default end as the .ics when no end time is present.
 function buildGoogleCalendarUrl(event) {
@@ -449,7 +456,7 @@ function buildGoogleCalendarUrl(event) {
     : new Date(start.getTime() + 2 * 60 * 60 * 1000);
 
   const url = (typeof buildEventShareUrl === "function" && buildEventShareUrl(event)) || window.location.href;
-  const details = [event.description, url ? `Details: ${url}` : ""]
+  const details = [url ? `Before you go, see who you've met: ${planUrl(url)}` : "", event.description, url ? `Details: ${url}` : ""]
     .filter(Boolean).join("\n\n");
 
   const params = new URLSearchParams({
@@ -525,6 +532,7 @@ function wirePlanControls() {
 
       attendanceConfirmedThisVisit = true;
       prepareBtn.textContent = "Attending ✓";
+      document.dispatchEvent(new CustomEvent("nearify:attending", { detail: { event: currentEvent } }));
       if (options) options.hidden = false;
       prepareBtn.setAttribute("aria-expanded", "true");
     });
@@ -1674,6 +1682,9 @@ async function init() {
 
     currentUser = await fetchCurrentUser();
     await populatePage(currentEvent);
+    // Lets optional panels (eventBriefPage.js) build on the loaded event.
+    window.__NEARIFY_EVENT__ = currentEvent;
+    document.dispatchEvent(new CustomEvent("nearify:event-ready", { detail: { event: currentEvent } }));
     requestAnimationFrame(()=>focusEventPreparation());
     await renderPersonalConnectSection(currentEvent.id);
     await maybeShowOrganizerSection(currentEvent);

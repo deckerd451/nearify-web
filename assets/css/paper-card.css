@@ -225,3 +225,32 @@
 @media (prefers-reduced-motion: reduce) {
   .connections-page .connection-row { transition: none; }
 }
+
+/* ── People you might see (event page + home) ─────────────────── */
+.nf-brief[hidden] { display: none; }
+.nf-brief { display: grid; gap: 14px; text-align: left; }
+.nf-brief-kicker { margin: 0 0 2px; font-family: var(--nf-hand); font-size: 22px; font-weight: 600; line-height: 1.1; color: #cdbbff; }
+.nf-brief-title { margin: 0; font-family: var(--nf-display); font-size: 24px; font-weight: 800; letter-spacing: -.02em; line-height: 1.1; color: #f5f3ff; }
+.nf-brief-list { display: grid; gap: 12px; margin: 0; padding: 0; list-style: none; }
+.nf-brief-list > li:nth-child(odd) .nf-brief-card { transform: rotate(-.3deg); }
+.nf-brief-list > li:nth-child(even) .nf-brief-card { transform: rotate(.25deg); }
+.nf-brief-card {
+  display: grid;
+  gap: 3px;
+  padding: 16px 18px;
+  border-radius: 16px;
+  text-decoration: none;
+  transition: transform .15s ease;
+}
+.nf-brief-list > li > .nf-brief-card:hover { transform: rotate(0) translateY(-2px); }
+.nf-brief-name { font-size: 19px; }
+.nf-brief-met { font-size: 13px; color: var(--nf-ink-soft); }
+.nf-brief-line { margin-top: 4px; font-family: var(--nf-hand); font-size: 22px; font-weight: 500; line-height: 1.2; color: var(--nf-pen); overflow-wrap: anywhere; }
+.nf-brief-empty { margin: 0; font-size: 15px; line-height: 1.5; color: #b8bad6; }
+.nf-brief-link { justify-self: start; font-size: 14px; font-weight: 600; color: #cdbbff; text-underline-offset: 3px; }
+.nf-brief-foot { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 18px; }
+.nf-brief-plan { margin: 0; min-height: 44px; display: inline-flex; align-items: center; }
+.nf-brief-fine { margin: 0; font-size: 13px; color: #8f92b8; }
+.nf-brief :is(a):focus-visible { outline: 3px solid #d6c8ff; outline-offset: 3px; }
+.nf-brief-home { margin: 0 0 24px; }
+@media (prefers-reduced-motion: reduce) { .nf-brief-card { transition: none; } }
