@@ -1,5 +1,7 @@
 # Legacy attendee roster: anonymous access remediation gate
 
+> **Update 2026-11-18:** checked in production. The legacy roster `get_public_event_attendees` can't be run by anyone, and signed-out visitors have no read policy on `event_attendees` or `profiles`. See [`docs/PRIVACY_STATUS.md`](PRIVACY_STATUS.md) for exactly what was and wasn't checked.
+
 **Status: candidate migration only; NOT applied to Supabase.** Follows issue #316 and audit PR #317.
 
 ## Confirmed finding

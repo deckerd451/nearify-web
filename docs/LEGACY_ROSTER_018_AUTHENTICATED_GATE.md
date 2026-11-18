@@ -1,5 +1,7 @@
 # Legacy roster: authenticated consent bypass — production gate
 
+> **Update 2026-11-18:** checked in production. The legacy roster `get_public_event_attendees` can't be run by anyone, and signed-out visitors have no read policy on `event_attendees` or `profiles`. See [`docs/PRIVACY_STATUS.md`](PRIVACY_STATUS.md) for exactly what was and wasn't checked.
+
 **Candidate only; no production execution.** Current project has a small tester population, which simplifies coordination but does not reduce the importance of consent or replace a recovery plan.
 
 ## Confirmed exposure
