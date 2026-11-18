@@ -35,6 +35,7 @@ import { saveAccountConnection } from "./accountConnection.js?v=20261106-eventhi
 import { guestSaveDiagnostic, guestSaveFailureMessage } from "./guestSaveDiagnostic.js";
 import { classifyWebQr } from "./webQr.js?v=20261106-eventscope1";
 import { trackGuestFunnel } from "./guestFunnel.js";
+import { buildGuestRecap } from "./guestRecap.js?v=20261118-recap1";
 import { fetchProfileCard, renderCardFacts } from "./profileCard.js?v=20261118-card1";
 
 const els = {
@@ -1175,7 +1176,71 @@ function renderGuestConnectionHistory(connections) {
     item.appendChild(details);
     listEl.appendChild(item);
   }
+  wireGuestRecap(historyEl, listEl, rows);
   historyEl.style.display = "";
+}
+
+// "Copy my recap": the guest's own list and on-device memories, as plain text
+// they can paste into notes. Read memories at tap time so edits are included.
+function wireGuestRecap(historyEl, listEl, rows) {
+  let wrap = document.getElementById("guestRecapActions");
+  if (!wrap) {
+    wrap = document.createElement("div");
+    wrap.id = "guestRecapActions";
+    wrap.className = "guest-recap-actions";
+    const button = document.createElement("button");
+    button.id = "guestCopyRecapBtn";
+    button.type = "button";
+    button.className = "btn secondary";
+    button.textContent = "Copy my recap";
+    const hint = document.createElement("p");
+    hint.className = "guest-recap-hint";
+    hint.textContent = "Names, dates and your private memories, ready to paste into your notes. No links are included.";
+    const status = document.createElement("p");
+    status.id = "guestCopyRecapStatus";
+    status.className = "guest-recap-status";
+    status.setAttribute("role", "status");
+    status.setAttribute("aria-live", "polite");
+    const fallback = document.createElement("textarea");
+    fallback.id = "guestRecapFallback";
+    fallback.className = "guest-recap-fallback";
+    fallback.readOnly = true;
+    fallback.rows = 6;
+    fallback.hidden = true;
+    fallback.setAttribute("aria-label", "Your recap");
+    wrap.append(button, hint, status, fallback);
+    listEl.after(wrap);
+  }
+  const button = document.getElementById("guestCopyRecapBtn");
+  const status = document.getElementById("guestCopyRecapStatus");
+  const fallback = document.getElementById("guestRecapFallback");
+  status.textContent = "";
+  fallback.hidden = true;
+  button.onclick = async () => {
+    const people = rows.map((row) => {
+      let memory = "";
+      try {
+        const key = guestMemoryStorageKey(row.memoryTargetId, row.memoryKind);
+        if (key) memory = localStorage.getItem(key) || "";
+      } catch (_) { /* storage unavailable: list names only */ }
+      return { name: row.to_profile_name, savedAt: row.connected_at, memory };
+    });
+    const eventName = document.getElementById("guestFlowEventName")?.textContent?.trim() || "";
+    const text = buildGuestRecap({ eventName, people });
+    if (!text) return;
+    try {
+      if (!navigator.clipboard?.writeText) throw new Error("Clipboard unavailable");
+      await navigator.clipboard.writeText(text);
+      fallback.hidden = true;
+      status.textContent = "Recap copied. Paste it into your notes.";
+    } catch (_) {
+      fallback.value = text;
+      fallback.hidden = false;
+      fallback.focus();
+      fallback.select();
+      status.textContent = "Copy isn't available here. Your recap is selected below; copy it from there.";
+    }
+  };
 }
 
 function updateClaimButtonCount(count) {
@@ -1386,6 +1451,7 @@ async function refreshAllGuestHistory(eventId) {
     ...profiles.map((p) => ({ ...p, memoryTargetId: p.to_profile_id, memoryKind: "member" })),
     ...guests.map((g) => ({
       to_profile_name: g.guest_name + " (guest)",
+      connected_at: g.connected_at,
       memoryTargetId: g.connection_id,
       memoryKind: "guest",
     })),
