@@ -187,12 +187,7 @@
   transform: rotate(-4deg);
 }
 
-/* The back: ruled like an index card, written in pen */
-.nx-back {
-  background-color: var(--nx-paper);
-  background-image: repeating-linear-gradient(to bottom, transparent 0 35px, var(--nx-rule) 35px 36px);
-  background-position: 0 62px;
-}
+/* The back: written in pen on ruled lines */
 .nx-back-label { font-size: 14px; font-weight: 600; color: #6f6990; }
 .nx-note {
   box-sizing: border-box;
@@ -201,6 +196,10 @@
   border: 0;
   background: transparent;
   resize: none;
+  overflow: hidden;
+  /* one rule under each 36px line of handwriting */
+  background-image: repeating-linear-gradient(to bottom, transparent 0 35px, var(--nx-rule) 35px 36px);
+  background-attachment: local;
   font-family: var(--nx-hand);
   font-size: 30px;
   font-weight: 500;
@@ -208,6 +207,7 @@
   color: var(--nx-pen);
 }
 .nx-note::placeholder { color: #a9a1d6; }
+.nx .nx-note:focus-visible { outline: 2px solid rgba(75, 59, 214, .28); outline-offset: 6px; border-radius: 4px; }
 .nx-chips { display: flex; flex-wrap: wrap; gap: 8px; }
 .nx-back .nx-card-btn { margin-top: 4px; }
 .nx .lx-chip {
