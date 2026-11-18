@@ -23,6 +23,8 @@
   <link rel="stylesheet" href="assets/css/follow-up.css?v=20261106-ambient1" />
   <link rel="stylesheet" href="/assets/css/profile-conversation.css?v=20261114-context1" />
   <link rel="stylesheet" href="/assets/css/profile-card.css?v=20261118-card1" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Caveat:wght@500;600&display=swap" />
+  <link rel="stylesheet" href="/assets/css/paper-card.css?v=20261118-paper1" />
 </head>
 <body>
   <a href="#main-content" class="skip-link">Skip to main content</a>
@@ -57,10 +59,12 @@
     <!-- Profile content -->
     <section id="profileContent" class="profile-card-wrapper" hidden>
       <div class="profile-card">
-        <div id="profileAvatar" class="profile-avatar-wrap"></div>
-        <h1 id="profileName" class="profile-name"></h1>
-        <p  id="profileContext" class="profile-context"></p>
-        <dl id="profileCardFacts" class="pc-facts" hidden></dl>
+        <div class="nf-paper profile-paper">
+          <div id="profileAvatar" class="profile-avatar-wrap"></div>
+          <h1 id="profileName" class="profile-name"></h1>
+          <p  id="profileContext" class="profile-context"></p>
+          <dl id="profileCardFacts" class="pc-facts" hidden></dl>
+        </div>
 
         <section id="profileEventContext" class="profile-event-context" aria-label="Why this conversation" hidden></section>
         <section id="profileFollowUp" class="followup-panel" aria-label="Follow up" hidden></section>
