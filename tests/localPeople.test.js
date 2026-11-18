@@ -40,14 +40,25 @@ describe('device store', () => {
 
 describe('account store', () => {
   it('maps rows both ways and upserts on the owner + client id', async () => {
-    const person = { id: 'c1', name: 'Maya', where: '', note: 'launch', savedAt: '2026-11-18T15:00:00Z' };
-    expect(toRow(person)).toEqual({ client_id: 'c1', name: 'Maya', met_where: null, note: 'launch', saved_at: '2026-11-18T15:00:00Z' });
+    const person = { id: 'c1', name: 'Maya', where: '', reach: '', note: 'launch', savedAt: '2026-11-18T15:00:00Z' };
+    expect(toRow(person)).toEqual({ client_id: 'c1', name: 'Maya', met_where: null, note: 'launch', saved_at: '2026-11-18T15:00:00Z', reach: null });
+    expect(toRow(person, { withReach: false })).not.toHaveProperty('reach');
     expect(fromRow(toRow(person))).toEqual(person);
     const upsert = vi.fn().mockResolvedValue({ error: null });
     const store = createAccountStore({ from: () => ({ upsert }) });
     expect(await store.importAll([person, { ...person, id: 'c2' }])).toBe(2);
     expect(upsert.mock.calls[0][1]).toEqual({ onConflict: 'owner_user_id,client_id' });
     expect(await store.importAll([])).toBe(0);
+  });
+
+  it('keeps working before the reach column exists', async () => {
+    const sent = [];
+    const upsert = vi.fn(async (rows) => { sent.push(rows); return sent.length === 1 ? { error: { code: 'PGRST204', message: "Could not find the 'reach' column" } } : { error: null }; });
+    const store = createAccountStore({ from: () => ({ upsert }) });
+    await store.add({ id: 'c1', name: 'A', reach: '555-123-4567', savedAt: 'x' });
+    expect(sent[0][0]).toHaveProperty('reach', '555-123-4567');
+    expect(sent[1][0]).not.toHaveProperty('reach');
+    expect(store.storesReach).toBe(false);
   });
 
   it('surfaces errors so the page can fall back to this device', async () => {

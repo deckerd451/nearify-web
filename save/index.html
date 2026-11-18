@@ -12,7 +12,7 @@
   <link rel="stylesheet" href="/assets/css/scan-entry.css?v=20261105-accountfix1" />
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Caveat:wght@500;600&display=swap" />
   <link rel="stylesheet" href="/assets/css/paper-card.css?v=20261118-paper1" />
-  <link rel="stylesheet" href="/assets/css/save-person.css?v=20261118-save1" />
+  <link rel="stylesheet" href="/assets/css/save-person.css?v=20261118-reach1" />
 </head>
 <body>
   <a href="#main-content" class="skip-link">Skip to main content</a>
@@ -46,6 +46,9 @@
       <input id="spName" class="sp-name" name="name" type="text" maxlength="80" autocomplete="off" autocapitalize="words" placeholder="Their name" required />
       <label class="sp-visually-hidden" for="spWhere">Where you met</label>
       <input id="spWhere" class="sp-where" name="where" type="text" maxlength="120" autocomplete="off" placeholder="Where you met" />
+      <label class="sp-visually-hidden" for="spReach">How to reach them</label>
+      <input id="spReach" class="sp-where" name="reach" type="text" maxlength="120" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="Phone, email or LinkedIn" aria-describedby="spReachHint" />
+      <p class="sp-reach-hint" id="spReachHint" aria-live="polite"></p>
       <label class="sp-label" for="spNote">One thing to remember</label>
       <textarea id="spNote" class="nf-pen sp-note" name="note" rows="2" maxlength="500" placeholder="Ask how the launch went"></textarea>
       <div class="sp-card-foot">
@@ -87,6 +90,6 @@
   </footer>
 
   <script type="module" src="../assets/js/navAuth.js?v=20261106-permissions2"></script>
-  <script type="module" src="../assets/js/savePerson.js?v=20261118-save2"></script>
+  <script type="module" src="../assets/js/savePerson.js?v=20261118-reach1"></script>
 </body>
 </html>

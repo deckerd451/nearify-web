@@ -4,7 +4,8 @@
  * (for example before the private_contacts table exists).
  */
 import { supabase, getSessionCached } from "./supabaseClient.js";
-import { createAccountStore } from "./localPeople.js?v=20261118-save1";
+import { createAccountStore } from "./localPeople.js?v=20261118-reach1";
+import { reachActions } from "./reach.js?v=20261118-reach1";
 
 function el(tag, className, text) {
   const node = document.createElement(tag);
@@ -31,6 +32,15 @@ async function showPrivateContacts() {
         .filter(Boolean).join(", ");
       if (met) li.append(el("p", "private-contact-met", met));
       if (person.note) li.append(el("p", "private-contact-note", person.note));
+      const [action] = reachActions(person);
+      if (action) {
+        const link = el("a", "private-contact-reach", action.label);
+        link.href = action.href;
+        if (action.external) { link.target = "_blank"; link.rel = "noopener noreferrer"; }
+        li.append(link);
+      } else if (person.reach) {
+        li.append(el("p", "private-contact-met", person.reach));
+      }
       return li;
     }));
     section.hidden = false;

@@ -13,12 +13,15 @@ import { logger } from "./logger.js";
 import { buildGuestRecap } from "./guestRecap.js?v=20261118-recap1";
 import {
   buildFollowUpIcs, createAccountStore, createLocalStore, followUpFileName, makePerson,
-} from "./localPeople.js?v=20261118-save1";
+} from "./localPeople.js?v=20261118-reach1";
+import { buildVCard, parseReach, reachActions, vCardFileName } from "./reach.js?v=20261118-reach1";
 
 const $ = (id) => document.getElementById(id);
 const form = $("spForm");
 const nameInput = $("spName");
 const whereInput = $("spWhere");
+const reachInput = $("spReach");
+const reachHint = $("spReachHint");
 const noteInput = $("spNote");
 const saveBtn = $("spSave");
 const savedMark = $("spSavedMark");
@@ -31,6 +34,7 @@ let clientPromise = null;
 const loadClient = () => (clientPromise ||= import("./supabaseClient.js").catch((err) => { clientPromise = null; throw err; }));
 let store = device;
 let people = [];
+let me = { myName: "", myCardUrl: "" }; // filled in when signed in
 
 function el(tag, className, text) {
   const node = document.createElement(tag);
@@ -53,16 +57,30 @@ function updateSaveLabel() {
   saveBtn.textContent = first ? `Save ${first.slice(0, 20)}` : "Save";
 }
 
-function downloadReminder(person) {
-  const blob = new Blob([buildFollowUpIcs(person)], { type: "text/calendar;charset=utf-8" });
+function downloadFile(text, type, fileName) {
+  const blob = new Blob([text], { type });
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.href = url;
-  link.download = followUpFileName(person);
+  link.download = fileName;
   document.body.append(link);
   link.click();
   link.remove();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+const REACH_HINTS = {
+  phone: "Phone number. You’ll be able to text them your card or call.",
+  email: "Email. You’ll be able to email them your card.",
+  link: "Link. You’ll be able to open it in one tap.",
+  text: "Saved as you wrote it.",
+};
+function updateReachHint() {
+  const reach = parseReach(reachInput.value);
+  if (!reach) { reachHint.textContent = ""; return; }
+  reachHint.textContent = reach.kind === "link" && reach.site
+    ? `${reach.site} link. You’ll be able to open it in one tap.`
+    : REACH_HINTS[reach.kind];
 }
 
 function personCard(person) {
@@ -74,16 +92,36 @@ function personCard(person) {
   who.append(el("h3", "nf-name sp-person-name", person.name));
   const met = [person.where, savedOn(person.savedAt)].filter(Boolean).join(", ");
   if (met) who.append(el("p", "sp-person-met", met));
+  if (person.reach) who.append(el("p", "sp-person-reach-text", person.reach));
   head.append(who);
   li.append(head);
   if (person.note) li.append(el("p", "sp-person-note", person.note));
 
+  const reachRow = reachActions(person, me);
+  if (reachRow.length) {
+    const quick = el("div", "sp-person-reach");
+    for (const action of reachRow) {
+      const link = el("a", action.primary ? "sp-reach-btn sp-reach-primary" : "sp-reach-btn", action.label);
+      link.href = action.href;
+      if (action.external) { link.target = "_blank"; link.rel = "noopener noreferrer"; }
+      quick.append(link);
+    }
+    li.append(quick);
+  }
+
   const actions = el("div", "sp-person-actions");
-  const remind = el("button", "sp-person-btn", "Remind me in a week");
+  const contact = el("button", "sp-person-btn", "Add to Contacts");
+  contact.type = "button";
+  contact.addEventListener("click", () => {
+    downloadFile(buildVCard(person), "text/vcard;charset=utf-8", vCardFileName(person));
+    status.textContent = `Contact card for ${person.name} downloaded. Open it to add them to your contacts.`;
+  });
+  const remind = el("button", "sp-person-btn", "Remind me");
+  remind.setAttribute("aria-label", `Remind me to follow up with ${person.name} in a week`);
   remind.type = "button";
   remind.addEventListener("click", () => {
-    downloadReminder(person);
-    status.textContent = `Reminder for ${person.name} downloaded. Open it to add it to your calendar.`;
+    downloadFile(buildFollowUpIcs(person), "text/calendar;charset=utf-8", followUpFileName(person));
+    status.textContent = `Reminder to follow up with ${person.name} next week downloaded. Open it to add it to your calendar.`;
   });
   const remove = el("button", "sp-person-delete", "Delete");
   remove.type = "button";
@@ -100,7 +138,7 @@ function personCard(person) {
       status.textContent = "Couldn’t delete. Check your connection and try again.";
     }
   });
-  actions.append(remind, remove);
+  actions.append(contact, remind, remove);
   li.append(actions);
   return li;
 }
@@ -125,13 +163,14 @@ async function refresh() {
 
 form.addEventListener("input", (event) => {
   if (event.target === nameInput) updateSaveLabel();
+  if (event.target === reachInput) updateReachHint();
   errorEl.hidden = true;
   savedMark.hidden = true;
 });
 
 form.addEventListener("submit", async (event) => {
   event.preventDefault();
-  const person = makePerson({ name: nameInput.value, where: whereInput.value, note: noteInput.value });
+  const person = makePerson({ name: nameInput.value, where: whereInput.value, reach: reachInput.value, note: noteInput.value });
   if (!person) {
     errorEl.textContent = "Add their name to save them.";
     errorEl.hidden = false;
@@ -150,15 +189,19 @@ form.addEventListener("submit", async (event) => {
   }
   form.reset();
   updateSaveLabel();
+  updateReachHint();
   savedMark.hidden = false;
-  status.textContent = `${person.name} saved.`;
+  const kind = parseReach(person.reach)?.kind;
+  status.textContent = kind === "phone" || kind === "email"
+    ? `${person.name} saved. Send them your card so they have your details too.`
+    : `${person.name} saved.`;
   await refresh();
   nameInput.focus();
 });
 
 $("spCopy").addEventListener("click", async () => {
   const text = buildGuestRecap({
-    people: people.map((p) => ({ name: p.name, savedAt: p.savedAt, memory: [p.where && `Met: ${p.where}`, p.note].filter(Boolean).join("\n") })),
+    people: people.map((p) => ({ name: p.name, savedAt: p.savedAt, memory: [p.where && `Met: ${p.where}`, p.reach && `Reach: ${p.reach}`, p.note].filter(Boolean).join("\n") })),
   });
   const copyStatus = $("spCopyStatus");
   const fallback = $("spCopyFallback");
@@ -196,11 +239,13 @@ async function init() {
 
   let supabase = null;
   let signedIn = false;
+  let userId = null;
   try {
     const client = await loadClient();
     supabase = client.supabase;
     const { data } = await client.getSessionCached();
     signedIn = Boolean(data?.session?.user);
+    userId = data?.session?.user?.id || null;
   } catch (_) { /* offline or CDN unavailable: stay on this device */ }
 
   if (signedIn) {
@@ -216,6 +261,10 @@ async function init() {
           : `${waiting.length} people from this phone are now in your account.`;
       }
       store = account;
+      try {
+        const { data: profile } = await supabase.from("profiles").select("id, name").eq("user_id", userId).maybeSingle();
+        if (profile?.id) me = { myName: profile.name || "", myCardUrl: `${window.location.origin}/profile/${encodeURIComponent(profile.id)}` };
+      } catch (_) { /* messages fall back to "now you have my number" */ }
       $("spLede").textContent = "Their name and one thing to remember. Only you can see them.";
       $("spFine").textContent = "Saved to your account. Nearify never contacts the people you save here.";
     } catch (err) {
