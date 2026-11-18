@@ -153,6 +153,7 @@
 .connections-page .private-contact-name { margin: 0; font-family: var(--nf-display); font-size: 20px; font-weight: 800; letter-spacing: -.015em; }
 .connections-page .private-contact-met { margin: 0; font-size: 14px; color: var(--nf-ink-soft); }
 .connections-page .private-contact-note { margin: 2px 0 0; font-family: var(--nf-hand); font-size: 22px; line-height: 1.25; color: var(--nf-pen); white-space: pre-wrap; overflow-wrap: anywhere; }
+.connections-page .private-contact-reach { justify-self: start; display: inline-flex; align-items: center; min-height: 40px; margin-top: 4px; padding: 0 16px; border-radius: 999px; background: var(--nf-ink); color: #fff; font-size: 14px; font-weight: 600; text-decoration: none; }
 .connections-page .connections-save-hint { margin-top: 16px; font-size: 14px; }
 .connections-page .connections-save-hint a { color: #cdbbff; }
 

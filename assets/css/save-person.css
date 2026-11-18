@@ -31,6 +31,8 @@
 .sp-card input:focus-visible { outline: none; border-bottom-color: var(--nf-pen); }
 .sp-card .sp-name { font-family: var(--nf-display); font-size: 28px; font-weight: 800; letter-spacing: -.02em; }
 .sp-card .sp-where { font-size: 16px; }
+.sp-reach-hint { margin: -6px 0 0; min-height: 0; font-size: 13px; color: var(--nf-ink-label); }
+.sp-reach-hint:empty { display: none; }
 .sp-label { margin-top: 4px; font-size: 14px; font-weight: 600; color: var(--nf-ink-label); }
 .sp-note { min-height: 72px; resize: none; overflow: hidden; }
 .sp-note:focus-visible { outline: 2px solid rgba(75, 59, 214, .28); outline-offset: 6px; border-radius: 4px; }
@@ -103,6 +105,16 @@
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
+.sp-person-reach-text { margin: 2px 0 0; font-size: 14px; color: var(--nf-ink-label); overflow-wrap: anywhere; }
+.sp-person-reach { display: flex; flex-wrap: wrap; gap: 10px; }
+.sp-reach-btn {
+  display: inline-flex; align-items: center; min-height: 44px; padding: 0 18px; border: 1.5px solid var(--nf-ink); border-radius: 999px;
+  color: var(--nf-ink); font-size: 15px; font-weight: 600; text-decoration: none;
+}
+.sp-reach-btn:hover { background: #e9e4ff; }
+.sp-reach-primary { background: var(--nf-ink); color: #fff; }
+.sp-reach-primary:hover { background: #2c2552; }
+.sp-person .sp-reach-btn:focus-visible { outline: 3px solid var(--nf-pen); outline-offset: 3px; }
 .sp-person-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 20px; padding-top: 10px; border-top: 1px solid var(--nf-rule); }
 .sp-person-btn, .sp-person-delete {
   min-height: 40px; padding: 0; border: 0; background: none; font: inherit; font-size: 14px; font-weight: 600; cursor: pointer;
@@ -130,6 +142,7 @@
 
 @media (max-width: 600px) {
   .sp-page { padding-top: 28px; }
+  .sp-reach-primary { flex: 1 1 auto; justify-content: center; }
   .sp-card { padding: 22px 20px 18px; }
   .sp-save { flex: 1; }
 }

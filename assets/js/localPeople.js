@@ -9,7 +9,7 @@
  */
 
 export const LOCAL_PEOPLE_KEY = "nearify_local_people_v1";
-export const LIMITS = Object.freeze({ name: 80, where: 120, note: 500 });
+export const LIMITS = Object.freeze({ name: 80, where: 120, reach: 120, note: 500 });
 
 function oneLine(value, max) {
   if (typeof value !== "string") return "";
@@ -27,13 +27,14 @@ function newId() {
 }
 
 /** Validates and normalizes a new entry. Returns null without a name. */
-export function makePerson({ name, where, note } = {}, now = new Date()) {
+export function makePerson({ name, where, reach, note } = {}, now = new Date()) {
   const cleanName = oneLine(name, LIMITS.name);
   if (!cleanName) return null;
   return {
     id: newId(),
     name: cleanName,
     where: oneLine(where, LIMITS.where),
+    reach: oneLine(reach, LIMITS.reach),
     note: clean(note, LIMITS.note),
     savedAt: now.toISOString(),
   };
@@ -49,6 +50,7 @@ export function parsePeople(raw) {
         id: p.id,
         name: oneLine(p.name, LIMITS.name),
         where: oneLine(p.where, LIMITS.where),
+        reach: oneLine(p.reach, LIMITS.reach),
         note: clean(p.note, LIMITS.note),
         savedAt: typeof p.savedAt === "string" ? p.savedAt : new Date(0).toISOString(),
       }));
@@ -79,27 +81,43 @@ export function createLocalStore(storage = globalThis.localStorage) {
 }
 
 /** Converts between the page's shape and the private_contacts row shape. */
-export function toRow(person) {
-  return { client_id: person.id, name: person.name, met_where: person.where || null, note: person.note || null, saved_at: person.savedAt };
+export function toRow(person, { withReach = true } = {}) {
+  const row = { client_id: person.id, name: person.name, met_where: person.where || null, note: person.note || null, saved_at: person.savedAt };
+  if (withReach) row.reach = person.reach || null;
+  return row;
 }
 export function fromRow(row) {
-  return { id: row.client_id, name: row.name, where: row.met_where || "", note: row.note || "", savedAt: row.saved_at };
+  return { id: row.client_id, name: row.name, where: row.met_where || "", reach: row.reach || "", note: row.note || "", savedAt: row.saved_at };
 }
+
+// The reach column arrived in a later migration. Until it exists, keep
+// working without it rather than failing the whole account store.
+const MISSING_COLUMN = new Set(["42703", "PGRST204"]);
+const isMissingColumn = (error) => Boolean(error && (MISSING_COLUMN.has(error.code) || /reach/.test(error.message || "") && /column/.test(error.message || "")));
 
 /** A store backed by the signed-in person's private_contacts rows. */
 export function createAccountStore(supabase) {
+  let withReach = true;
+  const columns = () => "client_id, name, met_where, note, saved_at" + (withReach ? ", reach" : "");
+  async function upsertRows(people) {
+    const send = () => supabase.from("private_contacts")
+      .upsert(people.map((p) => toRow(p, { withReach })), { onConflict: "owner_user_id,client_id" });
+    let { error } = await send();
+    if (error && withReach && isMissingColumn(error)) { withReach = false; ({ error } = await send()); }
+    if (error) throw error;
+  }
   return {
     kind: "account",
+    get storesReach() { return withReach; },
     async list() {
-      const { data, error } = await supabase.from("private_contacts")
-        .select("client_id, name, met_where, note, saved_at")
-        .order("saved_at", { ascending: false });
+      const query = () => supabase.from("private_contacts").select(columns()).order("saved_at", { ascending: false });
+      let { data, error } = await query();
+      if (error && withReach && isMissingColumn(error)) { withReach = false; ({ data, error } = await query()); }
       if (error) throw error;
       return (data || []).map(fromRow);
     },
     async add(person) {
-      const { error } = await supabase.from("private_contacts").upsert(toRow(person), { onConflict: "owner_user_id,client_id" });
-      if (error) throw error;
+      await upsertRows([person]);
       return person;
     },
     async remove(id) {
@@ -109,8 +127,7 @@ export function createAccountStore(supabase) {
     /** Moves device-only people into the account. Safe to repeat. */
     async importAll(people) {
       if (!people.length) return 0;
-      const { error } = await supabase.from("private_contacts").upsert(people.map(toRow), { onConflict: "owner_user_id,client_id" });
-      if (error) throw error;
+      await upsertRows(people);
       return people.length;
     },
   };
@@ -140,7 +157,7 @@ export function followUpStart(savedAt, days = 7) {
 export function buildFollowUpIcs(person, { days = 7, now = new Date() } = {}) {
   const start = followUpStart(person.savedAt, days);
   const end = new Date(start.getTime() + 15 * 60000);
-  const details = [person.where ? `Met: ${person.where}` : "", person.note ? `Remember: ${person.note}` : ""]
+  const details = [person.where ? `Met: ${person.where}` : "", person.reach ? `Reach: ${person.reach}` : "", person.note ? `Remember: ${person.note}` : ""]
     .filter(Boolean).join("\n");
   return [
     "BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//Nearify//Follow up//EN", "CALSCALE:GREGORIAN",
