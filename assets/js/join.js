@@ -35,6 +35,7 @@ import { saveAccountConnection } from "./accountConnection.js?v=20261106-eventhi
 import { guestSaveDiagnostic, guestSaveFailureMessage } from "./guestSaveDiagnostic.js";
 import { classifyWebQr } from "./webQr.js?v=20261106-eventscope1";
 import { trackGuestFunnel } from "./guestFunnel.js";
+import { fetchProfileCard, renderCardFacts } from "./profileCard.js?v=20261118-card1";
 
 const els = {
   joinKicker: document.getElementById("joinKicker"),
@@ -732,6 +733,22 @@ function renderGenericJoinUx(event, fallbackName, source) {
   logger.log("[Join] Rendering generic event join UX");
 }
 
+// Adds the person's own "Building / Looking for" lines when they've written them.
+function showTargetCardFacts(profileId) {
+  if (!profileId || !els.joinDescription) return;
+  fetchProfileCard(supabase, profileId).then((card) => {
+    if (!card || !document.body.classList.contains("join-mode-personal-connect")) return;
+    let dl = document.getElementById("joinTargetCardFacts");
+    if (!dl) {
+      dl = document.createElement("dl");
+      dl.id = "joinTargetCardFacts";
+      dl.className = "pc-facts";
+      els.joinDescription.after(dl);
+    }
+    renderCardFacts(dl, card);
+  });
+}
+
 function renderPersonalConnectUx(event, targetProfile) {
   setJoinMode("personal-connect");
 
@@ -741,6 +758,7 @@ function renderPersonalConnectUx(event, targetProfile) {
   setText(els.joinKicker, "");
   setText(els.joinTitle, `You're connected with ${personName}`);
   setText(els.joinDescription, "This person has been saved for this event.");
+  showTargetCardFacts(targetProfile?.id);
 
   renderEventMeta(event);
 

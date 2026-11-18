@@ -5,6 +5,7 @@ import { trackPageView, trackAppCtaClick } from "./analytics.js";
 import { getCurrentUser } from "./appState.js";
 import { mountProfileFollowUp } from "./profileFollowUp.js?v=20261114-context1";
 import { logger } from "./logger.js";
+import { fetchProfileCard, renderCardFacts } from "./profileCard.js?v=20261118-card1";
 import { summarizeRelationshipEvents, relationshipEventLabel } from "./relationshipEventHistory.js";
 import { INTENT_LABELS, buildRelationshipNarrative } from "./profileNarrative.js";
 
@@ -274,6 +275,7 @@ async function init() {
   }
 
   renderProfile(rows[0], eventId, eventName, { relationshipMode: fromConnections });
+  fetchProfileCard(supabase, profileId).then((card) => renderCardFacts(document.getElementById("profileCardFacts"), card));
 
   // Load relationship context for authenticated viewers (non-blocking)
   const user = await getCurrentUser();
