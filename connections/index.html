@@ -175,7 +175,7 @@
   <link rel="stylesheet" href="/assets/css/scan-entry.css?v=20261105-accountfix1" />
 <link rel="stylesheet" href="../assets/css/follow-up.css?v=20261106-ambient1">
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Caveat:wght@500;600&display=swap" />
-  <link rel="stylesheet" href="/assets/css/paper-card.css?v=20261118-paper1" />
+  <link rel="stylesheet" href="/assets/css/paper-card.css?v=20261118-paper2" />
 </head>
 <body>
   <a href="#main-content" class="skip-link">Skip to main content</a>
@@ -216,16 +216,27 @@
     <div id="connectionsAuthState" style="display:none;">
       <p>Sign in to see the people you've connected with at Nearify events.</p>
       <a href="../join/index.html" class="btn primary">Sign In</a>
+      <p class="connections-save-hint">No account? <a href="/save/">Save someone you met</a> on this phone.</p>
     </div>
 
     <!-- Empty state -->
     <div id="connectionsEmptyState" style="display:none;">
-      <p>No connections yet. Attend an event and connect with people to start building your network.</p>
-      <a href="../events/index.html" class="btn primary">Browse Events</a>
+      <p>No connections yet. Save someone you just met, or scan their QR at an event.</p>
+      <a href="/save/" class="btn primary">Save someone you met</a>
+      <a href="../events/index.html" class="btn secondary">Browse Events</a>
     </div>
 
     <!-- Connections list -->
     <ul id="connectionsList" class="connections-list" role="list" style="display:none;"></ul>
+
+    <!-- People saved by hand on /save/ (owner-only) -->
+    <section id="privateContactsSection" class="private-contacts" aria-labelledby="privateContactsHeading" hidden>
+      <div class="private-contacts-head">
+        <h2 id="privateContactsHeading">Saved by hand</h2>
+        <a href="/save/" class="private-contacts-add">Save someone</a>
+      </div>
+      <ul id="privateContactsList" class="connections-list" role="list"></ul>
+    </section>
 
   </main>
 
@@ -243,5 +254,6 @@
 
   <script type="module" src="../assets/js/navAuth.js?v=20261106-permissions2"></script>
   <script type="module" src="../assets/js/connections.js?v=20261106-review1"></script>
+  <script type="module" src="../assets/js/connectionsPrivate.js?v=20261118-save1"></script>
 </body>
 </html>
