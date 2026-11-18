@@ -203,15 +203,20 @@ const LANDING_STEPS = [
   { key: "landing_demo_cta_clicked", label: "Tapped “Save a real person”" },
 ];
 
-function escapeHtml(value) {
-  return String(value).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+function el(tag, className, text) {
+  const node = document.createElement(tag);
+  if (className) node.className = className;
+  if (text !== undefined) node.textContent = text;
+  return node;
 }
 
 function renderLandingDemo(result) {
   if (!$landing) return;
   $landing.style.display = "block";
   if (result.error) {
-    $landingBody.innerHTML = `<p class="fd-section-subtitle">Not available yet. Run <code>supabase/migrations/20261118_landing_demo_funnel.sql</code> to turn on this report.</p>`;
+    const note = el("p", "fd-section-subtitle", "Not available yet. Run ");
+    note.append(el("code", "", "supabase/migrations/20261118_landing_demo_funnel.sql"), " to turn on this report.");
+    $landingBody.replaceChildren(note);
     return;
   }
   const rows = result.data ?? [];
@@ -228,20 +233,30 @@ function renderLandingDemo(result) {
   const finished = totals.landing_demo_completed || 0;
   const pct = (n, d) => (d ? Math.round((n / d) * 100) + "%" : "—");
 
-  const stats = LANDING_STEPS.map((step) => `
-    <div class="fd-stat-card">
-      <div class="fd-stat-label">${step.label}</div>
-      <div class="fd-stat-value">${fmt(totals[step.key] || 0)}</div>
-      <div class="fd-stat-sub">${step.key === "landing_view" ? "Page loads" : pct(totals[step.key] || 0, views) + " of visits"}</div>
-    </div>`).join("");
+  const grid = el("div", "fd-stat-grid");
+  for (const step of LANDING_STEPS) {
+    const count = totals[step.key] || 0;
+    const card = el("div", "fd-stat-card");
+    card.append(
+      el("div", "fd-stat-label", step.label),
+      el("div", "fd-stat-value", fmt(count)),
+      el("div", "fd-stat-sub", step.key === "landing_view" ? "Page loads" : pct(count, views) + " of visits"),
+    );
+    grid.append(card);
+  }
 
-  const topSources = Object.entries(sources).sort((a, b) => b[1] - a[1]).slice(0, 5)
-    .map(([origin, n]) => `<li>${escapeHtml(origin)}: ${fmt(n)}</li>`).join("");
+  const summary = el("p", "fd-section-subtitle", started
+    ? `${pct(finished, started)} of people who started the demo reached the reminder.`
+    : "No demo starts in this range yet.");
 
-  $landingBody.innerHTML = `
-    <div class="fd-stat-grid">${stats}</div>
-    <p class="fd-section-subtitle">${started ? `${pct(finished, started)} of people who started the demo reached the reminder.` : "No demo starts in this range yet."}</p>
-    ${topSources ? `<div class="fd-section-subtitle">Where visits came from:</div><ul class="fd-section-subtitle">${topSources}</ul>` : ""}`;
+  const nodes = [grid, summary];
+  const topSources = Object.entries(sources).sort((x, y) => y[1] - x[1]).slice(0, 5);
+  if (topSources.length) {
+    const list = el("ul", "fd-section-subtitle");
+    for (const [origin, n] of topSources) list.append(el("li", "", `${origin}: ${fmt(n)}`));
+    nodes.push(el("div", "fd-section-subtitle", "Where visits came from:"), list);
+  }
+  $landingBody.replaceChildren(...nodes);
 }
 
 // Independent event totals cannot support stage-to-stage drop-off claims.
