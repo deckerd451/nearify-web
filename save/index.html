@@ -40,7 +40,8 @@
       <p class="sp-lede" id="spLede">Their name and one thing to remember. It stays on this phone.</p>
     </header>
 
-    <form class="nf-paper sp-card" id="spForm" novalidate>
+    <!-- method="dialog": the form never navigates, so nothing typed can reach the address bar -->
+    <form class="nf-paper sp-card" id="spForm" method="dialog" novalidate>
       <label class="sp-visually-hidden" for="spName">Their name</label>
       <input id="spName" class="sp-name" name="name" type="text" maxlength="80" autocomplete="off" autocapitalize="words" placeholder="Their name" required />
       <label class="sp-visually-hidden" for="spWhere">Where you met</label>
@@ -86,6 +87,6 @@
   </footer>
 
   <script type="module" src="../assets/js/navAuth.js?v=20261106-permissions2"></script>
-  <script type="module" src="../assets/js/savePerson.js?v=20261118-save1"></script>
+  <script type="module" src="../assets/js/savePerson.js?v=20261118-save2"></script>
 </body>
 </html>
