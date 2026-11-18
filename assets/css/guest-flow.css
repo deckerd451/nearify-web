@@ -293,3 +293,12 @@ body.guest-flow {background:radial-gradient(ellipse 460px 290px at 50% 185px,#48
 .guest-flow .guest-goal-optional > summary {width:fit-content;min-height:36px;cursor:pointer;font-size:14px;color:#b9a4ff;padding:4px 0}
 .guest-flow .guest-goal-optional[open] > summary {margin-bottom:10px}
 .guest-flow .guest-goal-optional .guest-goal-field {margin-bottom:8px}
+
+/* Copy my recap: under the saved list */
+.guest-flow .guest-recap-actions {margin:4px 0 12px;text-align:left}
+.guest-flow #guestCopyRecapBtn {width:100%;min-height:46px}
+.guest-flow .guest-recap-hint {margin:8px 0 0;font-size:13px;line-height:1.5;color:#bdb3d2}
+.guest-flow .guest-recap-status {margin:8px 0 0;font-size:13px;line-height:1.5;color:#b6e9da}
+.guest-flow .guest-recap-status:empty {display:none}
+.guest-flow .guest-recap-fallback {box-sizing:border-box;width:100%;margin-top:8px;padding:10px;border:1px solid #81749c;border-radius:10px;background:#141327;color:#fff;font:inherit;font-size:14px;line-height:1.5}
+.guest-flow .guest-recap-fallback[hidden] {display:none}
