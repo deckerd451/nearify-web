@@ -2,8 +2,13 @@
  * landingDemo.js — the signed-out homepage "Try it" demo.
  *
  * A visitor can see what Nearify does without an event, a QR code, or an
- * account. Everything stays in this page: nothing is stored, sent, or tracked.
+ * account. What they type stays in this page. Only anonymous step counts are
+ * sent (see landingDemoTracking.js), never the note or who the visitor is.
  */
+
+import { LANDING_DEMO_EVENTS as EVENTS, analyticsTracker, createOnceTracker } from "./landingDemoTracking.js?v=20261118-count1";
+
+const trackOnce = createOnceTracker(analyticsTracker());
 
 const DEFAULT_NOTE = "Ask how the flood alert launch went";
 
@@ -25,6 +30,8 @@ function init() {
       if (n === step) dot.setAttribute("aria-current", "step");
       else dot.removeAttribute("aria-current");
     });
+    if (step === 2) trackOnce(EVENTS.started);
+    if (step === 3) trackOnce(EVENTS.completed);
     if (step === 3) echo.textContent = "“" + (note.value.trim() || DEFAULT_NOTE) + "”";
     if (!focus) return;
     const active = demo.querySelector(`.lx-stage[data-step="${step}"]`);
@@ -54,6 +61,8 @@ function init() {
     demo.querySelectorAll(".lx-chip").forEach((c) => c.setAttribute("aria-pressed", "false"));
   });
 
+  demo.querySelector('.lx-stage[data-step="3"] a.btn')?.addEventListener("click", () => trackOnce(EVENTS.ctaClicked));
+
   document.getElementById("lxReplay")?.addEventListener("click", () => {
     note.value = "";
     demo.querySelectorAll(".lx-chip").forEach((c) => c.setAttribute("aria-pressed", "false"));
@@ -65,6 +74,7 @@ function init() {
     const section = document.getElementById("try");
     if (!section) return;
     event.preventDefault();
+    trackOnce(EVENTS.tryClicked);
     const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     section.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "start" });
     demo.querySelector('.lx-stage:not([hidden]) button')?.focus({ preventScroll: true });
@@ -72,6 +82,17 @@ function init() {
   });
 
   show(1, { focus: false });
+
+  // dashboard.js decides signed-in vs signed-out after the auth check, then
+  // reveals the landing view. Count a view only once it is actually shown.
+  const landing = document.getElementById("landingView");
+  const countViewIfShown = () => {
+    if (landing && landing.style.display !== "none") trackOnce(EVENTS.view);
+  };
+  if (landing) {
+    countViewIfShown();
+    new MutationObserver(countViewIfShown).observe(landing, { attributes: true, attributeFilter: ["style"] });
+  }
 }
 
 init();
