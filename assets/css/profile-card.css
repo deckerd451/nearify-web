@@ -1,0 +1,52 @@
+/* profile-card.css — "Building / Looking for" lines and the Your card editor. */
+
+.pc-facts { margin: 16px 0 0; display: grid; gap: 10px; text-align: left; }
+.pc-facts[hidden] { display: none; }
+#profileCardFacts { margin: 14px auto 18px; max-width: 34ch; text-align: center; }
+.pc-facts div { display: grid; gap: 2px; }
+.pc-facts dt { font-size: 12px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--color-text-label); }
+.pc-facts dd { margin: 0; font-size: 16px; line-height: 1.45; color: var(--color-text-secondary); overflow-wrap: anywhere; }
+
+.pc-page { max-width: 560px; margin: 0 auto; padding: 40px 20px 64px; }
+.pc-kicker { margin: 0 0 8px; font-size: 12px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: #c4afff; }
+.pc-page h1 { margin: 0 0 8px; font-size: clamp(26px, 5vw, 32px); line-height: 1.15; color: var(--color-text-primary); }
+.pc-lede { margin: 0 0 28px; font-size: 16px; line-height: 1.55; color: var(--color-text-secondary); }
+
+.pc-preview {
+  margin: 0 0 28px;
+  padding: 18px 20px;
+  border: 1px solid var(--color-border-featured);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+}
+.pc-preview-tag {
+  display: inline-block; margin-bottom: 12px; padding: 3px 10px;
+  border: 1px dashed rgba(196, 175, 255, .5); border-radius: var(--radius-full);
+  font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: #c4afff;
+}
+.pc-head { display: flex; align-items: center; gap: 14px; }
+.pc-avatar {
+  flex: none; display: grid; place-items: center; width: 48px; height: 48px; overflow: hidden;
+  border-radius: 50%; background: linear-gradient(135deg, #7c5cff, #3ec6ff); font-weight: 700; color: #fff;
+}
+.pc-avatar img { width: 100%; height: 100%; object-fit: cover; }
+.pc-name { margin: 0; font-size: 20px; color: var(--color-text-primary); }
+.pc-empty { margin: 14px 0 0; font-size: 14px; color: var(--color-text-muted); }
+
+.pc-form { display: grid; gap: 20px; }
+.pc-field { display: grid; gap: 6px; }
+.pc-field label { font-size: 16px; font-weight: 700; color: var(--color-text-primary); }
+.pc-field .pc-hint { margin: 0; font-size: 14px; color: var(--color-text-muted); }
+.pc-field input {
+  box-sizing: border-box; width: 100%; min-height: 48px; padding: 12px 14px;
+  border: 1px solid var(--color-border-subtle); border-radius: var(--radius-sm);
+  background: var(--color-bg); font: inherit; font-size: 16px; color: var(--color-text-primary);
+}
+.pc-count { justify-self: end; font-size: 12px; color: var(--color-text-label); }
+.pc-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 20px; }
+.pc-actions .btn { margin: 0; min-height: 48px; }
+.pc-status { margin: 0; font-size: 15px; color: #c4afff; }
+.pc-status.is-error { color: #ffb4a8; }
+.pc-note { margin: 24px 0 0; font-size: 14px; line-height: 1.5; color: var(--color-text-muted); }
+.pc-page :is(a, button, input):focus-visible { outline: 3px solid #d6c8ff; outline-offset: 3px; }
+@media (max-width: 600px) { .pc-actions .btn { width: 100%; } }
