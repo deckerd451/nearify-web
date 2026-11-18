@@ -1,0 +1,213 @@
+/* paper-card.css — the Nearify card look, shared across the app.
+   People appear as pale paper cards on the dark page: name in Bricolage
+   Grotesque, details in Inter, anything you write yourself in pen (Caveat).
+   Load after each page's own styles. Fonts come from the page's <link>. */
+
+:root {
+  --nf-ink: #1a1633;
+  --nf-ink-soft: #5d587a;
+  --nf-ink-label: #6f6990;
+  --nf-paper: #f3f0ff;
+  --nf-rule: #ddd6fb;
+  --nf-pen: #4b3bd6;
+  --nf-display: "Bricolage Grotesque", "Inter", system-ui, sans-serif;
+  --nf-hand: "Caveat", "Segoe Print", cursive;
+  --nf-shadow: 0 1px 0 rgba(255, 255, 255, .6) inset, 0 24px 60px rgba(4, 3, 20, .5);
+}
+
+/* ── The card ─────────────────────────────────────────────────── */
+.nf-paper {
+  box-sizing: border-box;
+  padding: 24px 26px;
+  border: 0;
+  border-radius: 18px;
+  background: var(--nf-paper);
+  color: var(--nf-ink);
+  box-shadow: var(--nf-shadow);
+  text-align: left;
+}
+.nf-paper :is(a, button, input, textarea):focus-visible { outline: 3px solid var(--nf-pen); outline-offset: 3px; }
+.nf-name { font-family: var(--nf-display); font-weight: 800; letter-spacing: -.02em; line-height: 1.05; color: var(--nf-ink); }
+.nf-saved { font-family: var(--nf-hand); font-size: 28px; font-weight: 600; line-height: 1; color: var(--nf-pen); }
+
+/* Lines in a card (Building / Looking for) */
+.nf-paper .pc-facts { margin: 16px 0 0; }
+.nf-paper .pc-facts dt { font-size: 13px; font-weight: 600; letter-spacing: 0; text-transform: none; color: var(--nf-ink-label); }
+.nf-paper .pc-facts dd { font-size: 17px; color: var(--nf-ink); }
+
+/* Writing in pen: ruled lines under each line of handwriting */
+.nf-pen {
+  box-sizing: border-box;
+  width: 100%;
+  padding: 0 2px;
+  border: 0;
+  border-radius: 0;
+  background-color: transparent;
+  background-image: repeating-linear-gradient(to bottom, transparent 0 35px, var(--nf-rule) 35px 36px);
+  background-attachment: local;
+  font-family: var(--nf-hand);
+  font-size: 26px;
+  font-weight: 500;
+  line-height: 36px;
+  color: var(--nf-pen);
+  resize: vertical;
+}
+.nf-pen::placeholder { color: #a9a1d6; }
+
+/* ── Your card (/card/) ───────────────────────────────────────── */
+.pc-page .pc-preview {
+  position: relative;
+  margin: 8px 0 36px;
+  padding: 26px 28px;
+  border: 0;
+  border-radius: 18px;
+  background: var(--nf-paper);
+  color: var(--nf-ink);
+  box-shadow: var(--nf-shadow);
+  transform: rotate(-1.5deg);
+}
+.pc-page .pc-preview-tag {
+  position: absolute;
+  top: -30px;
+  right: 8px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  font-family: var(--nf-hand);
+  font-size: 22px;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+  color: #cdbbff;
+  transform: rotate(3deg);
+}
+.pc-page .pc-name { font-family: var(--nf-display); font-size: 26px; font-weight: 800; letter-spacing: -.02em; color: var(--nf-ink); }
+.pc-page .pc-avatar { width: 52px; height: 52px; }
+.pc-page .pc-preview .pc-facts dt { font-size: 13px; font-weight: 600; letter-spacing: 0; text-transform: none; color: var(--nf-ink-label); }
+.pc-page .pc-preview .pc-facts dd { font-size: 17px; color: var(--nf-ink); }
+.pc-page .pc-empty { font-family: var(--nf-hand); font-size: 22px; color: #a9a1d6; }
+.pc-page h1 { font-family: var(--nf-display); font-weight: 800; letter-spacing: -.03em; }
+.pc-page .pc-kicker { font-size: 14px; letter-spacing: 0; text-transform: none; }
+
+/* ── Profile (profile.html) ───────────────────────────────────── */
+.profile-page .profile-card { padding: 0; border: 0; background: none; box-shadow: none; }
+.profile-paper {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  column-gap: 16px;
+  margin: 0 0 28px;
+  transform: rotate(-1.2deg);
+}
+.profile-paper .profile-avatar-wrap { grid-row: 1 / span 2; margin: 0; }
+.profile-paper .profile-avatar-img,
+.profile-paper .profile-avatar-placeholder { width: 60px; height: 60px; margin: 0; border: 0; font-size: 20px; }
+.profile-paper .profile-avatar-placeholder { background: linear-gradient(135deg, #7c5cff, #3ec6ff); color: #fff; }
+.profile-paper .profile-name { align-self: end; margin: 0; font-family: var(--nf-display); font-size: 30px; font-weight: 800; letter-spacing: -.02em; line-height: 1.05; color: var(--nf-ink); }
+.profile-paper .profile-context { align-self: start; margin: 4px 0 0; font-size: 14px; color: var(--nf-ink-soft); }
+.profile-paper #profileCardFacts { grid-column: 1 / -1; margin: 18px 0 0; max-width: none; text-align: left; }
+.profile-page .private-context textarea {
+  background-color: var(--nf-paper);
+  background-image: repeating-linear-gradient(to bottom, transparent 0 35px, var(--nf-rule) 35px 36px);
+  background-attachment: local;
+  background-position: 0 12px;
+  border: 0;
+  border-radius: 14px;
+  padding: 12px 16px;
+  font-family: var(--nf-hand);
+  font-size: 24px;
+  line-height: 36px;
+  color: var(--nf-pen);
+}
+
+/* ── Saved people (/connections/) ─────────────────────────────── */
+.connections-page .connections-page-header h1 { font-family: var(--nf-display); font-weight: 800; letter-spacing: -.03em; font-size: clamp(28px, 4vw, 38px); }
+.connections-page .connections-list { gap: 16px; }
+.connections-page .connection-row {
+  padding: 18px 20px;
+  border: 0;
+  border-radius: 16px;
+  background: var(--nf-paper);
+  color: var(--nf-ink);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, .6) inset, 0 14px 34px rgba(4, 3, 20, .45);
+  transition: transform .15s ease, box-shadow .15s ease;
+}
+.connections-page .connections-list > li:nth-child(odd) .connection-row { transform: rotate(-.25deg); }
+.connections-page .connections-list > li:nth-child(even) .connection-row { transform: rotate(.2deg); }
+.connections-page a.connection-row:hover { transform: rotate(0) translateY(-2px); background: #f7f5ff; box-shadow: 0 1px 0 rgba(255, 255, 255, .6) inset, 0 20px 44px rgba(4, 3, 20, .55); }
+.connections-page .connection-row-name { font-family: var(--nf-display); font-size: 20px; font-weight: 800; letter-spacing: -.015em; color: var(--nf-ink); }
+.connections-page .connection-row-meta,
+.connections-page .connection-row-event { color: var(--nf-ink-soft); }
+.connections-page .connection-row-arrow { color: var(--nf-ink-label); }
+.connections-page .connection-row .intel-avatar-placeholder { background: linear-gradient(135deg, #7c5cff, #3ec6ff); color: #fff; border: 0; }
+.connections-page .connection-row :focus-visible,
+.connections-page .connection-row:focus-visible { outline: 3px solid #d6c8ff; outline-offset: 3px; }
+
+/* ── After saving someone at an event (/join/) ────────────────── */
+.guest-flow .guest-save-confirmation .guest-saved-person,
+.guest-saved-person {
+  position: relative;
+  padding: 22px 22px 46px;
+  border: 0;
+  border-radius: 18px;
+  background: var(--nf-paper);
+  color: var(--nf-ink);
+  box-shadow: var(--nf-shadow);
+  transform: rotate(-1.5deg);
+}
+.guest-saved-person::after {
+  content: "Saved ✓";
+  position: absolute;
+  left: 22px;
+  bottom: 12px;
+  font-family: var(--nf-hand);
+  font-size: 26px;
+  font-weight: 600;
+  line-height: 1;
+  color: var(--nf-pen);
+  transform: rotate(-4deg);
+}
+.guest-saved-person strong { font-family: var(--nf-display); font-size: 24px; font-weight: 800; letter-spacing: -.02em; color: var(--nf-ink); }
+.guest-saved-person p { color: var(--nf-ink-soft); }
+.guest-saved-avatar { background: linear-gradient(135deg, #7c5cff, #3ec6ff); }
+.guest-flow .guest-memory-panel { border: 0; background: var(--nf-paper); color: var(--nf-ink); box-shadow: var(--nf-shadow); border-radius: 18px; }
+.guest-flow .guest-memory-panel label { color: var(--nf-ink); }
+.guest-flow .guest-memory-panel label span { color: var(--nf-ink-label); }
+.guest-flow .guest-memory-panel .guest-memory-disclosure,
+.guest-flow .guest-memory-panel [role="status"] { color: var(--nf-ink-soft); }
+.guest-flow #guestMemoryNote {
+  min-height: 108px;
+  padding: 0 2px;
+  border: 0;
+  border-radius: 0;
+  background-color: transparent;
+  background-image: repeating-linear-gradient(to bottom, transparent 0 35px, var(--nf-rule) 35px 36px);
+  background-attachment: local;
+  font-family: var(--nf-hand);
+  font-size: 26px;
+  line-height: 36px;
+  color: var(--nf-pen);
+}
+.guest-flow #guestMemoryNote::placeholder { color: #a9a1d6; font-size: 22px; }
+.guest-flow .guest-memory-panel .btn.secondary { background: var(--nf-ink); border-color: var(--nf-ink); color: #fff; }
+
+/* Signed-in scan: the person you just saved */
+.join-page .claim-success-name::before { content: none; }
+.join-page .claim-success-name {
+  padding: 12px 16px;
+  font-size: 18px;
+  border-radius: 12px;
+  font-family: var(--nf-display);
+  font-weight: 800;
+  background: var(--nf-paper);
+  color: var(--nf-ink);
+  border: 0;
+  box-shadow: 0 10px 26px rgba(4, 3, 20, .4);
+}
+.join-page #joinTargetCardFacts { margin: 14px 0 0; padding: 18px 20px; border-radius: 16px; background: var(--nf-paper); box-shadow: var(--nf-shadow); max-width: 420px; }
+.join-page #joinTargetCardFacts dt { font-size: 13px; font-weight: 600; letter-spacing: 0; text-transform: none; color: var(--nf-ink-label); }
+.join-page #joinTargetCardFacts dd { color: var(--nf-ink); }
+
+@media (prefers-reduced-motion: reduce) {
+  .connections-page .connection-row { transition: none; }
+}
