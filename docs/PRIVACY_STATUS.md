@@ -16,6 +16,19 @@ Before turning the function off, all three codebases were searched (Nearify web,
 
 **What this closes:** the anonymous attendee-list exposure described in `docs/LEGACY_ROSTER_REMEDIATION_017.md`, and the legacy-roster consent bypass in `docs/LEGACY_ROSTER_018_AUTHENTICATED_GATE.md`, since signed-in users can no longer run the function either.
 
+## Bluetooth proximity: paused and deleted (2026-11-18, production, by the owner)
+
+The iOS app broadcast a fixed Bluetooth identity (`BCN-<profile UUID prefix>`) while checked in, and recorded person-to-person encounters automatically. It's paused while it's redesigned.
+
+| Step | Result |
+|---|---|
+| `public.encounters`: `insert` and `update` revoked from `authenticated`, all access revoked from `anon` | Confirmed: signed-in users can't add or update, and signed-out visitors have no access |
+| `public.encounter_fragments` | Not present in production |
+| Stored encounter records | **All 94 deleted** (the newest was from 2026-09-17). 0 remain. |
+| iOS app | `AmbientProximity.isEnabled = false` ([nearify-ios#817](https://github.com/deckerd451/nearify-ios/pull/817)): no Bluetooth broadcast or scan, no encounters, no UWB, no location or Bluetooth prompts. Encounter files on the phone are deleted at launch. **Pending: device test and TestFlight release.** |
+
+Proximity comes back only with the redesign in `nearify-ios/docs/AMBIENT_PROXIMITY_PAUSE.md`: rotating server-issued identifiers, opt-in per event, nothing shown live, mutual-only connection, raw data deleted after the event, and an independent security review.
+
 ## Not covered by this check
 - What signed-in users can read directly. For example, `profiles` has a "viewable by authenticated users" policy, and `event_attendees` rows are readable by co-attendees under its own policies.
 - Other tables and functions, including the consent RPCs and Community Signal (see PR #242).
