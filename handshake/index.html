@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <title>Handshakes | Nearify</title>
+  <meta name="description" content="Only people you have met can reach you. Connect in person, introduce people, and keep it all on your phone." />
+  <meta name="robots" content="noindex" />
+  <link rel="stylesheet" href="../assets/css/styles.css?v=20261101-mobile1" />
+  <link rel="stylesheet" href="/assets/css/scan-entry.css?v=20261105-accountfix1" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Caveat:wght@500;600&display=swap" />
+  <link rel="stylesheet" href="/assets/css/paper-card.css?v=20261118-paper1" />
+  <link rel="stylesheet" href="/assets/css/handshake.css?v=20261119-hs1" />
+</head>
+<body>
+  <a href="#main-content" class="skip-link">Skip to main content</a>
+  <div class="nav-container">
+  <header class="nav">
+    <div class="logo"><a href="../index.html" aria-label="Nearify Home"><img class="logo-img" src="../assets/images/nearify-logo.png?v=20260909" alt="" /><span class="logo-text">Nearify</span></a></div>
+    <div class="nav-links">
+      <a href="../events/index.html">Events</a>
+      <a href="../vision.html">Vision</a>
+    </div>
+    <a href="/scan/?web=1" class="nav-scan-link"><svg viewBox="0 0 20 20" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M2 7V2h5M13 2h5v5M18 13v5h-5M7 18H2v-5"/><path d="M6 6h3v3H6zM12 6h2v3h-2zM6 12h3v2H6zM12 12h2v2h-2z"/></svg><span>Scan QR</span></a>
+    <button class="nav-hamburger" id="navHamburger" aria-label="Open menu" aria-expanded="false">
+      <span></span><span></span><span></span>
+    </button>
+  </header>
+  <nav class="nav-drawer" id="navDrawer" aria-label="Site navigation">
+    <a href="../events/index.html">Events</a>
+    <a href="../vision.html">Vision</a>
+  </nav>
+  </div>
+
+  <main id="main-content" class="hs-page">
+    <header class="hs-head">
+      <h1>Handshakes</h1>
+      <p class="hs-lede">Only people you've met can reach you.</p>
+    </header>
+
+    <section class="nf-paper hs-invite" id="hsInvite" aria-labelledby="hsInviteName" hidden>
+      <p class="hs-kicker">You scanned</p>
+      <p class="nf-name hs-invite-name" id="hsInviteName"></p>
+      <p class="hs-note">Connect so you can reach each other. They'll be asked too.</p>
+      <button type="button" class="hs-btn hs-btn-primary" id="hsInviteGo">Connect</button>
+    </section>
+
+    <p class="hs-status" id="hsStatus" role="status" aria-live="polite"></p>
+
+    <!-- method="dialog": the form never navigates, so nothing typed reaches the address bar -->
+    <form class="nf-paper hs-setup" id="hsSetupForm" method="dialog" novalidate>
+      <div id="hsSetup">
+        <h2 class="hs-setup-title">Make your card</h2>
+        <label class="hs-label" for="hsName">Your name</label>
+        <input class="hs-input" id="hsName" type="text" maxlength="40" autocomplete="off" autocapitalize="words" required />
+        <label class="hs-label" for="hsBuilding">What you're building <span class="hs-optional">(optional)</span></label>
+        <input class="hs-input" id="hsBuilding" type="text" maxlength="80" autocomplete="off" />
+        <button type="submit" class="hs-btn hs-btn-primary">Make my card</button>
+        <p class="hs-note">Your card and the people you meet stay in this browser. No account, no email, no phone number.</p>
+      </div>
+    </form>
+
+    <section id="hsMain" hidden>
+      <div class="nf-paper hs-mine">
+        <p class="nf-name hs-my-name" id="hsMyName"></p>
+        <p class="hs-person-building" id="hsMyBuilding"></p>
+        <div class="hs-qr" id="hsQr" role="img"></div>
+        <p class="hs-note">Let someone you've just met scan this with their camera. You'll both be asked before you're connected.</p>
+        <button type="button" class="hs-link" id="hsNewCode">New code</button>
+      </div>
+
+      <h2 class="hs-count" id="hsCount"></h2>
+      <ol class="hs-list" id="hsList"></ol>
+      <p class="hs-empty" id="hsEmpty">Nobody yet. Show your code to the next person you meet.</p>
+
+      <details class="hs-more">
+        <summary>What we can see</summary>
+        <ul>
+          <li>Your card and the people you connect with are kept only in this browser.</li>
+          <li>Our server passes along sealed messages between phones. It can't read them, doesn't know whose they are, and deletes each one when it's picked up or after 7 days.</li>
+          <li>We never see who met whom. Nobody can find you or message you unless you've connected.</li>
+          <li>Saying no, or cancelling, sends nothing. Nobody is told.</li>
+        </ul>
+      </details>
+
+      <details class="hs-more">
+        <summary>Back up, move to a new phone, or delete</summary>
+        <p class="hs-note">If this browser clears its storage, your connections go with it. A backup is locked with a passphrase only you know.</p>
+        <label class="hs-label" for="hsPass">Passphrase</label>
+        <input class="hs-input" id="hsPass" type="password" autocomplete="new-password" minlength="8" />
+        <div class="hs-actions">
+          <button type="button" class="hs-btn" id="hsBackup">Download backup</button>
+        </div>
+        <label class="hs-label" for="hsRestoreFile">Restore from a backup file</label>
+        <input id="hsRestoreFile" type="file" accept="application/json,.json" />
+        <div class="hs-actions">
+          <button type="button" class="hs-btn" id="hsRestore">Restore</button>
+          <button type="button" class="hs-btn hs-btn-danger" id="hsDelete">Delete everything</button>
+        </div>
+      </details>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <nav class="footer-links">
+      <a href="../events/index.html">Events</a>
+      <a href="../vision.html">Vision</a>
+      <a href="https://nearify.org/privacy.html">Privacy</a>
+      <a href="https://nearify.org/terms.html">Terms</a>
+      <a href="https://nearify.org/support.html">Support</a>
+      <a href="mailto:hello@nearify.org">Contact</a>
+    </nav>
+    <p>© 2026 Nearify</p>
+  </footer>
+
+  <script type="module" src="../assets/js/navAuth.js?v=20261106-permissions2"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" integrity="sha384-3zSEDfvllQohrq0PHL1fOXJuC/jSOO34H46t6UQfobFOmxE5BpjjaIJY5F2/bMnU" crossorigin="anonymous"></script>
+  <script type="module" src="../assets/js/handshake/page.js?v=20261119-hs1"></script>
+</body>
+</html>
