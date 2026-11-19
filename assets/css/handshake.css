@@ -1,0 +1,86 @@
+/* handshake.css — /handshake/: only people you've met can reach you. Uses paper-card.css tokens. */
+
+.hs-page { box-sizing: border-box; max-width: 560px; margin: 0 auto; padding: 40px 20px 72px; }
+.hs-head h1 {
+  margin: 0 0 10px;
+  font-family: var(--nf-display);
+  font-size: clamp(34px, 6vw, 52px);
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -.03em;
+  color: #f5f3ff;
+}
+.hs-lede { margin: 0 0 32px; font-size: 17px; line-height: 1.5; color: #b8bad6; }
+[hidden] { display: none !important; }
+
+.hs-kicker { margin: 0 0 6px; font-size: 13px; font-weight: 600; color: var(--nf-ink-label); }
+.hs-note { margin: 14px 0 0; font-size: 14px; line-height: 1.5; color: var(--nf-ink-soft); }
+.hs-status { min-height: 1.5em; margin: 18px 0; font-size: 14px; color: #b6e9da; }
+
+.hs-btn {
+  min-height: 44px;
+  padding: 0 20px;
+  border: 1.5px solid var(--nf-ink);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--nf-ink);
+  font: inherit;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.hs-btn-primary { background: var(--nf-ink); color: #fff; }
+.hs-btn-primary:hover { background: #2c2552; }
+.hs-btn-danger { border-color: #b3261e; color: #b3261e; }
+.hs-btn:disabled { opacity: .5; cursor: default; }
+.hs-link { margin-top: 10px; padding: 0; border: 0; background: none; color: var(--nf-pen); font: inherit; font-size: 14px; font-weight: 600; text-decoration: underline; cursor: pointer; }
+.hs-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-top: 16px; }
+
+/* The card you scanned */
+.hs-invite { margin-bottom: 8px; transform: rotate(-1deg); }
+.hs-invite-name { margin: 0 0 4px; font-size: 34px; }
+.hs-invite .hs-btn { margin-top: 18px; }
+
+/* Making your card */
+.hs-setup { display: grid; }
+.hs-setup-title { margin: 0 0 14px; font-family: var(--nf-display); font-size: 24px; font-weight: 800; color: var(--nf-ink); }
+.hs-label { display: block; margin: 14px 0 4px; font-size: 14px; font-weight: 600; color: var(--nf-ink-label); }
+.hs-optional { font-weight: 400; }
+.hs-input {
+  box-sizing: border-box;
+  width: 100%;
+  padding: 4px 0 8px;
+  border: 0;
+  border-bottom: 1.5px solid var(--nf-rule);
+  background: transparent;
+  color: var(--nf-ink);
+  font: inherit;
+  font-size: 17px;
+}
+.hs-input:focus-visible { outline: none; border-bottom-color: var(--nf-pen); }
+.hs-setup .hs-btn { justify-self: start; margin-top: 20px; }
+
+/* Your card with its code */
+.hs-mine { text-align: center; }
+.hs-my-name { margin: 0; font-size: 32px; }
+.hs-mine .hs-person-building { margin: 6px 0 0; }
+.hs-qr { display: grid; place-items: center; width: 236px; height: 236px; margin: 20px auto 0; padding: 8px; box-sizing: border-box; border-radius: 12px; background: var(--nf-paper); }
+.hs-qr img, .hs-qr canvas { display: block; }
+
+/* People */
+.hs-count { margin: 40px 0 14px; font-family: var(--nf-display); font-size: 22px; font-weight: 800; color: #f5f3ff; }
+.hs-list { display: grid; gap: 14px; margin: 0; padding: 0; list-style: none; }
+.hs-person { padding: 18px 20px; }
+.hs-person-name { margin: 0; font-size: 24px; }
+.hs-person-building { margin: 4px 0 0; font-size: 15px; color: var(--nf-ink-soft); }
+.hs-select { min-height: 44px; max-width: 100%; padding: 0 12px; border: 1.5px solid var(--nf-rule); border-radius: 10px; background: #fff; color: var(--nf-ink); font: inherit; font-size: 15px; }
+.hs-empty { margin: 0; color: #b8bad6; }
+
+/* Fine print */
+.hs-more { margin-top: 28px; padding: 16px 20px; border-radius: 14px; background: rgba(243, 240, 255, .06); color: #d9d7ee; }
+.hs-more summary { font-weight: 600; cursor: pointer; }
+.hs-more ul { margin: 12px 0 0; padding-left: 20px; line-height: 1.55; }
+.hs-more .hs-note, .hs-more .hs-label { color: #c9c6e4; }
+.hs-more .hs-input { border-bottom-color: rgba(243, 240, 255, .25); color: #f5f3ff; }
+.hs-more .hs-btn { border-color: #f5f3ff; color: #f5f3ff; }
+.hs-more .hs-btn-danger { border-color: #ff8a80; color: #ff8a80; }

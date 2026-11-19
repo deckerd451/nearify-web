@@ -2,8 +2,8 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { dedupeRequest } from "./supabaseLoad.js";
 import { logger } from "./logger.js";
 
-export const supabaseUrl = "https://unndeygygkgodmmdnlup.supabase.co";
-export const supabaseKey = "sb_publishable_G0KAfCFTovYCWDeEEKWBfg_8UpPHWWZ";
+import { supabaseUrl, supabaseKey } from "./supabaseConfig.js";
+export { supabaseUrl, supabaseKey };
 
 const STORAGE_KEY = "nearify-auth";
 
