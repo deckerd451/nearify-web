@@ -5,7 +5,21 @@ import { fetchIsAdmin, resetAdminCache } from "./adminAccess.js";
 // Hamburger / nav-drawer toggle (wired here since this module loads on every page)
 // ---------------------------------------------------------------------------
 
+// Handshakes works without signing in, so it's in the menu for everyone.
+function addHandshakesLink() {
+  const here = window.location.pathname.startsWith("/handshake");
+  for (const menu of document.querySelectorAll(".nav-links, #navDrawer")) {
+    if (menu.querySelector('a[href="/handshake/"]')) continue;
+    const link = document.createElement("a");
+    link.href = "/handshake/";
+    link.textContent = "Handshakes";
+    if (here) link.setAttribute("aria-current", "page");
+    menu.appendChild(link);
+  }
+}
+
 function initHamburger() {
+  addHandshakesLink();
   const hamburger = document.getElementById("navHamburger");
   const drawer    = document.getElementById("navDrawer");
   if (!hamburger || !drawer) return;
