@@ -9,8 +9,13 @@
  *   accepted  you said yes to an introduction; waiting for them
  *
  * Nothing is ever sent about a "no". Declining just forgets.
+ *
+ * "How to reach me" (state.me.reach) is never on the card someone scans.
+ * It is sent, sealed, only to people you are connected with: with your
+ * yes, or once both sides of an introduction have said yes.
  */
 import { PUB_PATTERN, BOX_PATTERN, generateIdentity, inboxId, open, openFrom, randomId, seal, sealTo, sharedSecret } from "./crypto.js";
+import { parseReach } from "../reach.js";
 
 export const INVITE_MINUTES = 30;
 const MAX_INVITES = 5;
@@ -23,20 +28,45 @@ export function cleanCard(card) {
   return building ? { name, building } : { name };
 }
 
+export function cleanReach(value) {
+  return parseReach(String(value ?? "").replace(CONTROL, " "))?.value || "";
+}
+
 export function emptyState() {
   return { me: null, invites: [], people: {} };
 }
 
-export async function setUp(state, card) {
+export async function setUp(state, card, reach = "") {
   const clean = cleanCard(card);
   if (!clean) throw new Error("Add your name first.");
   if (!state.me) {
     const id = await generateIdentity();
-    state.me = { privateKey: id.privateKey, pub: id.pub, card: clean };
+    state.me = { privateKey: id.privateKey, pub: id.pub, card: clean, reach: cleanReach(reach) };
   } else {
     state.me.card = clean;
   }
   return state;
+}
+
+const connected = (state) => Object.entries(state.people).filter(([, p]) => p.status === "connected").map(([pub]) => pub);
+
+/** Change how people you're connected with can reach you, and tell them. */
+export async function setReach(state, mailbox, value) {
+  const reach = cleanReach(value);
+  if (reach === (state.me.reach || "")) return 0;
+  state.me.reach = reach;
+  const pubs = connected(state);
+  for (const pub of pubs) await sendTo(state, mailbox, pub, { t: "reach", reach });
+  return pubs.length;
+}
+
+function withReach(message, state) {
+  return state.me.reach ? { ...message, reach: state.me.reach } : message;
+}
+
+function connectedPerson(person, msg, now) {
+  const reach = cleanReach(msg?.reach);
+  return { card: person.card, status: "connected", ...(person.via ? { via: person.via } : {}), since: now, ...(reach ? { reach } : {}) };
 }
 
 const secrets = new Map();
@@ -81,7 +111,7 @@ export async function answerInvite(state, mailbox, invite, now = Date.now()) {
 export async function acceptRequest(state, mailbox, pub, now = Date.now()) {
   const person = state.people[pub];
   if (person?.status !== "request") return;
-  await sendTo(state, mailbox, pub, { t: "accept" });
+  await sendTo(state, mailbox, pub, withReach({ t: "accept" }, state));
   state.people[pub] = { card: person.card, status: "connected", since: now };
 }
 
@@ -101,10 +131,14 @@ export async function introduce(state, mailbox, pubB, pubC) {
 export async function acceptIntro(state, mailbox, pub, now = Date.now()) {
   const person = state.people[pub];
   if (person?.status !== "offered") return;
-  await sendTo(state, mailbox, pub, { t: "intro-accept" });
-  state.people[pub] = person.theyAccepted
-    ? { card: person.card, status: "connected", via: person.via, since: now }
-    : { ...person, status: "accepted" };
+  if (person.theyAccepted) {
+    // They already said yes, so this connects us: my reach can go with it.
+    await sendTo(state, mailbox, pub, withReach({ t: "intro-accept" }, state));
+    state.people[pub] = { card: person.card, status: "connected", via: person.via, since: now, ...(person.reach ? { reach: person.reach } : {}) };
+  } else {
+    await sendTo(state, mailbox, pub, { t: "intro-accept" });
+    state.people[pub] = { ...person, status: "accepted" };
+  }
 }
 
 const LISTENING = new Set(["sent", "connected", "offered", "accepted"]);
@@ -124,7 +158,7 @@ export async function check(state, mailbox, now = Date.now()) {
     const source = byBox.get(box);
     if (!source) continue;
     try {
-      changed = (source.invite ? await applyRequest(state, mailbox, payload, now) : await applyLink(state, source.pub, payload, now)) || changed;
+      changed = (source.invite ? await applyRequest(state, mailbox, payload, now) : await applyLink(state, mailbox, source.pub, payload, now)) || changed;
     } catch (_) { /* Unreadable or forged messages are dropped. */ }
   }
   return changed;
@@ -138,7 +172,7 @@ async function applyRequest(state, mailbox, payload, now) {
   if (existing?.status === "connected") return false;
   if (existing?.status === "sent") {
     // We scanned each other's cards: both of us already said yes.
-    await sendTo(state, mailbox, msg.pub, { t: "accept" });
+    await sendTo(state, mailbox, msg.pub, withReach({ t: "accept" }, state));
     state.people[msg.pub] = { card: existing.card, status: "connected", since: now };
     return true;
   }
@@ -146,17 +180,27 @@ async function applyRequest(state, mailbox, payload, now) {
   return true;
 }
 
-async function applyLink(state, pub, payload, now) {
+async function applyLink(state, mailbox, pub, payload, now) {
   const msg = await open(await secretWith(state, pub), "link", payload);
   const person = state.people[pub];
   if (!person) return false;
   if (msg?.t === "accept" && person.status === "sent") {
-    state.people[pub] = { card: person.card, status: "connected", since: now };
+    state.people[pub] = connectedPerson(person, msg, now);
+    if (state.me.reach) await sendTo(state, mailbox, pub, { t: "reach", reach: state.me.reach });
+    return true;
+  }
+  if ((msg?.t === "reach" || msg?.t === "accept") && person.status === "connected") {
+    const reach = cleanReach(msg.reach);
+    if (msg.t === "accept" && !reach) return false;
+    if (reach === (person.reach || "")) return false;
+    const { reach: _old, ...rest } = person;
+    state.people[pub] = reach ? { ...rest, reach } : rest;
     return true;
   }
   if (msg?.t === "intro-accept") {
     if (person.status === "accepted") {
-      state.people[pub] = { card: person.card, status: "connected", via: person.via, since: now };
+      state.people[pub] = connectedPerson(person, msg, now);
+      if (state.me.reach) await sendTo(state, mailbox, pub, { t: "reach", reach: state.me.reach });
       return true;
     }
     if (person.status === "offered" && !person.theyAccepted) {

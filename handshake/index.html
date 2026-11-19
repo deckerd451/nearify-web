@@ -12,7 +12,7 @@
   <link rel="stylesheet" href="/assets/css/scan-entry.css?v=20261105-accountfix1" />
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Caveat:wght@500;600&display=swap" />
   <link rel="stylesheet" href="/assets/css/paper-card.css?v=20261118-paper1" />
-  <link rel="stylesheet" href="/assets/css/handshake.css?v=20261119-hs1" />
+  <link rel="stylesheet" href="/assets/css/handshake.css?v=20261119-hs2" />
 </head>
 <body>
   <a href="#main-content" class="skip-link">Skip to main content</a>
@@ -57,6 +57,9 @@
         <input class="hs-input" id="hsName" type="text" maxlength="40" autocomplete="off" autocapitalize="words" required />
         <label class="hs-label" for="hsBuilding">What you're building <span class="hs-optional">(optional)</span></label>
         <input class="hs-input" id="hsBuilding" type="text" maxlength="80" autocomplete="off" />
+        <label class="hs-label" for="hsReach">How to reach me <span class="hs-optional">(optional)</span></label>
+        <input class="hs-input" id="hsReach" type="text" maxlength="120" autocomplete="off" inputmode="email" placeholder="Phone, email or a link" />
+        <p class="hs-hint">Shared only with people you connect with. Once they save it, it's theirs.</p>
         <button type="submit" class="hs-btn hs-btn-primary">Make my card</button>
         <p class="hs-note">Your card and the people you meet stay in this browser. No account, no email, no phone number.</p>
       </div>
@@ -75,12 +78,29 @@
       <ol class="hs-list" id="hsList"></ol>
       <p class="hs-empty" id="hsEmpty">Nobody yet. Show your code to the next person you meet.</p>
 
+      <details class="hs-more" id="hsEdit">
+        <summary>Edit your card</summary>
+        <form id="hsEditForm" method="dialog" novalidate>
+          <label class="hs-label" for="hsEditName">Your name</label>
+          <input class="hs-input" id="hsEditName" type="text" maxlength="40" autocomplete="off" autocapitalize="words" required />
+          <label class="hs-label" for="hsEditBuilding">What you're building <span class="hs-optional">(optional)</span></label>
+          <input class="hs-input" id="hsEditBuilding" type="text" maxlength="80" autocomplete="off" />
+          <label class="hs-label" for="hsEditReach">How to reach me <span class="hs-optional">(optional)</span></label>
+          <input class="hs-input" id="hsEditReach" type="text" maxlength="120" autocomplete="off" placeholder="Phone, email or a link" />
+          <p class="hs-note">Shared only with people you connect with. Once they save it, it's theirs. Removing it here stops sharing it, but can't take it off phones it's already saved to.</p>
+          <div class="hs-actions">
+            <button type="submit" class="hs-btn">Save</button>
+          </div>
+        </form>
+      </details>
+
       <details class="hs-more">
         <summary>What we can see</summary>
         <ul>
           <li>Your card and the people you connect with are kept only in this browser.</li>
           <li>Our server passes along sealed messages between phones. It can't read them, doesn't know whose they are, and deletes each one when it's picked up or after 7 days.</li>
           <li>We never see who met whom. Nobody can find you or message you unless you've connected.</li>
+          <li>How to reach you is never on the code people scan. It's sent, sealed, only to people you've connected with.</li>
           <li>Saying no, or cancelling, sends nothing. Nobody is told.</li>
         </ul>
       </details>
@@ -117,6 +137,6 @@
 
   <script type="module" src="../assets/js/navAuth.js?v=20261106-permissions2"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" integrity="sha384-3zSEDfvllQohrq0PHL1fOXJuC/jSOO34H46t6UQfobFOmxE5BpjjaIJY5F2/bMnU" crossorigin="anonymous"></script>
-  <script type="module" src="../assets/js/handshake/page.js?v=20261119-hs1"></script>
+  <script type="module" src="../assets/js/handshake/page.js?v=20261119-hs2"></script>
 </body>
 </html>

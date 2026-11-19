@@ -16,8 +16,8 @@ function memoryMailbox() {
   };
 }
 
-async function person(name, building) {
-  return P.setUp(P.emptyState(), { name, building });
+async function person(name, building, reach) {
+  return P.setUp(P.emptyState(), { name, building }, reach);
 }
 
 async function connect(a, b, mail) {
@@ -179,5 +179,101 @@ describe("handshakes", () => {
     await P.introduce(a2, mail, b.me.pub, c.me.pub);
     await P.check(b, mail);
     expect(b.people[c.me.pub].status).toBe("offered");
+  });
+});
+
+describe("how to reach me", () => {
+  it("is shared only after the card owner accepts, in both directions", async () => {
+    const mail = memoryMailbox();
+    const alex = await person("Alex", "", "alex@example.com");
+    const sam = await person("Sam", "", "843-555-0100");
+    await P.answerInvite(sam, mail, P.parseInvite(new URL(P.createInvite(alex, "https://nearify.org")).hash));
+    expect(mail.dump()).not.toContain("843");
+    await P.check(alex, mail);
+    expect(alex.people[sam.me.pub].reach).toBeUndefined();
+    await P.acceptRequest(alex, mail, sam.me.pub);
+    await P.check(sam, mail);
+    expect(sam.people[alex.me.pub]).toMatchObject({ status: "connected", reach: "alex@example.com" });
+    await P.check(alex, mail);
+    expect(alex.people[sam.me.pub].reach).toBe("843-555-0100");
+  });
+
+  it("is never sent to someone you decline", async () => {
+    const mail = memoryMailbox();
+    const alex = await person("Alex", "", "alex@example.com");
+    const sam = await person("Sam", "", "sam@example.com");
+    await P.answerInvite(sam, mail, P.parseInvite(new URL(P.createInvite(alex, "https://nearify.org")).hash));
+    await P.check(alex, mail);
+    P.forget(alex, sam.me.pub);
+    await P.check(sam, mail);
+    expect(sam.people[alex.me.pub].reach).toBeUndefined();
+    expect(alex.people[sam.me.pub]).toBeUndefined();
+  });
+
+  it("is swapped when two people scan each other", async () => {
+    const mail = memoryMailbox();
+    const alex = await person("Alex", "", "alex@example.com");
+    const sam = await person("Sam", "", "sam@example.com");
+    await P.answerInvite(sam, mail, P.parseInvite(new URL(P.createInvite(alex, "https://nearify.org")).hash));
+    await P.answerInvite(alex, mail, P.parseInvite(new URL(P.createInvite(sam, "https://nearify.org")).hash));
+    await P.check(alex, mail);
+    await P.check(sam, mail);
+    await P.check(alex, mail);
+    expect(alex.people[sam.me.pub].reach).toBe("sam@example.com");
+    expect(sam.people[alex.me.pub].reach).toBe("alex@example.com");
+  });
+
+  it("goes with an introduction only once both say yes", async () => {
+    for (const firstIsB of [true, false]) {
+      const mail = memoryMailbox();
+      const a = await person("Ana");
+      const b = await person("Ben", "", "ben@example.com");
+      const c = await person("Cy", "", "cy@example.com");
+      await connect(a, b, mail);
+      await connect(a, c, mail);
+      await P.introduce(a, mail, b.me.pub, c.me.pub);
+      await P.check(b, mail);
+      await P.check(c, mail);
+      const [first, second] = firstIsB ? [b, c] : [c, b];
+      await P.acceptIntro(first, mail, second.me.pub);
+      await P.check(second, mail);
+      expect(second.people[first.me.pub].reach).toBeUndefined();
+      expect(mail.dump()).not.toContain("example.com");
+      await P.acceptIntro(second, mail, first.me.pub);
+      expect(second.people[first.me.pub].status).toBe("connected");
+      await P.check(first, mail);
+      expect(first.people[second.me.pub]).toMatchObject({ status: "connected", reach: second.me.reach });
+      await P.check(second, mail);
+      expect(second.people[first.me.pub].reach).toBe(first.me.reach);
+    }
+  });
+
+  it("updates and clears for everyone you're connected with", async () => {
+    const mail = memoryMailbox();
+    const a = await person("Ana");
+    const b = await person("Ben");
+    const c = await person("Cy");
+    await connect(a, b, mail);
+    await connect(a, c, mail);
+    expect(await P.setReach(a, mail, "linkedin.com/in/ana")).toBe(2);
+    await P.check(b, mail);
+    await P.check(c, mail);
+    expect(b.people[a.me.pub].reach).toBe("linkedin.com/in/ana");
+    expect(c.people[a.me.pub].reach).toBe("linkedin.com/in/ana");
+    await P.setReach(a, mail, "");
+    await P.check(b, mail);
+    expect(b.people[a.me.pub].reach).toBeUndefined();
+  });
+
+  it("ignores reach from someone you aren't connected with", async () => {
+    const mail = memoryMailbox();
+    const alex = await person("Alex");
+    const sam = await person("Sam", "", "sam@example.com");
+    await P.answerInvite(alex, mail, P.parseInvite(new URL(P.createInvite(sam, "https://nearify.org")).hash));
+    // Sam hasn't accepted. A forged "reach" from Sam must not land.
+    await P.setReach(sam, mail, "spam@example.com");
+    await P.check(alex, mail);
+    expect(alex.people[sam.me.pub]).toMatchObject({ status: "sent" });
+    expect(alex.people[sam.me.pub].reach).toBeUndefined();
   });
 });

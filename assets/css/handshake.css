@@ -84,3 +84,9 @@
 .hs-more .hs-input { border-bottom-color: rgba(243, 240, 255, .25); color: #f5f3ff; }
 .hs-more .hs-btn { border-color: #f5f3ff; color: #f5f3ff; }
 .hs-more .hs-btn-danger { border-color: #ff8a80; color: #ff8a80; }
+
+/* How to reach someone you're connected with */
+.hs-reach { margin: 10px 0 0; font-size: 15px; font-weight: 600; color: var(--nf-ink); overflow-wrap: anywhere; }
+.hs-person a.hs-btn { display: inline-flex; align-items: center; text-decoration: none; }
+.hs-hint { margin: 6px 0 0; font-size: 13px; color: var(--nf-ink-soft); }
+.hs-more form { display: grid; }
