@@ -6,6 +6,7 @@
 import * as P from "./protocol.js";
 import { encryptBackup, decryptBackup } from "./crypto.js";
 import { mailbox } from "./mailbox.js";
+import { buildVCard, reachActions, vCardFileName } from "../reach.js";
 import { loadState, saveState, deleteEverything, askToKeep } from "./store.js";
 
 const $ = (id) => document.getElementById(id);
@@ -67,6 +68,21 @@ function personRow(pub, person) {
     actions.append(button("Cancel", async () => P.forget(state, pub), "Cancelled."));
   } else {
     row.prepend(el("p", { class: "hs-kicker", text: person.via ? `Introduced by ${person.via.name}` : "Met in person" }));
+    if (person.reach) {
+      row.append(el("p", { class: "hs-reach", text: person.reach }));
+      const contact = contactFor(person);
+      const quick = el("div", { class: "hs-actions" });
+      for (const action of reachActions(contact, { myName: state.me.card.name })) {
+        const link = el("a", { class: action.primary ? "hs-btn hs-btn-primary" : "hs-btn", href: action.href, text: action.label });
+        if (action.external) { link.target = "_blank"; link.rel = "noopener noreferrer"; }
+        quick.append(link);
+      }
+      quick.append(el("button", { type: "button", class: "hs-btn", text: "Add to Contacts", on: { click: () => {
+        download(buildVCard(contact), "text/vcard;charset=utf-8", vCardFileName(contact));
+        say(`Contact card for ${person.card.name} downloaded. Open it to add them to your contacts.`);
+      } } }));
+      row.append(quick);
+    }
     const others = Object.entries(state.people).filter(([p, o]) => p !== pub && o.status === "connected");
     if (others.length) {
       const select = el("select", { class: "hs-select", "aria-label": `Introduce ${person.card.name} to` },
@@ -83,6 +99,29 @@ function personRow(pub, person) {
   }
   row.append(actions);
   return row;
+}
+
+function contactFor(person) {
+  return {
+    name: person.card.name,
+    reach: person.reach,
+    where: person.via ? `introduced by ${person.via.name}, through Nearify Handshakes` : "in person, through Nearify Handshakes",
+    note: person.card.building ? `Building: ${person.card.building}` : "",
+  };
+}
+
+function download(text, type, fileName) {
+  const a = el("a", { href: URL.createObjectURL(new Blob([text], { type })), download: fileName });
+  document.body.append(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+}
+
+function fillEdit() {
+  $("hsEditName").value = state.me.card.name;
+  $("hsEditBuilding").value = state.me.card.building || "";
+  $("hsEditReach").value = state.me.reach || "";
 }
 
 function renderQr() {
@@ -133,10 +172,8 @@ async function poll() {
 async function backup() {
   const pass = $("hsPass").value;
   if (pass.length < 8) return say("Use a passphrase of at least 8 characters.");
-  const file = await encryptBackup(pass, state.me.privateKey, { pub: state.me.pub, card: state.me.card, people: state.people });
-  const a = el("a", { href: URL.createObjectURL(new Blob([file], { type: "application/json" })), download: "nearify-handshakes-backup.json" });
-  a.click();
-  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  const file = await encryptBackup(pass, state.me.privateKey, { pub: state.me.pub, card: state.me.card, reach: state.me.reach || "", people: state.people });
+  download(file, "application/json", "nearify-handshakes-backup.json");
   $("hsPass").value = "";
   say("Backup saved. Keep the file and the passphrase somewhere safe.");
 }
@@ -146,7 +183,8 @@ async function restore() {
   if (!file) return say("Choose your backup file first.");
   try {
     const { privateKey, data } = await decryptBackup($("hsPass").value, await file.text());
-    state = { me: { privateKey, pub: data.pub, card: data.card }, invites: [], people: data.people || {} };
+    state = { me: { privateKey, pub: data.pub, card: data.card, reach: data.reach || "" }, invites: [], people: data.people || {} };
+    fillEdit();
     await saveState(state);
     $("hsPass").value = "";
     newInvite();
@@ -169,7 +207,8 @@ async function start() {
   $("hsSetupForm").addEventListener("submit", (e) => {
     e.preventDefault();
     act(async () => {
-      await P.setUp(state, { name: $("hsName").value, building: $("hsBuilding").value });
+      await P.setUp(state, { name: $("hsName").value, building: $("hsBuilding").value }, $("hsReach").value);
+      fillEdit();
       askToKeep();
       newInvite();
       if (pendingInvite) {
@@ -185,6 +224,17 @@ async function start() {
     const invite = pendingInvite;
     act(async () => { await P.answerInvite(state, mailbox, invite); pendingInvite = null; }, `Sent. You'll be connected when ${invite.card.name} says yes.`);
   });
+  $("hsEditForm").addEventListener("submit", (e) => {
+    e.preventDefault();
+    let shared = 0;
+    act(async () => {
+      await P.setUp(state, { name: $("hsEditName").value, building: $("hsEditBuilding").value });
+      shared = await P.setReach(state, mailbox, $("hsEditReach").value);
+      newInvite();
+      fillEdit();
+      say(shared ? `Saved. How to reach you was updated for ${shared === 1 ? "1 person" : `${shared} people`} you're connected with.` : "Saved.");
+    });
+  });
   $("hsNewCode").addEventListener("click", () => act(async () => newInvite(), "New code ready. The old one stops working in 30 minutes."));
   $("hsBackup").addEventListener("click", () => act(backup));
   $("hsRestore").addEventListener("click", () => restore());
@@ -198,7 +248,7 @@ async function start() {
   });
   document.addEventListener("visibilitychange", () => { if (!document.hidden) poll(); });
 
-  if (state.me) { newInvite(); await saveState(state); }
+  if (state.me) { newInvite(); fillEdit(); await saveState(state); }
   render();
   poll();
 }
