@@ -34,6 +34,8 @@ const $activity  = document.getElementById("fdActivitySection");
 const $insight   = document.getElementById("fdInsight");
 const $landing   = document.getElementById("fdLandingSection");
 const $landingBody = document.getElementById("fdLandingBody");
+const $handshake = document.getElementById("fdHandshakeSection");
+const $handshakeBody = document.getElementById("fdHandshakeBody");
 
 // ── Auth ───────────────────────────────────────────────────────────────────────
 
@@ -80,6 +82,46 @@ document.querySelectorAll(".fd-filter-btn").forEach(btn => {
 
 // ── Data loading ───────────────────────────────────────────────────────────────
 
+// ── Handshakes pilot ───────────────────────────────────────────────────────────
+
+const HANDSHAKE_KINDS = [
+  { key: "card_made",     label: "Cards made" },
+  { key: "connected",     label: "Connections" },
+  { key: "intro_sent",    label: "Introductions sent" },
+  { key: "ask_sent",      label: "Asks sent" },
+  { key: "ask_passed",    label: "Asks passed on" },
+  { key: "help_offered",  label: "Offers to help" },
+  { key: "contact_saved", label: "Added to Contacts" },
+];
+
+function renderHandshakes(result) {
+  if (!$handshake) return;
+  $handshake.style.display = "block";
+  if (result.error) {
+    const note = el("p", "fd-section-subtitle", "Not available yet. Run ");
+    note.append(el("code", "", "supabase/migrations/20261120_handshake_tally.sql"), " to turn on this report.");
+    $handshakeBody.replaceChildren(note);
+    return;
+  }
+  const totals = {};
+  const days = new Set();
+  for (const row of result.data ?? []) {
+    totals[row.kind] = (totals[row.kind] || 0) + Number(row.n);
+    days.add(row.day);
+  }
+  const grid = el("div", "fd-stat-grid");
+  for (const kind of HANDSHAKE_KINDS) {
+    const card = el("div", "fd-stat-card");
+    card.append(el("div", "fd-stat-label", kind.label), el("div", "fd-stat-value", fmt(totals[kind.key] || 0)));
+    grid.append(card);
+  }
+  const cards = totals.card_made || 0;
+  const summary = el("p", "fd-section-subtitle", cards
+    ? `${fmt(totals.connected || 0)} connections from ${fmt(cards)} cards, across ${days.size} ${days.size === 1 ? "day" : "days"} with activity.`
+    : "No Handshakes activity in this range yet.");
+  $handshakeBody.replaceChildren(grid, summary);
+}
+
 async function loadData() {
   setLoading(true);
   clearError();
@@ -88,14 +130,17 @@ async function loadData() {
     ? new Date(0).toISOString()
     : new Date(Date.now() - activeRangeDays * 86400_000).toISOString();
 
-  const [funnelResult, activityResult, landingResult] = await Promise.all([
+  const sinceDay = sinceTs.slice(0, 10);
+  const [funnelResult, activityResult, landingResult, handshakeResult] = await Promise.all([
     supabase.rpc("get_meetup_funnel", { p_since: sinceTs }),
     supabase.rpc("get_meetup_activity_hourly", { p_hours: Math.max(activeRangeDays, 1) * 24 || 8760 }),
     supabase.rpc("get_landing_demo_funnel", { p_since: sinceTs }),
+    supabase.rpc("get_handshake_tally", { p_since: sinceDay }),
   ]);
 
   // Independent of the Meetup funnel: a missing function must not hide the rest.
   renderLandingDemo(landingResult);
+  renderHandshakes(handshakeResult);
 
   setLoading(false);
 

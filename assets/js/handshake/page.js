@@ -5,7 +5,7 @@
  */
 import * as P from "./protocol.js";
 import { encryptBackup, decryptBackup } from "./crypto.js";
-import { mailbox } from "./mailbox.js";
+import { mailbox, count } from "./mailbox.js";
 import { buildVCard, reachActions, vCardFileName } from "../reach.js";
 import { loadState, saveState, deleteEverything, askToKeep } from "./store.js";
 
@@ -54,14 +54,14 @@ function personRow(pub, person) {
   if (person.status === "request") {
     row.prepend(el("p", { class: "hs-kicker", text: "Scanned your card" }));
     actions.append(
-      button("Connect", () => P.acceptRequest(state, mailbox, pub), `You and ${person.card.name} are connected.`, true),
+      button("Connect", async () => { await P.acceptRequest(state, mailbox, pub); count("connected"); }, `You and ${person.card.name} are connected.`, true),
       button("Not now", async () => P.forget(state, pub), "Forgotten. They aren't told."),
     );
   } else if (person.status === "offered") {
     row.prepend(el("p", { class: "hs-kicker", text: `${person.via.name} wants to introduce you` + (person.theyAccepted ? " · they've said yes" : "") }));
     if (person.about) row.append(el("p", { class: "hs-about", text: `About: ${person.about}` }));
     actions.append(
-      button("Say yes", () => P.acceptIntro(state, mailbox, pub), person.theyAccepted ? `You and ${person.card.name} are connected.` : `Sent. You'll be connected if ${person.card.name} says yes too.`, true),
+      button("Say yes", async () => { const both = person.theyAccepted; await P.acceptIntro(state, mailbox, pub); if (both) count("connected"); }, person.theyAccepted ? `You and ${person.card.name} are connected.` : `Sent. You'll be connected if ${person.card.name} says yes too.`, true),
       button("No thanks", async () => P.forget(state, pub), "Declined. Nobody is told."),
     );
   } else if (person.status === "sent" || person.status === "accepted") {
@@ -80,6 +80,7 @@ function personRow(pub, person) {
       }
       quick.append(el("button", { type: "button", class: "hs-btn", text: "Add to Contacts", on: { click: () => {
         download(buildVCard(contact), "text/vcard;charset=utf-8", vCardFileName(contact));
+        count("contact_saved");
         say(`Contact card for ${person.card.name} downloaded. Open it to add them to your contacts.`);
       } } }));
       row.append(quick);
@@ -93,7 +94,8 @@ function personRow(pub, person) {
       select.addEventListener("change", () => { send.disabled = !select.value; });
       send.addEventListener("click", () => {
         const other = state.people[select.value];
-        if (other) act(() => P.introduce(state, mailbox, pub, select.value), `Introduction sent. ${person.card.name} and ${other.card.name} each decide.`);
+        const to = select.value;
+        if (other) act(async () => { await P.introduce(state, mailbox, pub, to); count("intro_sent"); }, `Introduction sent. ${person.card.name} and ${other.card.name} each decide.`);
       });
       actions.append(select, send);
     }
@@ -150,7 +152,7 @@ function renderAsks() {
     if (item.helped) {
       actions.append(el("p", { class: "hs-done", text: item.hop === 1 ? `You told ${who} you can help.` : `${who} knows you can help and can introduce you.` }));
     } else {
-      actions.append(askButton("I can help", () => P.offerHelp(state, mailbox, id), item.hop === 1 ? `${who} will see that you can help.` : `${who} will see that you can help, and can introduce you.`, true));
+      actions.append(askButton("I can help", async () => { await P.offerHelp(state, mailbox, id); count("help_offered"); }, item.hop === 1 ? `${who} will see that you can help.` : `${who} will see that you can help, and can introduce you.`, true));
     }
     actions.append(askButton("Dismiss", async () => P.dismissAsk(state, id), "Dismissed. Nobody is told."));
     row.append(actions);
@@ -163,7 +165,7 @@ function renderAsks() {
       select.addEventListener("change", () => { send.disabled = !select.value; });
       send.addEventListener("click", () => {
         const to = select.value;
-        act(() => P.passOn(state, mailbox, id, to), `Passed on to ${nameOf(to)}, without ${who}'s name.`);
+        act(async () => { await P.passOn(state, mailbox, id, to); count("ask_passed"); }, `Passed on to ${nameOf(to)}, without ${who}'s name.`);
       });
       pass.append(select, send);
       row.append(pass);
@@ -180,7 +182,7 @@ function renderAsks() {
       const line = el("div", { class: "hs-actions" });
       line.append(el("p", { class: "hs-done", text: `${nameOf(helper)} can help.` }));
       if (relay.introduced.includes(helper)) line.append(el("p", { class: "hs-done", text: "Introduced." }));
-      else line.append(askButton(`Introduce ${nameOf(helper)} and ${asker}`, () => P.introduceHelper(state, mailbox, id, helper), `Introduction sent. ${nameOf(helper)} and ${asker} each decide.`, true));
+      else line.append(askButton(`Introduce ${nameOf(helper)} and ${asker}`, async () => { await P.introduceHelper(state, mailbox, id, helper); count("intro_sent"); }, `Introduction sent. ${nameOf(helper)} and ${asker} each decide.`, true));
       row.append(line);
     }
     rows.push(row);
@@ -288,6 +290,7 @@ async function start() {
     e.preventDefault();
     act(async () => {
       await P.setUp(state, { name: $("hsName").value, building: $("hsBuilding").value }, $("hsReach").value);
+      count("card_made");
       fillEdit();
       askToKeep();
       newInvite();
@@ -307,9 +310,10 @@ async function start() {
   $("hsAskForm").addEventListener("submit", (e) => {
     e.preventDefault();
     act(async () => {
-      const count = await P.sendAsk(state, mailbox, $("hsAskText").value);
+      const sent = await P.sendAsk(state, mailbox, $("hsAskText").value);
+      count("ask_sent");
       $("hsAskText").value = "";
-      say(`Ask sent to ${count === 1 ? "1 person" : `${count} people`} you've met.`);
+      say(`Ask sent to ${sent === 1 ? "1 person" : `${sent} people`} you've met.`);
     });
   });
   $("hsEditForm").addEventListener("submit", (e) => {
