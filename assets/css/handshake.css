@@ -90,3 +90,12 @@
 .hs-person a.hs-btn { display: inline-flex; align-items: center; text-decoration: none; }
 .hs-hint { margin: 6px 0 0; font-size: 13px; color: var(--nf-ink-soft); }
 .hs-more form { display: grid; }
+
+/* Asks */
+.hs-asks { margin-top: 8px; }
+.hs-ask-compose { display: grid; margin-bottom: 14px; }
+.hs-ask-compose .hs-btn { justify-self: start; margin-top: 16px; }
+.hs-textarea { resize: vertical; min-height: 56px; line-height: 1.4; }
+.hs-ask-text { margin: 4px 0 0; font-family: var(--nf-hand); font-size: 26px; font-weight: 600; line-height: 1.15; color: var(--nf-ink); overflow-wrap: anywhere; }
+.hs-about { margin: 8px 0 0; font-size: 15px; color: var(--nf-ink-soft); overflow-wrap: anywhere; }
+.hs-done { margin: 0; font-size: 14px; color: var(--nf-ink-soft); }

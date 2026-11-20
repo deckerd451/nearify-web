@@ -12,7 +12,7 @@
   <link rel="stylesheet" href="/assets/css/scan-entry.css?v=20261105-accountfix1" />
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Caveat:wght@500;600&display=swap" />
   <link rel="stylesheet" href="/assets/css/paper-card.css?v=20261118-paper1" />
-  <link rel="stylesheet" href="/assets/css/handshake.css?v=20261119-hs2" />
+  <link rel="stylesheet" href="/assets/css/handshake.css?v=20261120-asks1" />
 </head>
 <body>
   <a href="#main-content" class="skip-link">Skip to main content</a>
@@ -74,6 +74,17 @@
         <button type="button" class="hs-link" id="hsNewCode">New code</button>
       </div>
 
+      <section class="hs-asks" id="hsAsks" aria-labelledby="hsAsksTitle" hidden>
+        <h2 class="hs-count" id="hsAsksTitle">Asks</h2>
+        <form class="nf-paper hs-ask-compose" id="hsAskForm" method="dialog" novalidate>
+          <label class="hs-label" for="hsAskText">Ask the people you've met</label>
+          <textarea class="hs-input hs-textarea" id="hsAskText" maxlength="140" rows="2" placeholder="Looking for someone who knows embedded hardware"></textarea>
+          <p class="hs-hint">Goes only to people you're connected with. They can offer to help, or pass it one step further without your name.</p>
+          <button type="submit" class="hs-btn hs-btn-primary">Send ask</button>
+        </form>
+        <ol class="hs-list hs-ask-list" id="hsAskList"></ol>
+      </section>
+
       <h2 class="hs-count" id="hsCount"></h2>
       <ol class="hs-list" id="hsList"></ol>
       <p class="hs-empty" id="hsEmpty">Nobody yet. Show your code to the next person you meet.</p>
@@ -100,6 +111,7 @@
           <li>Your card and the people you connect with are kept only in this browser.</li>
           <li>Our server passes along sealed messages between phones. It can't read them, doesn't know whose they are, and deletes each one when it's picked up or after 7 days.</li>
           <li>We never see who met whom. Nobody can find you or message you unless you've connected.</li>
+          <li>Asks are sealed too. Someone two steps away never sees your name, only that someone their connection met is asking.</li>
           <li>How to reach you is never on the code people scan. It's sent, sealed, only to people you've connected with.</li>
           <li>Saying no, or cancelling, sends nothing. Nobody is told.</li>
         </ul>
@@ -137,6 +149,6 @@
 
   <script type="module" src="../assets/js/navAuth.js?v=20261106-permissions2"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" integrity="sha384-3zSEDfvllQohrq0PHL1fOXJuC/jSOO34H46t6UQfobFOmxE5BpjjaIJY5F2/bMnU" crossorigin="anonymous"></script>
-  <script type="module" src="../assets/js/handshake/page.js?v=20261119-hs2"></script>
+  <script type="module" src="../assets/js/handshake/page.js?v=20261120-asks1"></script>
 </body>
 </html>
