@@ -59,6 +59,7 @@ function personRow(pub, person) {
     );
   } else if (person.status === "offered") {
     row.prepend(el("p", { class: "hs-kicker", text: `${person.via.name} wants to introduce you` + (person.theyAccepted ? " · they've said yes" : "") }));
+    if (person.about) row.append(el("p", { class: "hs-about", text: `About: ${person.about}` }));
     actions.append(
       button("Say yes", () => P.acceptIntro(state, mailbox, pub), person.theyAccepted ? `You and ${person.card.name} are connected.` : `Sent. You'll be connected if ${person.card.name} says yes too.`, true),
       button("No thanks", async () => P.forget(state, pub), "Declined. Nobody is told."),
@@ -124,6 +125,80 @@ function fillEdit() {
   $("hsEditReach").value = state.me.reach || "";
 }
 
+const nameOf = (pub) => state.people[pub]?.card.name || "Someone";
+const connectedPubs = () => Object.entries(state.people).filter(([, p]) => p.status === "connected").map(([pub]) => pub);
+
+function askRow(kicker, text) {
+  const row = el("li", { class: "nf-paper hs-person hs-ask" });
+  row.append(el("p", { class: "hs-kicker", text: kicker }), el("p", { class: "hs-ask-text", text }));
+  return row;
+}
+
+function askButton(label, fn, done, primary) {
+  return el("button", { type: "button", class: primary ? "hs-btn hs-btn-primary" : "hs-btn", text: label, on: { click: () => act(fn, done) } });
+}
+
+function renderAsks() {
+  const asks = state.asks || { mine: {}, inbox: {}, relayed: {} };
+  const people = connectedPubs();
+  const rows = [];
+
+  for (const [id, item] of Object.entries(asks.inbox).sort(([, x], [, y]) => y.receivedAt - x.receivedAt)) {
+    const who = nameOf(item.from);
+    const row = askRow(item.hop === 1 ? `${who} asks` : `Someone ${who} met asks`, item.text);
+    const actions = el("div", { class: "hs-actions" });
+    if (item.helped) {
+      actions.append(el("p", { class: "hs-done", text: item.hop === 1 ? `You told ${who} you can help.` : `${who} knows you can help and can introduce you.` }));
+    } else {
+      actions.append(askButton("I can help", () => P.offerHelp(state, mailbox, id), item.hop === 1 ? `${who} will see that you can help.` : `${who} will see that you can help, and can introduce you.`, true));
+    }
+    actions.append(askButton("Dismiss", async () => P.dismissAsk(state, id), "Dismissed. Nobody is told."));
+    row.append(actions);
+    const targets = item.hop === 1 ? people.filter((p) => p !== item.from && !item.passedTo.includes(p)) : [];
+    if (targets.length) {
+      const pass = el("div", { class: "hs-actions" });
+      const select = el("select", { class: "hs-select", "aria-label": "Pass this ask on to" },
+        el("option", { value: "", text: "Pass it on to…" }), ...targets.map((p) => el("option", { value: p, text: nameOf(p) })));
+      const send = el("button", { type: "button", class: "hs-btn", text: "Pass on", disabled: true });
+      select.addEventListener("change", () => { send.disabled = !select.value; });
+      send.addEventListener("click", () => {
+        const to = select.value;
+        act(() => P.passOn(state, mailbox, id, to), `Passed on to ${nameOf(to)}, without ${who}'s name.`);
+      });
+      pass.append(select, send);
+      row.append(pass);
+    }
+    if (item.passedTo.length) row.append(el("p", { class: "hs-done", text: `Passed on to ${item.passedTo.map(nameOf).join(", ")}.` }));
+    rows.push(row);
+  }
+
+  for (const [id, relay] of Object.entries(asks.relayed)) {
+    if (!relay.offers.length) continue;
+    const asker = nameOf(relay.origin);
+    const row = askRow(`You passed on ${asker}'s ask`, relay.text);
+    for (const helper of relay.offers) {
+      const line = el("div", { class: "hs-actions" });
+      line.append(el("p", { class: "hs-done", text: `${nameOf(helper)} can help.` }));
+      if (relay.introduced.includes(helper)) line.append(el("p", { class: "hs-done", text: "Introduced." }));
+      else line.append(askButton(`Introduce ${nameOf(helper)} and ${asker}`, () => P.introduceHelper(state, mailbox, id, helper), `Introduction sent. ${nameOf(helper)} and ${asker} each decide.`, true));
+      row.append(line);
+    }
+    rows.push(row);
+  }
+
+  for (const [id, mine] of Object.entries(asks.mine).sort(([, x], [, y]) => y.createdAt - x.createdAt)) {
+    const sentTo = mine.to.length === 1 ? "1 person" : `${mine.to.length} people`;
+    const row = askRow(`Your ask · sent to ${sentTo}`, mine.text);
+    row.append(el("p", { class: "hs-done", text: mine.helpers.length ? `Can help: ${mine.helpers.map(nameOf).join(", ")}. They're in your people below.` : "No offers yet. People can also pass it on, and you'll get an introduction if someone further out can help." }));
+    row.append(el("div", { class: "hs-actions" }, askButton("Close ask", () => P.closeAsk(state, mailbox, id), "Ask closed. It's removed for everyone who had it.")));
+    rows.push(row);
+  }
+
+  $("hsAskList").replaceChildren(...rows);
+  $("hsAsks").hidden = !people.length && !rows.length;
+  $("hsAskForm").hidden = !people.length;
+}
+
 function renderQr() {
   const box = $("hsQr");
   box.replaceChildren();
@@ -149,6 +224,7 @@ function render() {
   const entries = Object.entries(state.people).sort(([, a], [, b]) => order[a.status] - order[b.status] || b.since - a.since);
   $("hsList").replaceChildren(...entries.map(([pub, p]) => personRow(pub, p)));
   $("hsEmpty").hidden = entries.length > 0;
+  renderAsks();
   const count = entries.filter(([, p]) => p.status === "connected").length;
   $("hsCount").textContent = count === 1 ? "1 person you've met" : `${count} people you've met`;
 }
@@ -172,7 +248,7 @@ async function poll() {
 async function backup() {
   const pass = $("hsPass").value;
   if (pass.length < 8) return say("Use a passphrase of at least 8 characters.");
-  const file = await encryptBackup(pass, state.me.privateKey, { pub: state.me.pub, card: state.me.card, reach: state.me.reach || "", people: state.people });
+  const file = await encryptBackup(pass, state.me.privateKey, { pub: state.me.pub, card: state.me.card, reach: state.me.reach || "", people: state.people, asks: state.asks });
   download(file, "application/json", "nearify-handshakes-backup.json");
   $("hsPass").value = "";
   say("Backup saved. Keep the file and the passphrase somewhere safe.");
@@ -183,7 +259,7 @@ async function restore() {
   if (!file) return say("Choose your backup file first.");
   try {
     const { privateKey, data } = await decryptBackup($("hsPass").value, await file.text());
-    state = { me: { privateKey, pub: data.pub, card: data.card, reach: data.reach || "" }, invites: [], people: data.people || {} };
+    state = { me: { privateKey, pub: data.pub, card: data.card, reach: data.reach || "" }, invites: [], people: data.people || {}, asks: data.asks || { mine: {}, inbox: {}, relayed: {} } };
     fillEdit();
     await saveState(state);
     $("hsPass").value = "";
@@ -195,14 +271,18 @@ async function restore() {
   render();
 }
 
+function readInvite() {
+  if (!location.hash) return;
+  pendingInvite = P.parseInvite(location.hash);
+  // Take the invite out of the address bar and history straight away.
+  history.replaceState(null, "", location.pathname);
+  if (!pendingInvite) say("That code didn't work. Ask them to show a new one.");
+}
+
 async function start() {
   state = await loadState();
-  if (location.hash) {
-    pendingInvite = P.parseInvite(location.hash);
-    // Take the invite out of the address bar and history straight away.
-    history.replaceState(null, "", location.pathname);
-    if (!pendingInvite) say("That code didn't work. Ask them to show a new one.");
-  }
+  readInvite();
+  window.addEventListener("hashchange", () => { readInvite(); render(); });
 
   $("hsSetupForm").addEventListener("submit", (e) => {
     e.preventDefault();
@@ -223,6 +303,14 @@ async function start() {
     if (!state.me) { $("hsName").focus(); return say("Add your name below first."); }
     const invite = pendingInvite;
     act(async () => { await P.answerInvite(state, mailbox, invite); pendingInvite = null; }, `Sent. You'll be connected when ${invite.card.name} says yes.`);
+  });
+  $("hsAskForm").addEventListener("submit", (e) => {
+    e.preventDefault();
+    act(async () => {
+      const count = await P.sendAsk(state, mailbox, $("hsAskText").value);
+      $("hsAskText").value = "";
+      say(`Ask sent to ${count === 1 ? "1 person" : `${count} people`} you've met.`);
+    });
   });
   $("hsEditForm").addEventListener("submit", (e) => {
     e.preventDefault();

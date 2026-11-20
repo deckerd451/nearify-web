@@ -277,3 +277,115 @@ describe("how to reach me", () => {
     expect(alex.people[sam.me.pub].reach).toBeUndefined();
   });
 });
+
+describe("asks", () => {
+  async function trio() {
+    // Ana–Ben and Ben–Cy are connected. Ana and Cy have never met.
+    const mail = memoryMailbox();
+    const a = await person("Ana", "", "ana@example.com");
+    const b = await person("Ben");
+    const c = await person("Cy", "", "cy@example.com");
+    await connect(a, b, mail);
+    await connect(b, c, mail);
+    await P.check(a, mail); await P.check(b, mail); await P.check(c, mail);
+    return { mail, a, b, c };
+  }
+  const only = (o) => Object.entries(o)[0];
+
+  it("reaches only people you're connected with, and they can offer help", async () => {
+    const { mail, a, b, c } = await trio();
+    expect(await P.sendAsk(a, mail, "Need someone who knows embedded hardware")).toBe(1);
+    expect(mail.dump()).not.toContain("embedded");
+    await P.check(b, mail);
+    await P.check(c, mail);
+    const [id, item] = only(b.asks.inbox);
+    expect(item).toMatchObject({ text: "Need someone who knows embedded hardware", from: a.me.pub, hop: 1 });
+    expect(c.asks.inbox).toEqual({});
+    await P.offerHelp(b, mail, id);
+    await P.check(a, mail);
+    expect(a.asks.mine[id].helpers).toEqual([b.me.pub]);
+  });
+
+  it("goes one step further only when passed on, without the asker's name", async () => {
+    const { mail, a, b, c } = await trio();
+    await P.sendAsk(a, mail, "Looking for a soldering mentor");
+    await P.check(b, mail);
+    const [id] = only(b.asks.inbox);
+    await P.passOn(b, mail, id, c.me.pub);
+    await P.check(c, mail);
+    expect(c.asks.inbox[id]).toMatchObject({ hop: 2, from: b.me.pub, text: "Looking for a soldering mentor" });
+    expect(JSON.stringify(c.asks)).not.toContain(a.me.pub);
+    expect(JSON.stringify(c.asks)).not.toContain("Ana");
+    await expect(P.passOn(c, mail, id, b.me.pub)).rejects.toThrow();
+  });
+
+  it("connects a helper two steps away only through an introduction both accept", async () => {
+    const { mail, a, b, c } = await trio();
+    await P.sendAsk(a, mail, "Need a PCB reviewer");
+    await P.check(b, mail);
+    const [id] = only(b.asks.inbox);
+    await P.passOn(b, mail, id, c.me.pub);
+    await P.check(c, mail);
+    await P.offerHelp(c, mail, id);
+    await P.check(b, mail);
+    expect(b.asks.relayed[id].offers).toEqual([c.me.pub]);
+    await P.check(a, mail);
+    expect(a.asks.mine[id].helpers).toEqual([]);
+    expect(a.people[c.me.pub]).toBeUndefined();
+    await P.introduceHelper(b, mail, id, c.me.pub);
+    await P.check(a, mail);
+    await P.check(c, mail);
+    expect(a.people[c.me.pub]).toMatchObject({ status: "offered", about: "Need a PCB reviewer", via: { name: "Ben" } });
+    expect(a.people[c.me.pub].reach).toBeUndefined();
+    // Both say yes at about the same time.
+    await P.acceptIntro(a, mail, c.me.pub);
+    await P.acceptIntro(c, mail, a.me.pub);
+    await P.check(a, mail);
+    await P.check(c, mail);
+    await P.check(a, mail);
+    expect(a.people[c.me.pub]).toMatchObject({ status: "connected", reach: "cy@example.com" });
+    expect(c.people[a.me.pub]).toMatchObject({ status: "connected", reach: "ana@example.com" });
+  });
+
+  it("closing an ask removes it two steps out too", async () => {
+    const { mail, a, b, c } = await trio();
+    await P.sendAsk(a, mail, "Anyone with a 3D printer?");
+    await P.check(b, mail);
+    const [id] = only(b.asks.inbox);
+    await P.passOn(b, mail, id, c.me.pub);
+    await P.check(c, mail);
+    await P.closeAsk(a, mail, id);
+    await P.check(b, mail);
+    await P.check(c, mail);
+    expect(a.asks.mine).toEqual({});
+    expect(b.asks.inbox).toEqual({});
+    expect(b.asks.relayed).toEqual({});
+    expect(c.asks.inbox).toEqual({});
+  });
+
+  it("ignores asks and help from people you aren't connected with", async () => {
+    const mail = memoryMailbox();
+    const a = await person("Ana");
+    const s = await person("Stranger");
+    await P.answerInvite(s, mail, P.parseInvite(new URL(P.createInvite(a, "https://nearify.org")).hash));
+    await P.check(a, mail); // request waiting, not accepted
+    await expect(P.sendAsk(a, mail, "hello")).rejects.toThrow(/Connect/);
+    expect(a.asks.inbox).toEqual({});
+  });
+
+  it("expires asks after 14 days and refuses empty asks", async () => {
+    const { mail, a, b } = await trio();
+    await expect(P.sendAsk(a, mail, "   ")).rejects.toThrow();
+    await P.sendAsk(a, mail, "Short-lived", 0);
+    await P.check(b, mail, 0);
+    await P.check(a, mail, 15 * 86400000);
+    await P.check(b, mail, 15 * 86400000);
+    expect(a.asks.mine).toEqual({});
+    expect(b.asks.inbox).toEqual({});
+  });
+
+  it("limits ask length and strips control characters", () => {
+    expect(P.cleanAsk("a\u0000b\n  c")).toBe("a b c");
+    expect(P.cleanAsk("x".repeat(300))).toHaveLength(140);
+  });
+});
