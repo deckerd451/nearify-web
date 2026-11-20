@@ -4,7 +4,7 @@
  */
 import { supabaseUrl, supabaseKey } from "../supabaseConfig.js";
 
-async function rpc(name, body) {
+export async function rpc(name, body) {
   const res = await fetch(`${supabaseUrl}/rest/v1/rpc/${name}`, {
     method: "POST",
     credentials: "omit",
@@ -24,3 +24,8 @@ export const mailbox = {
     return out;
   },
 };
+
+/** Best effort: adds 1 to today's anonymous total for this kind. Never blocks or fails a step. */
+export function count(kind) {
+  rpc("handshake_count", { p_kind: kind }).catch(() => {});
+}

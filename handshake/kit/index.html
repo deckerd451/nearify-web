@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <title>Handshakes event kit | Nearify</title>
+  <meta name="description" content="Only people you have met can reach you. Connect in person, introduce people, and keep it all on your phone." />
+  <meta name="robots" content="noindex" />
+  <link rel="stylesheet" href="../../assets/css/styles.css?v=20261101-mobile1" />
+  <link rel="stylesheet" href="/assets/css/scan-entry.css?v=20261105-accountfix1" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Caveat:wght@500;600&display=swap" />
+  <link rel="stylesheet" href="/assets/css/paper-card.css?v=20261118-paper1" />
+  <link rel="stylesheet" href="/assets/css/handshake-kit.css?v=20261120-kit1" />
+</head>
+<body>
+  <a href="#main-content" class="skip-link">Skip to main content</a>
+  <div class="nav-container">
+  <header class="nav">
+    <div class="logo"><a href="../../index.html" aria-label="Nearify Home"><img class="logo-img" src="../../assets/images/nearify-logo.png?v=20260909" alt="" /><span class="logo-text">Nearify</span></a></div>
+    <div class="nav-links">
+      <a href="../../events/index.html">Events</a>
+      <a href="../../vision.html">Vision</a>
+    </div>
+    <a href="/scan/?web=1" class="nav-scan-link"><svg viewBox="0 0 20 20" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M2 7V2h5M13 2h5v5M18 13v5h-5M7 18H2v-5"/><path d="M6 6h3v3H6zM12 6h2v3h-2zM6 12h3v2H6zM12 12h2v2h-2z"/></svg><span>Scan QR</span></a>
+    <button class="nav-hamburger" id="navHamburger" aria-label="Open menu" aria-expanded="false">
+      <span></span><span></span><span></span>
+    </button>
+  </header>
+  <nav class="nav-drawer" id="navDrawer" aria-label="Site navigation">
+    <a href="../../events/index.html">Events</a>
+    <a href="../../vision.html">Vision</a>
+  </nav>
+  </div>
+
+  <main id="main-content" class="kit-page">
+    <header class="kit-head">
+      <h1>Handshakes event kit</h1>
+      <p class="kit-lede">Everything to try Handshakes at a meetup: a slide, table cards to print, and 20 seconds to say from the front.</p>
+    </header>
+
+    <section class="kit-block" aria-labelledby="kitSlideTitle">
+      <h2 id="kitSlideTitle">1. The slide</h2>
+      <p class="kit-note">Put it up during breaks and at the end. Full screen works best.</p>
+      <div class="kit-slide" id="kitSlide">
+        <div class="kit-slide-words">
+          <p class="kit-slide-kicker">Before you leave tonight</p>
+          <p class="kit-slide-title">Scan to connect with the people you meet</p>
+          <p class="kit-slide-sub">Only people you've met can reach you.</p>
+          <p class="kit-slide-url">nearify.org/handshake</p>
+        </div>
+        <div class="kit-qr kit-qr-slide" data-qr="360" role="img" aria-label="QR code for nearify.org/handshake"></div>
+      </div>
+      <button type="button" class="hs-btn kit-btn" id="kitFullscreen">Show full screen</button>
+    </section>
+
+    <section class="kit-block" aria-labelledby="kitCardsTitle">
+      <h2 id="kitCardsTitle">2. Table cards</h2>
+      <p class="kit-note">Prints two folding cards on one sheet of letter paper. Cut along the middle, fold each along its dotted line, and stand it on a table.</p>
+      <button type="button" class="hs-btn kit-btn" id="kitPrint">Print table cards</button>
+      <div class="kit-sheet" id="kitSheet">
+        <div class="kit-tent">
+          <div class="kit-tent-face kit-tent-back"></div>
+          <div class="kit-tent-face"></div>
+        </div>
+        <div class="kit-tent">
+          <div class="kit-tent-face kit-tent-back"></div>
+          <div class="kit-tent-face"></div>
+        </div>
+      </div>
+      <template id="kitFace">
+        <div class="kit-face-inner">
+          <div class="kit-face-words">
+            <p class="kit-face-title">Only people you've met can reach you.</p>
+            <ol class="kit-face-steps">
+              <li>Scan this and make your card.</li>
+              <li>Show your code to people you meet.</li>
+              <li>You're connected only if you both say yes.</li>
+            </ol>
+            <p class="kit-face-url">nearify.org/handshake</p>
+          </div>
+          <div class="kit-qr" data-qr="150" role="img" aria-label="QR code for nearify.org/handshake"></div>
+        </div>
+      </template>
+    </section>
+
+    <section class="kit-block" aria-labelledby="kitScriptTitle">
+      <h2 id="kitScriptTitle">3. What to say (about 20 seconds)</h2>
+      <blockquote class="nf-paper kit-script">
+        <p>"Before you leave, scan the code on the screen and make a card. It takes 20 seconds, with no account. When you meet someone, show them your code. You're only connected if you both say yes. And if you need help with something, post an ask. It goes to the people you met tonight, and they can pass it on."</p>
+      </blockquote>
+    </section>
+
+    <section class="kit-block" aria-labelledby="kitChecklistTitle">
+      <h2 id="kitChecklistTitle">4. On the night</h2>
+      <ul class="kit-checklist">
+        <li>Make your own card before people arrive, so you can show how it works.</li>
+        <li>Say the script once at the start and once before people leave.</li>
+        <li>Connect with a few people yourself. Seeing an organizer do it is the best invitation.</li>
+        <li>The next day, check the Handshakes totals on the dashboard. They're daily counts with nothing about who.</li>
+      </ul>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <nav class="footer-links">
+      <a href="../events/index.html">Events</a>
+      <a href="../vision.html">Vision</a>
+      <a href="https://nearify.org/privacy.html">Privacy</a>
+      <a href="https://nearify.org/terms.html">Terms</a>
+      <a href="https://nearify.org/support.html">Support</a>
+      <a href="mailto:hello@nearify.org">Contact</a>
+    </nav>
+    <p>© 2026 Nearify</p>
+  </footer>
+
+  <script type="module" src="../../assets/js/navAuth.js?v=20261106-permissions2"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" integrity="sha384-3zSEDfvllQohrq0PHL1fOXJuC/jSOO34H46t6UQfobFOmxE5BpjjaIJY5F2/bMnU" crossorigin="anonymous"></script>
+  <script type="module" src="../../assets/js/handshake/kit.js?v=20261120-kit1"></script>
+</body>
+</html>
