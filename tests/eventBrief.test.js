@@ -34,7 +34,7 @@ describe('people you might see', () => {
   });
 
   it('includes hand-saved people only with a note, never twice', () => {
-    expect(people.find((p) => p.name === 'Alex Kim')).toMatchObject({ metAt: 'Met: coffee', href: '/save/#person-h1' });
+    expect(people.find((p) => p.name === 'Alex Kim')).toMatchObject({ metAt: 'Met: coffee', href: '/handshake/' });
     expect(people.some((p) => p.name === 'No Note' || p.name === 'maya rivera')).toBe(false);
   });
 

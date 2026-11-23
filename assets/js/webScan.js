@@ -27,17 +27,23 @@ function stopCamera() {
 function showResult(value) {
   const target = resolveWebQr(value);
   if (!target) {
-    status.textContent = 'Use a Nearify event or personal QR. This code cannot be opened here.';
+    status.textContent = 'Use a Nearify event code or someone’s Your people code. This code can’t be opened here.';
     return false;
   }
   stopCamera();
   document.getElementById('scanContinueLink').href = target;
+  if (target.startsWith('/handshake/')) {
+    const name = new URLSearchParams(target.split('#')[1]).get('n');
+    document.getElementById('scanResultHeading').textContent = name + '’s card';
+    document.getElementById('scanResultDescription').textContent = 'Continue to connect. You’re only connected if ' + name + ' says yes too.';
+  } else {
   const query = new URL(target, window.location.origin).searchParams;
   const kind = query.has('guest') ? 'Guest' : query.has('profile') ? 'Personal' : 'Event';
   document.getElementById('scanResultHeading').textContent = kind + ' QR found';
   document.getElementById('scanResultDescription').textContent = kind === 'Event'
     ? 'This QR identifies an event. Continue to join or view it in your browser.'
     : 'Continue to save this person as a connection. You may need to join the event first.';
+  }
   result.hidden = false;
   start.hidden = true;
   document.getElementById('scanCameraShell').hidden = true;

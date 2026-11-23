@@ -67,8 +67,8 @@ export function mountAmbientHome(){
    actions(card,link('Prepare for event','/events/event.html?id='+encodeURIComponent(event.id)+'#prepare'));
   }else if(action.kind==='idle'){
    card=makeCard('idle','Start a conversation','Make your next hello easier');
-   detail(card,'Meeting someone? Scan their Nearify QR and save a detail to remember.');
-   actions(card,link('Scan someone’s QR','/scan/?web=1'),link('Find an event','/events/index.html'));
+   detail(card,'Meeting someone? Show them your code. You’re only connected if you both say yes.');
+   actions(card,link('Show my code','/handshake/'),link('Find an event','/events/index.html'));
   }else{
    card=makeCard('unavailable','Your saved people','Pick up a connection');
    detail(card,'We couldn’t check all your activity. You can still open your saved people.');

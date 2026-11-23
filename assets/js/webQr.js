@@ -3,7 +3,19 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 export function resolveWebQr(value) {
   try {
     const url = new URL(String(value).trim());
-    if (url.username || url.password || url.hash || url.port) return null;
+    if (url.username || url.password || url.port) return null;
+    // A person's Your people (Handshakes) card: the invite lives in the #
+    // part, which browsers never send to a server. Rebuild it from checked parts.
+    if (url.protocol === 'https:' && ['nearify.org','www.nearify.org'].includes(url.hostname) && ['/handshake/','/handshake'].includes(url.pathname)) {
+      if (url.search) return null;
+      const p = new URLSearchParams(url.hash.slice(1));
+      const keys = [...p.keys()];
+      if (keys.length !== new Set(keys).size || keys.some(k => !['v','k','r','n'].includes(k))) return null;
+      const k = p.get('k') || '', r = p.get('r') || '', n = (p.get('n') || '').trim();
+      if (p.get('v') !== '1' || !/^[A-Za-z0-9_-]{87}$/.test(k) || !/^[A-Za-z0-9_-]{43}$/.test(r) || !n || n.length > 40) return null;
+      return '/handshake/#' + new URLSearchParams({v:'1',k,r,n});
+    }
+    if (url.hash) return null;
     if (url.protocol === 'beacon:' && url.hostname === 'event' && !url.search) {
       const event = url.pathname.slice(1);
       return UUID.test(event) ? `/join/?event=${encodeURIComponent(event)}&web=1` : null;
@@ -35,6 +47,7 @@ export function resolveWebQr(value) {
 export function classifyWebQr(value, currentEventId) {
   const route = resolveWebQr(value);
   if (!route) return {kind:'invalid'};
+  if (route.startsWith('/handshake/')) return {kind:'handshake',route};
   const url = new URL(route, 'https://nearify.org');
   const eventId = url.searchParams.get('event');
   const guest = url.searchParams.get('guest');

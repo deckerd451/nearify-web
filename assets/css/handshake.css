@@ -115,3 +115,17 @@
 .hs-add-note .hs-actions { margin-top: 18px; }
 .hs-remove-row { margin-top: 10px; }
 .hs-remove-row .hs-link { margin-top: 0; color: var(--nf-ink-soft); font-weight: 500; }
+
+/* From your Nearify account */
+.hs-account { margin-top: 18px; padding: 16px 20px; border-radius: 14px; background: rgba(243, 240, 255, .06); }
+.hs-account .hs-note { margin: 0 0 8px; color: #d9d7ee; }
+.hs-account .hs-btn-primary { background: #f5f3ff; color: var(--nf-ink); border-color: #f5f3ff; }
+.hs-inline-link { color: #c9c1ff; font-weight: 600; }
+
+/* Quieter page: the code and your people first, everything else folded away */
+.hs-ask-details { padding: 16px 20px; margin-bottom: 14px; }
+.hs-ask-details summary { font-weight: 600; color: var(--nf-ink); cursor: pointer; }
+.hs-ask-details .hs-ask-compose { margin: 0; }
+.hs-asks .hs-count { margin-top: 32px; }
+.hs-settings > .hs-more { margin-top: 14px; padding: 0 0 0 4px; background: none; }
+.hs-settings > .hs-more > summary { font-weight: 500; }

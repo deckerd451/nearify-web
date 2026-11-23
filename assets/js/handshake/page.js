@@ -7,6 +7,7 @@ import * as P from "./protocol.js";
 import { encryptBackup, decryptBackup } from "./crypto.js";
 import { mailbox, count } from "./mailbox.js";
 import { buildVCard, reachActions, vCardFileName } from "../reach.js";
+import { browserSaved, clearBrowserSaved, connectAccount } from "./account.js";
 import { loadState, saveState, deleteEverything, askToKeep } from "./store.js";
 
 const $ = (id) => document.getElementById(id);
@@ -45,6 +46,7 @@ async function act(fn, done) {
 }
 
 function personRow(pub, person) {
+  let removeRow = null;
   const row = el("li", { class: "nf-paper hs-person" });
   row.append(el("p", { class: "nf-name hs-person-name", text: person.card.name }));
   if (person.card.building) row.append(el("p", { class: "hs-person-building", text: person.card.building }));
@@ -69,10 +71,10 @@ function personRow(pub, person) {
     actions.append(button("Cancel", async () => P.forget(state, pub), "Cancelled."));
   } else {
     row.prepend(el("p", { class: "hs-kicker", text: person.via ? `Introduced by ${person.via.name}` : "Met in person" }));
-    row.append(el("div", { class: "hs-actions hs-remove-row" }, el("button", { type: "button", class: "hs-link", text: "Remove", on: { click: () => {
+    removeRow = el("div", { class: "hs-actions hs-remove-row" }, el("button", { type: "button", class: "hs-link", text: "Remove", on: { click: () => {
       if (!confirm(`Remove ${person.card.name}? They aren't told, and they can no longer reach you here.`)) return;
       act(async () => P.forget(state, pub), `Removed ${person.card.name}. They weren't told.`);
-    } } })));
+    } } }));
     if (person.reach) {
       row.append(el("p", { class: "hs-reach", text: person.reach }));
       row.append(contactActions(contactFor(person)));
@@ -93,6 +95,7 @@ function personRow(pub, person) {
     }
   }
   row.append(actions);
+  if (removeRow) row.append(removeRow);
   return row;
 }
 
@@ -220,7 +223,7 @@ function renderAsks() {
 
   $("hsAskList").replaceChildren(...rows);
   $("hsAsks").hidden = !people.length && !rows.length;
-  $("hsAskForm").hidden = !people.length;
+  $("hsAskCompose").hidden = !people.length;
 }
 
 function renderQr() {
@@ -304,8 +307,45 @@ function readInvite() {
   if (!pendingInvite) say("That code didn't work. Ask them to show a new one.");
 }
 
+let account = null;
+
+/** Brings people from the old "Save someone" page in this browser into Handshakes. */
+async function moveBrowserSaved() {
+  const saved = browserSaved();
+  if (!saved.length) return;
+  const moved = P.importSaved(state, saved);
+  await saveState(state);
+  clearBrowserSaved();
+  if (moved) say(`${moved === 1 ? "1 person" : `${moved} people`} you saved earlier ${moved === 1 ? "is" : "are"} now here, in this browser only.`);
+}
+
+async function renderAccount() {
+  const box = $("hsAccount");
+  if (!account) { box.hidden = true; return; }
+  let saved = [];
+  try { saved = await account.listSaved(); } catch (_) { /* table missing or offline */ }
+  const parts = [];
+  if (saved.length) {
+    const label = saved.length === 1 ? "1 person" : `${saved.length} people`;
+    parts.push(el("p", { class: "hs-note", text: `You have ${label} saved to your Nearify account. Move them here so everything about the people you know stays on your phone.` }));
+    parts.push(el("div", { class: "hs-actions" }, el("button", { type: "button", class: "hs-btn hs-btn-primary", text: `Move ${label} here`, on: { click: () => {
+      if (!confirm(`Move ${label} into this browser and delete them from your Nearify account? Afterwards they're kept only here, so download a backup if you switch phones.`)) return;
+      act(async () => {
+        P.importSaved(state, saved);
+        await saveState(state);
+        for (const person of saved) await account.removeSaved(person.id);
+        renderAccount();
+      }, `Moved ${label} here and deleted them from your account.`);
+    } } })));
+  }
+  parts.push(el("p", { class: "hs-note" }, "People you're connected with through events are in ", el("a", { href: "/connections/", class: "hs-inline-link", text: "Event connections" }), "."));
+  box.replaceChildren(...parts);
+  box.hidden = false;
+}
+
 async function start() {
   state = await loadState();
+  await moveBrowserSaved();
   readInvite();
   window.addEventListener("hashchange", () => { readInvite(); render(); });
 
@@ -346,6 +386,7 @@ async function start() {
       const sent = await P.sendAsk(state, mailbox, $("hsAskText").value);
       count("ask_sent");
       $("hsAskText").value = "";
+      $("hsAskCompose").open = false;
       say(`Ask sent to ${sent === 1 ? "1 person" : `${sent} people`} you've met.`);
     });
   });
@@ -376,6 +417,15 @@ async function start() {
   if (state.me) { newInvite(); fillEdit(); await saveState(state); }
   render();
   poll();
+  account = await connectAccount();
+  if (account) {
+    if (!state.me) {
+      const profile = await account.profile().catch(() => null);
+      if (profile?.name && !$("hsName").value) $("hsName").value = profile.name;
+      if (profile?.building && !$("hsBuilding").value) $("hsBuilding").value = profile.building;
+    }
+    renderAccount();
+  }
 }
 
 start();
