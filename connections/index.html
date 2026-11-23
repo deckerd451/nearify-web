@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <title>My Connections | Nearify</title>
+  <title>Event connections | Nearify</title>
   <meta name="description" content="People you've saved through Nearify events, with context to remember why they matter." />
   <meta name="robots" content="noindex" />
 
@@ -199,7 +199,7 @@
 
     <div class="connections-page-header">
       <div class="connections-page-kicker">Your Network</div>
-      <h1>My Connections</h1>
+      <h1>Event connections</h1>
       <p class="connections-page-subhead">People you've saved through Nearify events, with context to remember why they matter.</p>
     </div>
 
@@ -214,13 +214,13 @@
     <div id="connectionsAuthState" style="display:none;">
       <p>Sign in to see the people you've connected with at Nearify events.</p>
       <a href="../join/index.html" class="btn primary">Sign In</a>
-      <p class="connections-save-hint">No account? <a href="/save/">Save someone you met</a> on this phone.</p>
+      <p class="connections-save-hint">These are people from events, kept with your account. People you meet in person are in <a href="/handshake/">Your people</a>.</p>
     </div>
 
     <!-- Empty state -->
     <div id="connectionsEmptyState" style="display:none;">
-      <p>No connections yet. Save someone you just met, or scan their QR at an event.</p>
-      <a href="/save/" class="btn primary">Save someone you met</a>
+      <p>No event connections yet. To connect with someone you meet, use Your people.</p>
+      <a href="/handshake/" class="btn primary">Go to Your people</a>
       <a href="../events/index.html" class="btn secondary">Browse Events</a>
     </div>
 
@@ -231,7 +231,7 @@
     <section id="privateContactsSection" class="private-contacts" aria-labelledby="privateContactsHeading" hidden>
       <div class="private-contacts-head">
         <h2 id="privateContactsHeading">Saved by hand</h2>
-        <a href="/save/" class="private-contacts-add">Save someone</a>
+        <a href="/handshake/" class="private-contacts-add">Move these to Your people</a>
       </div>
       <ul id="privateContactsList" class="connections-list" role="list"></ul>
     </section>

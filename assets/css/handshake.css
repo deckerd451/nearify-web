@@ -115,3 +115,9 @@
 .hs-add-note .hs-actions { margin-top: 18px; }
 .hs-remove-row { margin-top: 10px; }
 .hs-remove-row .hs-link { margin-top: 0; color: var(--nf-ink-soft); font-weight: 500; }
+
+/* From your Nearify account */
+.hs-account { margin-top: 18px; padding: 16px 20px; border-radius: 14px; background: rgba(243, 240, 255, .06); }
+.hs-account .hs-note { margin: 0 0 8px; color: #d9d7ee; }
+.hs-account .hs-btn-primary { background: #f5f3ff; color: var(--nf-ink); border-color: #f5f3ff; }
+.hs-inline-link { color: #c9c1ff; font-weight: 600; }
