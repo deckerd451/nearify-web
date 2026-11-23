@@ -46,6 +46,7 @@ async function act(fn, done) {
 }
 
 function personRow(pub, person) {
+  let removeRow = null;
   const row = el("li", { class: "nf-paper hs-person" });
   row.append(el("p", { class: "nf-name hs-person-name", text: person.card.name }));
   if (person.card.building) row.append(el("p", { class: "hs-person-building", text: person.card.building }));
@@ -70,10 +71,10 @@ function personRow(pub, person) {
     actions.append(button("Cancel", async () => P.forget(state, pub), "Cancelled."));
   } else {
     row.prepend(el("p", { class: "hs-kicker", text: person.via ? `Introduced by ${person.via.name}` : "Met in person" }));
-    row.append(el("div", { class: "hs-actions hs-remove-row" }, el("button", { type: "button", class: "hs-link", text: "Remove", on: { click: () => {
+    removeRow = el("div", { class: "hs-actions hs-remove-row" }, el("button", { type: "button", class: "hs-link", text: "Remove", on: { click: () => {
       if (!confirm(`Remove ${person.card.name}? They aren't told, and they can no longer reach you here.`)) return;
       act(async () => P.forget(state, pub), `Removed ${person.card.name}. They weren't told.`);
-    } } })));
+    } } }));
     if (person.reach) {
       row.append(el("p", { class: "hs-reach", text: person.reach }));
       row.append(contactActions(contactFor(person)));
@@ -94,6 +95,7 @@ function personRow(pub, person) {
     }
   }
   row.append(actions);
+  if (removeRow) row.append(removeRow);
   return row;
 }
 
@@ -221,7 +223,7 @@ function renderAsks() {
 
   $("hsAskList").replaceChildren(...rows);
   $("hsAsks").hidden = !people.length && !rows.length;
-  $("hsAskForm").hidden = !people.length;
+  $("hsAskCompose").hidden = !people.length;
 }
 
 function renderQr() {
@@ -384,6 +386,7 @@ async function start() {
       const sent = await P.sendAsk(state, mailbox, $("hsAskText").value);
       count("ask_sent");
       $("hsAskText").value = "";
+      $("hsAskCompose").open = false;
       say(`Ask sent to ${sent === 1 ? "1 person" : `${sent} people`} you've met.`);
     });
   });
