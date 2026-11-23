@@ -42,9 +42,9 @@ export function renderBrief(root, data, { heading = "People you might see", kick
   root.append(head);
 
   if (!brief.people.length) {
-    const empty = el("p", "nf-brief-empty", "No notes yet about people you’ve met. After this event, save the people you want to remember with one detail, and they’ll show up here next time.");
-    const link = el("a", "nf-brief-link", "Save someone you met");
-    link.href = "/save/";
+    const empty = el("p", "nf-brief-empty", "No notes yet about people you’ve met. After this event, connect with people or add a note about them in Your people.");
+    const link = el("a", "nf-brief-link", "Go to Your people");
+    link.href = "/handshake/";
     root.append(empty, link);
   } else {
     const list = el("ul", "nf-brief-list");

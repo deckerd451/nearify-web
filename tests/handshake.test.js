@@ -409,3 +409,16 @@ describe("notes about people who aren't on Nearify", () => {
     expect(a.notes[id]).toEqual({ name: "Lee", savedAt: expect.any(Number) });
   });
 });
+
+describe("moving people saved with the old Save someone page", () => {
+  it("brings them in as notes, keeps their date, skips nameless rows", async () => {
+    const a = await person("Ana");
+    const moved = P.importSaved(a, [
+      { id: "x1", name: "Rosa Diaz", where: "Show & Tell", reach: "rosa@example.com", note: "Kites", savedAt: "2026-11-01T12:00:00.000Z" },
+      { id: "x2", name: "  ", where: "nowhere" },
+    ]);
+    expect(moved).toBe(1);
+    const [note] = Object.values(a.notes);
+    expect(note).toEqual({ name: "Rosa Diaz", where: "Show & Tell", note: "Kites", reach: "rosa@example.com", savedAt: Date.parse("2026-11-01T12:00:00.000Z") });
+  });
+});

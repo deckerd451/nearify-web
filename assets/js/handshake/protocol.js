@@ -357,7 +357,7 @@ export function addNote(state, fields, now = Date.now()) {
   const name = cleanCard({ name: fields?.name })?.name;
   if (!name) throw new Error("Add their name first.");
   const tidy = (v, n) => String(v ?? "").replace(CONTROL, " ").replace(/\s+/g, " ").trim().slice(0, n);
-  const note = { name, where: tidy(fields.where, 80), note: tidy(fields.note, 140), reach: cleanReach(fields.reach), savedAt: now };
+  const note = { name, where: tidy(fields.where, 80), note: tidy(fields.note, 500), reach: cleanReach(fields.reach), savedAt: now };
   for (const key of ["where", "note", "reach"]) if (!note[key]) delete note[key];
   const id = b64url(globalThis.crypto.getRandomValues(new Uint8Array(12)));
   (state.notes ||= {})[id] = note;
@@ -366,4 +366,17 @@ export function addNote(state, fields, now = Date.now()) {
 
 export function removeNote(state, id) {
   delete state.notes?.[id];
+}
+
+/** Moves people saved with the old "Save someone" page into notes. Returns how many. */
+export function importSaved(state, people, now = Date.now()) {
+  let moved = 0;
+  for (const p of people || []) {
+    try {
+      const savedAt = Date.parse(p.savedAt);
+      addNote(state, { name: p.name, where: p.where, note: p.note, reach: p.reach }, Number.isFinite(savedAt) ? savedAt : now);
+      moved++;
+    } catch (_) { /* a row without a name is skipped */ }
+  }
+  return moved;
 }

@@ -22,7 +22,7 @@ function time(value) {
  * @param {object} input
  * @param {Array}  input.connections  get_my_connections rows: { profile_id, name, first_encounter_event_name, last_encounter_at }
  * @param {Array}  input.contexts     ambient_contexts rows: { profile_id, note, intention, intention_completed, snoozed_until }
- * @param {Array}  input.handSaved    people saved on /save/: { id, name, where, note, savedAt }
+ * @param {Array}  input.handSaved    people saved by hand (account notes): { id, name, where, note, savedAt }
  * @param {number} [input.limit]
  * @param {Date}   [input.now]
  * @returns {{ people: Array<{ key, name, metAt, ask, note, href, score }>, total: number }}
@@ -70,7 +70,7 @@ export function buildEventBrief({ connections = [], contexts = [], handSaved = [
       metAt: where ? `Met: ${where}` : "",
       ask: "",
       note,
-      href: "/save/#person-" + encodeURIComponent(person.id),
+      href: "/handshake/",
       score: 2,
       recency: time(person.savedAt),
     });
