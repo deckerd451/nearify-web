@@ -1,7 +1,7 @@
 /**
  * landingDemo.js — the signed-out homepage card demo.
  *
- * Save Maya → the card flips so you can jot one detail → it flips back and
+ * Connect with Maya → the card flips so you can jot one detail → it flips back and
  * the "two weeks later" reminder appears. What the visitor types stays in
  * this page. Only anonymous step counts are sent (see landingDemoTracking.js),
  * never the note or who the visitor is.

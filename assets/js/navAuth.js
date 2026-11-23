@@ -116,6 +116,13 @@ function buildPill(profile, email) {
   connectionsLink.setAttribute("role", "menuitem");
   dropdown.appendChild(connectionsLink);
 
+  const cardLink = document.createElement("a");
+  cardLink.href = "/card/";
+  cardLink.textContent = "Your card";
+  cardLink.className = "nav-dropdown-delete";
+  cardLink.setAttribute("role", "menuitem");
+  dropdown.appendChild(cardLink);
+
   const messagesLink = document.createElement("a");
   messagesLink.href = "/messages/";
   messagesLink.textContent = "Messages";
@@ -236,6 +243,12 @@ function injectSignedIn(profile, email, user) {
     drawerNetwork.textContent = "Event connections";
     drawerNetwork.className = "nav-auth-link";
     drawer.appendChild(drawerNetwork);
+
+    const drawerCard = document.createElement("a");
+    drawerCard.href = "/card/";
+    drawerCard.textContent = "Your card";
+    drawerCard.className = "nav-auth-link";
+    drawer.appendChild(drawerCard);
 
 
     const messagesLink = document.createElement("a");
