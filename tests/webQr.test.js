@@ -70,3 +70,25 @@ describe('event-bound guest scanning',()=>{
   expect(classifyWebQr(`https://evil.example/join/?event=${event}&profile=${profile}`,event)).toEqual({kind:'invalid'});
  });
 });
+
+describe('Your people (Handshakes) codes in the Scan QR button', () => {
+  const k = 'A'.repeat(87), r = 'b'.repeat(43);
+  const code = (extra = '') => `https://nearify.org/handshake/#v=1&k=${k}&r=${r}&n=Maya%20Rivera${extra}`;
+  it('opens a valid card code on the Your people page, rebuilt from checked parts', () => {
+    expect(resolveWebQr(code())).toBe(`/handshake/#v=1&k=${k}&r=${r}&n=Maya+Rivera`);
+    expect(classifyWebQr(code(), 'x')).toEqual({ kind: 'handshake', route: `/handshake/#v=1&k=${k}&r=${r}&n=Maya+Rivera` });
+  });
+  it.each([
+    'https://nearify.org/handshake/',
+    `https://nearify.org/handshake/?x=1#v=1&k=${'A'.repeat(87)}&r=${'b'.repeat(43)}&n=Maya`,
+    `https://evil.example/handshake/#v=1&k=${'A'.repeat(87)}&r=${'b'.repeat(43)}&n=Maya`,
+    `https://nearify.org/handshake/#v=2&k=${'A'.repeat(87)}&r=${'b'.repeat(43)}&n=Maya`,
+    `https://nearify.org/handshake/#v=1&k=short&r=${'b'.repeat(43)}&n=Maya`,
+    `https://nearify.org/handshake/#v=1&k=${'A'.repeat(87)}&r=${'b'.repeat(43)}&n=`,
+    `https://nearify.org/handshake/#v=1&k=${'A'.repeat(87)}&r=${'b'.repeat(43)}&n=Maya&evil=1`,
+    `https://nearify.org/handshake/#v=1&v=1&k=${'A'.repeat(87)}&r=${'b'.repeat(43)}&n=Maya`,
+    `https://nearify.org/handshake/#v=1&k=${'A'.repeat(87)}&r=${'b'.repeat(43)}&n=${'x'.repeat(41)}`,
+  ])('rejects %s', (bad) => {
+    expect(resolveWebQr(bad)).toBeNull();
+  });
+});

@@ -12,7 +12,7 @@
   <link rel="stylesheet" href="/assets/css/scan-entry.css?v=20261105-accountfix1" />
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Caveat:wght@500;600&display=swap" />
   <link rel="stylesheet" href="/assets/css/paper-card.css?v=20261118-paper1" />
-  <link rel="stylesheet" href="/assets/css/handshake.css?v=20261123-simple2" />
+  <link rel="stylesheet" href="/assets/css/handshake.css?v=20261123-simple3" />
 </head>
 <body>
   <a href="#main-content" class="skip-link">Skip to main content</a>
@@ -72,22 +72,9 @@
         <button type="button" class="hs-link" id="hsNewCode">New code</button>
       </div>
 
-      <section class="hs-asks" id="hsAsks" aria-labelledby="hsAsksTitle" hidden>
-        <h2 class="hs-count" id="hsAsksTitle">Asks</h2>
-        <form class="nf-paper hs-ask-compose" id="hsAskForm" method="dialog" novalidate>
-          <label class="hs-label" for="hsAskText">Ask the people you've met</label>
-          <textarea class="hs-input hs-textarea" id="hsAskText" maxlength="140" rows="2" placeholder="Looking for someone who knows embedded hardware"></textarea>
-          <p class="hs-hint">Goes only to people you're connected with. They can offer to help, or pass it one step further without your name.</p>
-          <button type="submit" class="hs-btn hs-btn-primary">Send ask</button>
-        </form>
-        <ol class="hs-list hs-ask-list" id="hsAskList"></ol>
-      </section>
-
       <h2 class="hs-count" id="hsCount"></h2>
       <ol class="hs-list" id="hsList"></ol>
       <p class="hs-empty" id="hsEmpty">Nobody yet. Show your code to the next person you meet.</p>
-
-      <section class="hs-account" id="hsAccount" aria-label="From your Nearify account" hidden></section>
 
       <details class="nf-paper hs-add-note" id="hsAddNote">
         <summary>Add someone who isn't on Nearify</summary>
@@ -105,49 +92,68 @@
         </form>
       </details>
 
-      <details class="hs-more" id="hsEdit">
-        <summary>Edit your card</summary>
-        <form id="hsEditForm" method="dialog" novalidate>
-          <label class="hs-label" for="hsEditName">Your name</label>
-          <input class="hs-input" id="hsEditName" type="text" maxlength="40" autocomplete="off" autocapitalize="words" required />
-          <label class="hs-label" for="hsEditBuilding">What you're building <span class="hs-optional">(optional)</span></label>
-          <input class="hs-input" id="hsEditBuilding" type="text" maxlength="80" autocomplete="off" />
-          <label class="hs-label" for="hsEditReach">How to reach me <span class="hs-optional">(optional)</span></label>
-          <input class="hs-input" id="hsEditReach" type="text" maxlength="120" autocomplete="off" placeholder="Phone, email or a link" />
-          <p class="hs-note">Shared only with people you connect with. Once they save it, it's theirs. Removing it here stops sharing it, but can't take it off phones it's already saved to.</p>
-          <div class="hs-actions">
-            <button type="submit" class="hs-btn">Save</button>
-          </div>
+      <section class="hs-asks" id="hsAsks" aria-labelledby="hsAsksTitle" hidden>
+        <h2 class="hs-count" id="hsAsksTitle">Asks</h2>
+        <details class="nf-paper hs-ask-details" id="hsAskCompose">
+          <summary>Ask the people you've met</summary>
+        <form class="hs-ask-compose" id="hsAskForm" method="dialog" novalidate>
+          <label class="hs-label" for="hsAskText">What are you looking for?</label>
+          <textarea class="hs-input hs-textarea" id="hsAskText" maxlength="140" rows="2" placeholder="Looking for someone who knows embedded hardware"></textarea>
+          <p class="hs-hint">Goes only to people you're connected with. They can offer to help, or pass it one step further without your name.</p>
+          <button type="submit" class="hs-btn hs-btn-primary">Send ask</button>
         </form>
-      </details>
+        </details>
+        <ol class="hs-list hs-ask-list" id="hsAskList"></ol>
+      </section>
 
-      <details class="hs-more">
-        <summary>What we can see</summary>
-        <ul>
-          <li>Your card and the people you connect with are kept only in this browser.</li>
-          <li>Our server passes along sealed messages between phones. It can't read them, doesn't know whose they are, and deletes each one when it's picked up or after 7 days.</li>
-          <li>We never see who met whom. Nobody can find you or message you unless you've connected.</li>
-          <li>Asks are sealed too. Someone two steps away never sees your name, only that someone their connection met is asking.</li>
-          <li>How to reach you is never on the code people scan. It's sent, sealed, only to people you've connected with.</li>
-          <li>Saying no, or cancelling, sends nothing. Nobody is told.</li>
-          <li>We count daily totals, like how many cards were made or asks sent, so we know if this is useful. Just a number per day, nothing about who.</li>
-        </ul>
-      </details>
+      <section class="hs-account" id="hsAccount" aria-label="From your Nearify account" hidden></section>
 
-      <details class="hs-more">
-        <summary>Back up, move to a new phone, or delete</summary>
-        <p class="hs-note">If this browser clears its storage, your connections go with it. A backup is locked with a passphrase only you know.</p>
-        <label class="hs-label" for="hsPass">Passphrase</label>
-        <input class="hs-input" id="hsPass" type="password" autocomplete="new-password" minlength="8" />
-        <div class="hs-actions">
-          <button type="button" class="hs-btn" id="hsBackup">Download backup</button>
-        </div>
-        <label class="hs-label" for="hsRestoreFile">Restore from a backup file</label>
-        <input id="hsRestoreFile" type="file" accept="application/json,.json" />
-        <div class="hs-actions">
-          <button type="button" class="hs-btn" id="hsRestore">Restore</button>
-          <button type="button" class="hs-btn hs-btn-danger" id="hsDelete">Delete everything</button>
-        </div>
+      <details class="hs-more hs-settings">
+        <summary>Settings and privacy</summary>
+        <details class="hs-more" id="hsEdit">
+          <summary>Edit your card</summary>
+          <form id="hsEditForm" method="dialog" novalidate>
+            <label class="hs-label" for="hsEditName">Your name</label>
+            <input class="hs-input" id="hsEditName" type="text" maxlength="40" autocomplete="off" autocapitalize="words" required />
+            <label class="hs-label" for="hsEditBuilding">What you're building <span class="hs-optional">(optional)</span></label>
+            <input class="hs-input" id="hsEditBuilding" type="text" maxlength="80" autocomplete="off" />
+            <label class="hs-label" for="hsEditReach">How to reach me <span class="hs-optional">(optional)</span></label>
+            <input class="hs-input" id="hsEditReach" type="text" maxlength="120" autocomplete="off" placeholder="Phone, email or a link" />
+            <p class="hs-note">Shared only with people you connect with. Once they save it, it's theirs. Removing it here stops sharing it, but can't take it off phones it's already saved to.</p>
+            <div class="hs-actions">
+              <button type="submit" class="hs-btn">Save</button>
+            </div>
+          </form>
+        </details>
+
+        <details class="hs-more">
+          <summary>What we can see</summary>
+          <ul>
+            <li>Your card and the people you connect with are kept only in this browser.</li>
+            <li>Our server passes along sealed messages between phones. It can't read them, doesn't know whose they are, and deletes each one when it's picked up or after 7 days.</li>
+            <li>We never see who met whom. Nobody can find you or message you unless you've connected.</li>
+            <li>Asks are sealed too. Someone two steps away never sees your name, only that someone their connection met is asking.</li>
+            <li>How to reach you is never on the code people scan. It's sent, sealed, only to people you've connected with.</li>
+            <li>Saying no, or cancelling, sends nothing. Nobody is told.</li>
+            <li>We count daily totals, like how many cards were made or asks sent, so we know if this is useful. Just a number per day, nothing about who.</li>
+          </ul>
+        </details>
+
+        <details class="hs-more">
+          <summary>Back up, move to a new phone, or delete</summary>
+          <p class="hs-note">If this browser clears its storage, your connections go with it. A backup is locked with a passphrase only you know.</p>
+          <label class="hs-label" for="hsPass">Passphrase</label>
+          <input class="hs-input" id="hsPass" type="password" autocomplete="new-password" minlength="8" />
+          <div class="hs-actions">
+            <button type="button" class="hs-btn" id="hsBackup">Download backup</button>
+          </div>
+          <label class="hs-label" for="hsRestoreFile">Restore from a backup file</label>
+          <input id="hsRestoreFile" type="file" accept="application/json,.json" />
+          <div class="hs-actions">
+            <button type="button" class="hs-btn" id="hsRestore">Restore</button>
+            <button type="button" class="hs-btn hs-btn-danger" id="hsDelete">Delete everything</button>
+          </div>
+        </details>
       </details>
     </section>
   </main>
@@ -166,6 +172,6 @@
 
   <script type="module" src="../assets/js/navAuth.js?v=20261106-permissions2"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" integrity="sha384-3zSEDfvllQohrq0PHL1fOXJuC/jSOO34H46t6UQfobFOmxE5BpjjaIJY5F2/bMnU" crossorigin="anonymous"></script>
-  <script type="module" src="../assets/js/handshake/page.js?v=20261123-simple2"></script>
+  <script type="module" src="../assets/js/handshake/page.js?v=20261123-simple3"></script>
 </body>
 </html>
