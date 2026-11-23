@@ -99,3 +99,19 @@
 .hs-ask-text { margin: 4px 0 0; font-family: var(--nf-hand); font-size: 26px; font-weight: 600; line-height: 1.15; color: var(--nf-ink); overflow-wrap: anywhere; }
 .hs-about { margin: 8px 0 0; font-size: 15px; color: var(--nf-ink-soft); overflow-wrap: anywhere; }
 .hs-done { margin: 0; font-size: 14px; color: var(--nf-ink-soft); }
+
+/* Notes about people who aren't on Nearify, and Remove */
+.hs-add-note { margin-top: 14px; padding: 16px 20px; }
+.hs-add-note summary { font-weight: 600; color: var(--nf-ink); cursor: pointer; }
+.hs-add-note form { display: grid; }
+.hs-add-note .hs-actions { margin-top: 18px; }
+.hs-remove-row { margin-top: 10px; }
+.hs-remove-row .hs-link { margin-top: 0; color: var(--nf-ink-soft); font-weight: 500; }
+
+/* Notes about people who aren't on Nearify, and Remove */
+.hs-add-note { margin-top: 14px; padding: 16px 20px; }
+.hs-add-note summary { font-weight: 600; color: var(--nf-ink); cursor: pointer; }
+.hs-add-note form { display: grid; }
+.hs-add-note .hs-actions { margin-top: 18px; }
+.hs-remove-row { margin-top: 10px; }
+.hs-remove-row .hs-link { margin-top: 0; color: var(--nf-ink-soft); font-weight: 500; }

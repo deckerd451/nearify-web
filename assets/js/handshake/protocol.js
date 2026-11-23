@@ -33,7 +33,7 @@ export function cleanReach(value) {
 }
 
 export function emptyState() {
-  return { me: null, invites: [], people: {}, asks: { mine: {}, inbox: {}, relayed: {} } };
+  return { me: null, invites: [], people: {}, asks: { mine: {}, inbox: {}, relayed: {} }, notes: {} };
 }
 
 export async function setUp(state, card, reach = "") {
@@ -346,4 +346,24 @@ async function applyAsk(state, mailbox, pub, msg, now) {
     return changed;
   }
   return false;
+}
+
+// ── Notes: people who aren't on Nearify ──────────────────────────────────────
+//
+// A private note about someone you met who doesn't use Nearify. It never
+// leaves this browser (except inside your passphrase backup).
+
+export function addNote(state, fields, now = Date.now()) {
+  const name = cleanCard({ name: fields?.name })?.name;
+  if (!name) throw new Error("Add their name first.");
+  const tidy = (v, n) => String(v ?? "").replace(CONTROL, " ").replace(/\s+/g, " ").trim().slice(0, n);
+  const note = { name, where: tidy(fields.where, 80), note: tidy(fields.note, 140), reach: cleanReach(fields.reach), savedAt: now };
+  for (const key of ["where", "note", "reach"]) if (!note[key]) delete note[key];
+  const id = b64url(globalThis.crypto.getRandomValues(new Uint8Array(12)));
+  (state.notes ||= {})[id] = note;
+  return id;
+}
+
+export function removeNote(state, id) {
+  delete state.notes?.[id];
 }

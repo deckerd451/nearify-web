@@ -389,3 +389,23 @@ describe("asks", () => {
     expect(P.cleanAsk("x".repeat(300))).toHaveLength(140);
   });
 });
+
+describe("notes about people who aren't on Nearify", () => {
+  it("keeps a tidy private note and never sends anything", async () => {
+    const mail = memoryMailbox();
+    const a = await person("Ana");
+    const id = P.addNote(a, { name: "  Rosa\u0000 Diaz ", where: "Coffee on King St", note: "Builds  kites", reach: "rosa@example.com" }, 5);
+    expect(a.notes[id]).toEqual({ name: "Rosa Diaz", where: "Coffee on King St", note: "Builds kites", reach: "rosa@example.com", savedAt: 5 });
+    await P.check(a, mail);
+    expect(mail.boxes.size).toBe(0);
+    P.removeNote(a, id);
+    expect(a.notes).toEqual({});
+  });
+
+  it("needs a name and drops empty fields", async () => {
+    const a = await person("Ana");
+    expect(() => P.addNote(a, { name: " " })).toThrow();
+    const id = P.addNote(a, { name: "Lee", where: "  ", reach: "" });
+    expect(a.notes[id]).toEqual({ name: "Lee", savedAt: expect.any(Number) });
+  });
+});
