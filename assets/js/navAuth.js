@@ -221,11 +221,6 @@ function injectSignedIn(profile, email, user) {
     networkLink.className = "nav-auth-link";
     navLinks.appendChild(networkLink);
 
-    const signalLink = document.createElement("a");
-    signalLink.href = "/community-signal/live.html";
-    signalLink.textContent = "Community Signal";
-    signalLink.className = "nav-auth-link";
-    navLinks.appendChild(signalLink);
 
     navLinks.appendChild(buildPill(profile, email));
   }
@@ -241,11 +236,6 @@ function injectSignedIn(profile, email, user) {
     drawerNetwork.className = "nav-auth-link";
     drawer.appendChild(drawerNetwork);
 
-    const drawerSignal = document.createElement("a");
-    drawerSignal.href = "/community-signal/live.html";
-    drawerSignal.textContent = "Community Signal";
-    drawerSignal.className = "nav-auth-link";
-    drawer.appendChild(drawerSignal);
 
     const messagesLink = document.createElement("a");
     messagesLink.href = "/messages/";

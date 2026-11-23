@@ -69,21 +69,13 @@ function personRow(pub, person) {
     actions.append(button("Cancel", async () => P.forget(state, pub), "Cancelled."));
   } else {
     row.prepend(el("p", { class: "hs-kicker", text: person.via ? `Introduced by ${person.via.name}` : "Met in person" }));
+    row.append(el("div", { class: "hs-actions hs-remove-row" }, el("button", { type: "button", class: "hs-link", text: "Remove", on: { click: () => {
+      if (!confirm(`Remove ${person.card.name}? They aren't told, and they can no longer reach you here.`)) return;
+      act(async () => P.forget(state, pub), `Removed ${person.card.name}. They weren't told.`);
+    } } })));
     if (person.reach) {
       row.append(el("p", { class: "hs-reach", text: person.reach }));
-      const contact = contactFor(person);
-      const quick = el("div", { class: "hs-actions" });
-      for (const action of reachActions(contact, { myName: state.me.card.name })) {
-        const link = el("a", { class: action.primary ? "hs-btn hs-btn-primary" : "hs-btn", href: action.href, text: action.label });
-        if (action.external) { link.target = "_blank"; link.rel = "noopener noreferrer"; }
-        quick.append(link);
-      }
-      quick.append(el("button", { type: "button", class: "hs-btn", text: "Add to Contacts", on: { click: () => {
-        download(buildVCard(contact), "text/vcard;charset=utf-8", vCardFileName(contact));
-        count("contact_saved");
-        say(`Contact card for ${person.card.name} downloaded. Open it to add them to your contacts.`);
-      } } }));
-      row.append(quick);
+      row.append(contactActions(contactFor(person)));
     }
     const others = Object.entries(state.people).filter(([p, o]) => p !== pub && o.status === "connected");
     if (others.length) {
@@ -119,6 +111,36 @@ function download(text, type, fileName) {
   a.click();
   a.remove();
   setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+}
+
+function contactActions(contact) {
+  const quick = el("div", { class: "hs-actions" });
+  for (const action of reachActions(contact, { myName: state.me.card.name })) {
+    const link = el("a", { class: action.primary ? "hs-btn hs-btn-primary" : "hs-btn", href: action.href, text: action.label });
+    if (action.external) { link.target = "_blank"; link.rel = "noopener noreferrer"; }
+    quick.append(link);
+  }
+  quick.append(el("button", { type: "button", class: "hs-btn", text: "Add to Contacts", on: { click: () => {
+    download(buildVCard(contact), "text/vcard;charset=utf-8", vCardFileName(contact));
+    count("contact_saved");
+    say(`Contact card for ${contact.name} downloaded. Open it to add them to your contacts.`);
+  } } }));
+  return quick;
+}
+
+function noteRow(id, note) {
+  const row = el("li", { class: "nf-paper hs-person hs-note-row" });
+  row.append(el("p", { class: "hs-kicker", text: "Not on Nearify · only you can see this" }), el("p", { class: "nf-name hs-person-name", text: note.name }));
+  if (note.where) row.append(el("p", { class: "hs-person-building", text: `Met ${note.where}` }));
+  if (note.note) row.append(el("p", { class: "hs-ask-text", text: note.note }));
+  if (note.reach) {
+    row.append(el("p", { class: "hs-reach", text: note.reach }));
+    row.append(contactActions({ name: note.name, reach: note.reach, where: note.where || "", note: note.note || "" }));
+  }
+  row.append(el("div", { class: "hs-actions hs-remove-row" }, el("button", { type: "button", class: "hs-link", text: "Remove", on: { click: () => {
+    if (confirm(`Remove your note about ${note.name}?`)) act(async () => P.removeNote(state, id), "Note removed.");
+  } } })));
+  return row;
 }
 
 function fillEdit() {
@@ -224,10 +246,11 @@ function render() {
   $("hsMyBuilding").textContent = state.me.card.building || "";
   const order = { request: 0, offered: 1, sent: 2, accepted: 2, connected: 3 };
   const entries = Object.entries(state.people).sort(([, a], [, b]) => order[a.status] - order[b.status] || b.since - a.since);
-  $("hsList").replaceChildren(...entries.map(([pub, p]) => personRow(pub, p)));
-  $("hsEmpty").hidden = entries.length > 0;
+  const notes = Object.entries(state.notes || {}).sort(([, a], [, b]) => b.savedAt - a.savedAt);
+  $("hsList").replaceChildren(...entries.map(([pub, p]) => personRow(pub, p)), ...notes.map(([id, n]) => noteRow(id, n)));
+  $("hsEmpty").hidden = entries.length + notes.length > 0;
   renderAsks();
-  const count = entries.filter(([, p]) => p.status === "connected").length;
+  const count = entries.filter(([, p]) => p.status === "connected").length + notes.length;
   $("hsCount").textContent = count === 1 ? "1 person you've met" : `${count} people you've met`;
 }
 
@@ -250,7 +273,7 @@ async function poll() {
 async function backup() {
   const pass = $("hsPass").value;
   if (pass.length < 8) return say("Use a passphrase of at least 8 characters.");
-  const file = await encryptBackup(pass, state.me.privateKey, { pub: state.me.pub, card: state.me.card, reach: state.me.reach || "", people: state.people, asks: state.asks });
+  const file = await encryptBackup(pass, state.me.privateKey, { pub: state.me.pub, card: state.me.card, reach: state.me.reach || "", people: state.people, asks: state.asks, notes: state.notes || {} });
   download(file, "application/json", "nearify-handshakes-backup.json");
   $("hsPass").value = "";
   say("Backup saved. Keep the file and the passphrase somewhere safe.");
@@ -261,7 +284,7 @@ async function restore() {
   if (!file) return say("Choose your backup file first.");
   try {
     const { privateKey, data } = await decryptBackup($("hsPass").value, await file.text());
-    state = { me: { privateKey, pub: data.pub, card: data.card, reach: data.reach || "" }, invites: [], people: data.people || {}, asks: data.asks || { mine: {}, inbox: {}, relayed: {} } };
+    state = { me: { privateKey, pub: data.pub, card: data.card, reach: data.reach || "" }, invites: [], people: data.people || {}, asks: data.asks || { mine: {}, inbox: {}, relayed: {} }, notes: data.notes || {} };
     fillEdit();
     await saveState(state);
     $("hsPass").value = "";
@@ -306,6 +329,16 @@ async function start() {
     if (!state.me) { $("hsName").focus(); return say("Add your name below first."); }
     const invite = pendingInvite;
     act(async () => { await P.answerInvite(state, mailbox, invite); pendingInvite = null; }, `Sent. You'll be connected when ${invite.card.name} says yes.`);
+  });
+  $("hsNoteForm").addEventListener("submit", (e) => {
+    e.preventDefault();
+    act(async () => {
+      const name = $("hsNoteName").value;
+      P.addNote(state, { name, where: $("hsNoteWhere").value, note: $("hsNoteText").value, reach: $("hsNoteReach").value });
+      for (const id of ["hsNoteName", "hsNoteWhere", "hsNoteText", "hsNoteReach"]) $(id).value = "";
+      $("hsAddNote").open = false;
+      say(`Saved ${name.trim()}. Only you can see this.`);
+    });
   });
   $("hsAskForm").addEventListener("submit", (e) => {
     e.preventDefault();
