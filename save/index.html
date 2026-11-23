@@ -3,91 +3,13 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <title>Save someone you met | Nearify</title>
-  <meta name="description" content="Save someone you just met with the one detail you'll want next time. No account needed." />
   <meta name="robots" content="noindex" />
-  <link rel="stylesheet" href="../assets/css/styles.css?v=20261101-mobile1" />
-  <link rel="stylesheet" href="/assets/css/scan-entry.css?v=20261105-accountfix1" />
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Caveat:wght@500;600&display=swap" />
-  <link rel="stylesheet" href="/assets/css/paper-card.css?v=20261118-paper1" />
-  <link rel="stylesheet" href="/assets/css/save-person.css?v=20261118-reach1" />
+  <meta http-equiv="refresh" content="0; url=/handshake/" />
+  <link rel="canonical" href="https://nearify.org/handshake/" />
+  <title>Your people | Nearify</title>
+  <script>location.replace("/handshake/");</script>
 </head>
 <body>
-  <a href="#main-content" class="skip-link">Skip to main content</a>
-  <div class="nav-container">
-  <header class="nav">
-    <div class="logo"><a href="../index.html" aria-label="Nearify Home"><img class="logo-img" src="../assets/images/nearify-logo.png?v=20260909" alt="" /><span class="logo-text">Nearify</span></a></div>
-    <div class="nav-links">
-      <a href="../events/index.html">Events</a>
-    </div>
-    <a href="/scan/?web=1" class="nav-scan-link"><svg viewBox="0 0 20 20" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M2 7V2h5M13 2h5v5M18 13v5h-5M7 18H2v-5"/><path d="M6 6h3v3H6zM12 6h2v3h-2zM6 12h3v2H6zM12 12h2v2h-2z"/></svg><span>Scan QR</span></a>
-    <button class="nav-hamburger" id="navHamburger" aria-label="Open menu" aria-expanded="false">
-      <span></span><span></span><span></span>
-    </button>
-  </header>
-  <nav class="nav-drawer" id="navDrawer" aria-label="Site navigation">
-    <a href="../events/index.html">Events</a>
-  </nav>
-  </div>
-
-  <main id="main-content" class="sp-page">
-    <header class="sp-head">
-      <h1>Save someone you met</h1>
-      <p class="sp-lede" id="spLede">Their name and one thing to remember. It stays on this phone.</p>
-    </header>
-
-    <!-- method="dialog": the form never navigates, so nothing typed can reach the address bar -->
-    <form class="nf-paper sp-card" id="spForm" method="dialog" novalidate>
-      <label class="sp-visually-hidden" for="spName">Their name</label>
-      <input id="spName" class="sp-name" name="name" type="text" maxlength="80" autocomplete="off" autocapitalize="words" placeholder="Their name" required />
-      <label class="sp-visually-hidden" for="spWhere">Where you met</label>
-      <input id="spWhere" class="sp-where" name="where" type="text" maxlength="120" autocomplete="off" placeholder="Where you met" />
-      <label class="sp-visually-hidden" for="spReach">How to reach them</label>
-      <input id="spReach" class="sp-where" name="reach" type="text" maxlength="120" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="Phone, email or LinkedIn" aria-describedby="spReachHint" />
-      <p class="sp-reach-hint" id="spReachHint" aria-live="polite"></p>
-      <label class="sp-label" for="spNote">One thing to remember</label>
-      <textarea id="spNote" class="nf-pen sp-note" name="note" rows="2" maxlength="500" placeholder="Ask how the launch went"></textarea>
-      <div class="sp-card-foot">
-        <button type="submit" class="sp-save" id="spSave">Save</button>
-        <span class="nf-saved sp-saved" id="spSavedMark" aria-hidden="true" hidden>Saved ✓</span>
-      </div>
-      <p class="sp-error" id="spError" role="alert" hidden></p>
-    </form>
-    <p class="sp-status" id="spStatus" role="status" aria-live="polite"></p>
-
-    <section class="sp-people" id="spPeople" aria-labelledby="spPeopleHeading" hidden>
-      <div class="sp-people-head">
-        <h2 id="spPeopleHeading">Your people</h2>
-        <button type="button" class="sp-link" id="spCopy">Copy my recap</button>
-      </div>
-      <p class="sp-copy-status" id="spCopyStatus" role="status" aria-live="polite"></p>
-      <textarea id="spCopyFallback" class="sp-copy-fallback" rows="6" readonly hidden aria-label="Your recap"></textarea>
-      <ol class="sp-list" id="spList"></ol>
-    </section>
-
-    <aside class="sp-keep" id="spKeep" hidden>
-      <p><strong>Keep them on every device.</strong> Sign in and the people saved here move to your account. Only you can see them.</p>
-      <button type="button" class="btn primary" id="spSignIn">Sign in with Google</button>
-    </aside>
-
-    <p class="sp-fine" id="spFine">Nearify never contacts the people you save here.</p>
-  </main>
-
-  <footer class="footer">
-    <nav class="footer-links">
-      <a href="../events/index.html">Events</a>
-      <a href="../vision.html">Vision</a>
-      <a href="https://nearify.org/privacy.html">Privacy</a>
-      <a href="https://nearify.org/terms.html">Terms</a>
-      <a href="https://nearify.org/support.html">Support</a>
-      <a href="mailto:hello@nearify.org">Contact</a>
-    </nav>
-    <p>© 2026 Nearify</p>
-  </footer>
-
-  <script type="module" src="../assets/js/navAuth.js?v=20261106-permissions2"></script>
-  <script type="module" src="../assets/js/savePerson.js?v=20261118-reach1"></script>
+  <p>Saving people now happens in <a href="/handshake/">Your people</a>. Anything you saved in this browser is moved there automatically.</p>
 </body>
 </html>

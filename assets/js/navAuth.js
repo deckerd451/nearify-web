@@ -5,14 +5,14 @@ import { fetchIsAdmin, resetAdminCache } from "./adminAccess.js";
 // Hamburger / nav-drawer toggle (wired here since this module loads on every page)
 // ---------------------------------------------------------------------------
 
-// Handshakes works without signing in, so it's in the menu for everyone.
+// Your people (Handshakes) works without signing in, so it's in the menu for everyone.
 function addHandshakesLink() {
   const here = window.location.pathname.startsWith("/handshake");
   for (const menu of document.querySelectorAll(".nav-links, #navDrawer")) {
     if (menu.querySelector('a[href="/handshake/"]')) continue;
     const link = document.createElement("a");
     link.href = "/handshake/";
-    link.textContent = "Handshakes";
+    link.textContent = "Your people";
     if (here) link.setAttribute("aria-current", "page");
     menu.appendChild(link);
   }
@@ -108,6 +108,13 @@ function buildPill(profile, email) {
   emailEl.className = "nav-dropdown-email";
   emailEl.textContent = email || "";
   dropdown.appendChild(emailEl);
+
+  const connectionsLink = document.createElement("a");
+  connectionsLink.href = "/connections/";
+  connectionsLink.textContent = "Event connections";
+  connectionsLink.className = "nav-dropdown-delete";
+  connectionsLink.setAttribute("role", "menuitem");
+  dropdown.appendChild(connectionsLink);
 
   const messagesLink = document.createElement("a");
   messagesLink.href = "/messages/";
@@ -215,12 +222,6 @@ function injectSignedIn(profile, email, user) {
     const homeLink = buildHomeLink();
     navLinks.insertBefore(homeLink, navLinks.firstChild);
 
-    const networkLink = document.createElement("a");
-    networkLink.href = "/connections/";
-    networkLink.textContent = "My Connections";
-    networkLink.className = "nav-auth-link";
-    navLinks.appendChild(networkLink);
-
 
     navLinks.appendChild(buildPill(profile, email));
   }
@@ -232,7 +233,7 @@ function injectSignedIn(profile, email, user) {
 
     const drawerNetwork = document.createElement("a");
     drawerNetwork.href = "/connections/";
-    drawerNetwork.textContent = "My Connections";
+    drawerNetwork.textContent = "Event connections";
     drawerNetwork.className = "nav-auth-link";
     drawer.appendChild(drawerNetwork);
 
